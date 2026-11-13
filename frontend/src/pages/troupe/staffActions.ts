@@ -8,7 +8,7 @@
 import { hasCard } from "../jyhad/taps";
 
 /** The items, by what they open. */
-export type StaffAction = "play" | "xp" | "equipment" | "status" | "titles" | "listing" | "give" | "claim" | "sheet" | "badge" | "jyhad";
+export type StaffAction = "play" | "xp" | "equipment" | "status" | "titles" | "listing" | "give" | "claim" | "npc" | "sheet" | "badge" | "jyhad";
 
 /** What decides the items, from the character's roster entry. */
 export type ActionTarget = {
@@ -40,7 +40,8 @@ export type Staffing = {
  * its Play View; Award XP is for a PC whose home this is; equipment and status are
  * given by the home troupe, and equipment only to an active character; an NPC is
  * listed on the Who's Who by hand; only storytellers give an NPC to a player or
- * make a claim link for it, and not from an archived troupe. A Stock NPC has no
+ * make a claim link for it, and not from an archived troupe. A retired PC whose home
+ * this is can be copied as an NPC (#764), however it left. A Stock NPC has no
  * sheet to print; Badge… shows what the badge says, takes a note and prints it.
  */
 export function staffActions(c: ActionTarget, who: Staffing): { doing: StaffAction[]; printing: StaffAction[] } {
@@ -55,6 +56,7 @@ export function staffActions(c: ActionTarget, who: Staffing): { doing: StaffActi
   doing.push("titles");
   if (npc) doing.push("listing");
   if (c.givable && who.storyteller && !who.archived) doing.push("give", "claim");
+  if (c.kind === "pc" && c.home && c.retired && !who.archived) doing.push("npc");
   const printing: StaffAction[] = c.npc_form === "stock" ? ["badge"] : ["sheet", "badge"];
   // Its Jyhad card (#537), for a character that can have one.
   if (hasCard(c)) printing.push("jyhad");

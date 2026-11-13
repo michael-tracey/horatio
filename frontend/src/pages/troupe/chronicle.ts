@@ -64,6 +64,8 @@ export function placed(events: readonly ChronicleEvent[], inGame: boolean): { sh
  */
 export function lanes<T extends { from: Date; to: Date | null; span: boolean }>(items: readonly T[], openEnd: Date): { placed: { item: T; lane: number }[]; count: number } {
   const ends: number[] = [];
+  // sort() is stable: items at the same moment keep the order they came in, which is
+  // the server's, by when each was recorded and then its id (#733).
   const out = [...items]
     .sort((a, b) => a.from.getTime() - b.from.getTime())
     .map((item) => {
@@ -84,6 +86,7 @@ export function rows(shown: readonly Placed[], by: "kind" | "character", openEnd
   if (by === "kind") {
     for (const k of KINDS) groups.set(k.kind, { label: k.label, items: [] });
   }
+  // Stable, as in lanes(): ties keep the server's order.
   const ordered = [...shown].sort((a, b) => a.from.getTime() - b.from.getTime());
   for (const p of ordered) {
     const key = by === "kind" ? p.event.kind : (p.event.character_id ?? `name:${p.event.character_name}`);

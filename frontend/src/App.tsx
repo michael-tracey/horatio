@@ -30,6 +30,7 @@ const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then(
 const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then((m) => ({ default: m.CustodianPage })));
 const CyclePage = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.CyclePage })));
 const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ default: m.PlayPage })));
+const HarpyLedgerPage = lazy(() => import("./pages/play/HarpyLedgerPage").then((m) => ({ default: m.HarpyLedgerPage })));
 const ScenePage = lazy(() => import("./pages/play/ScenePage").then((m) => ({ default: m.ScenePage })));
 const ScenesPage = lazy(() => import("./pages/play/ScenesPage").then((m) => ({ default: m.ScenesPage })));
 const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })));
@@ -46,6 +47,7 @@ const TroupePrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ de
 // The chart kit's demonstration (#706): d3 loads with it, never with the app's first chunk.
 const ChartKitPage = lazy(() => import("./pages/charts/ChartKitPage").then((m) => ({ default: m.ChartKitPage })));
 const WhosWhoPrintPage = lazy(() => import("./pages/WhosWhoPrintPage").then((m) => ({ default: m.WhosWhoPrintPage })));
+const BoonAuditPrintPage = lazy(() => import("./pages/BoonAuditPrintPage").then((m) => ({ default: m.BoonAuditPrintPage })));
 
 function ToScenes() {
   const { troupeId = "" } = useParams();
@@ -89,10 +91,12 @@ export const routes = createRoutesFromElements(
       <Route path="/print/troupes/:troupeId/badges" element={<ForTroupe><TroupeBadgesPage /></ForTroupe>} />
       <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
       <Route path="/print/troupes/:troupeId/whos-who" element={<ForTroupe><WhosWhoPrintPage /></ForTroupe>} />
+      <Route path="/print/boon-audits/:auditId" element={<BoonAuditPrintPage />} />
       <Route path="/print/characters/:characterId/badge" element={<ForCharacter><CharacterBadgePage /></ForCharacter>} />
       {/* Found by tapping the clan symbol seven times (#537): no link leads here for a player. */}
       <Route path="/print/characters/:characterId/jyhad" element={<ForCharacter><JyhadCardPage /></ForCharacter>} />
       <Route path="/play/characters/:characterId" element={<ForCharacter><PlayPage /></ForCharacter>} />
+      <Route path="/play/characters/:characterId/ledger" element={<ForCharacter><HarpyLedgerPage /></ForCharacter>} />
       <Route path="/play/troupes/:troupeId/scenes" element={<ForTroupe><ScenesPage /></ForTroupe>} />
       <Route path="/play/troupes/:troupeId/scenes/:sceneId" element={<ForTroupe><ScenePage /></ForTroupe>} />
       {/* The one scene per troupe from before scenes were named (issue #231). */}

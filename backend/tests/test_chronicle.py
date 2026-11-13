@@ -11,9 +11,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from horatio.models import Diablerie, Embrace
+from horatio.models import Boonbreaker, Diablerie, Embrace, HeldStatus
 from tests.api_helpers import Person, Troupe
 from tests.test_api_leaving import retire
+from tests.test_api_npc_copies import built, copied
 from tests.test_api_sect_status import add, entitle, member
 
 
@@ -108,6 +109,78 @@ def test_staff_see_every_kind_of_event_with_its_dates(troupe: Troupe) -> None:
     # Oldest first, by when Horatio recorded it.
     moments = [e["at"] for e in found["events"]]
     assert moments == sorted(moments)
+
+
+def test_events_recorded_together_keep_the_order_they_were_made(troupe: Troupe) -> None:
+    """Rows written in one transaction share created_at: the id breaks the tie (#733)."""
+    agnes = member(troupe, "Agnes")
+    # Status first, then an Embrace, both in this one transaction: the kinds' names
+    # would sort the other way.
+    troupe.session.add(
+        HeldStatus(
+            character_id=uuid.UUID(agnes),
+            name="Loyal",
+            troupe_id=uuid.UUID(troupe.id),
+            given_on=date(1890, 3, 1),
+        )
+    )
+    troupe.session.flush()
+    embraced(troupe, agnes, date(1791, 6, 2))
+    found = [
+        e["kind"]
+        for e in chronicle(troupe.storyteller, troupe)["events"]
+        if e["kind"] in ("status", "embrace")
+    ]
+    assert found == ["status", "embrace"]
+
+
+def test_an_npc_is_added_and_a_copy_says_whose_it_is(troupe: Troupe) -> None:
+    member(troupe, "Abiding")  # the player stays a member
+    viktor = built(troupe)
+    retire(troupe.player, viktor, reason="off_field", listed=True)
+    npc = copied(troupe.storyteller, viktor)["character"]
+    arrival = next(
+        e
+        for e in chronicle(troupe.storyteller, troupe)["events"]
+        if e["kind"] == "arrival" and e["character_id"] == npc["id"]
+    )
+    assert arrival["label"] == "Added as an NPC"
+    assert arrival["detail"] == "A copy of Viktor, retired"
+
+    # Listed on the Who's Who, the players see it join, and no more.
+    listed = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/npcs/{npc['id']}/whos-who", json={"listed": True}
+    )
+    assert listed.status_code < 300, listed.text
+    troupe.storyteller.client.patch(f"/troupes/{troupe.id}", json={"chronicle_players": True})
+    seen = [e for e in chronicle(troupe.player, troupe)["events"] if e["character_id"] == npc["id"]]
+    assert [(e["kind"], e["label"], e["detail"]) for e in seen] == [
+        ("arrival", "Joined the troupe", "")
+    ]
+
+
+def test_a_boonbreakers_disgraced_names_the_declaration(troupe: Troupe) -> None:
+    roth = member(troupe, "Roth")
+    held = HeldStatus(
+        character_id=uuid.UUID(roth),
+        name="Disgraced",
+        troupe_id=uuid.UUID(troupe.id),
+        given_on=date(2026, 11, 1),
+        patron_text="Declared a Boonbreaker by staff",
+        story="Refused a major boon.",
+    )
+    troupe.session.add(held)
+    troupe.session.flush()
+    troupe.session.add(
+        Boonbreaker(
+            troupe_id=uuid.UUID(troupe.id), character_id=uuid.UUID(roth), held_status_id=held.id
+        )
+    )
+    troupe.session.flush()
+    disgraced = next(
+        e for e in chronicle(troupe.storyteller, troupe)["events"] if e["label"] == "Disgraced"
+    )
+    assert disgraced["detail"] == "Declared a Boonbreaker by staff. Refused a major boon."
 
 
 def test_assistants_see_it_and_narrators_do_not(troupe: Troupe) -> None:

@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter
 from sqlalchemy import or_, select
 
-from horatio import bonds
+from horatio import bonds, npc_copies
 from horatio.api.roster import LogEntry, log_entries
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import AuditEvent, Troupe, User
@@ -29,8 +29,9 @@ def character_log(
     limit: int = 200,
 ) -> list[LogEntry]:
     """Everything that happened to the character, newest first. Its player sees it
-    all; a troupe's staff see the sheet's own history and what happened in their
-    troupe, not in the character's other troupes."""
+    all but its copy as an NPC (horatio.npc_copies); a troupe's staff see the sheet's
+    own history and what happened in their troupe, not in the character's other
+    troupes."""
     character = visible_character(db, user, character_id)
     query = (
         select(AuditEvent, User.display_name)
@@ -39,7 +40,11 @@ def character_log(
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
         .limit(min(max(limit, 1), 500))
     )
-    if not (user.is_custodian or (character.kind == "pc" and character.player_id == user.id)):
+    players_own = character.kind == "pc" and character.player_id == user.id
+    if players_own and not user.is_custodian:
+        # Staff copying it as an NPC is theirs to tell (horatio.npc_copies).
+        query = query.where(AuditEvent.action != npc_copies.COPIED_AS_NPC)
+    if not (user.is_custodian or players_own):
         troupe_ids = set(
             db.scalars(select(AuditEvent.troupe_id).where(AuditEvent.character_id == character.id))
         ) - {None}

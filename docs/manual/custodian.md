@@ -23,7 +23,7 @@ The custodian can also do anything a lead storyteller can, in any troupe, even o
 What the custodian isn't:
 
 - **Not a player's stand-in.** Like staff, the custodian can read any character's sheet, but only a character's player edits it. To see exactly what a player sees, use [View as](#viewing-as-someone).
-- **Not one of every troupe's staff.** The custodian isn't listed on a troupe's Staff tab, and isn't sent each troupe's approvals and downtimes. Their bell has only the custodian's own work, such as new troupe requests.
+- **Not one of every troupe's staff.** The custodian isn't listed on a troupe's Staff tab, and isn't sent each troupe's approvals and downtimes. Their bell has only the custodian's own work, such as new troupe requests, and a note each time someone signs up, which opens **Custodian › People** with that person found.
 - **Not a role you give in the app.** There's no button to make someone the custodian, or to stop being one. See [Becoming the custodian](#becoming-the-custodian) and [Removing a custodian](#removing-a-custodian).
 
 ## Becoming the custodian
@@ -54,15 +54,21 @@ The same command takes the role away again, with `--remove` before the email:
 
 The account stays as it is, with its characters and any staff roles; only the custodian's powers go, at once. **Custodian** leaves their top menu when they next reload the page. The last custodian can't be removed: make someone else the custodian first.
 
+## Troupe management
+
+**Custodian › Troupe management** holds what you do with troupes as a whole, one section under another: **New troupe**, to [make one yourself](#making-a-troupe-yourself); **Troupes**, every troupe still running, to [appoint a lead storyteller](#appointing-a-lead-storyteller); **Requests**, for [troupe requests](#troupe-requests); and **Archived troupes**, to [reopen one](#reopening-a-troupe). The tab shows how many requests are waiting.
+
+![The Troupe management tab: New troupe, the troupes, requests and archived troupes](images/custodian/troupe-management.png)
+
 ## Troupe requests
 
-Anyone signed in can ask for a troupe of their own, from **Ask for a new troupe** at the foot of the Troupes page. They give its **Troupe name**, and optionally a **Description** and a **Note to the custodian**. Each request waits on **Custodian › Troupe requests**, and the tab shows how many are waiting. It's on your bell too.
+Anyone signed in can ask for a troupe of their own, from **Ask for a new troupe** at the foot of the Troupes page. They give its **Troupe name**, and optionally a **Description** and a **Note to the custodian**. Each request waits under **Requests** on **Custodian › Troupe management**, and the tab shows how many are waiting. It's on your bell too.
 
-![The Troupe requests tab, with one request waiting and one already approved](images/custodian/troupe-requests.png)
+![The Requests section, with one request waiting and one already approved](images/custodian/troupe-requests.png)
 
 ### Approving or declining a request
 
-1. Open **Custodian › Troupe requests**. **Waiting** lists the requests, the longest waiting first, with who asked and their note.
+1. Open **Custodian › Troupe management**. Under **Requests**, **Waiting** lists the requests, the longest waiting first, with who asked and their note.
 2. To say yes, choose **Approve and make the troupe**. Horatio makes the troupe with the name and description they gave, and makes the person who asked its [lead storyteller](glossary.md#lead-storyteller). They're told on their bell.
 3. To say no, choose **Decline…**. You can say why under **Why not? (optional)**: they see it. Then choose **Decline**.
 
@@ -70,14 +76,14 @@ Anyone signed in can ask for a troupe of their own, from **Ask for a new troupe*
 
 ### Making a troupe yourself
 
-You can also make a troupe without a request. On the **Troupes** page, the custodian has a **New troupe** card: give its **Name**, a **Description** and its **Lead storyteller**, who needs an account already, then choose **Create troupe**.
+You can also make a troupe without a request. On **Custodian › Troupe management**, under **New troupe**, give its **Name**, a **Description** and its **Lead storyteller**, who needs an account already, then choose **Create troupe**. The **Troupes** page points you there too.
 
 ### Appointing a lead storyteller
 
 Each troupe has one lead storyteller. Only you can change who it is, for example when a lead steps down or is suspended:
 
-1. Open the troupe, then its **Staff** tab.
-2. Under **Lead storyteller**, in **Appoint a new lead**, pick the person, or type a name or handle to find them.
+1. On **Custodian › Troupe management**, under **Troupes**, choose **Change lead…** on the troupe's row. (Or open the troupe, then its **Staff** tab, and use **Appoint a new lead** under **Lead storyteller**.)
+2. Under **New lead**, pick the person, or type a name or handle to find them. The dialog says who leads it now.
 3. Choose **Appoint**.
 
 The new lead takes over at once. If they were already on the troupe's staff, their old role gives way to lead. The previous lead leaves the staff, with no role in the troupe, as the card says before you confirm; the troupe's log records who they were. If they're staying on, add them back under **Add staff** with a role. What each role can do is in [Running a troupe](running-a-troupe.md#staff-roles).
@@ -99,9 +105,9 @@ Once archived, the troupe is closed to everyone but you.
 
 ### Reopening a troupe
 
-**Custodian › Archived troupes** lists every archived troupe, the latest first: when and by whom it was archived, why, its lead storyteller, and the characters it had then. **Open** and **Log** take you to its pages, which stay readable to you.
+**Custodian › Troupe management**, under **Archived troupes**, lists every archived troupe, the latest first: when and by whom it was archived, why, its lead storyteller, and the characters it had then. **Open** and **Log** take you to its pages, which stay readable to you.
 
-![An archived troupe on the Archived troupes tab, with who archived it and why](images/custodian/archived-troupes.png)
+![An archived troupe under Archived troupes, with who archived it and why](images/custodian/archived-troupes.png)
 
 To bring one back:
 
@@ -292,7 +298,7 @@ The very first screen shows before the app has asked the server anything, so it 
 
 ## Tools
 
-**Custodian › Tools** holds upkeep that would otherwise need a command on the server. Each tool is a card that says what it does, shows what it would change, and changes nothing until you say so. The cards that fetch files from elsewhere say what the server has now.
+**Custodian › Tools** holds upkeep that would otherwise need a command on the server. Each tool is a card that says what it does, shows what it would change, and changes nothing until you say so. The cards that fetch files from elsewhere say what the server has now. The [import from Yorick](#importing-characters-from-yorick) is here too: its card opens it.
 
 ### Fitting NPC creation picks
 
@@ -374,7 +380,7 @@ The page holds real players' names and emails. Horatio keeps it only for the imp
 
 ### Upload the page
 
-1. Open **Custodian › Import from Yorick**, and choose the **Troupe**.
+1. Open **Custodian › Tools**, choose **Open the import** on the **Import from Yorick** card, and choose the **Troupe**.
 2. Choose **Upload the page**, and pick the zip or the `.html`. **Upload a newer page** replaces it later.
 3. Under **The NPCs are made by**, choose who makes them: the lead storyteller, or one of the troupe's storytellers.
 

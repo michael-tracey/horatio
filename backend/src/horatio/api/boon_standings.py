@@ -14,6 +14,7 @@ from horatio import boon_standings as standings
 from horatio import boons
 from horatio.api.boons import Kind, Standing
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.boon_harpy import Keeper
 from horatio.models import Troupe, User
 
 router = APIRouter(tags=["boons"])
@@ -294,17 +295,27 @@ def standings_out(troupe: Troupe, found: standings.Standings) -> BoonStandingsOu
     )
 
 
-def standings_troupe(db: DbSession, user: User, troupe_id: uuid.UUID) -> Troupe:
-    """The troupe, for those who may read its standings (`can_read`), while it keeps a
-    ledger. Switched off, there is nothing to see."""
+def standings_reader(db: DbSession, user: User, troupe_id: uuid.UUID) -> tuple[Troupe, Keeper]:
+    """The troupe, and who reads its standings (horatio.boon_standings.reader): its
+    staff, or its Harpy where the troupe allows it (#749), while it keeps a ledger.
+    Switched off, there is nothing to see."""
     troupe = db.get(Troupe, troupe_id)
     if troupe is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
-    if not standings.can_read(db, user, troupe):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the troupe's staff see this.")
+    reader = standings.reader(db, user, troupe)
+    if reader is None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only the troupe's staff, and its Harpy where the troupe allows it, see this.",
+        )
     if not boons.tracked(troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "This troupe doesn't keep a boon ledger.")
-    return troupe
+    return troupe, reader
+
+
+def standings_troupe(db: DbSession, user: User, troupe_id: uuid.UUID) -> Troupe:
+    """The troupe, for those who may read its standings (`standings_reader`)."""
+    return standings_reader(db, user, troupe_id)[0]
 
 
 @router.get("/troupes/{troupe_id}/boon-standings")
@@ -314,9 +325,10 @@ def boon_standings(
     """Where everyone stands in the troupe's boon ledger, now: totals, open boons by
     kind, each party's net, the court, clans, ages and sects, how old open debt is,
     how boons get settled, boons across clan and sect lines, and those who owe each
-    other. "active" leaves out boons that involve someone dead or off-field."""
-    troupe = standings_troupe(db, user, troupe_id)
-    return standings_out(troupe, standings.standings_of(db, troupe, scope))
+    other. "active" leaves out boons that involve someone dead or off-field. A Harpy
+    (#749) reads who has left only as the court knows it."""
+    troupe, reader = standings_reader(db, user, troupe_id)
+    return standings_out(troupe, standings.standings_of(db, troupe, scope, reader.court))
 
 
 @router.put("/troupes/{troupe_id}/boon-weights")

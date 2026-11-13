@@ -1,7 +1,8 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ThrowsTab } from "./Throws";
+import { useState } from "react";
+import { ThrowsTab, useThrows } from "./Throws";
 import { useChallenge } from "./Challenge";
 import { load } from "./challenge";
 
@@ -34,6 +35,20 @@ describe("the Throws tab", () => {
     expect(screen.queryByText("Rock…")).toBeNull();
     expect(screen.getByRole("img", { name: THROWN })).toBeTruthy();
     expect(screen.getByRole("list").children).toHaveLength(1);
+  });
+
+  it("shows the word twice, once upside down above the picture, and reads it out once (#740)", () => {
+    motion(true);
+    shown();
+    fireEvent.click(screen.getByRole("button", { name: "Throw" }));
+    const face = screen.getByRole("img", { name: THROWN });
+    const word = face.getAttribute("aria-label")!;
+    const words = Array.from(face.querySelectorAll("span")).filter((s) => s.textContent === word);
+    expect(words).toHaveLength(2);
+    expect(words[0]!.className).toContain("rotate-180");
+    expect(words[1]!.className).not.toContain("rotate-180");
+    expect(words.every((s) => s.getAttribute("aria-hidden") === "true")).toBe(true);
+    expect(screen.getAllByRole("img", { name: word })).toHaveLength(1);
   });
 
   it("counts in rock, paper, scissors for about a second, then shows the throw", () => {
@@ -139,6 +154,42 @@ describe("a pool thrown from the Pools tab", () => {
   });
 });
 
+describe("throws kept by the page (#756)", () => {
+  /** The Play View: it keeps the throws, and remakes the tab when the sheet arrives. */
+  function Page() {
+    const throwing = useThrows();
+    const [loaded, setLoaded] = useState(false);
+    return (
+      <>
+        <button onClick={() => setLoaded(true)}>The sheet arrives</button>
+        {loaded ? (
+          <div>
+            <ThrowsTab throwing={throwing} />
+          </div>
+        ) : (
+          <ThrowsTab throwing={throwing} />
+        )}
+      </>
+    );
+  }
+
+  it("doesn't lose a throw that was counting in when the tab is remade", () => {
+    vi.useFakeTimers();
+    motion(false);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <Page />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Throw" }));
+    expect(screen.getByText("Rock…")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "The sheet arrives" }));
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(screen.getByRole("img", { name: THROWN })).toBeTruthy();
+    expect(screen.getByRole("list").children).toHaveLength(1);
+  });
+});
+
 describe("throwing by flipping the phone (#669)", () => {
   afterEach(() => localStorage.clear());
 
@@ -159,7 +210,8 @@ describe("throwing by flipping the phone (#669)", () => {
     expect(screen.queryByRole("button", { name: "Turn on flipping the phone" })).toBeNull();
   });
 
-  it("offers the switch once the sensor reads, and a flip throws at once, with a buzz", () => {
+  it("offers the switch once the sensor reads, and a flip counts in like the button, then throws with a buzz (#756)", () => {
+    vi.useFakeTimers();
     motion(false);
     const vibrate = vi.fn();
     vi.stubGlobal("navigator", { ...navigator, vibrate });
@@ -167,11 +219,24 @@ describe("throwing by flipping the phone (#669)", () => {
     orient(0);
     expect((screen.getByRole("checkbox", { name: "Throw by flipping" }) as HTMLInputElement).checked).toBe(true);
     flipOver();
-    // No count-in: the screen was face down, so the throw shows as it comes up.
+    // As the screen comes back up it counts in, as the Throw button does.
+    expect(screen.getByText("Rock…")).toBeTruthy();
+    expect(screen.queryByRole("img", { name: THROWN })).toBeNull();
+    expect(vibrate).not.toHaveBeenCalled();
+    act(() => void vi.advanceTimersByTime(1000));
     expect(screen.queryByText("Rock…")).toBeNull();
     expect(screen.getByRole("img", { name: THROWN })).toBeTruthy();
     expect(vibrate).toHaveBeenCalledOnce();
     expect(screen.getByRole("list").children).toHaveLength(1);
+  });
+
+  it("shows a flip's throw straight away with reduced motion", () => {
+    motion(true);
+    shown();
+    orient(0);
+    flipOver();
+    expect(screen.queryByText("Rock…")).toBeNull();
+    expect(screen.getByRole("img", { name: THROWN })).toBeTruthy();
   });
 
   it("doesn't throw by flipping once switched off, and remembers that on this device", () => {

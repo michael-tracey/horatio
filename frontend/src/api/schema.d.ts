@@ -552,6 +552,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boon-audits/{audit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Audit
+         * @description One audit, as it was made: for whoever keeps the troupe's ledger and may see it,
+         *     and for the player of the character it was given to.
+         */
+        get: operations["read_audit_api_boon_audits__audit_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar/links": {
         parameters: {
             query?: never;
@@ -755,6 +776,32 @@ export interface paths {
          *     in a troupe, or the custodian at any time (see horatio/renames.py).
          */
         patch: operations["change_character_api_characters__character_id__patch"];
+        trace?: never;
+    };
+    "/api/characters/{character_id}/apology-boon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Apology Choices
+         * @description For staff putting right a slip under Warned or Disgraced: the ledger its boon
+         *     goes in, and who could have been wronged.
+         */
+        get: operations["apology_choices_api_characters__character_id__apology_boon_get"];
+        put?: never;
+        /**
+         * Apology Boon
+         * @description Register the boon an apology owes for a slip (p. 316): minor under Warned, major
+         *     under Disgraced, owed by the character to whoever was wronged.
+         */
+        post: operations["apology_boon_api_characters__character_id__apology_boon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/characters/{character_id}/attendance": {
@@ -1124,6 +1171,48 @@ export interface paths {
          * @description Take back a drink its player reported, while it waits.
          */
         post: operations["withdraw_report_api_characters__character_id__bonds_reports__report_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/bonds/{bond_id}/meetings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Meeting
+         * @description Its player logs the character meeting the other side of a bond it is in (#665):
+         *     it counts now, or waits on staff, by the troupe's setting (horatio.bonds).
+         */
+        post: operations["report_meeting_api_characters__character_id__bonds__bond_id__meetings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/boon-audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Audits
+         * @description The audits given to the character, newest first: for its player, and the staff
+         *     of the troupe each was made in.
+         */
+        get: operations["character_audits_api_characters__character_id__boon_audits_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1908,6 +1997,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/harpy-ledgers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Harpy Ledgers
+         * @description The ledgers the character's player keeps as it, the troupe's Harpy (#688): for
+         *     the Harpy's own page, linked from the Play View's Boons tab.
+         */
+        get: operations["character_harpy_ledgers_api_characters__character_id__harpy_ledgers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/haven": {
         parameters: {
             query?: never;
@@ -2226,6 +2336,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/leaving/warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Leaving Warnings
+         * @description What the retire dialog, and changing why a character left, warn of before it
+         *     tells other players something they haven't been told (#748): its player's, and its
+         *     home troupe's running staff's, each as they may know of it.
+         */
+        get: operations["leaving_warnings_api_characters__character_id__leaving_warnings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/location-requests": {
         parameters: {
             query?: never;
@@ -2277,8 +2409,9 @@ export interface paths {
         /**
          * Character Log
          * @description Everything that happened to the character, newest first. Its player sees it
-         *     all; a troupe's staff see the sheet's own history and what happened in their
-         *     troupe, not in the character's other troupes.
+         *     all but its copy as an NPC (horatio.npc_copies); a troupe's staff see the sheet's
+         *     own history and what happened in their troupe, not in the character's other
+         *     troupes.
          */
         get: operations["character_log_api_characters__character_id__log_get"];
         put?: never;
@@ -2352,6 +2485,28 @@ export interface paths {
         get: operations["nominations_about_api_characters__character_id__nominations_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/npc-copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy As Npc
+         * @description Copy a retired player character as a sheeted NPC of its home troupe, named
+         *     "[NPC] <name>" (horatio.npc_copies, #764), for the troupe's running staff. The
+         *     original stays as it is with its player, who isn't told.
+         */
+        post: operations["copy_as_npc_api_characters__character_id__npc_copy_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2656,9 +2811,31 @@ export interface paths {
         /**
          * Report Boon
          * @description A player reports a boon for their character, which goes in the troupe's ledger
-         *     as theirs, done as the character.
+         *     as theirs, done as the character: standing, or waiting for review where the troupe
+         *     holds reports for review (#687).
          */
         post: operations["report_boon_api_characters__character_id__play_boons_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play-boons/{boon_id}/gallant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Play Gallant
+         * @description The creditor's player, with Social Nobility, gives the debtor of a boon repaid
+         *     to their character Gallant, or not (p. 405); staff may answer here too.
+         */
+        post: operations["answer_play_gallant_api_characters__character_id__play_boons__boon_id__gallant_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3030,6 +3207,28 @@ export interface paths {
          * @description Choose, or for staff change, what a power was bought with.
          */
         put: operations["set_power_choices_api_characters__character_id__power_choices_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/praised-claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Praised Claims
+         * @description For spending Praised (p. 316): who in the troupe whose ledger the character's
+         *     Play View shows is Accepted by its sect and not already in its debt. Its player
+         *     sees player characters; staff see the troupe's NPCs too.
+         */
+        get: operations["praised_claims_api_characters__character_id__praised_claims_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3465,6 +3664,51 @@ export interface paths {
         };
         /** Read Sheet */
         get: operations["read_sheet_api_characters__character_id__sheet_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/sire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Sire
+         * @description The character's sire, as anyone who sees the character sees it.
+         */
+        get: operations["read_sire_api_characters__character_id__sire_get"];
+        /**
+         * Set Sire
+         * @description Give the character its sire: a character the caller can see, or a name and
+         *     clan; and whether the troupe's players see it.
+         */
+        put: operations["set_sire_api_characters__character_id__sire_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/sire/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sire Choices
+         * @description The vampires that could be the character's sire, by name (`candidates`).
+         */
+        get: operations["sire_choices_api_characters__character_id__sire_choices_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3933,6 +4177,68 @@ export interface paths {
          *     the techniques that need it straight away. Nothing is saved.
          */
         post: operations["unavailable_after_api_characters__character_id__unavailable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/vaulderies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Vaulderie
+         * @description Its player reports a Vaulderie the character took part in: it waits for the
+         *     troupe's running staff to approve it.
+         */
+        post: operations["report_vaulderie_api_characters__character_id__vaulderies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/vaulderies/{vaulderie_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw Vaulderie
+         * @description Take back a Vaulderie its player reported, while it waits.
+         */
+        post: operations["withdraw_vaulderie_api_characters__character_id__vaulderies__vaulderie_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/vinculum": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Vinculum
+         * @description The Vinculum ratings the character feels, as the reader may know of them, and
+         *     for its player, where they can report its Vaulderies and those they reported.
+         */
+        get: operations["character_vinculum_api_characters__character_id__vinculum_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7444,7 +7750,8 @@ export interface paths {
         /**
          * Known Bonds
          * @description The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
-         *     characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).
+         *     characters' Embraces and the sires their sheets name, ghouls' domitors and vampires'
+         *     ghoul Retainers (#663, #739).
          */
         get: operations["known_bonds_api_troupes__troupe_id__bonds_known_get"];
         put?: never;
@@ -7514,6 +7821,27 @@ export interface paths {
          * @description Stop showing the regnant's player a bond whose thrall died.
          */
         post: operations["clear_kept_api_troupes__troupe_id__bonds__bond_id__clear_kept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/confirm-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Change
+         * @description Staff confirm the change time has brought a bond, in a troupe where players
+         *     report and staff approve (#665): it drops to two drinks, or ends.
+         */
+        post: operations["confirm_change_api_troupes__troupe_id__bonds__bond_id__confirm_change_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7623,6 +7951,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/meetings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Meeting
+         * @description Log the thrall and regnant meeting, such as in a downtime: it keeps a lesser bond
+         *     from ending (#665).
+         */
+        post: operations["add_meeting_api_troupes__troupe_id__bonds__bond_id__meetings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/book-traits": {
         parameters: {
             query?: never;
@@ -7649,6 +7998,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Audits
+         * @description The troupe's audits the caller sees, newest first, and whom they can audit and
+         *     give one to: for its staff, and a Harpy or Lesser Harpy who may perform audits.
+         */
+        get: operations["troupe_audits_api_troupes__troupe_id__boon_audits_get"];
+        put?: never;
+        /**
+         * Make Audit
+         * @description Audit a character's boons as the ledger holds them now; given at once to a
+         *     player character, if named.
+         */
+        post: operations["make_audit_api_troupes__troupe_id__boon_audits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-audits/{audit_id}/give": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give Audit
+         * @description Give an audit to a player character in play in the troupe, once.
+         */
+        post: operations["give_audit_api_troupes__troupe_id__boon_audits__audit_id__give_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-flags/{flag_id}/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clear
+         * @description Clear a flag, with an optional note: the name is right as it is, say.
+         */
+        post: operations["clear_api_troupes__troupe_id__boon_flags__flag_id__clear_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-games": {
         parameters: {
             query?: never;
@@ -7663,6 +8078,28 @@ export interface paths {
          */
         get: operations["boon_games_api_troupes__troupe_id__boon_games_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-harpy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Harpy
+         * @description How far the troupe's Harpy reaches into its boon ledger (#688): not at all, the
+         *     review queue and word of each boon players report, or the full ledger; and whether,
+         *     with the full ledger, the Harpy also reads its standings and statistics (#749).
+         */
+        put: operations["set_boon_harpy_api_troupes__troupe_id__boon_harpy_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -7712,6 +8149,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Review Queue
+         * @description The review queue: every boon waiting for review or with a flag raised.
+         */
+        get: operations["review_queue_api_troupes__troupe_id__boon_review_get"];
+        /**
+         * Set Boon Review
+         * @description Whether boons the troupe's players report wait for review before they stand.
+         */
+        put: operations["set_boon_review_api_troupes__troupe_id__boon_review_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-standings": {
         parameters: {
             query?: never;
@@ -7724,7 +8185,8 @@ export interface paths {
          * @description Where everyone stands in the troupe's boon ledger, now: totals, open boons by
          *     kind, each party's net, the court, clans, ages and sects, how old open debt is,
          *     how boons get settled, boons across clan and sect lines, and those who owe each
-         *     other. "active" leaves out boons that involve someone dead or off-field.
+         *     other. "active" leaves out boons that involve someone dead or off-field. A Harpy
+         *     (#749) reads who has left only as the court knows it.
          */
         get: operations["boon_standings_api_troupes__troupe_id__boon_standings_get"];
         put?: never;
@@ -7746,12 +8208,81 @@ export interface paths {
          * Boon Statistics
          * @description The boon ledger's statistics: by month, who owes whom, debt between clans and
          *     sects, and each recent game's boons. "active" leaves out boons that involve
-         *     someone dead or off-field.
+         *     someone dead or off-field. A Harpy (#749) reads who has left only as the court
+         *     knows it.
          */
         get: operations["boon_statistics_api_troupes__troupe_id__boon_statistics_get"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-talons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boon Talons List
+         * @description Who has access to the ledger as a Lesser Harpy, with what each may do: for the
+         *     Harpy, who gives it, and for the troupe's running staff.
+         */
+        get: operations["boon_talons_list_api_troupes__troupe_id__boon_talons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-talons-setting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Talons
+         * @description Whether the troupe's Harpy may give others access to its boon ledger (#689),
+         *     and what it calls them. Only used while the Harpy has the full ledger.
+         */
+        put: operations["set_boon_talons_api_troupes__troupe_id__boon_talons_setting_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-talons/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Give Talon
+         * @description The Harpy gives a character access to the ledger, or changes what it allows,
+         *     as their character. Logged.
+         */
+        put: operations["give_talon_api_troupes__troupe_id__boon_talons__character_id__put"];
+        post?: never;
+        /**
+         * Take Talon
+         * @description Take a character's access to the ledger away: the Harpy, as their character, or
+         *     the troupe's running staff. Logged.
+         */
+        delete: operations["take_talon_api_troupes__troupe_id__boon_talons__character_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -7777,6 +8308,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boonbreakers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Boonbreakers
+         * @description Everyone marked a Boonbreaker in the troupe's ledger, standing marks first.
+         */
+        get: operations["troupe_boonbreakers_api_troupes__troupe_id__boonbreakers_get"];
+        put?: never;
+        /**
+         * Declare Boonbreaker
+         * @description Declare a character a Boonbreaker (p. 397): their open boons void, both ways,
+         *     and Disgraced while the mark stands.
+         */
+        post: operations["declare_boonbreaker_api_troupes__troupe_id__boonbreakers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boonbreakers/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boonbreaker Preview
+         * @description What declaring the character a Boonbreaker would make void, before it's done.
+         */
+        get: operations["boonbreaker_preview_api_troupes__troupe_id__boonbreakers_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boonbreakers/{mark_id}/appeals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Appeal Boonbreaker
+         * @description An appeal for mercy and its outcome (p. 398). Granted, the mark is lifted and
+         *     the boons named in `restore` stand again.
+         */
+        post: operations["appeal_boonbreaker_api_troupes__troupe_id__boonbreakers__mark_id__appeals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boons": {
         parameters: {
             query?: never;
@@ -7796,7 +8393,8 @@ export interface paths {
         /**
          * Register
          * @description Register boons in the ledger: one, or a whole game's at once, each row as many
-         *     times as its count. All or none: a row that can't be registered stops them all.
+         *     times as its count. All or none: a row that can't be registered stops them all. A
+         *     Harpy (#688) registers them as their character, with no staff note.
          */
         post: operations["register_api_troupes__troupe_id__boons_post"];
         delete?: never;
@@ -7814,7 +8412,8 @@ export interface paths {
         };
         /**
          * One Boon
-         * @description A boon with its log.
+         * @description A boon with its log. A Harpy given only the review queue (#688) opens only the
+         *     boons in it; a Lesser Harpy (#689) any boon.
          */
         get: operations["one_boon_api_troupes__troupe_id__boons__boon_id__get"];
         put?: never;
@@ -7825,9 +8424,91 @@ export interface paths {
         /**
          * Edit
          * @description Correct what a boon says, with a note. Its log keeps each field before and
-         *     after, which only the troupe's storytellers and assistant storytellers see.
+         *     after, which only the troupe's storytellers and assistant storytellers see. A Harpy
+         *     (#688) edits as their character, and never the staff note.
          */
         patch: operations["edit_api_troupes__troupe_id__boons__boon_id__patch"];
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept
+         * @description A boon waiting for review stands: it was reviewed, perhaps edited first.
+         */
+        post: operations["accept_api_troupes__troupe_id__boons__boon_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Flag
+         * @description Flag a boon by hand for a ruling, with a note.
+         */
+        post: operations["flag_api_troupes__troupe_id__boons__boon_id__flags_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/gallant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Gallant
+         * @description Staff, or a Harpy with the full ledger, give the repaid boon's debtor Gallant,
+         *     or decline to (pp. 402, 405).
+         */
+        post: operations["answer_gallant_api_troupes__troupe_id__boons__boon_id__gallant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link
+         * @description Put a character in place of a name on a boon, or on every boon naming it.
+         */
+        post: operations["link_api_troupes__troupe_id__boons__boon_id__link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/troupes/{troupe_id}/boons/{boon_id}/pass-on": {
@@ -7845,6 +8526,26 @@ export interface paths {
          *     as a broodmate after a death.
          */
         post: operations["pass_on_api_troupes__troupe_id__boons__boon_id__pass_on_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject
+         * @description A boon waiting for review isn't accepted, with a reason its reporter sees.
+         */
+        post: operations["reject_api_troupes__troupe_id__boons__boon_id__reject_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7885,6 +8586,27 @@ export interface paths {
          * @description The boon is settled: called in, forgiven, or formally ignored (p. 397).
          */
         post: operations["settle_api_troupes__troupe_id__boons__boon_id__settle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/status-loss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Status Loss
+         * @description For a great boon its debtor formally ignored (p. 395): staff or the Harpy took
+         *     the status they lost, with the status tools, or won't.
+         */
+        post: operations["answer_status_loss_api_troupes__troupe_id__boons__boon_id__status_loss_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10641,6 +11363,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/sire-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Sire Lines
+         * @description Who sired whom: every vampire in the troupe for its staff; for its players, if
+         *     the troupe shows them, those on its Who's Who with the sires it shows.
+         */
+        get: operations["read_sire_lines_api_troupes__troupe_id__sire_lines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/specializations": {
         parameters: {
             query?: never;
@@ -11009,6 +11752,127 @@ export interface paths {
          */
         put: operations["set_one_holder_api_troupes__troupe_id__titles__name__one_holder_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vaulderies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Vaulderie
+         * @description Record a Vaulderie: it counts at once, and lowers each participant's blood bonds
+         *     the troupe keeps a step (the Errata's p. 434).
+         */
+        post: operations["record_vaulderie_api_troupes__troupe_id__vaulderies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vaulderies/{vaulderie_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide Vaulderie
+         * @description Approve a Vaulderie a player reported, or decline it with the reason.
+         */
+        post: operations["decide_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vaulderies/{vaulderie_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Vaulderie
+         * @description Take a recorded Vaulderie out, with the reason: it no longer counts toward
+         *     ratings. The bonds it lowered stay lowered.
+         */
+        post: operations["remove_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vinculum": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Vinculum
+         * @description The troupe's Vaulderies, background ties and every rating now, for its running
+         *     staff.
+         */
+        get: operations["troupe_vinculum_api_troupes__troupe_id__vinculum_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vinculum/ties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Tie
+         * @description Enter a background tie: two who shared Vaulderies before Horatio, at a rating
+         *     on a night (p. 435's example).
+         */
+        post: operations["add_tie_api_troupes__troupe_id__vinculum_ties_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vinculum/ties/{tie_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove Tie */
+        post: operations["remove_tie_api_troupes__troupe_id__vinculum_ties__tie_id__remove_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11616,6 +12480,14 @@ export interface components {
             /** Character Name */
             character_name: string;
         };
+        /** AcceptIn */
+        AcceptIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** ActionKindChoiceOut */
         ActionKindChoiceOut: {
             /** Key */
@@ -12078,6 +12950,94 @@ export interface components {
             feeding?: components["schemas"]["FeedingIn"] | null;
             /** Quick Hands */
             quick_hands?: boolean | null;
+        };
+        /** ApologyBoonIn */
+        ApologyBoonIn: {
+            /**
+             * Held Id
+             * Format: uuid
+             */
+            held_id: string;
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            wronged: components["schemas"]["BoonPartyIn"];
+        };
+        /**
+         * ApologyChoicesOut
+         * @description Where an apology's boon goes: the troupe whose ledger the character's Play
+         *     View shows, and its characters, to name whoever was wronged.
+         */
+        ApologyChoicesOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** AppealIn */
+        AppealIn: {
+            /** Against */
+            against?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** On */
+            on?: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "granted" | "refused";
+            /**
+             * Restore
+             * @default []
+             */
+            restore: string[];
+            /**
+             * To
+             * @enum {string}
+             */
+            to: "harpy" | "court";
+        };
+        /** AppealOut */
+        AppealOut: {
+            /** Against */
+            against: number | null;
+            /** By */
+            by: string;
+            /** Follows */
+            follows: string;
+            /** Note */
+            note: string;
+            /**
+             * On
+             * Format: date
+             */
+            on: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "granted" | "refused";
+            /**
+             * To
+             * @enum {string}
+             */
+            to: "harpy" | "court";
         };
         /** AppearanceOut */
         AppearanceOut: {
@@ -13655,9 +14615,15 @@ export interface components {
         };
         /**
          * BondAskOut
-         * @description A drink a player reported, for staff to approve (horatio.bonds).
+         * @description A drink a player reported, or a meeting (#665), for staff to approve
+         *     (horatio.bonds).
          */
         BondAskOut: {
+            /**
+             * Kind
+             * @default drink
+             */
+            kind: string;
             /**
              * Night
              * Format: date
@@ -13748,8 +14714,11 @@ export interface components {
             known_to_regnant: boolean;
             /** Last Drink */
             last_drink: string | null;
+            /** Last Met */
+            last_met?: string | null;
             /** Level */
             level: number;
+            next_change?: components["schemas"]["horatio__api__bonds__ChangeOut"] | null;
             regnant: components["schemas"]["PartyOut"];
             /** Status */
             status: string;
@@ -13779,6 +14748,12 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Kind
+             * @default drink
+             * @enum {string}
+             */
+            kind: "drink" | "meeting";
             /**
              * Night
              * Format: date
@@ -13964,6 +14939,144 @@ export interface components {
             boons: number;
             who: components["schemas"]["BoonStandingPartyOut"];
         };
+        /** BoonAuditChoice */
+        BoonAuditChoice: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** BoonAuditGiveIn */
+        BoonAuditGiveIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+        };
+        /** BoonAuditIn */
+        BoonAuditIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Given To Id */
+            given_to_id?: string | null;
+        };
+        /** BoonAuditLineOut */
+        BoonAuditLineOut: {
+            /** Conditions */
+            conditions: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /** Other */
+            other: string;
+            /** Reason */
+            reason: string;
+            /** Settled How */
+            settled_how?: ("called_in" | "forgiven" | "ignored") | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "standing" | "settled" | "departed";
+        };
+        /** BoonAuditOut */
+        BoonAuditOut: {
+            /** Age */
+            age: string | null;
+            /**
+             * Can Give
+             * @default false
+             */
+            can_give: boolean;
+            /** Clan */
+            clan: string | null;
+            /** Given At */
+            given_at: string | null;
+            /** Given To */
+            given_to: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Made At
+             * Format: date-time
+             */
+            made_at: string;
+            /** Made By */
+            made_by: string;
+            /** Name */
+            name: string;
+            /** Owed */
+            owed: components["schemas"]["BoonAuditLineOut"][];
+            /** Owed Count */
+            owed_count: number;
+            /** Owed Weight */
+            owed_weight: number;
+            /** Owes */
+            owes: components["schemas"]["BoonAuditLineOut"][];
+            /** Owes Count */
+            owes_count: number;
+            /** Owes Weight */
+            owes_weight: number;
+            /** Standing */
+            standing: ("active" | "final_death" | "off_field" | "gone") | null;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** BoonAuditSummaryOut */
+        BoonAuditSummaryOut: {
+            /**
+             * Can Give
+             * @default false
+             */
+            can_give: boolean;
+            /** Given At */
+            given_at: string | null;
+            /** Given To */
+            given_to: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Made At
+             * Format: date-time
+             */
+            made_at: string;
+            /** Made By */
+            made_by: string;
+            /** Name */
+            name: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
         /** BoonBandOut */
         BoonBandOut: {
             /** Count */
@@ -14036,9 +15149,40 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "registered" | "edited" | "traded" | "passed_on" | "settled" | "voided" | "reopened";
+            kind: "registered" | "edited" | "traded" | "passed_on" | "settled" | "voided" | "reopened" | "submitted" | "accepted" | "rejected" | "flagged" | "flag_cleared" | "linked" | "gallant_given" | "gallant_declined";
             /** Note */
             note: string;
+        };
+        /**
+         * BoonFlagOut
+         * @description A flag raised on a boon for review (horatio.boon_reviews, #687).
+         */
+        BoonFlagOut: {
+            /** Detail */
+            detail: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "unmatched" | "duplicate" | "hand";
+            /** Note */
+            note: string;
+            /** Other Boon Id */
+            other_boon_id: string | null;
+            /**
+             * Raised At
+             * Format: date-time
+             */
+            raised_at: string;
+            /** Raised By */
+            raised_by: string | null;
+            /** Side */
+            side: ("debtor" | "creditor") | null;
         };
         /**
          * BoonFlowOut
@@ -14100,6 +15244,16 @@ export interface components {
             owed: number;
             /** Owes */
             owes: number;
+        };
+        /** BoonHarpyIn */
+        BoonHarpyIn: {
+            /**
+             * Access
+             * @enum {string}
+             */
+            access: "none" | "submissions" | "full";
+            /** Standings */
+            standings?: boolean | null;
         };
         /** BoonKindCount */
         BoonKindCount: {
@@ -14223,11 +15377,19 @@ export interface components {
             /** Conditions */
             conditions: string;
             creditor: components["schemas"]["BoonPartyOut"];
+            /**
+             * Creditor Disgraced
+             * @default false
+             */
+            creditor_disgraced: boolean;
             debtor: components["schemas"]["BoonPartyOut"];
             /** Departed */
             departed: boolean;
             /** Events */
             events?: components["schemas"]["BoonEventOut"][] | null;
+            /** Flags */
+            flags?: components["schemas"]["BoonFlagOut"][] | null;
+            gallant?: components["schemas"]["GallantOut"] | null;
             /**
              * Id
              * Format: uuid
@@ -14256,6 +15418,8 @@ export interface components {
              * @enum {string}
              */
             state: "pending" | "registered" | "settled" | "void";
+            /** Status Loss */
+            status_loss?: ("due" | "taken" | "waived") | null;
             /**
              * Submitted At
              * Format: date-time
@@ -14288,6 +15452,11 @@ export interface components {
         };
         /** BoonPartyOut */
         BoonPartyOut: {
+            /**
+             * Boonbreaker
+             * @default false
+             */
+            boonbreaker: boolean;
             /** Character Id */
             character_id: string | null;
             /** Kind */
@@ -14320,6 +15489,21 @@ export interface components {
             see: "intake" | "owes" | "owed";
             /** Settle */
             settle: boolean;
+        };
+        /** BoonReviewIn */
+        BoonReviewIn: {
+            /** Hold */
+            hold: boolean;
+        };
+        /** BoonReviewOut */
+        BoonReviewOut: {
+            /** Boons */
+            boons: components["schemas"]["BoonOut"][];
+            /**
+             * Characters
+             * @default []
+             */
+            characters: components["schemas"]["CharacterChoice-Output"][];
         };
         /** BoonSettleIn */
         BoonSettleIn: {
@@ -14479,6 +15663,41 @@ export interface components {
             weight: number;
             who: components["schemas"]["BoonStandingPartyOut"];
         };
+        /** BoonTalonsOut */
+        BoonTalonsOut: {
+            /** Choices */
+            choices: components["schemas"]["TalonChoice"][];
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "harpy" | "staff";
+            /** Talons */
+            talons: components["schemas"]["TalonOut"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /**
+             * Word
+             * @enum {string}
+             */
+            word: "Lesser Harpies" | "Talons";
+        };
+        /** BoonTalonsSettingIn */
+        BoonTalonsSettingIn: {
+            /** On */
+            on: boolean;
+            /**
+             * Word
+             * @default Lesser Harpies
+             * @enum {string}
+             */
+            word: "Lesser Harpies" | "Talons";
+        };
         /** BoonTradeIn */
         BoonTradeIn: {
             creditor: components["schemas"]["BoonPartyIn"];
@@ -14518,6 +15737,51 @@ export interface components {
             minor: number;
             /** Trivial */
             trivial: number;
+        };
+        /** BoonbreakerOut */
+        BoonbreakerOut: {
+            /** Appeals */
+            appeals: components["schemas"]["AppealOut"][];
+            character: components["schemas"]["BoonPartyOut"];
+            /** Declared As */
+            declared_as: string | null;
+            /**
+             * Declared At
+             * Format: date-time
+             */
+            declared_at: string;
+            /** Disgraced */
+            disgraced: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lifted At */
+            lifted_at: string | null;
+            /** Lifted Note */
+            lifted_note: string;
+            /** Note */
+            note: string;
+            refused: components["schemas"]["BoonOut"] | null;
+            /** Restored */
+            restored: string[];
+            /** Voided */
+            voided: components["schemas"]["BoonOut"][];
+        };
+        /** BoonbreakerPreviewOut */
+        BoonbreakerPreviewOut: {
+            /** Boons */
+            boons: components["schemas"]["BoonOut"][];
+            /** Owed By */
+            owed_by: number;
+            /** Owed To */
+            owed_to: number;
+        };
+        /** BoonbreakersOut */
+        BoonbreakersOut: {
+            /** Marks */
+            marks: components["schemas"]["BoonbreakerOut"][];
         };
         /** BreakIn */
         BreakIn: {
@@ -14927,12 +16191,6 @@ export interface components {
              * @default
              */
             staff_note: string;
-        };
-        /** ChangeOut */
-        ChangeOut: {
-            /** Cost */
-            cost: number;
-            sheet: components["schemas"]["SheetOut"];
         };
         /** ChannelIn */
         ChannelIn: {
@@ -15472,6 +16730,39 @@ export interface components {
             warnings: string[];
             xp: components["schemas"]["BackupXpOut"] | null;
         };
+        /** CharacterSireIn */
+        CharacterSireIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Clan
+             * @default
+             */
+            clan: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Secret
+             * @default false
+             */
+            secret: boolean;
+        };
+        /** CharacterSireOut */
+        CharacterSireOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string;
+            /** Name */
+            name: string;
+            /** Secret */
+            secret: boolean;
+        };
         /** CharacterTitlesOut */
         CharacterTitlesOut: {
             /** Acting */
@@ -15492,6 +16783,18 @@ export interface components {
             troupe_name: string | null;
             /** Why */
             why: string | null;
+        };
+        /**
+         * CharacterVinculumOut
+         * @description For a character's Bonds card (#666).
+         */
+        CharacterVinculumOut: {
+            /** Ratings */
+            ratings: components["schemas"]["VinculumOut"][];
+            /** Report To */
+            report_to: components["schemas"]["VaulderieTroupeOut"][];
+            /** Reports */
+            reports: components["schemas"]["VaulderieOut"][];
         };
         /**
          * CharacterXpIn
@@ -16016,6 +17319,14 @@ export interface components {
             character_ids: string[];
             /** Clan */
             clan: string | null;
+        };
+        /** ClearIn */
+        ClearIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
         };
         /** Cleared */
         Cleared: {
@@ -16778,6 +18089,18 @@ export interface components {
             /** Legacy Id */
             legacy_id: string;
         };
+        /** DeclareIn */
+        DeclareIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Note */
+            note: string;
+            /** Refused Boon Id */
+            refused_boon_id?: string | null;
+        };
         /** Decline */
         Decline: {
             /**
@@ -17346,6 +18669,11 @@ export interface components {
              */
             note: string;
             /**
+             * Override
+             * @default
+             */
+            override: string;
+            /**
              * Source
              * @default staff
              * @enum {string}
@@ -17796,6 +19124,11 @@ export interface components {
         };
         /** EndingOut */
         EndingOut: {
+            /**
+             * Boonbreaker
+             * @default false
+             */
+            boonbreaker: boolean;
             /** Games Left */
             games_left: number;
             /** Not Before */
@@ -17816,6 +19149,11 @@ export interface components {
              * Format: date
              */
             night: string;
+            /**
+             * Override
+             * @default
+             */
+            override: string;
             /** Reason */
             reason: string;
             regnant: components["schemas"]["PartyIn"];
@@ -18815,6 +20153,11 @@ export interface components {
             /** Xp Now */
             xp_now: number;
         };
+        /** FlagIn */
+        FlagIn: {
+            /** Note */
+            note: string;
+        };
         /**
          * FlawPlanOut
          * @description A Lesser Generation or Thin Blooded flaw, and what the troupe's setting does.
@@ -19053,6 +20396,29 @@ export interface components {
             beast: components["schemas"]["PoolPart"][];
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
+        };
+        /** GallantAnswerIn */
+        GallantAnswerIn: {
+            /** Give */
+            give: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /**
+         * GallantOut
+         * @description Gallant offered for a repaid boon's debtor (horatio.boon_gallant, #693), which
+         *     the caller may give or decline.
+         */
+        GallantOut: {
+            /** Creditor */
+            creditor: string;
+            /** Debtor */
+            debtor: string;
+            /** Reasons */
+            reasons: ("nobility" | "great")[];
         };
         /**
          * GameChoice
@@ -19480,6 +20846,68 @@ export interface components {
         HandleIn: {
             /** Handle */
             handle: string;
+        };
+        /**
+         * HarpyLedgerOut
+         * @description A ledger the character keeps as its troupe's Harpy (#688), or as one of its
+         *     Lesser Harpies (#689).
+         */
+        HarpyLedgerOut: {
+            /**
+             * Access
+             * @enum {string}
+             */
+            access: "submissions" | "full";
+            /**
+             * Can Add
+             * @default true
+             */
+            can_add: boolean;
+            /**
+             * Can Audit
+             * @default true
+             */
+            can_audit: boolean;
+            /**
+             * Can Edit
+             * @default true
+             */
+            can_edit: boolean;
+            /**
+             * Can Review
+             * @default true
+             */
+            can_review: boolean;
+            /**
+             * Gives Access
+             * @default false
+             */
+            gives_access: boolean;
+            /**
+             * Role
+             * @default harpy
+             * @enum {string}
+             */
+            role: "harpy" | "talon";
+            /**
+             * Sees Standings
+             * @default false
+             */
+            sees_standings: boolean;
+            /**
+             * Talon Word
+             * @default Lesser Harpy
+             */
+            talon_word: string;
+            /** To Review */
+            to_review: number;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** HavenAdvantageChoiceOut */
         HavenAdvantageChoiceOut: {
@@ -21064,7 +22492,7 @@ export interface components {
              * Why
              * @enum {string}
              */
-            why: "embrace" | "domitor" | "retainer";
+            why: "embrace" | "sire" | "domitor" | "retainer";
         };
         /** KnownIn */
         KnownIn: {
@@ -21177,6 +22605,37 @@ export interface components {
             /** Titles */
             titles: string[];
         };
+        /** LeavingSharersOut */
+        LeavingSharersOut: {
+            /** Background */
+            background: string;
+            /** Name */
+            name: string;
+            /** Others */
+            others: string[];
+            /** Troupe */
+            troupe: string;
+        };
+        /** LeavingThrallOut */
+        LeavingThrallOut: {
+            /** Name */
+            name: string;
+            /** Troupe */
+            troupe: string;
+        };
+        /**
+         * LeavingWarningsOut
+         * @description What retiring the character, or saying it met Final Death, could tell others
+         *     (horatio.retiring), as the reader may know of it.
+         */
+        LeavingWarningsOut: {
+            /** Shared */
+            shared: components["schemas"]["LeavingSharersOut"][];
+            /** Staff */
+            staff: boolean;
+            /** Thralls */
+            thralls: components["schemas"]["LeavingThrallOut"][];
+        };
         /** LedTroupe */
         LedTroupe: {
             /**
@@ -21239,6 +22698,36 @@ export interface components {
             label: string;
             /** Url */
             url: string;
+        };
+        /** LinkIn */
+        LinkIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /**
+             * Everywhere
+             * @default false
+             */
+            everywhere: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "debtor" | "creditor";
+        };
+        /** LinkOut */
+        LinkOut: {
+            /** Linked */
+            linked: number;
+            /** Skipped */
+            skipped: number;
         };
         /** LinkedRetainer */
         LinkedRetainer: {
@@ -22269,6 +23758,28 @@ export interface components {
             next_handle_change: string | null;
             preferences: components["schemas"]["Preferences"];
         };
+        /**
+         * MeetingIn
+         * @description The thrall and regnant met, which keeps a lesser bond from ending (#665).
+         */
+        MeetingIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Source
+             * @default staff
+             * @enum {string}
+             */
+            source: "game" | "downtime" | "staff";
+        };
         /** MemberOut */
         MemberOut: {
             /**
@@ -22888,6 +24399,11 @@ export interface components {
              * @default
              */
             note: string;
+            /**
+             * Override
+             * @default
+             */
+            override: string;
             regnant: components["schemas"]["PartyIn"];
             /**
              * Source
@@ -23137,6 +24653,12 @@ export interface components {
             name: string;
             /** Rating */
             rating: number;
+        };
+        /** NpcCopyOut */
+        NpcCopyOut: {
+            character: components["schemas"]["CharacterOut"];
+            /** Left Out */
+            left_out: string[];
         };
         /** NpcKeptOffOut */
         NpcKeptOffOut: {
@@ -24367,6 +25889,12 @@ export interface components {
             /** Conditions */
             conditions: string;
             /**
+             * Creditor Disgraced
+             * @default false
+             */
+            creditor_disgraced: boolean;
+            gallant?: components["schemas"]["GallantOut"] | null;
+            /**
              * Id
              * Format: uuid
              */
@@ -24385,6 +25913,11 @@ export interface components {
             notify_on_trade: boolean;
             /** Other */
             other: string;
+            /**
+             * Other Boonbreaker
+             * @default false
+             */
+            other_boonbreaker: boolean;
             /** Other Id */
             other_id: string | null;
             /** Reason */
@@ -24416,14 +25949,29 @@ export interface components {
         };
         /** PlayBoonsOut */
         PlayBoonsOut: {
+            /**
+             * Boonbreaker
+             * @default false
+             */
+            boonbreaker: boolean;
             /** Can Report */
             can_report: boolean;
             /** Characters */
             characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Harpy
+             * @default []
+             */
+            harpy: components["schemas"]["HarpyLedgerOut"][];
             /** Owed */
             owed: components["schemas"]["PlayBoonOut"][] | null;
             /** Owes */
             owes: components["schemas"]["PlayBoonOut"][] | null;
+            /**
+             * Reports
+             * @default []
+             */
+            reports: components["schemas"]["PlayReportOut"][];
             /**
              * See
              * @enum {string}
@@ -24494,6 +26042,52 @@ export interface components {
             retainers: components["schemas"]["RetainerOut"][];
             /** Traits */
             traits: components["schemas"]["PlayTrait"][];
+            /**
+             * Vinculum
+             * @default []
+             */
+            vinculum: components["schemas"]["VinculumLine"][];
+        };
+        /**
+         * PlayReportOut
+         * @description A boon the character's player reported that waits for review, or that wasn't
+         *     accepted lately, with the reason (#687). Shown to its player whatever else the
+         *     troupe lets them see: they reported it.
+         */
+        PlayReportOut: {
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "owes" | "owed";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /** Other */
+            other: string;
+            /** Reason */
+            reason: string;
+            /** Rejected At */
+            rejected_at: string | null;
+            /** Rejected Because */
+            rejected_because: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "rejected";
         };
         /**
          * PlayStatusOut
@@ -24727,6 +26321,25 @@ export interface components {
             /** Retired */
             retired: boolean;
         };
+        /** PlayerMeetingIn */
+        PlayerMeetingIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Source
+             * @default game
+             * @enum {string}
+             */
+            source: "game" | "downtime";
+        };
         /** PlayerNominationsIn */
         PlayerNominationsIn: {
             /** On */
@@ -24913,6 +26526,37 @@ export interface components {
              * @default false
              */
             suspended: boolean;
+        };
+        /** PlayerVaulderieIn */
+        PlayerVaulderieIn: {
+            /**
+             * False Sabbat
+             * @default false
+             */
+            false_sabbat: boolean;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            officiant?: components["schemas"]["PartyIn"] | null;
+            /** Others */
+            others: components["schemas"]["VaulderieParticipantIn"][];
+            /**
+             * Source
+             * @default game
+             */
+            source: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
         };
         /**
          * PoolChange
@@ -25247,6 +26891,20 @@ export interface components {
              * @default 0
              */
             turned_on: number;
+        };
+        /** PraisedClaimsOut */
+        PraisedClaimsOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /** Sect */
+            sect: string | null;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** Preferences */
         Preferences: {
@@ -26560,6 +28218,11 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /** RejectIn */
+        RejectIn: {
+            /** Reason */
+            reason: string;
         };
         /** RememberedMonthOut */
         RememberedMonthOut: {
@@ -28555,6 +30218,11 @@ export interface components {
          */
         SheetBondOut: {
             /**
+             * Can Meet
+             * @default false
+             */
+            can_meet: boolean;
+            /**
              * Id
              * Format: uuid
              */
@@ -28738,6 +30406,62 @@ export interface components {
              * @default
              */
             name: string;
+        };
+        /** SireLineChoiceOut */
+        SireLineChoiceOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Name */
+            name: string;
+        };
+        /** SireLineClanCount */
+        SireLineClanCount: {
+            /** Clan */
+            clan: string;
+            /** Count */
+            count: number;
+        };
+        /** SireLineNodeOut */
+        SireLineNodeOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string | null;
+            /** Generation */
+            generation: number | null;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string;
+            /** Left Reason */
+            left_reason: string | null;
+            /** Name */
+            name: string;
+            /** Retired */
+            retired: boolean;
+            /** Sire Key */
+            sire_key: string | null;
+        };
+        /** SireLinesOut */
+        SireLinesOut: {
+            /** Clans */
+            clans: components["schemas"]["SireLineClanCount"][];
+            /** Nodes */
+            nodes: components["schemas"]["SireLineNodeOut"][];
+            /** Players See */
+            players_see: boolean;
+            /** Staff */
+            staff: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
         };
         /** SkillPool */
         SkillPool: {
@@ -29167,6 +30891,16 @@ export interface components {
             name: string;
             /** Points */
             points: components["schemas"]["StatusPointOut"][];
+        };
+        /** StatusLossIn */
+        StatusLossIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Taken */
+            taken: boolean;
         };
         /** StatusOut */
         StatusOut: {
@@ -29671,6 +31405,61 @@ export interface components {
             amount: number;
             /** Label */
             label: string;
+        };
+        /** TalonChoice */
+        TalonChoice: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lesser Harpy */
+            lesser_harpy: boolean;
+            /** Name */
+            name: string;
+        };
+        /** TalonIn */
+        TalonIn: {
+            /**
+             * Can Add
+             * @default false
+             */
+            can_add: boolean;
+            /**
+             * Can Audit
+             * @default false
+             */
+            can_audit: boolean;
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit: boolean;
+        };
+        /** TalonOut */
+        TalonOut: {
+            /** Can Add */
+            can_add: boolean;
+            /** Can Audit */
+            can_audit: boolean;
+            /** Can Edit */
+            can_edit: boolean;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /**
+             * Given At
+             * Format: date-time
+             */
+            given_at: string;
+            /** Given By */
+            given_by: string;
+            /** In Play */
+            in_play: boolean;
+            /** Name */
+            name: string;
         };
         /**
          * TapIn
@@ -30619,6 +32408,32 @@ export interface components {
              * @enum {string}
              */
             setting: "off" | "staff" | "players_report" | "players_manage";
+            /**
+             * Vaulderies Waiting
+             * @default 0
+             */
+            vaulderies_waiting: number;
+            /**
+             * Vinculum
+             * @default false
+             */
+            vinculum: boolean;
+        };
+        /** TroupeBoonAuditsOut */
+        TroupeBoonAuditsOut: {
+            /** Audits */
+            audits: components["schemas"]["BoonAuditSummaryOut"][];
+            /** Can Audit */
+            can_audit: boolean;
+            /** Recipients */
+            recipients: components["schemas"]["BoonAuditChoice"][];
+            /** Subjects */
+            subjects: components["schemas"]["BoonAuditChoice"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
         };
         /** TroupeBoonSummaryOut */
         TroupeBoonSummaryOut: {
@@ -30671,6 +32486,8 @@ export interface components {
             play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws" | "boons")[] | null;
             /** Session Xp */
             session_xp?: number | null;
+            /** Sire Lines Players */
+            sire_lines_players?: boolean | null;
             /** Starting Xp */
             starting_xp?: number | null;
             /** Status At Checkin */
@@ -30852,6 +32669,17 @@ export interface components {
              */
             blood_bonds: "off" | "staff" | "players_report" | "players_manage";
             /**
+             * Boon Harpy
+             * @default none
+             * @enum {string}
+             */
+            boon_harpy: "none" | "submissions" | "full";
+            /**
+             * Boon Harpy Standings
+             * @default false
+             */
+            boon_harpy_standings: boolean;
+            /**
              * Boon Players See
              * @default intake
              * @enum {string}
@@ -30862,6 +32690,22 @@ export interface components {
              * @default false
              */
             boon_players_settle: boolean;
+            /**
+             * Boon Review
+             * @default false
+             */
+            boon_review: boolean;
+            /**
+             * Boon Talon Word
+             * @default Lesser Harpies
+             * @enum {string}
+             */
+            boon_talon_word: "Lesser Harpies" | "Talons";
+            /**
+             * Boon Talons
+             * @default false
+             */
+            boon_talons: boolean;
             /**
              * Boons
              * @default false
@@ -30970,6 +32814,8 @@ export interface components {
             remembrances: boolean;
             /** Session Xp */
             session_xp: number;
+            /** Sire Lines Players */
+            sire_lines_players: boolean;
             /** Starting Blood */
             starting_blood: number | null;
             /** Starting Xp */
@@ -31176,6 +33022,23 @@ export interface components {
             /** Qualities */
             qualities: components["schemas"]["EquipmentItemQuality"][];
         };
+        /**
+         * TroupeVinculumOut
+         * @description A Sabbat troupe's Vinculum, for its running staff: its Vaulderies (newest first,
+         *     those waiting first of all), its background ties, and every rating now.
+         */
+        TroupeVinculumOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /** People */
+            people: components["schemas"]["VinculumPersonOut"][];
+            /** Ratings */
+            ratings: components["schemas"]["VinculumRatingOut"][];
+            /** Ties */
+            ties: components["schemas"]["VinculumTieOut"][];
+            /** Vaulderies */
+            vaulderies: components["schemas"]["VaulderieOut"][];
+        };
         /** UnavailableIn */
         UnavailableIn: {
             /** Categories */
@@ -31295,6 +33158,105 @@ export interface components {
             /** Play */
             play: string;
         };
+        /** VaulderieDecideIn */
+        VaulderieDecideIn: {
+            /** Approve */
+            approve: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** VaulderieIn */
+        VaulderieIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            officiant?: components["schemas"]["PartyIn"] | null;
+            /** Participants */
+            participants: components["schemas"]["VaulderieParticipantIn"][];
+            /**
+             * Source
+             * @default staff
+             */
+            source: string;
+        };
+        /** VaulderieOut */
+        VaulderieOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Note */
+            note: string;
+            officiant: components["schemas"]["PartyOut"] | null;
+            /** Participants */
+            participants: components["schemas"]["VaulderieParticipantOut"][];
+            /** Reason */
+            reason: string;
+            /** Recorded By */
+            recorded_by: string | null;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+        };
+        /** VaulderieParticipantIn */
+        VaulderieParticipantIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * False Sabbat
+             * @default false
+             */
+            false_sabbat: boolean;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
+        /** VaulderieParticipantOut */
+        VaulderieParticipantOut: {
+            /** False Sabbat */
+            false_sabbat: boolean;
+            who: components["schemas"]["PartyOut"];
+        };
+        /**
+         * VaulderieTroupeOut
+         * @description A troupe its player can report the character's Vaulderies to, with the characters
+         *     they can name in it by id.
+         */
+        VaulderieTroupeOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** Venue */
         Venue: {
             /**
@@ -31379,6 +33341,88 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /**
+         * VinculumLine
+         * @description A Vinculum the character feels, for the Play View's Sheet tab (#666).
+         */
+        VinculumLine: {
+            /** Effects */
+            effects: string[];
+            /** Rating */
+            rating: number;
+            /** Toward */
+            toward: string;
+        };
+        /**
+         * VinculumOut
+         * @description A Vinculum the character feels, on its Bonds card: toward whom, and its rating.
+         */
+        VinculumOut: {
+            /** Effects */
+            effects: string[];
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
+        /** VinculumPersonOut */
+        VinculumPersonOut: {
+            /** Key */
+            key: string;
+            who: components["schemas"]["PartyOut"];
+        };
+        /** VinculumRatingOut */
+        VinculumRatingOut: {
+            /** Felt By */
+            felt_by: string;
+            /** Rating */
+            rating: number;
+            /** Toward */
+            toward: string;
+        };
+        /** VinculumReasonIn */
+        VinculumReasonIn: {
+            /** Reason */
+            reason: string;
+        };
+        /** VinculumTieIn */
+        VinculumTieIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            one: components["schemas"]["PartyIn"];
+            other: components["schemas"]["PartyIn"];
+            /** Rating */
+            rating: number;
+            /** Reason */
+            reason: string;
+        };
+        /** VinculumTieOut */
+        VinculumTieOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            one: components["schemas"]["PartyOut"];
+            other: components["schemas"]["PartyOut"];
+            /** Rating */
+            rating: number;
+            /** Reason */
+            reason: string;
         };
         /** VisibleNote */
         VisibleNote: {
@@ -31570,6 +33614,8 @@ export interface components {
             seated: string[] | null;
             /** Shows Negative */
             shows_negative: boolean;
+            /** Sire Lines */
+            sire_lines: boolean;
             /**
              * Troupe Id
              * Format: uuid
@@ -32165,6 +34211,24 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /**
+         * ChangeOut
+         * @description What time does next to a bond (#665): it drops to two drinks, or ends, on a day.
+         */
+        horatio__api__bonds__ChangeOut: {
+            /** Due */
+            due: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "drop" | "end";
+            /**
+             * On
+             * Format: date
+             */
+            on: string;
+        };
         /** AppliedOut */
         horatio__api__downtime_effects__AppliedOut: {
             /** Character Name */
@@ -32290,6 +34354,12 @@ export interface components {
             free: boolean;
             /** Reason */
             reason: string;
+        };
+        /** ChangeOut */
+        horatio__api__sheets__ChangeOut: {
+            /** Cost */
+            cost: number;
+            sheet: components["schemas"]["SheetOut"];
         };
         /** DetailChange */
         horatio__api__specializations__DetailChange: {
@@ -33338,6 +35408,37 @@ export interface operations {
             };
         };
     };
+    read_audit_api_boon_audits__audit_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     links_api_calendar_links_get: {
         parameters: {
             query: {
@@ -33727,6 +35828,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apology_choices_api_characters__character_id__apology_boon_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApologyChoicesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apology_boon_api_characters__character_id__apology_boon_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApologyBoonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
                 };
             };
             /** @description Validation Error */
@@ -34389,6 +36556,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BondReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_meeting_api_characters__character_id__bonds__bond_id__meetings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerMeetingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_audits_api_characters__character_id__boon_audits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditSummaryOut"][];
                 };
             };
             /** @description Validation Error */
@@ -35955,6 +38189,37 @@ export interface operations {
             };
         };
     };
+    character_harpy_ledgers_api_characters__character_id__harpy_ledgers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HarpyLedgerOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_haven_api_characters__character_id__haven_get: {
         parameters: {
             query?: never;
@@ -36623,6 +38888,37 @@ export interface operations {
             };
         };
     };
+    leaving_warnings_api_characters__character_id__leaving_warnings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeavingWarningsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     request_location_quest_api_characters__character_id__location_requests_post: {
         parameters: {
             query?: never;
@@ -36841,6 +39137,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AboutYouOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    copy_as_npc_api_characters__character_id__npc_copy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcCopyOut"];
                 };
             };
             /** @description Validation Error */
@@ -37463,6 +39790,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayBoonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_play_gallant_api_characters__character_id__play_boons__boon_id__gallant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GallantAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38173,6 +40536,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PowerChoicesOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    praised_claims_api_characters__character_id__praised_claims_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PraisedClaimsOut"];
                 };
             };
             /** @description Validation Error */
@@ -38986,6 +41380,105 @@ export interface operations {
             };
         };
     };
+    read_sire_api_characters__character_id__sire_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSireOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_sire_api_characters__character_id__sire_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterSireIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSireOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sire_choices_api_characters__character_id__sire_choices_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SireLineChoiceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     character_kinds_api_characters__character_id__specializations_get: {
         parameters: {
             query?: never;
@@ -39544,7 +42037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -39579,7 +42072,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -39614,7 +42107,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -39854,6 +42347,104 @@ export interface operations {
                             [key: string]: string;
                         };
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_vaulderie_api_characters__character_id__vaulderies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerVaulderieIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_vaulderie_api_characters__character_id__vaulderies__vaulderie_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                vaulderie_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_vinculum_api_characters__character_id__vinculum_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterVinculumOut"];
                 };
             };
             /** @description Validation Error */
@@ -46869,6 +49460,38 @@ export interface operations {
             };
         };
     };
+    confirm_change_api_troupes__troupe_id__bonds__bond_id__confirm_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_drink_api_troupes__troupe_id__bonds__bond_id__drinks_post: {
         parameters: {
             query?: never;
@@ -47051,6 +49674,42 @@ export interface operations {
             };
         };
     };
+    add_meeting_api_troupes__troupe_id__bonds__bond_id__meetings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_book_traits_api_troupes__troupe_id__book_traits_get: {
         parameters: {
             query?: never;
@@ -47117,6 +49776,144 @@ export interface operations {
             };
         };
     };
+    troupe_audits_api_troupes__troupe_id__boon_audits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeBoonAuditsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_audit_api_troupes__troupe_id__boon_audits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonAuditIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_audit_api_troupes__troupe_id__boon_audits__audit_id__give_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                audit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonAuditGiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_api_troupes__troupe_id__boon_flags__flag_id__clear_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                flag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClearIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     boon_games_api_troupes__troupe_id__boon_games_get: {
         parameters: {
             query?: never;
@@ -47135,6 +49932,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoonGameOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_harpy_api_troupes__troupe_id__boon_harpy_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonHarpyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */
@@ -47195,6 +50027,72 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BoonPlayersIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_queue_api_troupes__troupe_id__boon_review_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonReviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_review_api_troupes__troupe_id__boon_review_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonReviewIn"];
             };
         };
         responses: {
@@ -47284,6 +50182,140 @@ export interface operations {
             };
         };
     };
+    boon_talons_list_api_troupes__troupe_id__boon_talons_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_talons_api_troupes__troupe_id__boon_talons_setting_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonTalonsSettingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_talon_api_troupes__troupe_id__boon_talons__character_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TalonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_talon_api_troupes__troupe_id__boon_talons__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     set_boon_weights_api_troupes__troupe_id__boon_weights_put: {
         parameters: {
             query?: never;
@@ -47306,6 +50338,141 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoonWeightsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_boonbreakers_api_troupes__troupe_id__boonbreakers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonbreakersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    declare_boonbreaker_api_troupes__troupe_id__boonbreakers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclareIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonbreakerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    boonbreaker_preview_api_troupes__troupe_id__boonbreakers_preview_get: {
+        parameters: {
+            query: {
+                character_id: string;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonbreakerPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    appeal_boonbreaker_api_troupes__troupe_id__boonbreakers__mark_id__appeals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                mark_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppealIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonbreakerOut"];
                 };
             };
             /** @description Validation Error */
@@ -47460,6 +50627,150 @@ export interface operations {
             };
         };
     };
+    accept_api_troupes__troupe_id__boons__boon_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flag_api_troupes__troupe_id__boons__boon_id__flags_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlagIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_gallant_api_troupes__troupe_id__boons__boon_id__gallant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GallantAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_api_troupes__troupe_id__boons__boon_id__link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     pass_on_api_troupes__troupe_id__boons__boon_id__pass_on_post: {
         parameters: {
             query?: never;
@@ -47473,6 +50784,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BoonPassOnIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_api_troupes__troupe_id__boons__boon_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectIn"];
             };
         };
         responses: {
@@ -47545,6 +50892,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BoonSettleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_status_loss_api_troupes__troupe_id__boons__boon_id__status_loss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusLossIn"];
             };
         };
         responses: {
@@ -53325,6 +56708,37 @@ export interface operations {
             };
         };
     };
+    read_sire_lines_api_troupes__troupe_id__sire_lines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SireLinesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     troupe_kinds_api_troupes__troupe_id__specializations_get: {
         parameters: {
             query?: never;
@@ -54137,6 +57551,215 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_vaulderie_api_troupes__troupe_id__vaulderies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaulderieIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__decide_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                vaulderie_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaulderieDecideIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                vaulderie_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculumReasonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_vinculum_api_troupes__troupe_id__vinculum_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeVinculumOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_tie_api_troupes__troupe_id__vinculum_ties_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculumTieIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinculumTieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_tie_api_troupes__troupe_id__vinculum_ties__tie_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                tie_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculumReasonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeVinculumOut"];
                 };
             };
             /** @description Validation Error */

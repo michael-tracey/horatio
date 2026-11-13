@@ -391,7 +391,9 @@ def desk(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser, kind: Kind = "n
         if kind != "news" or not may(db, user, troupe, TroupeAction.PROPOSE_NEWS):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "You cannot do that in this troupe.")
         query = query.where(Post.proposed_by == user.id, Post.status.in_(("proposed", "declined")))
-    found = list(db.scalars(query.order_by(Post.publish_at, Post.updated_at.desc())))
+    found = list(
+        db.scalars(query.order_by(Post.publish_at, Post.updated_at.desc(), Post.id.desc()))
+    )
     return Desk(posts=posts_out(db, user, troupe, found), writes=writes)
 
 

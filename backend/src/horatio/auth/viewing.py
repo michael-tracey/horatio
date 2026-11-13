@@ -80,7 +80,7 @@ def live(db: Session, token: str) -> Viewing | None:
             SignInSession.expires_at > now,
             Viewing.ended_at.is_(None),
         )
-        .order_by(Viewing.created_at.desc())
+        .order_by(Viewing.created_at.desc(), Viewing.id.desc())
         .limit(1)
     ).first()
     if row is None:

@@ -89,7 +89,7 @@ def list_suspensions(db: DbSession, user: CurrentUser, limit: int = 50) -> Suspe
             .join(User, Suspension.user_id == User.id)
             .join(by, Suspension.suspended_by_id == by.id)
             .where(suspensions.live())
-            .order_by(Suspension.created_at.desc())
+            .order_by(Suspension.created_at.desc(), Suspension.id.desc())
         )
     )
     led: dict[uuid.UUID, list[LedTroupe]] = {}

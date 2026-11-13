@@ -37,6 +37,7 @@ from sqlalchemy.orm import Session
 from horatio import leaving, social_age, title_history, whos_who
 from horatio.models import (
     AuditEvent,
+    Boonbreaker,
     Character,
     CharacterTitle,
     Diablerie,
@@ -62,6 +63,9 @@ class Event:
     detail: str
     # When Horatio recorded it; a title's holding ends at `ends_at`, or is held still.
     at: datetime
+    # The record's id: rows written in one transaction share `at`, and ids (UUID v7)
+    # rise as rows are made, so it keeps them in the order they were recorded (#733).
+    record_id: uuid.UUID
     # The in-game date, where its record keeps one.
     on: date | None = None
     ends_at: datetime | None = None
@@ -71,6 +75,8 @@ class Event:
     # What the troupe's players may see, where it lets them.
     public: bool = False
     clan: str | None = field(default=None)
+    # An NPC's arrival, which players read only as joining.
+    npc: bool = False
 
 
 def name_of(character: Character | None, fallback: str = "Someone deleted") -> str:
@@ -88,6 +94,7 @@ def embraces(db: Session, troupe: Troupe, people: dict[uuid.UUID, Character]) ->
         events.append(
             Event(
                 key=f"embrace:{e.id}",
+                record_id=e.id,
                 kind="embrace",
                 character_id=e.character_id,
                 character_name=name_of(character),
@@ -110,6 +117,7 @@ def diableries(db: Session, troupe: Troupe, people: dict[uuid.UUID, Character]) 
     return [
         Event(
             key=f"diablerie:{d.id}",
+            record_id=d.id,
             kind="diablerie",
             character_id=d.character_id,
             character_name=name_of(people.get(d.character_id)),
@@ -129,13 +137,24 @@ def _note(note: str) -> str:
 
 def status_given(db: Session, troupe: Troupe, people: dict[uuid.UUID, Character]) -> list[Event]:
     found = db.scalars(select(HeldStatus).where(HeldStatus.troupe_id == troupe.id))
+    # The Disgraced a Boonbreaker holds (horatio.boonbreakers, #717) names the
+    # declaration as its patron, in words of its own.
+    marked = set(
+        db.scalars(
+            select(Boonbreaker.held_status_id).where(
+                Boonbreaker.troupe_id == troupe.id, Boonbreaker.held_status_id.is_not(None)
+            )
+        )
+    )
     events = []
     for s in found:
         patron = s.patron_name or s.patron_text
-        parts = [f"From {patron}" if patron else "", s.story.strip()]
+        given = patron if s.id in marked else f"From {patron}" if patron else ""
+        parts = [given, s.story.strip()]
         events.append(
             Event(
                 key=f"status:{s.id}",
+                record_id=s.id,
                 kind="status",
                 character_id=s.character_id,
                 character_name=name_of(people.get(s.character_id)),
@@ -152,6 +171,7 @@ def holdings(db: Session, troupe: Troupe) -> list[Event]:
     return [
         Event(
             key=f"title:{h.id}",
+            record_id=h.id,
             kind="title",
             character_id=h.character_id,
             character_name=h.character_name,
@@ -179,26 +199,44 @@ def comings_and_goings(
     stays = list(
         db.scalars(select(TroupeMembership).where(TroupeMembership.troupe_id == troupe.id))
     )
+    # NPCs copied from a retired character (horatio.npc_copies, #764), and whose copy.
+    copies = {
+        entry.character_id: str(entry.data.get("original", ""))
+        for entry in db.scalars(
+            select(AuditEvent).where(
+                AuditEvent.troupe_id == troupe.id,
+                AuditEvent.action == "npc.copied_from_character",
+            )
+        )
+        if entry.character_id is not None
+    }
     events: list[Event] = []
     for m in stays:
         character = people.get(m.character_id)
         home = m.approved_version_id is not None
+        npc = character is not None and character.kind == "npc"
+        joined = "Accepted as home" if home else "Joined as a visitor"
+        label = "Added as an NPC" if npc else joined
+        original = copies.get(m.character_id)
         events.append(
             Event(
                 key=f"joined:{m.id}",
+                record_id=m.id,
                 kind="arrival",
                 character_id=m.character_id,
                 character_name=name_of(character),
-                label="Accepted as home" if home else "Joined as a visitor",
-                detail="",
+                label=label,
+                detail=f"A copy of {original}, retired" if original else "",
                 at=m.joined_at,
                 public=m.character_id in listed,
+                npc=npc,
             )
         )
         if m.left_at is not None:
             events.append(
                 Event(
                     key=f"left:{m.id}",
+                    record_id=m.id,
                     kind="departure",
                     character_id=m.character_id,
                     character_name=name_of(character),
@@ -218,7 +256,7 @@ def comings_and_goings(
                 AuditEvent.action == "character.retired",
                 AuditEvent.character_id.in_(list(retired)),
             )
-            .order_by(AuditEvent.created_at)
+            .order_by(AuditEvent.created_at, AuditEvent.id)
         )
         last: dict[uuid.UUID, AuditEvent] = {}
         for entry in logged:
@@ -230,6 +268,7 @@ def comings_and_goings(
             events.append(
                 Event(
                     key=f"retired:{entry.id}",
+                    record_id=entry.id,
                     kind="death" if death else "departure",
                     character_id=character_id,
                     character_name=character.name,
@@ -289,10 +328,13 @@ def events(db: Session, troupe: Troupe, *, full: bool) -> list[Event]:
         for e in found:
             # Players learn why a listed character left, as the Who's Who says, and no more.
             e.detail = ""
+            # The Who's Who doesn't say which characters are NPCs.
+            if e.npc:
+                e.label = "Joined the troupe"
 
     standing = social_age.standings(db, [e.character_id for e in found if e.character_id])
     for e in found:
         known = standing.get(e.character_id) if e.character_id else None
         e.clan = known.clan if known else None
-    found.sort(key=lambda e: (e.at, e.key))
+    found.sort(key=lambda e: (e.at, e.record_id))
     return found

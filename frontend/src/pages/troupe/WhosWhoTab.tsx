@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { WhosWhoEntry } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
@@ -11,6 +11,9 @@ import { Badge, Empty, ErrorText, Input, Loading, Select } from "../../component
 import { RemembrancesPanel } from "../nominations/Remembrances";
 import { RepresentedBy } from "./RepresentedBy";
 import { NO_FILTER, clanText, filterChoices, sections, type Section, type WhosWhoFilter } from "./whosWho";
+
+// The sire lines draw with d3, which only they load (#706, #707).
+const SireLines = lazy(() => import("./SireLines").then((m) => ({ default: m.SireLines })));
 
 /**
  * The troupe's Who's Who (issue #264): its active characters for its players and
@@ -24,13 +27,15 @@ export function WhosWhoTab({ troupeId }: { troupeId: string }) {
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/whos-who", { params: { path: { troupe_id: troupeId } } })),
   });
   const [filter, setFilter] = useState<WhosWhoFilter>(NO_FILTER);
+  const [view, setView] = useState<"list" | "lines">("list");
+  const navigate = useNavigate();
   const { hash } = useLocation();
   const named = useClanName();
   const loaded = !!whosWho.data;
   // A link to one character's entry (from the Play View) scrolls to it once it is there.
   useEffect(() => {
-    if (loaded && hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: "center" });
-  }, [loaded, hash]);
+    if (loaded && hash && view === "list") document.getElementById(hash.slice(1))?.scrollIntoView({ block: "center" });
+  }, [loaded, hash, view]);
 
   if (whosWho.isPending) return <Loading />;
   if (whosWho.error) return <ErrorText error={whosWho.error} />;
@@ -42,58 +47,100 @@ export function WhosWhoTab({ troupeId }: { troupeId: string }) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-mist">The troupe’s characters, for its players and staff. It is never public.</p>
-        <a
-          href={`/print/troupes/${troupeId}/whos-who`}
-          target="_blank"
-          rel="noopener"
-          className="inline-flex min-h-9 items-center rounded-md border border-ash px-3 text-sm text-parchment hover:border-gold hover:text-gold"
-        >
-          Print
-        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          {data.sire_lines && (
+            <div role="group" aria-label="View" className="inline-flex overflow-hidden rounded-md border border-ash text-sm">
+              {VIEWS.map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={view === key}
+                  onClick={() => setView(key)}
+                  className={`min-h-9 px-3 ${view === key ? "bg-ash text-parchment" : "text-mist hover:text-parchment"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          <a
+            href={`/print/troupes/${troupeId}/whos-who`}
+            target="_blank"
+            rel="noopener"
+            className="inline-flex min-h-9 items-center rounded-md border border-ash px-3 text-sm text-parchment hover:border-gold hover:text-gold"
+          >
+            Print
+          </a>
+        </div>
       </div>
-      <div className="flex flex-wrap gap-3">
-        <Input
-          aria-label="Search the Who's Who"
-          placeholder="Character, player or title"
-          className="min-w-0 flex-1 basis-56"
-          value={filter.query}
-          onChange={(e) => setFilter({ ...filter, query: e.target.value })}
-        />
-        <Select aria-label="Clan" className="w-auto" value={filter.clan} onChange={(e) => setFilter({ ...filter, clan: e.target.value })}>
-          <option value="">Every clan</option>
-          {choices.clans.map((c) => (
-            <option key={c} value={c}>
-              {named(c)}
-            </option>
-          ))}
-        </Select>
-        {choices.sects.length > 1 && (
-          <Select aria-label="Sect" className="w-auto" value={filter.sect} onChange={(e) => setFilter({ ...filter, sect: e.target.value })}>
-            <option value="">Every sect</option>
-            {choices.sects.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </Select>
-        )}
-      </div>
-      {shown.length > 1 && (
-        <nav aria-label="Jump to" className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-          {shown.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className="text-mist underline hover:text-gold">
-              {named(s.title)}
-            </a>
-          ))}
-        </nav>
+      {view === "lines" && (
+        <Suspense fallback={<Loading />}>
+          <SireLines
+            troupeId={troupeId}
+            open={(node, staff) => {
+              if (!node.character_id) return;
+              // Staff open the sheet; a player goes back to the entry on the Who's Who.
+              if (staff) navigate(`/characters/${node.character_id}`);
+              else {
+                setView("list");
+                navigate({ hash: `c-${node.character_id}` });
+              }
+            }}
+          />
+        </Suspense>
       )}
-      {shown.length === 0 && <Empty>{filtered ? "No one matches." : "No one yet."}</Empty>}
-      {shown.map((s) => (
-        <WhosWhoSection key={s.id} section={s} seated={data.seated} represent={{ troupeId, canSet: data.can_represent }} />
-      ))}
+      {view === "list" && (
+        <>
+          <div className="flex flex-wrap gap-3">
+            <Input
+              aria-label="Search the Who's Who"
+              placeholder="Character, player or title"
+              className="min-w-0 flex-1 basis-56"
+              value={filter.query}
+              onChange={(e) => setFilter({ ...filter, query: e.target.value })}
+            />
+            <Select aria-label="Clan" className="w-auto" value={filter.clan} onChange={(e) => setFilter({ ...filter, clan: e.target.value })}>
+              <option value="">Every clan</option>
+              {choices.clans.map((c) => (
+                <option key={c} value={c}>
+                  {named(c)}
+                </option>
+              ))}
+            </Select>
+            {choices.sects.length > 1 && (
+              <Select aria-label="Sect" className="w-auto" value={filter.sect} onChange={(e) => setFilter({ ...filter, sect: e.target.value })}>
+                <option value="">Every sect</option>
+                {choices.sects.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </div>
+          {shown.length > 1 && (
+            <nav aria-label="Jump to" className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+              {shown.map((s) => (
+                <a key={s.id} href={`#${s.id}`} className="text-mist underline hover:text-gold">
+                  {named(s.title)}
+                </a>
+              ))}
+            </nav>
+          )}
+          {shown.length === 0 && <Empty>{filtered ? "No one matches." : "No one yet."}</Empty>}
+          {shown.map((s) => (
+            <WhosWhoSection key={s.id} section={s} seated={data.seated} represent={{ troupeId, canSet: data.can_represent }} />
+          ))}
+        </>
+      )}
     </div>
   );
 }
+
+const VIEWS = [
+  ["list", "Characters"],
+  ["lines", "Sire lines"],
+] as const;
 
 /** Where an entry in Other says who represents it, and whose the caller may set. */
 type Represent = { troupeId: string; canSet: string[] };

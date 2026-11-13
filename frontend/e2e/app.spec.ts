@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, PASSWORD, shots, person } from "./support";
+import { closeContextsAfterEach, PASSWORD, shots, person, makeCustodian, topBar } from "./support";
 
 /** The app itself: About, the Help pages, signing in on the way to a link, and reloading after a deploy. */
 
@@ -43,7 +43,7 @@ test("Help opens the user manual from the top menu, signed out or in, with links
 
   // Signed in, from the top menu, and search across every part.
   const { page: p } = await person(browser, "helpmenu-player");
-  await p.getByRole("banner").getByRole("link", { name: "Help", exact: true }).click();
+  await (await topBar(p)).getByRole("link", { name: "Help", exact: true }).click();
   await expect(p.getByRole("heading", { name: "Help", level: 1 })).toBeVisible();
   await p.getByRole("searchbox", { name: "Search the manual" }).fill("calendar link");
   const results = p.getByRole("region", { name: "Search results" });
@@ -66,6 +66,45 @@ test("Help opens the user manual from the top menu, signed out or in, with links
   // Back goes to the results as they were.
   await p.goBack();
   await expect(p.getByRole("searchbox", { name: "Search the manual" })).toHaveValue("calendar link");
+});
+
+test("the top bar is one line, on a phone too: the bell and a menu that holds the links (#746)", async ({ browser }) => {
+  // A custodian with a long name: the widest bar there is.
+  const { page, email } = await person(browser, "phonebar-custodian-with-a-long-name");
+  makeCustodian(email);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  const bell = page.getByRole("button", { name: /^Notifications/ });
+  await expect(bell).toBeVisible();
+  // One line: no taller than its padding and its tallest control.
+  expect((await page.getByRole("banner").boundingBox())!.height).toBeLessThan(70);
+
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  if ((page.viewportSize()?.width ?? 1280) < 1024) {
+    // The links are behind the menu, which opens over the page and closes on going somewhere.
+    await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
+    await menu.click();
+    const nav = page.getByRole("navigation", { name: "Main" });
+    for (const name of ["Characters", "Troupes", "Rules reference", "Help", "Custodian"]) await expect(nav.getByRole("link", { name, exact: true })).toBeVisible();
+    await expect(nav.getByRole("link", { name: /^Your account: phonebar-custodian-with-a-long-name/ })).toContainText("(custodian)");
+    await expect(nav.getByRole("button", { name: "Sign out" })).toBeVisible();
+    await page.screenshot(shots("top-bar-menu"));
+    await page.keyboard.press("Escape");
+    await expect(nav).toHaveCount(0);
+    await expect(menu).toBeFocused();
+    await (await topBar(page)).getByRole("link", { name: "Troupes", exact: true }).click();
+    await expect(page).toHaveURL(/\/troupes$/);
+    await expect(nav).toHaveCount(0);
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+  } else {
+    await expect(menu).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Custodian", exact: true })).toBeVisible();
+  }
+
+  // The bell still opens its list.
+  await bell.click();
+  await expect(page.getByRole("dialog", { name: "Notifications" })).toBeVisible();
+  await page.screenshot(shots("top-bar"));
 });
 
 test("the chart kit draws its sample charts in Dark, Ultra goth and print, with tooltips and tables, d3 loading only then (#706)", async ({ browser }) => {
@@ -176,7 +215,7 @@ test("a page whose file is gone after a deploy reloads once, then says Horatio w
     return route.fulfill({ status: 404, contentType: "text/plain", body: "not found" });
   });
   await page.goto("/characters");
-  await page.getByTitle("Your account").click();
+  await (await topBar(page)).getByTitle("Your account").click();
   await expect(page.getByText("Horatio has been updated. Reload to continue.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
   // One reload was tried, and no more: two asks for the file, not a loop.

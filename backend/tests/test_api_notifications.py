@@ -27,7 +27,8 @@ def bell(person: Person) -> dict[str, Any]:
 
 
 def summaries(person: Person) -> list[str]:
-    return [i["summary"] for i in bell(person)["items"]]
+    # Sign-up notices (#757) reach the custodian as everyone signs up; left out here.
+    return [i["summary"] for i in bell(person)["items"] if i["kind"] != "account.signed_up"]
 
 
 def at_home(troupe: Troupe, name: str = "Agnes") -> str:
@@ -57,8 +58,10 @@ def test_waiting_approvals_are_tasks_for_whoever_can_decide_them(troupe: Troupe)
         )
         assert item["summary"] == "Agnes asks to make Lords of the Night its home"
     # Narrators cannot approve; players and the custodian (on staff nowhere) are not asked.
-    for person in (troupe.narrator, troupe.player, troupe.custodian, troupe.stranger):
+    for person in (troupe.narrator, troupe.player, troupe.stranger):
         assert bell(person) == {"items": [], "count": 0}
+    # The custodian hears only of the troupe's people signing up (#757).
+    assert {i["kind"] for i in bell(troupe.custodian)["items"]} == {"account.signed_up"}
 
 
 def test_a_task_goes_when_the_work_is_done(troupe: Troupe) -> None:

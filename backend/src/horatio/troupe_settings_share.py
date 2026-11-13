@@ -614,6 +614,7 @@ SETTINGS: dict[str, Setting] = {
         Setting(
             "whos_who_negative", "status_titles", "Negative status on the Who's Who", bool, on_off
         ),
+        Setting("sire_lines_players", "status_titles", "Sire lines shown to players", bool, on_off),
         Setting(
             "golconda_enlightened",
             "status_titles",
@@ -695,6 +696,47 @@ SETTINGS: dict[str, Setting] = {
             "Players mark boons owed to them settled",
             bool,
             on_off,
+        ),
+        Setting(
+            "boon_review",
+            "at_game",
+            "Boons players report wait for review",
+            bool,
+            on_off,
+        ),
+        Setting(
+            "boon_harpy",
+            "at_game",
+            "The Harpy's access to the boon ledger",
+            Literal["none", "submissions", "full"],
+            chosen(
+                {
+                    "none": "None",
+                    "submissions": "Receives submissions",
+                    "full": "The full ledger",
+                }
+            ),
+        ),
+        Setting(
+            "boon_harpy_standings",
+            "at_game",
+            "The Harpy reads the boon standings and statistics",
+            bool,
+            on_off,
+        ),
+        Setting(
+            "boon_talons",
+            "at_game",
+            "The Harpy may give others access to the boon ledger",
+            bool,
+            on_off,
+        ),
+        Setting(
+            "boon_talon_word",
+            "at_game",
+            "What the troupe calls those the Harpy gives access",
+            Literal["Lesser Harpies", "Talons"],
+            chosen({"Lesser Harpies": "Lesser Harpies", "Talons": "Talons"}),
         ),
         Setting(
             "boon_weights",
@@ -851,6 +893,7 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "seated_clans": "its court is its own (titles and seats aren't carried)",
     "free_changes_since": "set to the time of import when free changes are switched on",
     "rules_version": "kept by the database, changing with the troupe's rules",
+    "bond_clock_from": "the day its own bonds' clocks start from, not a setting (#665)",
 }
 
 # The tables that belong to a troupe and are exported, each in its section.
@@ -884,7 +927,10 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "backstory_feedback": PLAY,
     "backstory_question_sets": "backstory question sets aren't carried",
     "blood_bonds": PLAY,
+    "boon_audits": PLAY,
     "bond_reports": PLAY,
+    "boon_talons": PLAY,
+    "boonbreakers": PLAY,
     "boons": PLAY,
     "calendar_feeds": "people's own calendar links",
     "character_titles": PLAY,
@@ -920,6 +966,8 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "troupe_requests": "how the troupe began",
     "troupe_staff": "its staff are its own",
     "troupe_titles": "the troupe's titles aren't carried",
+    "vaulderies": PLAY,
+    "vinculum_ties": PLAY,
     "xp_range_entries": "the XP floor and ceiling's history is the troupe's own",
     "yorick_imports": "imports from Yorick are the troupe's own",
 }
@@ -2357,6 +2405,7 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "titles_by",
             "status_at_checkin",
             "whos_who_negative",
+            "sire_lines_players",
             "badge_titles",
             "badge_status",
             "badge_pronouns",
@@ -2367,6 +2416,11 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "boons",
             "boon_players_see",
             "boon_players_settle",
+            "boon_review",
+            "boon_harpy",
+            "boon_harpy_standings",
+            "boon_talons",
+            "boon_talon_word",
             "player_nominations",
             "remembrances",
             "assamite_name",

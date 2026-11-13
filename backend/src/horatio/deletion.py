@@ -13,7 +13,7 @@ The troupe logs keep their entries, with the character's name.
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit, title_history
+from horatio import audit, social_age, title_history
 from horatio.models import (
     AllowanceAdjustment,
     AlternateIdentity,
@@ -59,6 +59,9 @@ from horatio.models import (
     TraitException,
     TroupeMembership,
     User,
+    Vaulderie,
+    VaulderieParticipant,
+    VinculumTie,
     XpEntry,
 )
 from horatio.sheets import conflict, memberships
@@ -157,6 +160,13 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     # Its own Embrace goes with it; a childe it sired keeps its sire by name.
     db.execute(delete(Embrace).where(Embrace.character_id == cid))
     db.execute(update(Embrace).where(Embrace.sire_id == cid).values(sire_id=None))
+    db.execute(
+        update(Character)
+        .where(Character.sire_id == cid)
+        .values(
+            sire_id=None, sire_name=name, sire_clan=social_age.standings(db, [cid])[cid].clan or ""
+        )
+    )
     # The scheduled games it checked in to, then its games on the Play View, with
     # their taps, and what the player kept there.
     db.execute(delete(GameAttendance).where(GameAttendance.character_id == cid))
@@ -219,6 +229,26 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         update(BondReport)
         .where(BondReport.regnant_id == cid)
         .values(regnant_id=None, regnant_name=name)
+    )
+    # A Vaulderie it took part in or officiated, and a background tie it is in, keep its
+    # name (#666).
+    db.execute(
+        update(VaulderieParticipant)
+        .where(VaulderieParticipant.character_id == cid)
+        .values(character_id=None, name=name)
+    )
+    db.execute(
+        update(Vaulderie)
+        .where(Vaulderie.officiant_id == cid)
+        .values(officiant_id=None, officiant_name=name)
+    )
+    db.execute(
+        update(VinculumTie).where(VinculumTie.one_id == cid).values(one_id=None, one_name=name)
+    )
+    db.execute(
+        update(VinculumTie)
+        .where(VinculumTie.other_id == cid)
+        .values(other_id=None, other_name=name)
     )
     # A boon it owes or holds keeps its name; its log forgets who it was done as.
     db.execute(update(Boon).where(Boon.debtor_id == cid).values(debtor_id=None, debtor_name=name))

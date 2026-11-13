@@ -21,6 +21,7 @@ import { givable } from "../troupe/GiveNpc";
 import { LeavingCard } from "./Leaving";
 import { RenameCharacter } from "./Rename";
 import { CharacterPronouns } from "./Pronouns";
+import { CharacterSire } from "./Sire";
 import { Pronouns } from "../../components/PronounsInput";
 import { AtHandle } from "../../components/PersonPicker";
 import { CharacterPicture } from "./Picture";
@@ -52,6 +53,13 @@ export function CharacterPage() {
   });
   const [renaming, setRenaming] = useState(false);
   const [saying, setSaying] = useState(false);
+  const [siring, setSiring] = useState(false);
+  // A vampire's sire (#707): whether the caller may give it puts Sire… in the menu.
+  const sireOf = useQuery({
+    queryKey: ["sire", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sire", { params: { path: { character_id: characterId } } })),
+    enabled: character.data?.splat === "vampire",
+  });
   // The Shared backgrounds tab shows once the character has put dots in one.
   const shared = useQuery({
     queryKey: ["character-shared", characterId],
@@ -109,6 +117,8 @@ export function CharacterPage() {
   const play = c.play_view && primaryLink(`/play/characters/${c.id}`, "Play", onDowntime);
   const rename = renaming && <RenameCharacter key={c.id} character={c} asCustodian={custodian} onDone={() => setRenaming(false)} />;
   const pronouns = saying && <CharacterPronouns key={c.id} character={c} onDone={() => setSaying(false)} />;
+  const sire = siring && sireOf.data && <CharacterSire key={c.id} character={c} sire={sireOf.data} onDone={() => setSiring(false)} />;
+  const onSire = sireOf.data?.can_change && !siring ? () => setSiring(true) : undefined;
   const name = (
     <>
       {c.name}
@@ -136,6 +146,7 @@ export function CharacterPage() {
                   onRename={() => setRenaming(true)}
                   canRetire={c.status === "active"}
                   onPronouns={saying ? undefined : () => setSaying(true)}
+                  onSire={onSire}
                   canDelete
                   canExport
                   canGive={!!npcTroupe.data && abilities(npcTroupe.data.my_role, custodian).storyteller && !npcTroupe.data.archived && givable(c)}
@@ -149,6 +160,7 @@ export function CharacterPage() {
         {rename}
         {c.status === "retired" && <LeavingCard character={c} canChange />}
         {pronouns}
+        {sire}
         <Tabs
           tabs={[
             ...(!c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
@@ -204,9 +216,11 @@ export function CharacterPage() {
                 onRename={() => setRenaming(true)}
                 canRetire={mine && c.status === "active"}
                 onPronouns={mine && c.status === "active" && !saying ? () => setSaying(true) : undefined}
+                onSire={onSire}
                 canDelete={mine}
                 canMove={custodian}
                 canExport={mine || custodian}
+                canMakeNpc={!mine && c.status === "retired" && !!home.data && abilities(home.data.my_role, custodian).running && !home.data.archived}
               />
             </div>
           }
@@ -218,6 +232,7 @@ export function CharacterPage() {
       {c.status === "retired" && <LeavingCard character={c} canChange={mine || custodian || (!!home.data && abilities(home.data.my_role, custodian).running)} />}
       {c.status === "retired" && c.kind === "pc" && <RemembrancesCard character={c} />}
       {pronouns}
+      {sire}
       <CharacterTabs
         groups={[
           { label: "Create", tabs: creating ? [{ to: `${base}/create`, label: "Create" }] : [] },

@@ -11,16 +11,18 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { MoveCharacter } from "../custodian/MoveCharacter";
 import { ClaimLink, GiveToPlayer } from "../troupe/GiveNpc";
+import { MakeNpc } from "../troupe/MakeNpc";
 import { ExportBackup } from "./Backup";
 import { DiablerieForm, diablerieAction, useDiablerie } from "./Diablerie";
 import { RetireCharacter } from "./Leaving";
 
 /**
  * The character's less-used actions, behind a ⋯ button beside Play, in groups:
- * Rename, Pronouns and Move to another player (the custodian's, for a PC); Give to a
+ * Rename, Pronouns, Sire and Move to another player (the custodian's, for a PC); Give to a
  * player and Claim link (an NPC's storytellers', for one they can give); diablerie
  * (staff record it, the player asks them to); Export (backup), for its player or an
- * NPC's staff, retired or not; Retire and Delete. `renameOn` is the
+ * NPC's staff, retired or not; Make an NPC of a retired PC, for its home troupe's
+ * staff (#764); Retire and Delete. `renameOn` is the
  * first day a player who renamed lately can again; the item says so instead of
  * renaming. `canDelete` is for those who may delete it at all: a PC's player, an
  * NPC's staff. A PC still in a troupe can't be deleted yet, and Delete says why.
@@ -31,11 +33,13 @@ export function CharacterMenu({
   renameOn,
   onRename,
   onPronouns,
+  onSire,
   canRetire = false,
   canDelete,
   canMove = false,
   canGive = false,
   canExport = false,
+  canMakeNpc = false,
 }: {
   character: CharacterOut;
   canRename: boolean;
@@ -43,6 +47,8 @@ export function CharacterMenu({
   onRename: () => void;
   /** Set the character's pronouns, for those who may. */
   onPronouns?: () => void;
+  /** Give a vampire its sire (#707), for those who may. */
+  onSire?: () => void;
   canRetire?: boolean;
   canDelete: boolean;
   canMove?: boolean;
@@ -50,6 +56,8 @@ export function CharacterMenu({
   canGive?: boolean;
   /** Export it as a file, as a backup (#567). */
   canExport?: boolean;
+  /** Copy a retired PC as an NPC of its home troupe (#764). */
+  canMakeNpc?: boolean;
 }) {
   const [retiring, setRetiring] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -57,10 +65,11 @@ export function CharacterMenu({
   const [giving, setGiving] = useState<"give" | "claim" | null>(null);
   const [diablerie, setDiablerie] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [makingNpc, setMakingNpc] = useState(false);
   const dates = useDates();
   const diablerieList = useDiablerie(character);
   const diablerieItem = diablerieAction(diablerieList.data);
-  if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove && !canGive && !canExport && !diablerieItem) return null;
+  if (!canRename && !renameOn && !onPronouns && !onSire && !canRetire && !canDelete && !canMove && !canGive && !canExport && !canMakeNpc && !diablerieItem) return null;
 
   return (
     <div>
@@ -75,6 +84,7 @@ export function CharacterMenu({
             canRename && <MenuItem onSelect={onRename}>Rename…</MenuItem>
           )}
           {onPronouns && <MenuItem onSelect={onPronouns}>Pronouns…</MenuItem>}
+          {onSire && <MenuItem onSelect={onSire}>Sire…</MenuItem>}
           {canMove && <MenuItem onSelect={() => setMoving(true)}>Move to another player…</MenuItem>}
         </MenuGroup>
         <MenuGroup label="Give to a player">
@@ -83,6 +93,7 @@ export function CharacterMenu({
         </MenuGroup>
         <MenuGroup label="Diablerie">{diablerieItem && <MenuItem onSelect={() => setDiablerie(true)}>{diablerieItem}</MenuItem>}</MenuGroup>
         <MenuGroup label="Backup">{canExport && <MenuItem onSelect={() => setExporting(true)}>Export (backup)…</MenuItem>}</MenuGroup>
+        <MenuGroup label="NPC">{canMakeNpc && <MenuItem onSelect={() => setMakingNpc(true)}>Make an NPC…</MenuItem>}</MenuGroup>
         <MenuGroup label="Leaving">
           {canRetire && <MenuItem onSelect={() => setRetiring(true)}>Retire…</MenuItem>}
           {canDelete && <DeleteItem character={character} onDelete={() => setDeleting(true)} />}
@@ -112,6 +123,11 @@ export function CharacterMenu({
       {canExport && (
         <Dialog title={`Export ${character.name}`} open={exporting} onClose={() => setExporting(false)}>
           {exporting && <ExportBackup character={character} onDone={() => setExporting(false)} />}
+        </Dialog>
+      )}
+      {canMakeNpc && (
+        <Dialog title={`Make an NPC of ${character.name}`} open={makingNpc} onClose={() => setMakingNpc(false)}>
+          {makingNpc && <MakeNpc characterId={character.id} name={character.name} onDone={() => setMakingNpc(false)} />}
         </Dialog>
       )}
       <Dialog title={`Retire ${character.name}`} open={retiring} onClose={() => setRetiring(false)}>

@@ -1,4 +1,4 @@
-import type { BoonEventOut, BoonOut, BoonKindCount } from "./api/types";
+import type { AppealOut, BoonEventOut, BoonOut, BoonKindCount, BoonbreakerPreviewOut } from "./api/types";
 
 /** Where the book has boons: what they are, their kinds, and boon breakers. */
 export const BOON_PAGE = "MET: VTM pp. 395-397";
@@ -51,11 +51,11 @@ export const SETTLED: { value: SettledHow; label: string; meaning: string }[] = 
   {
     value: "ignored",
     label: "Formally ignored",
-    meaning: "The debtor formally ignored it, which costs status for a major boon or greater (p. 397).",
+    meaning: "The debtor formally ignored it, which costs them status for a major, blood or life boon (p. 395).",
   },
 ];
 
-/** The ledger's views, as its tabs. Pending boons come with review (#687), so that tab shows only when there are some. */
+/** The ledger's views, as its tabs. Pending boons wait for review (#687), so that tab shows only when there are some. */
 export const VIEWS: { value: BoonView; label: string }[] = [
   { value: "open", label: "Open" },
   { value: "departed", label: "Departed" },
@@ -104,6 +104,14 @@ const EVENTS: Record<BoonEventOut["kind"], string> = {
   settled: "Settled",
   voided: "Made void",
   reopened: "Reopened",
+  submitted: "Reported for review",
+  accepted: "Accepted",
+  rejected: "Not accepted",
+  flagged: "Flagged for review",
+  flag_cleared: "Flag cleared",
+  linked: "Name linked",
+  gallant_given: "Gallant given",
+  gallant_declined: "Gallant not given",
 };
 
 export function eventName(kind: BoonEventOut["kind"]): string {
@@ -120,7 +128,21 @@ const FIELDS: Record<string, string> = {
   notify_on_trade: "Tell the debtor if traded",
   staff_note: "Staff note",
   state: "State",
+  flags: "Flags",
+  gallant: "Gallant",
 };
+
+/** Why Gallant is offered for a repaid boon's debtor (#693; MET: VTM pp. 402, 405). */
+const GALLANT_REASONS: Record<"nobility" | "great", string> = {
+  nobility: "the creditor has Social Nobility (p. 405)",
+  great: "a great boon repaid to someone of significance (p. 402)",
+};
+
+/** "Give Bram Gallant for repaying it? The creditor has Social Nobility (p. 405)." */
+export function gallantText(offer: { debtor: string; reasons: ("nobility" | "great")[] }): string {
+  const why = offer.reasons.map((r) => GALLANT_REASONS[r]).join(", and ");
+  return `Give ${offer.debtor} Gallant for repaying it? ${why.charAt(0).toUpperCase()}${why.slice(1)}.`;
+}
 
 /** One change in a boon's log: "Kind: Minor → Major". Empty text reads "(none)". */
 export function changeText(change: { field: string; before: string; after: string }): string {
@@ -176,3 +198,56 @@ export function rowStarted(row: EntryRow): boolean {
 export function rowsTotal(rows: EntryRow[]): number {
   return rows.filter(rowStarted).reduce((n, r) => n + Math.max(1, r.count || 1), 0);
 }
+
+export type BoonFlag = NonNullable<BoonOut["flags"]>[number];
+
+/** A flag raised for review (#687), as its badge names it. */
+export const FLAG_NAMES: Record<BoonFlag["kind"], string> = {
+  unmatched: "Name not linked",
+  duplicate: "Likely duplicate",
+  hand: "Flagged",
+};
+
+/** What a flag says, after its name: "creditor, The Moon: No character in the troupe has this name." */
+export function flagBody(flag: BoonFlag, boon: Pick<BoonOut, "debtor" | "creditor">): string {
+  if (flag.kind === "unmatched" && flag.side) {
+    const name = flag.side === "debtor" ? boon.debtor.name : boon.creditor.name;
+    return `${flag.side}, ${name}: ${flag.detail}`;
+  }
+  if (flag.kind === "duplicate") return flag.detail;
+  return `${flag.raised_by ? `by ${flag.raised_by}: ` : ""}${flag.note}`;
+}
+
+/** What a flag is about, in a line: "Name not linked (creditor, The Moon): No character in the troupe has this name." */
+export function flagText(flag: BoonFlag, boon: Pick<BoonOut, "debtor" | "creditor">): string {
+  if (flag.kind === "unmatched") return `${FLAG_NAMES.unmatched} (${flagBody(flag, boon).replace(": ", "): ")}`;
+  return `${FLAG_NAMES[flag.kind]}${flag.kind === "hand" && flag.raised_by ? " " : ": "}${flagBody(flag, boon)}`;
+}
+
+// --- Boonbreakers (#717) --------------------------------------------------------------------
+
+/** Where the book has Boonbreakers, and appeals for mercy. */
+export const BREAKER_PAGE = "MET: VTM pp. 397-398";
+
+/** What declaring someone a Boonbreaker would make void, said before it's done. */
+export function voidsText(preview: Pick<BoonbreakerPreviewOut, "owed_by" | "owed_to">): string {
+  const total = preview.owed_by + preview.owed_to;
+  if (total === 0) return "They have no open boons to make void.";
+  return `This makes ${total} ${total === 1 ? "boon" : "boons"} void: ${preview.owed_by} owed by them, ${preview.owed_to} owed to them.`;
+}
+
+const APPEAL_TO: Record<AppealOut["to"], string> = { harpy: "the Harpy", court: "a court of Harpies" };
+
+/** One appeal for mercy: "To a court of Harpies: mercy refused, 4 against". */
+export function appealText(appeal: Pick<AppealOut, "to" | "outcome" | "against">): string {
+  const outcome = appeal.outcome === "granted" ? "mercy granted" : "mercy refused";
+  const votes = appeal.against !== null && appeal.against !== undefined ? `, ${appeal.against} against` : "";
+  return `To ${APPEAL_TO[appeal.to]}: ${outcome}${votes}`;
+}
+
+/** A great boon its debtor formally ignored, and the status they lose for it (p. 395). */
+export const LOSS_TEXT: Record<NonNullable<BoonOut["status_loss"]>, string> = {
+  due: "Ignoring it costs its debtor status (p. 395): take it with the status tools, then say so here.",
+  taken: "Its debtor lost status for ignoring it (p. 395).",
+  waived: "No status was taken for ignoring it.",
+};
