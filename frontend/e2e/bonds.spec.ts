@@ -77,10 +77,10 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   await expect(l.getByText(/^Blood bonds are tracked\./)).toBeVisible();
   await expect(l.getByRole("radio", { name: /^Staff manages/ })).toBeChecked();
 
-  // The first drink, on the Bonds screen under Characters.
+  // The first drink, on the Bonds screen under Court.
   await l
     .getByRole("navigation", { name: "Troupe sections" })
-    .getByRole("link", { name: "Characters", exact: true })
+    .getByRole("link", { name: "Court", exact: true })
     .click();
   await l.getByRole("link", { name: "Bonds", exact: true }).click();
   await expect(l.getByText("No blood bonds yet.")).toBeVisible();
@@ -305,7 +305,7 @@ test("staff see one web of obligation: boons, blood bonds and sire lines on the 
   await send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall: { name: "old hesper" }, regnant: { character_id: seraphine.id }, night: "2026-10-03", source: "game" });
 
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Court", exact: true }).click();
   await l.getByRole("link", { name: "Web of obligation", exact: true }).click();
   const chart = l.getByRole("figure", { name: "The web of obligation" });
   await expect(chart).toBeVisible();

@@ -34,8 +34,8 @@ test("staff keep the boon ledger: a game's boons at once, then a settling, an ed
   await expect(l.getByText(/^The boon ledger is on\./)).toBeVisible();
   await expect(keep).toBeChecked();
 
-  // Under Characters, the Boons screen: register a game's boons at once.
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  // Under Court, the Boons screen: register a game's boons at once.
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Court", exact: true }).click();
   await l.getByRole("link", { name: "Boons", exact: true }).click();
   await expect(l.getByText("No open boons yet.")).toBeVisible();
   await l.getByRole("button", { name: "Register boons" }).click();
@@ -141,9 +141,9 @@ test("staff see the boon standings: each character's net by the troupe's weights
   const owes = (debtor: string, creditor: string, kind: string) => ({ debtor: { character_id: debtor }, creditor: { character_id: creditor }, kind, made_on: "2026-10-03" });
   await send(l, "POST", `/api/troupes/${troupe.id}/boons`, { boons: [owes(isolde.id, casimir.id, "major"), owes(casimir.id, isolde.id, "minor")] });
 
-  // Under Characters › Boons, Standings: Casimir is owed a major and owes a minor.
+  // Under Court › Boons, Standings: Casimir is owed a major and owes a minor.
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Court", exact: true }).click();
   await l.getByRole("link", { name: "Boons", exact: true }).click();
   await l.getByRole("navigation", { name: "Boons", exact: true }).getByRole("link", { name: "Standings", exact: true }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/boons/standings$`));
@@ -230,9 +230,9 @@ test("staff see the boon statistics: the ledger over time, who owes whom, betwee
   // The old address of Boon statistics, from before it joined Boons (#780), still leads there.
   await l.goto(`/troupes/${troupe.id}/boon-statistics`);
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/boons/statistics$`));
-  // Under Characters › Boons, Statistics: each of the four charts, every one with its table.
+  // Under Court › Boons, Statistics: each of the four charts, every one with its table.
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Court", exact: true }).click();
   await l.getByRole("link", { name: "Boons", exact: true }).click();
   await l.getByRole("navigation", { name: "Boons", exact: true }).getByRole("link", { name: "Statistics", exact: true }).click();
   for (const title of ["Boons registered", "Who owes whom", "Debt between clans", "Boons at each game"]) {
@@ -663,7 +663,7 @@ test("staff declare a Boonbreaker: their open boons are made void, both ways, an
   });
 
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Court", exact: true }).click();
   await l.getByRole("link", { name: "Boons", exact: true }).click();
   await expect(l.getByText("No Boonbreakers.")).toBeVisible();
 

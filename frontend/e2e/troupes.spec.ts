@@ -1129,12 +1129,15 @@ test("staff award XP, give equipment and print from a character's ⋯ on the Cha
   menu = await actions(a, "Casimir");
   await expect(menu.getByRole("menuitem")).toHaveText(["Play", "Give equipment…", "Status…", "Titles…", "List on the Who’s Who", "Print sheet", "Badge…"]);
 
-  // A narrator never sees character sheets, so has no Characters list at all.
+  // A narrator never sees character sheets, so has no Characters list at all: their
+  // Characters group holds only the troupe's lines and veils, and opens on them (#779).
   const n = narrator.page;
   await n.goto(`/troupes/${troupe.id}`);
   const sections = n.getByRole("navigation", { name: "Troupe sections" });
   await expect(sections.getByRole("link", { name: "Downtimes", exact: true })).toBeVisible();
-  await expect(sections.getByRole("link", { name: "Characters", exact: true })).toHaveCount(0);
+  await sections.getByRole("link", { name: "Characters", exact: true }).click();
+  await expect(n).toHaveURL(new RegExp(`/troupes/${troupe.id}/lines-veils$`));
+  await expect(n.getByRole("navigation", { name: "Characters", exact: true })).toHaveCount(0);
   await n.goto(`/troupes/${troupe.id}/characters`);
   await expect(n.getByRole("heading", { name: troupeName })).toBeVisible();
   await expect(n.getByRole("button", { name: "Actions for Odalys" })).toHaveCount(0);
