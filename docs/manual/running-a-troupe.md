@@ -477,7 +477,15 @@ Below it, **House settings at a glance** sums up who may join, XP, status and ti
 
 ## Customise: troupe settings
 
-**Customise › Troupe settings** holds the settings for the whole troupe, in groups.
+**Customise › Troupe settings** holds the settings for the whole troupe, in groups, under a list of its features.
+
+### Features
+
+The **Features** list at the top has a row for each optional feature: Who's Who, News and announcements, the Play View, Boons, Blood bonds, Player Nominations, Remembrances, the court over time and the chronicle for players, Quests, Feeding, Golconda and Enlightened, and Items that expire. Each row says whether it's on, what it adds and which tabs appear with it, with **Open** to go to its tab once it's on, and **Settings** for the rest of its settings where it has more.
+
+Storytellers switch a feature on or off with the switch at the start of its row. It's the same setting as the feature's card further down (or, for Quests, under **Rules › Quests**), so either can be used. A feature switched off has no tab, and what was recorded with it is kept for when it's on again. Blood bonds switched on here are kept by staff; choose another way under its **Settings**. Who's Who and News are always on, and the Play View is switched tab by tab. Assistant storytellers see the list without the switches.
+
+![Troupe settings › Features, as a new troupe has them: Who's Who, News, the Play View and Feeding on, the rest off.](images/running-a-troupe/troupe-features.png)
 
 ### Who may join
 

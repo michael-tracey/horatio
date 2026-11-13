@@ -22,6 +22,8 @@ import { ThrowImagesSetting } from "./ThrowImagesSetting";
 import { NominationsSetting } from "../nominations/NominationsSetting";
 import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
+import { FeaturesList } from "./FeaturesList";
+import { settingsAnchor, type FeatureKey } from "./features";
 import { StatusBanClans } from "./StatusBanClans";
 import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
@@ -31,8 +33,9 @@ import { useCatalogue } from "../../catalogue";
 /**
  * The settings for the whole troupe, set once a season or so, by what they are
  * for: who may join, XP, status and titles, what happens at game, downtimes,
- * feeding, and what a clan is called. Its storytellers change them; the troupe's other running
- * staff read them. The troupe's rules for traits are on the Rules tab beside it.
+ * feeding, and what a clan is called, under the Features list: every optional feature, on or
+ * off (#783). Its storytellers change them; the troupe's other running staff read them. The
+ * troupe's rules for traits are on the Rules tab beside it.
  */
 export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const base = `/troupes/${troupe.id}`;
@@ -42,6 +45,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         {canEdit ? "Settings for the whole troupe. Each change takes effect straight away." : "Settings for the whole troupe. Its storytellers change them."}{" "}
         What traits cost and what new characters start with are under Rules, beside this.
       </p>
+      <FeaturesList troupe={troupe} canEdit={canEdit} />
       <Group title="Who may join">
         <SplatsCard troupe={troupe} canEdit={canEdit} />
         <SectsCard troupe={troupe} canEdit={canEdit} />
@@ -63,28 +67,40 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         <StatusSetting troupe={troupe} canEdit={canEdit} />
         <TitlesSetting troupe={troupe} canEdit={canEdit} />
         <StatusAtCheckinSetting troupe={troupe} canEdit={canEdit} />
-        {troupe.whos_who && <WhosWhoSetting troupe={troupe} canEdit={canEdit} />}
+        {troupe.whos_who && (
+          <Anchored feature="whos_who">
+            <WhosWhoSetting troupe={troupe} canEdit={canEdit} />
+          </Anchored>
+        )}
         <CourtHistorySetting troupe={troupe} canEdit={canEdit} />
         <ChronicleSetting troupe={troupe} canEdit={canEdit} />
         <GolcondaSetting troupeId={troupe.id} canEdit={canEdit} />
         <StatusBanClans troupeId={troupe.id} canEdit={canEdit} />
       </Group>
       <Group title="At game">
-        <PlayTabsSetting troupe={troupe} canEdit={canEdit} />
+        <Anchored feature="play_view">
+          <PlayTabsSetting troupe={troupe} canEdit={canEdit} />
+        </Anchored>
         <ThrowImagesSetting troupe={troupe} canEdit={canEdit} />
         <BadgeSetting troupe={troupe} canEdit={canEdit} />
         <StartingBlood troupeId={troupe.id} canEdit={canEdit} />
         <DiablerieFlaws troupeId={troupe.id} canEdit={canEdit} />
         <ItemExpirySetting troupe={troupe} canEdit={canEdit} />
-        <BloodBondsSetting troupe={troupe} canEdit={canEdit} />
-        <BoonLedgerSetting troupe={troupe} canEdit={canEdit} />
+        <Anchored feature="blood_bonds">
+          <BloodBondsSetting troupe={troupe} canEdit={canEdit} />
+        </Anchored>
+        <Anchored feature="boons">
+          <BoonLedgerSetting troupe={troupe} canEdit={canEdit} />
+        </Anchored>
       </Group>
       <Group title="Downtimes">
         <NominationsSetting troupe={troupe} canEdit={canEdit} />
         <RemembrancesSetting troupe={troupe} canEdit={canEdit} />
       </Group>
       <Group title="Feeding">
-        <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />
+        <Anchored feature="feeding">
+          <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />
+        </Anchored>
         {/* Unlike the settings around it, assistant storytellers keep the territories too, as the
             API lets them: who holds which changes in play, as the Authority proclaims it. */}
         {troupe.feeding !== "off" && troupe.feeding_territories && (
@@ -94,6 +110,15 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
       <Group title="Names">
         <ClanNamesSetting troupeId={troupe.id} canEdit={canEdit} />
       </Group>
+    </div>
+  );
+}
+
+/** A feature's settings card, where the Features list's Settings link lands. */
+function Anchored({ feature, children }: { feature: FeatureKey; children: ReactNode }) {
+  return (
+    <div id={settingsAnchor(feature)} className="scroll-mt-4">
+      {children}
     </div>
   );
 }

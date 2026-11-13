@@ -108,6 +108,62 @@ test("Customise opens on Overview, a setup checklist and the house settings, and
   await expect(glance.getByText(/^1 of \d+ played differently$/)).toBeVisible();
 });
 
+test("Troupe settings open on a Features list: each optional feature on or off, and switching one on brings its tab (#783)", async ({ browser }) => {
+  const custodian = await person(browser, "switch-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "switch-lead");
+  const troupeName = `House of Switches ${run}`;
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // Boons are off: there's no Boons tab under Characters.
+  const l = lead.page;
+  // A group's tabs, under its name in the troupe's sections.
+  const characters = l.getByRole("navigation", { name: "Characters", exact: true });
+  const downtimes = l.getByRole("navigation", { name: "Downtimes", exact: true });
+  await l.goto(`/troupes/${troupeId}/characters`);
+  await expect(characters.getByRole("link", { name: "Approvals", exact: true })).toBeVisible();
+  await expect(characters.getByRole("link", { name: "Boons", exact: true })).toHaveCount(0);
+
+  // Troupe settings list every feature, on or off, before the groups of settings.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const list = l.getByRole("list", { name: "Features" });
+  const boons = list.getByRole("listitem", { name: "Boons" });
+  await expect(boons.getByText("Off", { exact: true })).toBeVisible();
+  await expect(boons.getByRole("link", { name: "Open Boons" })).toHaveCount(0);
+  await expect(list.getByRole("listitem", { name: "Feeding" }).getByRole("switch", { name: "Feeding" })).toHaveAttribute("aria-checked", "true");
+  await expect(list.getByRole("listitem", { name: "Who's Who" }).getByRole("switch")).toHaveCount(0);
+
+  // The lead switches Boons on from the list: the card below follows, and its Settings link lands on it.
+  await boons.getByRole("switch", { name: "Boons" }).click();
+  await expect(boons.getByRole("switch", { name: "Boons" })).toHaveAttribute("aria-checked", "true");
+  await expect(l.getByRole("checkbox", { name: /^Keep a boon ledger/ })).toBeChecked();
+  await boons.getByRole("link", { name: "Settings for Boons" }).click();
+  await expect(l).toHaveURL(/#feature-boons$/);
+  // Its tab is there now, under Characters.
+  await boons.getByRole("link", { name: "Open Boons" }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/boons`));
+  await expect(characters.getByRole("link", { name: "Boons", exact: true })).toBeVisible();
+
+  // Quests: switched on, a Quests tab under Downtimes; switched off again, it goes.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const quests = list.getByRole("listitem", { name: "Quests" });
+  await quests.getByRole("switch", { name: "Quests" }).click();
+  await expect(quests.getByText("On, 1 request a character each cycle")).toBeVisible();
+  await quests.getByRole("link", { name: "Open Quests" }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/quests`));
+  await expect(downtimes.getByRole("link", { name: "Quests", exact: true })).toBeVisible();
+  await l.goto(`/troupes/${troupeId}/settings`);
+  await quests.getByRole("switch", { name: "Quests" }).click();
+  await expect(quests.getByRole("switch", { name: "Quests" })).toHaveAttribute("aria-checked", "false");
+  await expect(quests.getByRole("link", { name: "Open Quests" })).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}/downtimes`);
+  await expect(downtimes.getByRole("link", { name: "Cycles", exact: true })).toBeVisible();
+  await expect(downtimes.getByRole("link", { name: "Quests", exact: true })).toHaveCount(0);
+});
+
 test("the lead builds a check of the troupe's own from blocks, and it refuses a purchase (#432)", async ({ browser }) => {
   const custodian = await person(browser, "ownchk-custodian");
   makeCustodian(custodian.email);
