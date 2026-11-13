@@ -38,6 +38,7 @@ import {
 } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { VinculumSection } from "./VinculumSection";
 import { WhoPicker } from "./WhoPicker";
 
 type By = "thrall" | "regnant";
@@ -193,6 +194,7 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
           </section>
         ))
       )}
+      {bonds.data.vinculum && <VinculumSection troupeId={troupeId} />}
     </div>
   );
 }
@@ -977,9 +979,11 @@ function EntryRow({
       ? `entered at ${levelName(e.level ?? 1).toLowerCase()}`
       : e.kind === "dropped"
         ? "dropped to two drinks, three months without drinking"
-        : e.kind === "meeting"
-          ? `met, ${told}`
-          : `a drink, ${told}`;
+        : e.kind === "vaulderie"
+          ? `lowered to ${levelName(e.level ?? 1).toLowerCase()} by a Vaulderie`
+          : e.kind === "meeting"
+            ? `met, ${told}`
+            : `a drink, ${told}`;
   return (
     <li aria-label={`${dates.day(e.night)}: ${what}`}>
       {dates.day(e.night)}: {what}

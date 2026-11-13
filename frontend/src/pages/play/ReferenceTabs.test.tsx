@@ -22,6 +22,7 @@ const reference: PlayReference = {
   identities: [],
   backgrounds_changed: [],
   bonds: [],
+  vinculum: [],
   traits: [
     trait("archetype", "Archetype", "Identity", "Loner", { rating: null, description: "You'd rather work alone." }),
     trait("attributes", "Attributes", "Attributes", "Physical", { rating: 5, description: "Strength, speed and toughness." }),
@@ -73,6 +74,22 @@ describe("SheetTab", () => {
   it("has no blood bonds panel without one", () => {
     sheet();
     expect(screen.queryByText("Blood bonds")).toBeNull();
+  });
+
+  it("shows the Vinculum ratings with a rules effect, and what each costs (#666)", () => {
+    sheet({ ...reference, vinculum: [{ toward: "Ezra", rating: 2, effects: ["Killing Ezra costs 1 Willpower (p. 434)."] }] });
+    expect(screen.getByText("Vinculum")).toBeTruthy();
+    expect(screen.getByText("· Vinculum 2")).toBeTruthy();
+    expect(screen.getByText("Killing Ezra costs 1 Willpower (p. 434).")).toBeTruthy();
+  });
+
+  it("has no Vinculum panel without one, or from an older copy kept offline", () => {
+    sheet();
+    expect(screen.queryByText("Vinculum")).toBeNull();
+    const older: Partial<PlayReference> = { ...reference };
+    delete older.vinculum;
+    sheet(older as PlayReference);
+    expect(screen.queryByText("Vinculum")).toBeNull();
   });
 
   it("gives a chevron only to a trait with something to say", () => {

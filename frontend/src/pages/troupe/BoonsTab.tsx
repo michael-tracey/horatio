@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BoonOut, CharacterChoice } from "../../api/types";
@@ -11,8 +11,10 @@ import {
   changeText,
   emptyRow,
   eventName,
+  gallantText,
   KINDS,
   kindName,
+  LOSS_TEXT,
   owes,
   partyName,
   rowStarted,
@@ -30,8 +32,29 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { AuditsCard } from "./BoonAudits";
+import { Boonbreakers } from "./Boonbreakers";
 import { BoonReviewQueue, ReviewPanel } from "./BoonReview";
 import { WhoPicker } from "./WhoPicker";
+
+/**
+ * Who keeps the ledger, and how far they reach: its running staff (null), or a Harpy
+ * (#688) or a Lesser Harpy (#689), working as their character from the Play View. A
+ * Harpy has the review queue only or the full ledger; a Lesser Harpy sees the ledger
+ * and does what the Harpy let them. Neither sees or writes a boon's staff note.
+ */
+export type LedgerKeeper = {
+  access: "submissions" | "full";
+  role: "harpy" | "talon";
+  add: boolean;
+  edit: boolean;
+  review: boolean;
+  // Audit a character's boons (#690).
+  audit: boolean;
+  // One of the troupe's Lesser Harpies, as it calls them: "Lesser Harpy" or "Talon".
+  word: string;
+};
+const HarpyMode = createContext<LedgerKeeper | null>(null);
 
 function today(dates: ReturnType<typeof useDates>) {
   return dates.toInput(new Date()).slice(0, 10);
@@ -50,7 +73,36 @@ function picked(party: BoonOut["debtor"]): { who: string; name: string } {
  * the troupe keeps a ledger. Boons waiting for review, or flagged, are listed under
  * "To review" (#687), and each boon's detail has its review.
  */
-export function BoonsTab({ troupeId }: { troupeId: string }) {
+export function BoonsTab({ troupeId, harpy = null }: { troupeId: string; harpy?: LedgerKeeper | null }) {
+  return (
+    <HarpyMode.Provider value={harpy}>{harpy?.access === "submissions" ? <ReviewOnly troupeId={troupeId} /> : <Ledger troupeId={troupeId} />}</HarpyMode.Provider>
+  );
+}
+
+/** A Harpy given only the review queue (#688): the boons waiting for review or flagged, nothing else of the ledger. */
+function ReviewOnly({ troupeId }: { troupeId: string }) {
+  const review = useQuery({
+    queryKey: ["boon-review", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/boon-review", { params: { path: { troupe_id: troupeId } } })),
+  });
+  if (review.isPending) return <Loading />;
+  if (review.error) return <ErrorText error={review.error} />;
+  const characters = review.data.characters ?? [];
+  return (
+    <div className="flex flex-col gap-4">
+      <Card title="To review">
+        <p className="text-sm text-mist">
+          Boons players reported that wait for review, and boons flagged for a ruling ({BOON_PAGE}). Accept each one, or don&apos;t, with a reason its player
+          sees; link a name to a character; clear a flag. The rest of the ledger is staff&apos;s.
+        </p>
+      </Card>
+      <BoonReviewQueue troupeId={troupeId} detail={(boonId) => <BoonDetail troupeId={troupeId} boonId={boonId} characters={characters} />} />
+    </div>
+  );
+}
+
+function Ledger({ troupeId }: { troupeId: string }) {
+  const harpy = useContext(HarpyMode);
   const [params, setParams] = useSearchParams();
   const [view, setView] = useState<BoonView>("open");
   // The review queue (#687) in place of the ledger's views.
@@ -84,9 +136,11 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
       ),
     placeholderData: (previous) => previous,
   });
+  const reviews = !harpy || harpy.review;
   const review = useQuery({
     queryKey: ["boon-review", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/boon-review", { params: { path: { troupe_id: troupeId } } })),
+    enabled: reviews,
   });
   const toReview = review.data?.boons.length ?? 0;
   if (ledger.isPending) return <Loading />;
@@ -107,7 +161,8 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
       <Card
         title="Boon ledger"
         actions={
-          !adding && (
+          !adding &&
+          (!harpy || harpy.add) && (
             <Button variant="secondary" onClick={() => setAdding(true)}>
               Register boons
             </Button>
@@ -117,9 +172,14 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
         <p className="text-sm text-mist">
           The debts characters owe each other, registered with the Harpy ({BOON_PAGE}). Each boon keeps its own log; an edit&apos;s changes show only to
           storytellers and assistant storytellers. A boon made off the record isn&apos;t tracked here.
+          {harpy?.role === "harpy" && " You keep it as the troupe's Harpy: what you do is logged as your character. An NPC you can't pick is named by name, for staff to link."}
+          {harpy?.role === "talon" &&
+            ` You keep it as a ${harpy.word} of the troupe, as far as the Harpy lets you: what you do is logged as your character. An NPC you can't pick is named by name, for staff to link.`}
         </p>
         {adding && <QuickEntry troupeId={troupeId} characters={characters} onDone={() => setAdding(false)} />}
       </Card>
+
+      {(!harpy || harpy.role === "harpy") && <Boonbreakers troupeId={troupeId} characters={characters} />}
 
       <div className="flex flex-col gap-3">
         <div role="tablist" aria-label="Ledger views" className="flex flex-wrap gap-1">
@@ -138,7 +198,7 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
               {v.label} <span className="text-mist">({counts[v.value] ?? 0})</span>
             </Button>
           ))}
-          {(toReview > 0 || reviewing) && (
+          {reviews && (toReview > 0 || reviewing) && (
             <Button
               role="tab"
               aria-selected={reviewing}
@@ -200,6 +260,8 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
           ))}
         </ul>
       )}
+
+      {(!harpy || harpy.audit) && <AuditsCard troupeId={troupeId} inPlay={!!harpy} />}
     </div>
   );
 }
@@ -224,9 +286,9 @@ function BoonRow({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p>
-            <span className="text-parchment">{partyName(boon.debtor)}</span>
+            <PartyName party={boon.debtor} />
             <span className="text-mist"> owes </span>
-            <span className="text-parchment">{partyName(boon.creditor)}</span>
+            <PartyName party={boon.creditor} />
             <span className="text-mist"> · </span>
             <span className="text-gold">{kindName(boon.kind)}</span>
             <span className="text-mist"> · {dates.day(boon.made_on)}</span>
@@ -247,6 +309,20 @@ function BoonRow({
   );
 }
 
+/** A side of a boon, marked when they're a Boonbreaker (#717). */
+function PartyName({ party }: { party: BoonOut["debtor"] }) {
+  return (
+    <>
+      <span className="text-parchment">{partyName(party)}</span>
+      {party.boonbreaker && (
+        <Badge tone="blood" className="ml-1">
+          Boonbreaker
+        </Badge>
+      )}
+    </>
+  );
+}
+
 type Doing = "edit" | "trade" | "pass" | "settle" | "void" | "reopen";
 
 const ACTION_LABELS: Record<Doing, string> = {
@@ -259,6 +335,7 @@ const ACTION_LABELS: Record<Doing, string> = {
 };
 
 function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId: string; characters: CharacterChoice[] }) {
+  const harpy = useContext(HarpyMode);
   const dates = useDates();
   const [doing, setDoing] = useState<Doing | null>(null);
   const boon = useQuery({
@@ -304,8 +381,10 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
           </>
         )}
       </dl>
-      <ReviewPanel troupeId={troupeId} boon={b} characters={characters} />
-      {doing === null ? (
+      {(!harpy || harpy.review) && <ReviewPanel troupeId={troupeId} boon={b} characters={characters} />}
+      {b.status_loss && (!harpy || harpy.edit) && <StatusLoss troupeId={troupeId} boon={b} />}
+      {b.gallant && (!harpy || harpy.edit) && <GallantOffer troupeId={troupeId} boon={b} offer={b.gallant} />}
+      {harpy && !harpy.edit ? null : doing === null ? (
         <div role="group" aria-label="What to do with it" className="flex flex-wrap gap-2">
           {actionsFor(b.state).map((a) => (
             <Button key={a} variant={a === "void" ? "ghost" : "secondary"} onClick={() => setDoing(a)}>
@@ -331,8 +410,7 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
               <span className="text-mist">
                 {" "}
                 · {dates.dateTime(e.at)}
-                {e.by && ` · ${e.by}`}
-                {e.as_character && ` as ${e.as_character}`}
+                {e.by ? ` · ${e.by}${e.as_character ? ` as ${e.as_character}` : ""}` : e.as_character ? ` · ${e.as_character}` : ""}
               </span>
               {e.note && <span> · {e.note}</span>}
               {e.changes && e.changes.length > 0 && (
@@ -345,6 +423,42 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
             </li>
           ))}
         </ol>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A major, blood or life boon its debtor formally ignored costs them status (p. 395):
+ * staff, or the Harpy, take it with the status tools and say so here, or say they
+ * won't. Never taken by itself (#717).
+ */
+function StatusLoss({ troupeId, boon }: { troupeId: string; boon: BoonOut }) {
+  const [note, setNote] = useState("");
+  const save = useAction(async (taken: boolean) => {
+    await unwrap(
+      api.POST("/api/troupes/{troupe_id}/boons/{boon_id}/status-loss", {
+        ...boonPath(troupeId, boon),
+        body: { taken, note },
+      }),
+    );
+  });
+  if (!boon.status_loss) return null;
+  if (boon.status_loss !== "due") return <p className="text-sm text-mist">{LOSS_TEXT[boon.status_loss]}</p>;
+  return (
+    <div role="group" aria-label="Status for ignoring it" className="flex flex-col gap-2 rounded-md border border-blood/60 p-3 text-sm">
+      <p>{LOSS_TEXT.due}</p>
+      <Field label="Note (optional)" hint="Which status, say.">
+        <Input maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <ErrorText error={save.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" disabled={save.isPending} onClick={() => save.mutate(true)}>
+          Status taken
+        </Button>
+        <Button variant="ghost" disabled={save.isPending} onClick={() => save.mutate(false)}>
+          No status taken
+        </Button>
       </div>
     </div>
   );
@@ -368,6 +482,7 @@ function boonPath(troupeId: string, boon: BoonOut) {
 }
 
 function EditForm({ troupeId, boon, characters, onDone }: { troupeId: string; boon: BoonOut; characters: CharacterChoice[]; onDone: () => void }) {
+  const harpy = useContext(HarpyMode);
   const [debtor, setDebtor] = useState(picked(boon.debtor));
   const [creditor, setCreditor] = useState(picked(boon.creditor));
   const [kind, setKind] = useState<BoonKind>(boon.kind);
@@ -392,7 +507,7 @@ function EditForm({ troupeId, boon, characters, onDone }: { troupeId: string; bo
           reason,
           conditions,
           notify_on_trade: notify,
-          staff_note: staffNote,
+          ...(harpy ? {} : { staff_note: staffNote }),
           note,
         },
       }),
@@ -438,9 +553,11 @@ function EditForm({ troupeId, boon, characters, onDone }: { troupeId: string; bo
         <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
         Tell the debtor&apos;s player if it&apos;s traded
       </label>
-      <Field label="Staff note" hint="For storytellers and assistant storytellers only.">
-        <Textarea rows={2} maxLength={2000} value={staffNote} onChange={(e) => setStaffNote(e.target.value)} />
-      </Field>
+      {!harpy && (
+        <Field label="Staff note" hint="For storytellers and assistant storytellers only.">
+          <Textarea rows={2} maxLength={2000} value={staffNote} onChange={(e) => setStaffNote(e.target.value)} />
+        </Field>
+      )}
       <Field label="Why the edit" hint="Goes in its log. What changed shows only to storytellers and assistant storytellers.">
         <Input maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
@@ -566,6 +683,36 @@ function SettleForm({ troupeId, boon, onDone }: { troupeId: string; boon: BoonOu
   );
 }
 
+/** Gallant offered for a repaid boon's debtor (#693): staff give it or not, once. */
+function GallantOffer({ troupeId, boon, offer }: { troupeId: string; boon: BoonOut; offer: NonNullable<BoonOut["gallant"]> }) {
+  const [note, setNote] = useState("");
+  const answer = useAction(async (give: boolean) => {
+    await unwrap(
+      api.POST("/api/troupes/{troupe_id}/boons/{boon_id}/gallant", {
+        ...boonPath(troupeId, boon),
+        body: { give, note },
+      }),
+    );
+  });
+  return (
+    <section aria-label="Gallant offered" className="flex flex-col gap-2 rounded-md border border-gold/60 bg-gold/10 p-3 text-sm">
+      <p>{gallantText(offer)}</p>
+      <Field label="Note (optional)" hint="It goes in the boon's log.">
+        <Input maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <ErrorText error={answer.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={answer.isPending} onClick={() => answer.mutate(true)}>
+          Give Gallant
+        </Button>
+        <Button variant="ghost" disabled={answer.isPending} onClick={() => answer.mutate(false)}>
+          Not this time
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 function NoteForm({ troupeId, boon, action, onDone }: { troupeId: string; boon: BoonOut; action: "void" | "reopen"; onDone: () => void }) {
   const [note, setNote] = useState("");
   const save = useAction(async () => {
@@ -616,6 +763,7 @@ function NoteForm({ troupeId, boon, action, onDone }: { troupeId: string; boon: 
  * register together, or none do.
  */
 function QuickEntry({ troupeId, characters, onDone }: { troupeId: string; characters: CharacterChoice[]; onDone: () => void }) {
+  const harpy = useContext(HarpyMode);
   const dates = useDates();
   const toast = useToast();
   const [madeOn, setMadeOn] = useState(today(dates));
@@ -626,6 +774,8 @@ function QuickEntry({ troupeId, characters, onDone }: { troupeId: string; charac
   const games = useQuery({
     queryKey: ["boon-games", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/boon-games", { params: { path: { troupe_id: troupeId } } })),
+    // The games come with the standings, which are staff's (a Harpy's are a follow-up to #688).
+    enabled: !harpy,
   });
   const set = (i: number, change: Partial<EntryRow>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...change } : r)));
   const started = rows.filter(rowStarted);

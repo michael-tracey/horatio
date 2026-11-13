@@ -37,7 +37,7 @@ registered it.
 """
 
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime
 from typing import Any
@@ -45,7 +45,7 @@ from typing import Any
 from sqlalchemy import ColumnElement, and_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications
+from horatio import audit, court_knows, notifications
 from horatio.models import AuditEvent, Boon, BoonEvent, Character, Troupe, User
 from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.sheets import conflict, membership, unprocessable
@@ -85,6 +85,8 @@ PLAYERS_SEE = {
 # How a player may settle a boon owed to their character: formally ignoring one is
 # its debtor's doing (p. 397).
 PLAYER_SETTLES = ("called_in", "forgiven")
+# Formally ignoring one of these costs its debtor status (p. 395; horatio.boonbreakers).
+COSTS_STATUS = ("major", "blood", "life")
 # The most boons one entry may make, and rows a quick entry may hold.
 MOST_AT_ONCE = 20
 MOST_ROWS = 100
@@ -179,7 +181,12 @@ def standing(character: Character | None) -> str | None:
     return character.left_reason or "retired"
 
 
-def departed(character: Character | None) -> bool:
+def departed(character: Character | None, court: Collection[uuid.UUID] | None = None) -> bool:
+    """Gone from play: dead or off-field. With `court`, for those who learn of
+    departures only as the court knows them (a Harpy, horatio.court_knows), as the
+    troupe's Who's Who lists them."""
+    if court is not None:
+        return court_knows.departed(character, court)
     return standing(character) in DEPARTED
 
 
@@ -406,9 +413,11 @@ def edit(
     debtor: Party | None = None,
     creditor: Party | None = None,
     terms: Mapping[str, Any] | None = None,
+    as_character: Character | None = None,
 ) -> None:
     """Correct what the boon says, with a note. Its log keeps each field before and
-    after, for the troupe's storytellers and assistant storytellers."""
+    after, for the troupe's storytellers and assistant storytellers; done as
+    `as_character` for a Harpy (#688)."""
     note = need_note(note, "the edit")
     was_debtor, was_creditor = parties(db, boon)
     now_debtor = debtor or was_debtor
@@ -440,7 +449,7 @@ def edit(
     if not changes:
         raise unprocessable("Nothing has changed.")
     db.flush()
-    event(db, user, boon, "edited", note, changes)
+    event(db, user, boon, "edited", note, changes, as_character)
     log(db, user, "boon.edited", boon, reason=note)
 
 
@@ -449,7 +458,14 @@ def must_stand(boon: Boon, doing: str) -> None:
         raise conflict(f"Only a boon that still stands can be {doing}.")
 
 
-def trade(db: Session, user: User, boon: Boon, to: Party, note: str = "") -> None:
+def trade(
+    db: Session,
+    user: User,
+    boon: Boon,
+    to: Party,
+    note: str = "",
+    as_character: Character | None = None,
+) -> None:
     """Its creditor trades it to another, who holds it now; the boon keeps its
     history. If its conditions ask, its debtor's player is told."""
     must_stand(boon, "traded")
@@ -461,7 +477,7 @@ def trade(db: Session, user: User, boon: Boon, to: Party, note: str = "") -> Non
     place(boon, "creditor", to)
     db.flush()
     note = note.strip()
-    event(db, user, boon, "traded", note, {"creditor": (creditor.shown, to.shown)})
+    event(db, user, boon, "traded", note, {"creditor": (creditor.shown, to.shown)}, as_character)
     log(db, user, "boon.traded", boon, before=creditor.shown, reason=note)
     owner = debtor.character
     if boon.notify_on_trade and owner is not None and owner.kind == "pc":
@@ -477,7 +493,15 @@ def trade(db: Session, user: User, boon: Boon, to: Party, note: str = "") -> Non
         )
 
 
-def pass_on(db: Session, user: User, boon: Boon, side: str, to: Party, note: str = "") -> None:
+def pass_on(
+    db: Session,
+    user: User,
+    boon: Boon,
+    side: str,
+    to: Party,
+    note: str = "",
+    as_character: Character | None = None,
+) -> None:
     """Move the debtor's or the creditor's side of a standing boon to another, such
     as a broodmate after a death."""
     if side not in ("debtor", "creditor"):
@@ -492,7 +516,7 @@ def pass_on(db: Session, user: User, boon: Boon, side: str, to: Party, note: str
     place(boon, side, to)
     db.flush()
     note = note.strip()
-    event(db, user, boon, "passed_on", note, {side: (was.shown, to.shown)})
+    event(db, user, boon, "passed_on", note, {side: (was.shown, to.shown)}, as_character)
     log(db, user, "boon.passed_on", boon, side=side, before=was.shown, after=to.shown, reason=note)
 
 
@@ -517,6 +541,7 @@ def settle(
     must_stand(boon, "settled")
     note = note.strip()
     close(boon, "settled", note, how)
+    boon.status_loss = "due" if how == "ignored" and boon.kind in COSTS_STATUS else None
     db.flush()
     event(
         db,
@@ -530,7 +555,9 @@ def settle(
     log(db, user, "boon.settled", boon, how=SETTLED[how], reason=note)
 
 
-def void(db: Session, user: User, boon: Boon, note: str) -> None:
+def void(
+    db: Session, user: User, boon: Boon, note: str, as_character: Character | None = None
+) -> None:
     """The boon never stood, or no longer counts: entered by mistake, say."""
     note = need_note(note, "making it void")
     if boon.state == "void":
@@ -538,11 +565,13 @@ def void(db: Session, user: User, boon: Boon, note: str) -> None:
     was = STATES[boon.state]
     close(boon, "void", note)
     db.flush()
-    event(db, user, boon, "voided", note, {"state": (was, "Void")})
+    event(db, user, boon, "voided", note, {"state": (was, "Void")}, as_character)
     log(db, user, "boon.voided", boon, reason=note)
 
 
-def reopen(db: Session, user: User, boon: Boon, note: str) -> None:
+def reopen(
+    db: Session, user: User, boon: Boon, note: str, as_character: Character | None = None
+) -> None:
     """A settled or void boon stands again: settled by mistake, say."""
     note = need_note(note, "reopening it")
     if boon.state not in ("settled", "void"):
@@ -552,8 +581,9 @@ def reopen(db: Session, user: User, boon: Boon, note: str) -> None:
     boon.settled_how = None
     boon.closed_at = None
     boon.closed_note = ""
+    boon.status_loss = None
     db.flush()
-    event(db, user, boon, "reopened", note, {"state": (was, "Standing")})
+    event(db, user, boon, "reopened", note, {"state": (was, "Standing")}, as_character)
     log(db, user, "boon.reopened", boon, reason=note)
 
 
@@ -563,7 +593,12 @@ def reopen(db: Session, user: User, boon: Boon, note: str) -> None:
 VIEWS = ("open", "departed", "settled", "void", "pending", "all")
 
 
-def in_view(boon: Boon, characters: Mapping[uuid.UUID, Character], view: str) -> bool:
+def in_view(
+    boon: Boon,
+    characters: Mapping[uuid.UUID, Character],
+    view: str,
+    court: Collection[uuid.UUID] | None = None,
+) -> bool:
     """Whether the boon belongs in one of the ledger's views: open, standing with both
     parties still in play; departed, standing but involving someone dead or
     off-field; settled; void; pending; or all."""
@@ -572,14 +607,20 @@ def in_view(boon: Boon, characters: Mapping[uuid.UUID, Character], view: str) ->
     if boon.state != "registered":
         return boon.state == view
     gone = any(
-        departed(characters.get(c)) for c in (boon.debtor_id, boon.creditor_id) if c is not None
+        departed(characters.get(c), court)
+        for c in (boon.debtor_id, boon.creditor_id)
+        if c is not None
     )
     return view == ("departed" if gone else "open")
 
 
-def counts(boons: Sequence[Boon], characters: Mapping[uuid.UUID, Character]) -> dict[str, int]:
+def counts(
+    boons: Sequence[Boon],
+    characters: Mapping[uuid.UUID, Character],
+    court: Collection[uuid.UUID] | None = None,
+) -> dict[str, int]:
     """How many boons are in each view."""
-    return {v: sum(1 for b in boons if in_view(b, characters, v)) for v in VIEWS}
+    return {v: sum(1 for b in boons if in_view(b, characters, v, court)) for v in VIEWS}
 
 
 # --- players (#686) -----------------------------------------------------------------------

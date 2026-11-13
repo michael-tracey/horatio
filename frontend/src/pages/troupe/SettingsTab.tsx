@@ -9,6 +9,7 @@ import { BadgeSetting } from "./BadgeSetting";
 import { BloodBondsSetting } from "./BloodBondsSetting";
 import { BoonLedgerSetting } from "./BoonLedgerSetting";
 import { ClanNamesSetting } from "./ClanNamesSetting";
+import { ChronicleSetting } from "./ChronicleSetting";
 import { CourtHistorySetting } from "./CourtHistorySetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
@@ -64,6 +65,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         <StatusAtCheckinSetting troupe={troupe} canEdit={canEdit} />
         {troupe.whos_who && <WhosWhoSetting troupe={troupe} canEdit={canEdit} />}
         <CourtHistorySetting troupe={troupe} canEdit={canEdit} />
+        <ChronicleSetting troupe={troupe} canEdit={canEdit} />
         <GolcondaSetting troupeId={troupe.id} canEdit={canEdit} />
         <StatusBanClans troupeId={troupe.id} canEdit={canEdit} />
       </Group>

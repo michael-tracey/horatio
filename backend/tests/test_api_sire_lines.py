@@ -81,6 +81,46 @@ def test_the_player_and_staff_give_a_sire_and_a_loop_is_refused(troupe: Troupe) 
     assert any("sire: Old Marcus (Tremere)." in e["message"] for e in log.json())
 
 
+def told(person: Any) -> list[str]:
+    return [i["summary"] for i in person.client.get("/notifications").json()["items"]]
+
+
+def test_staff_are_told_when_the_player_changes_the_sire(troupe: Troupe) -> None:
+    """#747: the player's change tells the home troupe's storytellers and assistant
+    storytellers what the sire was and is now; staff's own change tells no one."""
+    elsa = member(troupe, "Elsa")
+    anna = member(troupe, "Anna")
+    assert give(troupe.player.client, anna, character_id=elsa).status_code == 200
+    said = "Anna's player changed the sire: now Elsa, was no sire."
+    for staff in (troupe.lead, troupe.storyteller, troupe.assistant):
+        assert said in told(staff)
+    # Not the player who made it, nor a narrator.
+    assert said not in told(troupe.player)
+    assert said not in told(troupe.narrator)
+    # Kept secret from players: staff are still told the name.
+    secret = give(troupe.player.client, anna, name="Old Marcus", clan="Tremere", secret=True)
+    assert secret.status_code == 200, secret.text
+    assert (
+        "Anna's player changed the sire: now Old Marcus (Tremere), kept from players, was Elsa."
+        in told(troupe.storyteller)
+    )
+    # Clearing it tells them too.
+    assert give(troupe.player.client, anna).status_code == 200
+    assert (
+        "Anna's player changed the sire: now no sire, was Old Marcus (Tremere), kept from players."
+        in told(troupe.storyteller)
+    )
+    # The same sire again changes nothing, and tells no one.
+    before = len(told(troupe.storyteller))
+    assert give(troupe.player.client, anna).status_code == 200
+    assert len(told(troupe.storyteller)) == before
+    # Staff's own change tells no one.
+    lead_before = told(troupe.lead)
+    assert give(troupe.storyteller.client, anna, character_id=elsa).status_code == 200
+    assert give(troupe.storyteller.client, anna).status_code == 200
+    assert told(troupe.lead) == lead_before
+
+
 def test_staff_see_every_line_and_players_only_what_the_whos_who_shows(
     troupe: Troupe, client_for: Callable[[], TestClient]
 ) -> None:

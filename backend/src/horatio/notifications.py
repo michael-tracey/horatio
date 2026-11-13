@@ -241,7 +241,7 @@ def troupe_request_tasks(db: Session, user: User) -> list[Item]:
             troupe_id=None,
             troupe_name=None,
             summary=f"{requester} asks for a new troupe, {request.name}",
-            link="/custodian/troupe-requests",
+            link="/custodian/troupe-management#requests",
             at=request.created_at,
             read=False,
         )
@@ -336,7 +336,21 @@ def troupe_request_waiting(db: Session, request: TroupeRequest, requester: User)
         custodians,
         "troupe_request",
         f"{requester.display_name} asks for a new troupe, {request.name}",
-        "/custodian/troupe-requests",
+        "/custodian/troupe-management#requests",
+    )
+
+
+def signed_up(db: Session, user: User) -> None:
+    """Someone has just made themselves an account: tell the custodians, in the bell.
+    It links to them under Custodian › People, found by their handle; their email
+    is left out, as the People page is where the custodian sees it (#757)."""
+    custodians = db.scalars(select(User.id).where(User.is_custodian, User.id != user.id))
+    notify(
+        db,
+        custodians,
+        "account.signed_up",
+        f"{user.display_name} (@{user.handle}) signed up.",
+        f"/custodian/people?q={user.handle}",
     )
 
 

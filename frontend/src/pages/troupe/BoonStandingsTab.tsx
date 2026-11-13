@@ -22,9 +22,12 @@ const FIRST = 25;
  * boon ledger, live. Every kind has a weight (the troupe's own, or Trivial 0.5, Minor
  * 1, Major 3, Blood 5, Life 10), and a character's net is the weight owed to them less
  * the weight they owe. Tables first, each with a plain bar beside the numbers; the
- * charts come with #702. Only shown while the troupe keeps a ledger.
+ * charts come with #702. Only shown while the troupe keeps a ledger. With `harpy`, as
+ * the Harpy reads them from their ledger page where the troupe allows it (#749): who
+ * has left only as the court knows it (the server sees to that), and the weights read
+ * only.
  */
-export function BoonStandingsTab({ troupeId }: { troupeId: string }) {
+export function BoonStandingsTab({ troupeId, harpy = false }: { troupeId: string; harpy?: boolean }) {
   const [scope, setScope] = useState<Scope>("active");
   const standings = useQuery({
     queryKey: ["boon-standings", troupeId, scope],
@@ -46,7 +49,14 @@ export function BoonStandingsTab({ troupeId }: { troupeId: string }) {
       <Card title="Boon standings">
         <p className="mb-3 text-sm text-mist">
           Where everyone stands in the boon ledger, now ({BOON_PAGE}). Each kind of boon has a weight, and a character&apos;s <strong>net</strong> is the weight
-          owed to them less the weight they owe. The boons themselves are on the <Link to="../boons">Boons</Link> screen.
+          owed to them less the weight they owe.{" "}
+          {harpy ? (
+            <>Who has left is shown as the court knows it.</>
+          ) : (
+            <>
+              The boons themselves are on the <Link to="../boons">Boons</Link> screen.
+            </>
+          )}
         </p>
         <fieldset className="flex flex-wrap items-center gap-2 text-sm">
           <legend className="sr-only">Who is counted</legend>
@@ -59,7 +69,13 @@ export function BoonStandingsTab({ troupeId }: { troupeId: string }) {
           <span className="text-xs text-mist">{SCOPES.find((o) => o.value === scope)?.meaning}</span>
         </fieldset>
         <Totals totals={s.totals} />
-        <Weights troupeId={troupeId} weights={weights} defaults={s.weights.defaults} />
+        {harpy ? (
+          <p className="mt-3 text-sm">
+            <span className="text-mist">Weights{s.weights.defaults ? " (the defaults)" : ""}:</span> {weightsLine(weights)}
+          </p>
+        ) : (
+          <Weights troupeId={troupeId} weights={weights} defaults={s.weights.defaults} />
+        )}
       </Card>
       <ByKind standings={s} />
       <Characters standings={s} />

@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { PlayBoonIn, PlayBoonOut, PlayBoonsOut, PlayReportOut } from "../../api/types";
+import type { HarpyLedgerOut, PlayBoonIn, PlayBoonOut, PlayBoonsOut, PlayReportOut } from "../../api/types";
 import { disgracedText } from "../../boonStatus";
-import { BOON_PAGE, KINDS, kindName, type BoonKind } from "../../boons";
+import { BOON_PAGE, BREAKER_PAGE, gallantText, KINDS, kindName, type BoonKind } from "../../boons";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
-import { Button, Card, ErrorText, Field, Input, Loaded, Select } from "../../components/ui";
+import { Badge, Button, Card, ErrorText, Field, Input, Loaded, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { playerSettles, reportedText, reportLine, settledText, standingFirst, type PlayerSettles } from "./boons";
@@ -33,16 +34,86 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
       <Loaded query={query}>
         {(boons) => (
           <>
+            {boons.boonbreaker && (
+              <p role="status" className="rounded-md border border-blood/60 px-3 py-2 text-sm">
+                {name} is a Boonbreaker in {boons.troupe_name}&apos;s ledger ({BREAKER_PAGE}): the boons they owed and were owed there were made void, and
+                they hold Disgraced while the mark stands.
+              </p>
+            )}
+            {(boons.harpy ?? []).map((h) => (
+              <HarpyCard key={h.troupe_id} characterId={characterId} name={name} ledger={h} online={online} />
+            ))}
             <Report characterId={characterId} name={name} boons={boons} online={online} />
             {boons.reports && boons.reports.length > 0 && <Reports reports={boons.reports} name={name} troupe={boons.troupe_name} />}
             {boons.owes && <Side title={`${name} owes`} empty={`${name} owes no boons in the ledger.`} boons={boons.owes} owes name={name} characterId={characterId} online={online} />}
             {boons.owed && (
               <Side title={`Owed to ${name}`} empty={`No boons in the ledger are owed to ${name}.`} boons={boons.owed} owes={false} name={name} characterId={characterId} online={online} />
             )}
+            <Audits characterId={characterId} name={name} online={online} />
           </>
         )}
       </Loaded>
     </section>
+  );
+}
+
+/**
+ * The audits of others' boons given to the character (#690), newest first: each as
+ * the ledger stood when it was made. Opened on its own page, to read or print. Only
+ * shown once there are some.
+ */
+function Audits({ characterId, name, online }: { characterId: string; name: string; online: boolean }) {
+  const dates = useDates();
+  const audits = useQuery({
+    queryKey: ["character-boon-audits", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/boon-audits", { params: { path: { character_id: characterId } } })),
+    refetchOnWindowFocus: false,
+    enabled: online,
+  });
+  if (!audits.isSuccess || audits.data.length === 0) return null;
+  return (
+    <Card title="Audits">
+      <p className="text-sm text-mist">Audits of others&apos; boons given to {name}, each as the ledger stood when it was made.</p>
+      <ul aria-label="Audits" className="mt-2 divide-y divide-ash/60">
+        {audits.data.map((a) => (
+          <li key={a.id} className="py-2 text-sm">
+            <Link to={`/print/boon-audits/${a.id}`} className="inline-flex min-h-10 items-center text-gold underline hover:text-parchment">
+              {a.name}&apos;s boons
+            </Link>
+            <span className="block text-xs text-mist">
+              {dates.date(a.made_at)} · by {a.made_by}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+/** For the troupe's Harpy (#688), or one of its Lesser Harpies (#689): a way to the ledger they keep, and how many boons wait for review. */
+function HarpyCard({ characterId, name, ledger, online }: { characterId: string; name: string; ledger: HarpyLedgerOut; online: boolean }) {
+  const full = ledger.access === "full";
+  const talon = ledger.role === "talon";
+  const reviews = ledger.can_review ?? true;
+  const does = talon
+    ? `You keep the troupe's boon ledger as far as the Harpy lets you: see it${ledger.can_add ? ", add boons" : ""}${ledger.can_edit ? ", edit and settle them, and review what players report" : ""}.`
+    : full
+      ? "You keep the troupe's boon ledger: register, edit and settle boons, and review what players report."
+      : "You review the boons players report.";
+  return (
+    <Card title={`${name}, ${talon ? (ledger.talon_word ?? "Lesser Harpy") : "Harpy"} of ${ledger.troupe_name}`}>
+      <p className="text-sm text-mist">
+        {does}
+        {reviews && (ledger.to_review > 0 ? ` ${ledger.to_review} to review.` : " Nothing waits for review.")}
+      </p>
+      {online ? (
+        <Link to={`/play/characters/${characterId}/ledger`} className="mt-2 inline-flex min-h-10 items-center text-sm text-gold underline hover:text-parchment">
+          {full ? "Open the boon ledger" : "Review boons"}
+        </Link>
+      ) : (
+        <p className="mt-2 text-xs text-mist">The ledger needs a signal.</p>
+      )}
+    </Card>
   );
 }
 
@@ -261,6 +332,11 @@ function BoonRow({
           <strong className="font-semibold text-parchment">{kindName(boon.kind)}</strong>
           <span className="text-mist"> {owes ? "to" : "from"} </span>
           {boon.other}
+          {boon.other_boonbreaker && (
+            <Badge tone="blood" className="ml-1">
+              Boonbreaker
+            </Badge>
+          )}
           <span className="text-mist"> · {dates.day(boon.made_on)}</span>
         </p>
         {boon.can_settle && !settling && (
@@ -275,7 +351,37 @@ function BoonRow({
       {boon.creditor_disgraced && <p className="text-xs text-blood-bright">{disgracedText(creditor)}</p>}
       {boon.state === "settled" && <p className="text-xs text-mist">{settledText(boon, dates.day)}</p>}
       {settling && <Settle boon={boon} characterId={characterId} online={online} done={() => setSettling(false)} />}
+      {boon.gallant && <Gallant boon={boon} offer={boon.gallant} characterId={characterId} online={online} />}
     </li>
+  );
+}
+
+/** Gallant offered for repaying a boon owed to the character (#693): with Social
+ * Nobility, its creditor's player gives it, or not, once (p. 405). */
+function Gallant({ boon, offer, characterId, online }: { boon: PlayBoonOut; offer: NonNullable<PlayBoonOut["gallant"]>; characterId: string; online: boolean }) {
+  const answer = useAction(
+    (give: boolean) =>
+      unwrap(
+        api.POST("/api/characters/{character_id}/play-boons/{boon_id}/gallant", {
+          params: { path: { character_id: characterId, boon_id: boon.id } },
+          body: { give, note: "" },
+        }),
+      ),
+    [["play-boons", characterId]],
+  );
+  return (
+    <div role="group" aria-label="Gallant offered" className="mt-2 flex flex-col gap-2 rounded-md border border-gold/60 bg-gold/10 p-2">
+      <p>{gallantText(offer)}</p>
+      <ErrorText error={answer.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button className="min-h-10" disabled={!online || answer.isPending} onClick={() => answer.mutate(true)}>
+          Give Gallant
+        </Button>
+        <Button variant="secondary" className="min-h-10" disabled={!online || answer.isPending} onClick={() => answer.mutate(false)}>
+          Not this time
+        </Button>
+      </div>
+    </div>
   );
 }
 

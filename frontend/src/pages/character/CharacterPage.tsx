@@ -220,6 +220,7 @@ export function CharacterPage() {
                 canDelete={mine}
                 canMove={custodian}
                 canExport={mine || custodian}
+                canMakeNpc={!mine && c.status === "retired" && !!home.data && abilities(home.data.my_role, custodian).running && !home.data.archived}
               />
             </div>
           }

@@ -63,15 +63,20 @@ class BondEntry(Record):
     (horatio.bonds.level_of): a drink, on a night, which counts once a night; the
     bond entered by staff at the level it already stood at, such as one from before
     Horatio, with the reason; a full bond dropped to two drinks after three months
-    without drinking (#665, p. 296), which sets the level as entering does; or the two
-    meeting, which keeps a lesser bond from ending and changes no level."""
+    without drinking (#665, p. 296), which sets the level as entering does; the two
+    meeting, which keeps a lesser bond from ending and changes no level; or the bond
+    lowered a step by a Vaulderie its thrall took part in (#666, the Errata's p. 434),
+    which sets the level too."""
 
     __tablename__ = "bond_entries"
     __table_args__ = (
-        CheckConstraint("kind in ('drink', 'entered', 'dropped', 'meeting')", name="kind"),
+        CheckConstraint(
+            "kind in ('drink', 'entered', 'dropped', 'meeting', 'vaulderie')", name="kind"
+        ),
         CheckConstraint("source in ('game', 'downtime', 'staff')", name="source"),
         CheckConstraint(
-            "(kind in ('entered', 'dropped')) = (level is not null)", name="entered_level"
+            "(kind in ('entered', 'dropped', 'vaulderie')) = (level is not null)",
+            name="entered_level",
         ),
         CheckConstraint("level between 1 and 3", name="level"),
     )
@@ -84,8 +89,8 @@ class BondEntry(Record):
     night: Mapped[date] = mapped_column(Date)
     # Where it was told: at a game, in a downtime, or to staff some other way.
     source: Mapped[str] = mapped_column(default="staff", server_default="staff")
-    # For a bond entered, the level it stood at, 1 to 3 drinks; for one dropped, the
-    # level it fell to.
+    # For a bond entered, the level it stood at, 1 to 3 drinks; for one dropped or
+    # lowered by a Vaulderie, the level it fell to.
     level: Mapped[int | None]
     # A note, or for a bond entered, the reason.
     note: Mapped[str] = mapped_column(default="", server_default="")

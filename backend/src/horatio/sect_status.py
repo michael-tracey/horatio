@@ -77,6 +77,7 @@ from sqlalchemy.orm import Session
 from horatio import audit, social_age, titles
 from horatio.models import (
     Boon,
+    Boonbreaker,
     Character,
     CharacterTitle,
     HeldStatus,
@@ -171,6 +172,8 @@ class Ending:
     while_held: str | None
     this_game: bool
     over: bool
+    # Disgraced a Boonbreaker holds while the mark stands (#717): `text` says so.
+    boonbreaker: bool = False
 
 
 @dataclass(frozen=True)
@@ -400,12 +403,34 @@ def endings(
     for row in rows:
         by_name[row.name].append(row)
     found: dict[uuid.UUID, Ending] = {}
+    # A Boonbreaker's Disgraced lasts while the mark stands, whatever its own duration
+    # (horatio.boonbreakers; p. 397).
+    ids = [r.id for r in rows]
+    marked = (
+        set(
+            db.scalars(
+                select(Boonbreaker.held_status_id).where(
+                    Boonbreaker.held_status_id.in_(ids), Boonbreaker.lifted_at.is_(None)
+                )
+            )
+        )
+        if ids
+        else set()
+    )
+    for row in rows:
+        if row.id in marked:
+            found[row.id] = Ending(
+                "While a Boonbreaker (p. 397).", None, 0, None, False, False, boonbreaker=True
+            )
     # Each status lasting while another is held waits on that one's ending.
     waiting: list[tuple[HeldStatus, StatusData]] = []
     for name, chain in by_name.items():
         status = statuses.get(name)
         duration = status.duration if status else None
         if status is None or duration is None or duration.until_removed:
+            continue
+        chain = [r for r in chain if r.id not in marked]
+        if not chain:
             continue
         chain.sort(key=lambda r: (r.created_at, r.id))
         groups = [chain] if duration.stacks else [[r] for r in chain]
@@ -535,31 +560,57 @@ def suppressions(db: Session, character: Character, held: Sequence[Held]) -> lis
 # ban's words, so it is known by them, as the rules files have it.
 NO_BOONS_BAN = "No boons registered with the Harpy."
 # A boon the Harpy has registered, standing or since settled; pending and void ones
-# never were (horatio.boons).
+# never were, and a Boonbreaker's boons are made void (horatio.boons,
+# horatio.boonbreakers).
 REGISTERED = ("registered", "settled")
 
 
 def boons_registered(db: Session, character: Character) -> bool | None:
     """Whether the character has a boon registered, owed or owed to it, in the ledger
     of any troupe it is in that keeps one and judges the ban by it; None when none of
-    them does (#692)."""
-    keeping = [
-        t.id
+    them does (#692).
+
+    As the ledger's Open and Settled tabs have them: a settled boon is on record
+    whoever has left since, but a standing one counts only while its other side is in
+    play as the court knows it (horatio.court_knows, as the Harpy's standings judge
+    it, #754): gone only once the Who's Who lists them."""
+    from horatio import court_knows  # imports horatio.whos_who, which imports this module
+
+    keeping = {
+        t.id: t
         for t in db.scalars(select(Troupe).where(Troupe.id.in_(current_troupe_ids(db, character))))
         if t.boons and t.boons_judge_ban
-    ]
+    }
     if not keeping:
         return None
-    found = db.scalar(
-        select(Boon.id)
-        .where(
+    found = db.scalars(
+        select(Boon).where(
             Boon.troupe_id.in_(keeping),
             Boon.state.in_(REGISTERED),
             (Boon.debtor_id == character.id) | (Boon.creditor_id == character.id),
         )
-        .limit(1)
-    )
-    return found is not None
+    ).all()
+    if any(b.state == "settled" for b in found):
+        return True
+    others = {b.id: b.creditor_id if b.debtor_id == character.id else b.debtor_id for b in found}
+    # A name only, or a character in play, is in play for the court.
+    if any(other is None for other in others.values()):
+        return True
+    people = {
+        c.id: c for c in db.scalars(select(Character).where(Character.id.in_(others.values())))
+    }
+    if any(c.status != "retired" for c in people.values()):
+        return True
+    # Only retired ones left: gone only if their troupe's Who's Who lists them.
+    listed: dict[uuid.UUID, frozenset[uuid.UUID]] = {}
+    for boon in found:
+        if boon.troupe_id not in listed:
+            listed[boon.troupe_id] = court_knows.listed(db, keeping[boon.troupe_id])
+        other_id = others[boon.id]
+        other = people.get(other_id) if other_id is not None else None
+        if not court_knows.departed(other, listed[boon.troupe_id]):
+            return True
+    return False
 
 
 def bans_of(
@@ -962,12 +1013,16 @@ def add(
     give_up: uuid.UUID | None = None,
     override: bool = False,
     game_id: uuid.UUID | None = None,
+    acting: Acting | None = None,
 ) -> HeldStatus:
     """Give the character a fleeting or negative status of its sect, named for its
     patron, as the troupe's setting allows. At the fleeting cap it gives up
     `give_up`, lost unspent. `game_id` is the game it is given at, if any; else the
-    game the character is playing now, if it has begun."""
-    acting = require_change(db, user, character, troupe)
+    game the character is playing now, if it has begun. `acting` is for a caller
+    that has already said who may: a Harpy declaring a Boonbreaker (#717), or a
+    creditor's player giving Gallant for a boon repaid (horatio.boon_gallant, #693),
+    who is not the character's player."""
+    acting = acting or require_change(db, user, character, troupe)
     expire(db, character, user)
     found = standing(db, character)
     if found.sect_data is None:
@@ -1151,6 +1206,7 @@ def remove(
     *,
     reason: str = "",
     how: Literal["removed", "spent"] = "removed",
+    acting: Acting | None = None,
 ) -> None:
     """Take a held status off the character: removed, as the troupe's setting allows
     (a negative status only by the one who gave it, or staff); or `spent`, a fleeting
@@ -1158,21 +1214,36 @@ def remove(
     row = db.get(HeldStatus, held_id)
     if row is None or row.character_id != character.id:
         raise unprocessable("The character does not hold that status.")
+    mark = db.scalar(
+        select(Boonbreaker.id).where(
+            Boonbreaker.held_status_id == row.id, Boonbreaker.lifted_at.is_(None)
+        )
+    )
+    if mark is not None:
+        raise conflict(
+            f"{character.name} holds {row.name} as a Boonbreaker: it ends when the mark is"
+            " lifted (p. 397)."
+        )
     status = rules_for(db, character).rule_set.statuses.get(row.name)
     patron = db.get(Character, row.patron_id) if row.patron_id else None
     gave_it = patron is not None and is_player(user, patron)
-    if how == "spent":
-        if status is None or status.type != "Fleeting":
-            raise unprocessable("Only fleeting status is spent for good.")
-        acting: Acting = (
-            "player" if is_player(user, character) else require_change(db, user, character, troupe)
-        )
-    elif gave_it and status is not None and status.type == "Negative":
-        acting = "player"
-    else:
-        acting = require_change(db, user, character, troupe)
-        if acting == "player" and status is not None and status.type == "Negative":
-            raise conflict(f"Only the one who gave {row.name}, or staff, remove it before it ends.")
+    if acting is None:
+        if how == "spent":
+            if status is None or status.type != "Fleeting":
+                raise unprocessable("Only fleeting status is spent for good.")
+            acting = (
+                "player"
+                if is_player(user, character)
+                else require_change(db, user, character, troupe)
+            )
+        elif gave_it and status is not None and status.type == "Negative":
+            acting = "player"
+        else:
+            acting = require_change(db, user, character, troupe)
+            if acting == "player" and status is not None and status.type == "Negative":
+                raise conflict(
+                    f"Only the one who gave {row.name}, or staff, remove it before it ends."
+                )
     # Spending is a move in the game, not a change to the sheet: it needs no reason.
     spending = how == "spent" or gave_it
     reason = reason.strip() if spending else reason_needed(user, character, acting, reason)

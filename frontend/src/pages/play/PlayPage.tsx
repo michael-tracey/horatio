@@ -27,7 +27,7 @@ import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
 import { TeachingAsks } from "./Teaching";
 import { BoonsTab } from "./Boons";
-import { ThrowsTab } from "./Throws";
+import { challengeTest, ThrowsTab, useThrows } from "./Throws";
 import { useChallenge } from "./Challenge";
 import { useChosenThrowImages } from "./chosenThrows";
 import { load } from "./challenge";
@@ -106,6 +106,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const [feeding, setFeeding] = useState(false);
   // A pool thrown from the Pools tab, kept for this browser tab while the tabs switch (#698).
   const challenging = useChallenge();
+  // Kept here, not in the tab, so a throw survives the sheet arriving (#756).
+  const throwing = useThrows({ onThrown: challengeTest(challenging) });
   // The pictures the person chose in Settings (#671), kept with the Play View for no signal.
   const throwImages = useChosenThrowImages();
   const choose = (next: Tab) =>
@@ -133,8 +135,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const undoButton = <UndoLast last={shown ? latestUndoable(shown.log) : undefined} undo={undo} />;
 
   // Throws needs nothing from the server, so it works before the sheet comes, or with none kept on the phone.
-  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab images={throwImages} challenging={challenging} /> : <Loading />}</PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab images={throwImages} challenging={challenging} /> : <ErrorText error={view.error} />}</PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab images={throwImages} challenging={challenging} throwing={throwing} /> : <Loading />}</PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab images={throwImages} challenging={challenging} throwing={throwing} /> : <ErrorText error={view.error} />}</PlayShell>;
 
   const record: RecordTap = (change) => {
     // Influence always asks for the spend's details, for the troupe's influence log.
@@ -190,6 +192,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
         <ThrowsTab
           images={throwImages}
           challenging={challenging}
+          throwing={throwing}
           willpower={shown.willpower.value}
           spendWillpower={() => tap({ kind: "change", tracker: "willpower", amount: -1, damage: null })}
         />

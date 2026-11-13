@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, PASSWORD } from "./support";
+import { closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, topBar } from "./support";
 
 /** Storytellers building NPCs, of every kind and form. */
 
@@ -12,8 +12,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   const lead = await person(browser, "npc-lead");
   const troupeName = `Court of Smoke ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   const created = custodian.page.waitForResponse((r) => r.url().endsWith("/api/troupes") && r.request().method() === "POST");
@@ -23,7 +22,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   // NPCs share the Characters list (#556): it opens on player characters, and shows NPCs at a choice.
@@ -76,7 +75,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
   // Titles are given on the troupe's Characters tab, where Everyone shows NPCs beside player characters.
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await expect(p.getByText("No player characters have joined this troupe yet.")).toBeVisible();
@@ -379,6 +378,48 @@ test("a storyteller gives an NPC to a player, who finds it among their character
   expect(notes.items.map((n: { summary: string }) => n.summary)).toContain(`Odette Lamarr is yours now: Court of Gifts ${run} gave it to you, at home there and accepted`);
 });
 
+test("a storyteller makes an NPC of a retired character, and its player keeps the original (#764)", async ({ browser }) => {
+  const custodian = await person(browser, "turn-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "turn-lead");
+  const player = await person(browser, "turn-player");
+  const { troupeId, npcId: sylvieId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Turncoats", "Sylvie Marchand");
+  // The player's character, at home in the troupe, then retired by its Final Death.
+  const headers = { "X-Horatio": "1" };
+  const given = await lead.page.request.post(`/api/characters/${sylvieId}/give-to-player`, { headers, data: { handle: player.handle, carried_xp: 0, carried_reason: "" } });
+  expect(given.status(), await given.text()).toBe(204);
+  const retired = await player.page.request.post(`/api/characters/${sylvieId}/retire`, { headers, data: { reason: "final_death", note: "", listed: false } });
+  expect(retired.status(), await retired.text()).toBe(200);
+
+  const p = lead.page;
+  await p.goto(`/troupes/${troupeId}/characters`);
+  // Retired characters are hidden until the list's default filter is taken off.
+  await p.getByRole("button", { name: "Remove “Is active”" }).click();
+  await p.getByRole("button", { name: "Actions for Sylvie Marchand" }).click();
+  await p.getByRole("menuitem", { name: "Make an NPC…" }).click();
+  const dialog = p.getByRole("dialog", { name: "Make an NPC of Sylvie Marchand" });
+  await expect(dialog.getByText("Sylvie Marchand stays as it is, retired, in its player's characters.", { exact: false })).toBeVisible();
+  await expect(dialog.getByText("Its player isn't told.")).toBeVisible();
+  await dialog.getByRole("button", { name: "Make [NPC] Sylvie Marchand" }).click();
+
+  // The new NPC's page, with the same sheet.
+  await expect(p.getByRole("heading", { level: 1, name: "[NPC] Sylvie Marchand" })).toBeVisible();
+  const copyId = p.url().match(/\/characters\/([0-9a-f-]+)/)![1]!;
+  expect(copyId).not.toBe(sylvieId);
+  const traits = async (id: string) =>
+    ((await (await p.request.get(`/api/characters/${id}/sheet`)).json()).traits as { category: string; name: string; rating: number | null }[])
+      .map((t) => `${t.category}/${t.name}/${t.rating}`)
+      .sort();
+  expect(await traits(copyId)).toEqual(await traits(sylvieId));
+
+  // The player still has the original, retired and theirs, and hears nothing of the copy.
+  const h = player.page;
+  const original = await (await h.request.get(`/api/characters/${sylvieId}`)).json();
+  expect([original.name, original.status, original.kind]).toEqual(["Sylvie Marchand", "retired", "pc"]);
+  const notes = await (await h.request.get("/api/notifications")).json();
+  expect(notes.items.map((n: { summary: string }) => n.summary).join("\n")).not.toContain("[NPC]");
+});
+
 test("a storyteller exports the troupe's characters and NPCs as a .zip, with emails only if ticked (#567)", async ({ browser }) => {
   const custodian = await person(browser, "export-cust");
   makeCustodian(custodian.email);
@@ -674,8 +715,7 @@ test("storytellers give an NPC powers, and one out of order is marked until it i
   const lead = await person(browser, "powers-lead");
   const troupeName = `Court of Kindling ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   const created = custodian.page.waitForResponse((r) => r.url().endsWith("/api/troupes") && r.request().method() === "POST");

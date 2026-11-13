@@ -137,8 +137,18 @@ class TroupeOut(BaseModel):
     boons_judge_ban: bool = False
     # Boons its players report wait for review before they stand (#687).
     boon_review: bool = False
+    # The Harpy's access to the ledger (#688): none, the review queue, or all of it.
+    boon_harpy: Literal["none", "submissions", "full"] = "none"
+    # The Harpy with the full ledger also reads its boon standings and statistics (#749).
+    boon_harpy_standings: bool = False
+    # The Harpy may give others access to the ledger (#689), and what the troupe calls
+    # them.
+    boon_talons: bool = False
+    boon_talon_word: Literal["Lesser Harpies", "Talons"] = "Lesser Harpies"
     # The court over time (horatio.title_history): whether its players see it.
     court_history_players: bool = False
+    # The chronicle timeline (horatio.chronicle): whether its players see it.
+    chronicle_players: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -182,6 +192,7 @@ class TroupeChanges(BaseModel):
     whos_who_negative: bool | None = None
     sire_lines_players: bool | None = None
     court_history_players: bool | None = None
+    chronicle_players: bool | None = None
     play_tabs_off: list[play_tabs.PlayTab] | None = None
 
 
@@ -387,7 +398,12 @@ def one_out(
         boon_players_settle=troupe.boon_players_settle,
         boons_judge_ban=troupe.boons_judge_ban,
         boon_review=troupe.boon_review,
+        boon_harpy=troupe.boon_harpy,  # type: ignore[arg-type]  # checked by the database
+        boon_harpy_standings=troupe.boon_harpy_standings,
+        boon_talons=troupe.boon_talons,
+        boon_talon_word=troupe.boon_talon_word,  # type: ignore[arg-type]  # checked by the database
         court_history_players=troupe.court_history_players,
+        chronicle_players=troupe.chronicle_players,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
@@ -614,6 +630,17 @@ def change_troupe(
                 "troupe.court_history",
                 troupe_id=troupe.id,
                 who="players and staff" if body.court_history_players else "staff only",
+            )
+    if body.chronicle_players is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.chronicle_players != troupe.chronicle_players:
+            troupe.chronicle_players = body.chronicle_players
+            audit.record(
+                db,
+                user,
+                "troupe.chronicle",
+                troupe_id=troupe.id,
+                who="players and staff" if body.chronicle_players else "staff only",
             )
     if body.play_tabs_off is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)

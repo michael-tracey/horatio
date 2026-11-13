@@ -3,8 +3,8 @@ the Camarilla's lesser status ban on no boons registered with the Harpy (MET: VT
 p. 403) from it. Off by default, so switching boons on doesn't put the whole court
 under the ban before the ledger holds every boon.
 
-Revision ID: 0211
-Revises: 0207
+Revision ID: 0219
+Revises: 0218
 Create Date: 2026-11-12 23:00:00.000000
 """
 
@@ -13,8 +13,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0211"
-down_revision: str | None = "0207"
+revision: str = "0219"
+down_revision: str | None = "0218"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

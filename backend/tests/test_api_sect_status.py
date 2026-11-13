@@ -538,6 +538,43 @@ def test_both_sides_of_a_registered_boon_are_clear_of_the_ban(troupe: Troupe) ->
     assert boons_ban(troupe.storyteller, bram)["applies"] is False
 
 
+def test_a_standing_boon_with_someone_gone_counts_until_the_court_knows(
+    troupe: Troupe,
+) -> None:
+    # As the Harpy's standings judge it (horatio.court_knows, #754): gone only once the
+    # Who's Who lists them; a settled boon stays on record whoever has left.
+    agnes = member(troupe)
+    brams_player = sign_up(troupe.client_for, "bramsowner")
+    bram = member(troupe, "Bram", player=brams_player)
+    for setting in ("boon-ledger", "boon-ban"):
+        assert switch(troupe, setting, True).status_code == 200
+    boon_id = register_boon(troupe, {"character_id": bram}, {"character_id": agnes})
+
+    def retire(listed: bool) -> None:
+        gone = brams_player.client.post(
+            f"/characters/{bram}/retire", json={"reason": "final_death", "listed": listed}
+        )
+        assert gone.status_code < 300, gone.text
+
+    # Retired, but not listed: the court hasn't heard, so the boon still counts.
+    retire(listed=False)
+    assert boons_ban(troupe.player, agnes)["applies"] is False
+
+    # Listed as Final Death: the boon stands with no one to pay it, so the ban applies.
+    record = troupe.session.get(Character, uuid.UUID(bram))
+    assert record is not None
+    record.left_listed = True
+    troupe.session.commit()
+    assert boons_ban(troupe.player, agnes)["applies"] is True
+
+    # Settled, it is on record whoever has left.
+    settled = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/boons/{boon_id}/settle", json={"how": "forgiven", "note": ""}
+    )
+    assert settled.status_code == 200, settled.text
+    assert boons_ban(troupe.player, agnes)["applies"] is False
+
+
 def test_only_storytellers_switch_judging_the_ban_and_it_is_logged(troupe: Troupe) -> None:
     for person in (troupe.assistant, troupe.narrator, troupe.player):
         assert switch(troupe, "boon-ban", True, by=person).status_code == 403

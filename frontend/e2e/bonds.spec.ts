@@ -334,6 +334,61 @@ test("staff see one web of obligation: boons, blood bonds and sire lines on the 
   await expect(l).toHaveURL(new RegExp(`/characters/${lucan.id}`));
 });
 
+test("staff record a Vaulderie: ratings come from it, a false Sabbat's are one-way, and it lowers a bond a step (#666)", async ({ browser }) => {
+  const custodian = await person(browser, "vaulder-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "vaulder-lead");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", `/api/troupes`, { name: `Vaulderie Circle ${run}`, lead_handle: lead.handle });
+  const l = lead.page;
+  await send(l, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, { setting: "staff" });
+  const ilse = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Ilse Varga" });
+  await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Dmitri Sava" });
+  // Ilse has drunk twice of the Bishop's blood: two drinks.
+  for (const night of ["2026-09-05", "2026-09-12"])
+    await send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall: { character_id: ilse.id }, regnant: { name: "The Bishop" }, night, source: "game" });
+
+  await l.goto(`/troupes/${troupe.id}/bonds`);
+  const section = l.getByRole("region", { name: "The Vinculum" });
+  await section.getByRole("button", { name: "Record a Vaulderie" }).click();
+  const form = l.getByRole("form", { name: "Record a Vaulderie" });
+  const pick = async (n: number, typed: string, option: RegExp) => {
+    await form.getByRole("combobox", { name: `Participant ${n}` }).fill(typed);
+    await form.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: option }).click();
+  };
+  await pick(1, "Ilse", /Ilse Varga/);
+  await pick(2, "Dmitri", /Dmitri Sava/);
+  await form.getByRole("button", { name: "Add a participant" }).click();
+  await pick(3, "Old Petra", /name only/);
+  await form.getByRole("checkbox", { name: "Participant 3 is a false Sabbat" }).check();
+  await form.getByRole("button", { name: "Record the Vaulderie" }).click();
+  await expect(form).toBeHidden();
+
+  // Both of a pair feel the same rating; nobody gains one toward the false Sabbat.
+  const ratings = section.getByRole("table", { name: "Vinculum ratings" });
+  await expect(ratings.locator('td[title="Ilse Varga toward Dmitri Sava: 1, kinship"]')).toBeVisible();
+  await expect(ratings.locator('td[title="Dmitri Sava toward Ilse Varga: 1, kinship"]')).toBeVisible();
+  await expect(ratings.locator('td[title="Old Petra toward Ilse Varga: 1, kinship"]')).toBeVisible();
+  await expect(ratings.locator('td[title^="Ilse Varga toward Old Petra"]')).toHaveCount(0);
+  await expect(section.getByRole("list", { name: "Vaulderie log" })).toContainText("Ilse Varga, Dmitri Sava and Old Petra (false Sabbat)");
+
+  // Taking part lowered Ilse's bond to the Bishop a step (Errata p. 434).
+  const listed = await (await l.request.get(`/api/troupes/${troupe.id}/bonds`)).json();
+  const bond = listed.bonds.find((b: { regnant: { name: string } }) => b.regnant.name === "The Bishop");
+  expect(bond.level).toBe(1);
+  expect(bond.entries.at(-1).kind).toBe("vaulderie");
+
+  // Players never see the troupe's Vinculum.
+  const player = await person(browser, "vaulder-player");
+  expect((await player.page.request.get(`/api/troupes/${troupe.id}/vinculum`)).status()).toBe(403);
+});
+
 test("players report a drink for staff to approve; under Players manage the thrall confirms one the regnant recorded", async ({
   browser,
 }) => {
@@ -521,14 +576,42 @@ test("a dead regnant's bond fades: staff see the day it ends, and the thrall's s
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, {
     setting: "staff",
   });
+  let drunk: { id: string } = { id: "" };
   for (const night of ["2026-10-03", "2026-10-10"]) {
-    await send(lead.page, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, {
+    drunk = await send(lead.page, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, {
       thrall: { character_id: solene },
       regnant: { character_id: hale },
       night,
       source: "game",
     });
   }
+
+  // Before retiring him, Malachai's player is warned of what listing him would tell
+  // (#748), but only of a bond they know of: staff haven't told them yet.
+  const r = regnant.page;
+  const retiring = async () => {
+    await r.goto(`/characters/${hale}`);
+    await r.getByRole("button", { name: "More for Malachai Hale" }).click();
+    await r.getByRole("menuitem", { name: "Retire…" }).click();
+    const dialog = r.getByRole("dialog", { name: "Retire Malachai Hale" });
+    await dialog.getByRole("radio", { name: /^Final Death/ }).check();
+    await expect(dialog.getByRole("checkbox", { name: /under “No longer with us”/ })).toBeChecked();
+    return dialog;
+  };
+  let dialog = await retiring();
+  await expect(dialog.getByRole("button", { name: "Retire Malachai Hale" })).toBeEnabled();
+  await expect(dialog.getByRole("note", { name: "What this tells others" })).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/bonds/${drunk.id}/known`, { known: true });
+  dialog = await retiring();
+  const warning = dialog.getByRole("note", { name: "What this tells others" });
+  await expect(warning).toContainText("Malachai Hale is the regnant of Solene Ardoise.");
+  await expect(warning).toContainText("Listing Malachai Hale under “No longer with us” tells the thrall's player that Malachai Hale died now.");
+  await r.screenshot(shots("retire-warning"));
+  // Unlisted, there's nothing to warn of.
+  await dialog.getByRole("checkbox", { name: /under “No longer with us”/ }).uncheck();
+  await expect(warning).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Cancel" }).click();
 
   // Solene's player sees two drinks.
   const t = thrall.page;

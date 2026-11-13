@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, boons, notifications
+from horatio import audit, boon_harpy, boons, notifications
 from horatio.models import Boon, BoonEvent, BoonFlag, Character, Troupe, TroupeMembership, User
 from horatio.sheets import conflict, unprocessable
 
@@ -56,9 +56,10 @@ def set_review(db: Session, user: User, troupe: Troupe, hold: bool) -> None:
 
 
 def can_review(db: Session, user: User, troupe: Troupe) -> bool:
-    """Who reviews the troupe's boons: its running staff and the custodian. The Harpy
-    joins them by the troupe's Harpy access setting (#688)."""
-    return boons.can_manage(db, user, troupe)
+    """Who reviews the troupe's boons: its running staff and the custodian, and a
+    Harpy where the troupe gives them the review queue or more (horatio.boon_harpy,
+    #688)."""
+    return boon_harpy.keeper(db, user, troupe, "submissions") is not None
 
 
 # --- flags --------------------------------------------------------------------------------
@@ -161,19 +162,27 @@ def flag_new(db: Session, troupe: Troupe, made: Sequence[Boon]) -> list[BoonFlag
     return flags
 
 
-def flag(db: Session, user: User, boon: Boon, note: str) -> BoonFlag:
+def flag(
+    db: Session, user: User, boon: Boon, note: str, as_character: Character | None = None
+) -> BoonFlag:
     """Flag the boon by hand, for a ruling, with a note."""
     note = boons.need_note(note, "the flag")
     found = BoonFlag(boon_id=boon.id, kind="hand", note=note, raised_by=user.id)
     db.add(found)
     db.flush()
-    boons.event(db, user, boon, "flagged", note)
+    boons.event(db, user, boon, "flagged", note, as_character=as_character)
     boons.log(db, user, "boon.flagged", boon, reason=note)
     return found
 
 
 def clear_flags(
-    db: Session, user: User, found: Iterable[BoonFlag], note: str, *, logged: bool = True
+    db: Session,
+    user: User,
+    found: Iterable[BoonFlag],
+    note: str,
+    *,
+    logged: bool = True,
+    as_character: Character | None = None,
 ) -> int:
     """Clear the flags, with a note. Logged on each boon unless the caller logs it."""
     now = datetime.now(UTC)
@@ -193,17 +202,31 @@ def clear_flags(
             if boon is None:
                 continue
             what = ", ".join(FLAGS[f.kind].lower() for f in flags)
-            boons.event(db, user, boon, "flag_cleared", note, {"flags": (what, "cleared")})
+            boons.event(
+                db,
+                user,
+                boon,
+                "flag_cleared",
+                note,
+                {"flags": (what, "cleared")},
+                as_character,
+            )
             boons.log(db, user, "boon.flag_cleared", boon, what=what, reason=note)
     db.flush()
     return cleared
 
 
-def clear(db: Session, user: User, found: BoonFlag, note: str = "") -> None:
+def clear(
+    db: Session,
+    user: User,
+    found: BoonFlag,
+    note: str = "",
+    as_character: Character | None = None,
+) -> None:
     """Clear one flag, with an optional note: the name is right as it is, say."""
     if found.cleared_at is not None:
         raise conflict("That flag is cleared already.")
-    clear_flags(db, user, [found], note.strip())
+    clear_flags(db, user, [found], note.strip(), as_character=as_character)
 
 
 # --- accepting and rejecting --------------------------------------------------------------
@@ -214,14 +237,20 @@ def must_wait(boon: Boon, doing: str) -> None:
         raise conflict(f"Only a boon waiting for review can be {doing}.")
 
 
-def accept(db: Session, user: User, boon: Boon, note: str = "") -> None:
+def accept(
+    db: Session,
+    user: User,
+    boon: Boon,
+    note: str = "",
+    as_character: Character | None = None,
+) -> None:
     """The boon stands: it was reviewed and is right, perhaps after an edit. Its flags
     are cleared with it."""
     must_wait(boon, "accepted")
     note = note.strip()
     boon.state = "registered"
     db.flush()
-    boons.event(db, user, boon, "accepted", note, {"state": ("Pending", "Standing")})
+    boons.event(db, user, boon, "accepted", note, {"state": ("Pending", "Standing")}, as_character)
     boons.log(db, user, "boon.accepted", boon, reason=note)
     clear_flags(db, user, raised(db, [boon.id]), note or "Accepted.", logged=False)
 
@@ -242,14 +271,18 @@ def reporter(db: Session, boon: Boon) -> tuple[uuid.UUID | None, Character | Non
     return boon.submitted_by, character
 
 
-def reject(db: Session, user: User, boon: Boon, reason: str) -> None:
+def reject(
+    db: Session, user: User, boon: Boon, reason: str, as_character: Character | None = None
+) -> None:
     """The boon isn't accepted, with a reason its reporter sees. It stays in the ledger
     as void, and its flags are cleared with it."""
     must_wait(boon, "rejected")
     reason = boons.need_note(reason, "rejecting it")
     boons.close(boon, "void", reason)
     db.flush()
-    boons.event(db, user, boon, "rejected", reason, {"state": ("Pending", "Rejected")})
+    boons.event(
+        db, user, boon, "rejected", reason, {"state": ("Pending", "Rejected")}, as_character
+    )
     boons.log(db, user, "boon.rejected", boon, reason=reason)
     clear_flags(db, user, raised(db, [boon.id]), "Rejected.", logged=False)
     by, character = reporter(db, boon)
@@ -281,6 +314,7 @@ def link(
     to: Character,
     everywhere: bool,
     note: str = "",
+    as_character: Character | None = None,
 ) -> tuple[int, int]:
     """Put `to` in place of the name on the boon's `side`: on that boon, or, with
     `everywhere`, on every boon in the ledger that names it, on either side. Each
@@ -325,7 +359,7 @@ def link(
         was = getattr(b, f"{s}_name")
         boons.place(b, s, boons.Party(to, ""))
         db.flush()
-        boons.event(db, user, b, "linked", note, {s: (was, to.name)})
+        boons.event(db, user, b, "linked", note, {s: (was, to.name)}, as_character)
         linked.add(b.id)
         clear_flags(
             db,

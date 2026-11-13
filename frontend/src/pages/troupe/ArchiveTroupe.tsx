@@ -44,7 +44,7 @@ function Confirm({ troupe, onCancel }: { troupe: TroupeOut; onCancel: () => void
   });
   const archive = useAction(async () => {
     await unwrap(api.POST("/api/troupes/{troupe_id}/archive", { params: { path: { troupe_id: troupe.id } }, body: { reason: reason.trim() } }));
-    navigate(me.data?.is_custodian ? "/custodian/archived-troupes" : "/troupes");
+    navigate(me.data?.is_custodian ? "/custodian/troupe-management#archived" : "/troupes");
   });
   if (closing.isPending) return <Loading />;
   if (closing.error) return <ErrorText error={closing.error} />;

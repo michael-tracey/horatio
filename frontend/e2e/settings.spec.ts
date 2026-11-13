@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, topBar } from "./support";
 
 /** A person's account and settings: handle, password, dates, text size, notifications and the Play View. */
 
@@ -7,7 +7,7 @@ closeContextsAfterEach();
 
 test("settings are kept on the account, and each change says it is saved", async ({ browser }) => {
   const { page } = await person(browser, "settings-player");
-  await page.getByRole("link", { name: "settings-player" }).click();
+  await (await topBar(page)).getByRole("link", { name: "settings-player" }).click();
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" }).click();
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
@@ -83,7 +83,7 @@ test("Show ratings as is kept through signing out and in, a reload and another d
 
   // Signed out and in again: numbers straight away, and after a reload.
   await p.goto("/characters");
-  await p.getByRole("button", { name: "Sign out" }).click();
+  await (await topBar(p)).getByRole("button", { name: "Sign out" }).click();
   await p.getByLabel("Email or handle").fill(lead.email);
   await p.getByLabel("Password").fill(PASSWORD);
   await p.getByRole("button", { name: "Sign in" }).click();
@@ -139,7 +139,7 @@ test("notifications by email: a choice per kind, once the server can send email"
 test("a handle to be found by, and to sign in with", async ({ browser }) => {
   const { page } = await person(browser, "handle-player");
   // On the profile, with the rest of how others see you.
-  await page.getByRole("link", { name: "handle-player" }).click();
+  await (await topBar(page)).getByRole("link", { name: "handle-player" }).click();
   await expect(page.getByLabel("Your handle")).toHaveValue(`handle-player_${run.slice(-10)}`);
   const handle = `Owl_${run.slice(-10)}`;
   await page.getByLabel("Your handle").fill(handle);
@@ -159,14 +159,14 @@ test("a handle to be found by, and to sign in with", async ({ browser }) => {
 
 test("the profile asks before going to another page with changes not saved: Cancel keeps them, Leave drops them (#622)", async ({ browser }) => {
   const { page } = await person(browser, "unsaved-profile");
-  await page.getByRole("link", { name: "unsaved-profile" }).click();
+  await (await topBar(page)).getByRole("link", { name: "unsaved-profile" }).click();
   const bio = page.getByLabel("Bio");
   await bio.fill("Half a thought about a Brujah.");
-  const troupes = page.getByRole("banner").getByRole("link", { name: "Troupes", exact: true });
+  const troupes = async () => (await topBar(page)).getByRole("link", { name: "Troupes", exact: true });
   const leaving = page.getByRole("dialog", { name: "Leave this page?" });
 
   // Cancel stays on the profile, with the change still there to save.
-  await troupes.click();
+  await (await troupes()).click();
   await expect(leaving).toBeVisible();
   await expect(leaving.getByText("Your changes here aren't saved. Leave anyway? They'll be lost.")).toBeVisible();
   await page.screenshot(shots("leave-unsaved"));
@@ -177,10 +177,10 @@ test("the profile asks before going to another page with changes not saved: Canc
   await expect(page.getByText("Not saved yet")).toBeVisible();
 
   // Leave goes on, and the change is gone.
-  await troupes.click();
+  await (await troupes()).click();
   await leaving.getByRole("button", { name: "Leave" }).click();
   await expect(page).toHaveURL(/\/troupes$/);
-  await page.getByRole("link", { name: "unsaved-profile" }).click();
+  await (await topBar(page)).getByRole("link", { name: "unsaved-profile" }).click();
   await expect(bio).toHaveValue("");
 });
 
@@ -194,7 +194,7 @@ test("a signed-in person changes their password, and signs in with the new one",
   await other.getByRole("button", { name: "Sign in" }).click();
   await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Your account" }).click();
+  await (await topBar(page)).getByRole("link", { name: "Your account" }).click();
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   const card = page.locator("section", { has: page.getByRole("heading", { name: "Password", exact: true }) });
   const newPassword = "a much longer passphrase";
@@ -293,7 +293,7 @@ test("large text makes the app bigger, but not printed sheets and badges", async
   const fontSize = () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize);
   const normal = await fontSize();
 
-  await page.getByRole("link", { name: "large-text" }).click();
+  await (await topBar(page)).getByRole("link", { name: "large-text" }).click();
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   const saved = page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
   await page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" }).click();

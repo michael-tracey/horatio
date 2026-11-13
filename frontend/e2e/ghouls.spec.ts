@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, openSlot, pickedAt, slotsAt } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, slotsAt, topBar } from "./support";
 
 /** Ghouls: building, playing and Embracing them. */
 
@@ -12,15 +12,14 @@ test("a troupe takes ghouls once its storytellers tick Ghoul on About, and a gho
   const player = await person(browser, "splat-player");
   const troupeName = `Thrall Court ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
   const l = lead.page;
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(l.url()).pathname.split("/")[2]!;

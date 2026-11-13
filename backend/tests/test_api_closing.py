@@ -24,7 +24,9 @@ def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
 
 
 def summaries(person: Person) -> list[str]:
-    return [i["summary"] for i in person.client.get("/notifications").json()["items"]]
+    # Sign-up notices (#757) reach the custodian as everyone signs up; left out here.
+    items = person.client.get("/notifications").json()["items"]
+    return [i["summary"] for i in items if i["kind"] != "account.signed_up"]
 
 
 def character(person: Person, character_id: str) -> dict[str, Any]:
