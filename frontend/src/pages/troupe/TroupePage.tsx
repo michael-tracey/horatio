@@ -12,6 +12,7 @@ import { BoonsPages } from "./BoonsPages";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { EquipmentTab } from "./EquipmentTab";
+import { TabSettings } from "./FeatureSettings";
 import { GameNightPage } from "./GameNight";
 import { HouseRulesTab } from "./HouseRulesTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
@@ -83,6 +84,8 @@ export function TroupePage() {
   const t = troupe.data;
   const can = abilities(t.my_role, me.data?.is_custodian ?? false);
   const base = `/troupes/${t.id}`;
+  // Those who may change a feature's settings find them folded at the top of its tab (#784).
+  const settings = can.storyteller && !t.archived;
 
   return (
     <>
@@ -192,7 +195,17 @@ export function TroupePage() {
         {t.whos_who && !t.archived && <Route path="announcements/*" element={<PostsSection troupeId={t.id} kind="announcement" writes={can.running} proposes={false} />} />}
         {can.running && <Route path="news-agencies" element={<AgenciesTab troupeId={t.id} archived={t.archived} />} />}
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
-        {t.whos_who && <Route path="whos-who" element={<WhosWhoTab troupeId={t.id} />} />}
+        {t.whos_who && (
+          <Route
+            path="whos-who"
+            element={
+              <>
+                {settings && <TabSettings troupe={t} feature="whos_who" />}
+                <WhosWhoTab troupeId={t.id} />
+              </>
+            }
+          />
+        )}
         {t.nominations && (
           <Route path="nominations" element={<NominationsTab troupeId={t.id} canStar={can.running} nominations={!!t.player_nominations} remembrances={!!t.remembrances} />} />
         )}
@@ -200,7 +213,17 @@ export function TroupePage() {
         {can.running && !t.archived && <Route path="characters/import" element={<TroupeImportPage troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
-        {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
+        {can.running && (
+          <Route
+            path="play"
+            element={
+              <>
+                {settings && <TabSettings troupe={t} feature="play_view" />}
+                <PlayTab troupeId={t.id} />
+              </>
+            }
+          />
+        )}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="games/:gameId" element={<GameNightPage troupeId={t.id} />} />}
         {/* NPCs were a tab of their own until they joined the Characters list (#556). */}
@@ -227,8 +250,28 @@ export function TroupePage() {
             }
           />
         )}
-        {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds/*" element={<BondsPages troupeId={t.id} />} />}
-        {can.running && t.boons && <Route path="boons/*" element={<BoonsPages troupeId={t.id} />} />}
+        {can.running && (t.blood_bonds ?? "off") !== "off" && (
+          <Route
+            path="bonds/*"
+            element={
+              <>
+                {settings && <TabSettings troupe={t} feature="blood_bonds" />}
+                <BondsPages troupeId={t.id} />
+              </>
+            }
+          />
+        )}
+        {can.running && t.boons && (
+          <Route
+            path="boons/*"
+            element={
+              <>
+                {settings && <TabSettings troupe={t} feature="boons" />}
+                <BoonsPages troupeId={t.id} />
+              </>
+            }
+          />
+        )}
         {/* The standings and statistics were tabs of their own until they joined Boons (#780). */}
         <Route path="boon-standings" element={<Navigate to={`${base}/boons/standings`} replace />} />
         <Route path="boon-statistics" element={<Navigate to={`${base}/boons/statistics`} replace />} />

@@ -108,7 +108,7 @@ test("Customise opens on Overview, a setup checklist and the house settings, and
   await expect(glance.getByText(/^1 of \d+ played differently$/)).toBeVisible();
 });
 
-test("Troupe settings open on a Features list: each optional feature on or off, and switching one on brings its tab (#783)", async ({ browser }) => {
+test("Troupe settings open on a Features list: each optional feature on or off, and switching one on brings its tab, its settings folded at the top (#783, #784)", async ({ browser }) => {
   const custodian = await person(browser, "switch-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "switch-lead");
@@ -136,16 +136,24 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   await expect(list.getByRole("listitem", { name: "Feeding" }).getByRole("switch", { name: "Feeding" })).toHaveAttribute("aria-checked", "true");
   await expect(list.getByRole("listitem", { name: "Who's Who" }).getByRole("switch")).toHaveCount(0);
 
-  // The lead switches Boons on from the list: the card below follows, and its Settings link lands on it.
+  // The lead switches Boons on from the list, the one place it is switched (#784): no card below has a switch of its own.
   await boons.getByRole("switch", { name: "Boons" }).click();
   await expect(boons.getByRole("switch", { name: "Boons" })).toHaveAttribute("aria-checked", "true");
-  await expect(l.getByRole("checkbox", { name: /^Keep a boon ledger/ })).toBeChecked();
+  await expect(l.getByRole("checkbox", { name: /^Keep a boon ledger/ })).toHaveCount(0);
+  await expect(l.getByRole("heading", { name: "Boons", exact: true })).toHaveCount(0);
+  // Its Settings link lands on its tab, under Characters, with its settings folded open at the top.
   await boons.getByRole("link", { name: "Settings for Boons" }).click();
-  await expect(l).toHaveURL(/#feature-boons$/);
-  // Its tab is there now, under Characters.
-  await boons.getByRole("link", { name: "Open Boons" }).click();
-  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/boons`));
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/boons#settings$`));
   await expect(characters.getByRole("link", { name: "Boons", exact: true })).toBeVisible();
+  await expect(l.getByRole("radio", { name: /^Also what they're owed/ })).toBeVisible();
+  await expect(l.getByRole("button", { name: "Register boons" })).toBeVisible();
+  // Opened from the list, the tab has them folded away.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  await boons.getByRole("link", { name: "Open Boons" }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/boons$`));
+  await expect(l.getByRole("radio", { name: /^Also what they're owed/ })).toBeHidden();
+  await l.locator("#settings > summary").click();
+  await expect(l.getByRole("radio", { name: /^Also what they're owed/ })).toBeVisible();
 
   // Quests: switched on, a Quests tab under Downtimes; switched off again, it goes.
   await l.goto(`/troupes/${troupeId}/settings`);

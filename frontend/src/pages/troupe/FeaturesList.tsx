@@ -4,7 +4,7 @@ import type { TroupeOut } from "../../api/types";
 import { useToast } from "../../components/Toast";
 import { Badge, Card, ErrorText } from "../../components/ui";
 import { useRulesAction } from "../../hooks";
-import { features, type Feature, type FeatureKey } from "./features";
+import { features, settingsOnTab, type Feature, type FeatureKey } from "./features";
 
 /** Switches a feature on or off, through the same endpoint as its settings card. */
 async function setFeature(troupe: TroupeOut, key: FeatureKey, on: boolean): Promise<unknown> {
@@ -95,8 +95,8 @@ async function setFeature(troupe: TroupeOut, key: FeatureKey, on: boolean): Prom
 /**
  * Every optional feature of the troupe, at the top of Troupe settings (#783): on or off,
  * what it adds, a switch for its storytellers, and links to its tab and its settings.
- * The switches are the ones its settings cards have, so a feature switched off, with no
- * tab, can still be found.
+ * Each feature is switched on and off here only; the rest of its settings are folded at
+ * the top of its own tab (#784), so a feature switched off, with no tab, can still be found.
  */
 export function FeaturesList({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const toast = useToast();
@@ -116,53 +116,57 @@ export function FeaturesList({ troupe, canEdit }: { troupe: TroupeOut; canEdit: 
           : "What the troupe uses beyond the sheets and downtimes. Its storytellers switch them on and off."}
       </p>
       <ul aria-label="Features" className="flex flex-col divide-y divide-ash">
-        {features(troupe).map((f) => (
-          <li key={f.key} aria-label={f.name} className="flex items-start gap-3 py-3">
-            {canEdit && f.switchable ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={f.on}
-                aria-label={f.name}
-                disabled={save.isPending}
-                onClick={() => save.mutate({ feature: f, on: !f.on })}
-                className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:opacity-60 ${
-                  f.on ? "border-gold bg-gold/30" : "border-ash bg-night"
-                }`}
-              >
-                <span className={`inline-block h-4 w-4 rounded-full transition-transform ${f.on ? "translate-x-6 bg-gold" : "translate-x-1 bg-mist"}`} />
-              </button>
-            ) : (
-              <span aria-hidden className="w-11 shrink-0" />
-            )}
-            <div className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
-              <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="text-parchment">{f.name}</span>
-                <Badge tone={f.on ? "gold" : "mist"}>{f.state}</Badge>
-              </p>
-              <p className="text-xs text-mist">{f.adds}</p>
-              {(f.tab || f.settings) && (
-                <p className="flex flex-wrap gap-x-4 text-xs">
-                  {f.tab && (
-                    <Link to={`${base}/${f.tab.to}`} className="text-mist underline hover:text-parchment">
-                      Open {f.tab.label}
-                    </Link>
-                  )}
-                  {f.settings &&
-                    (f.settings.startsWith("#") ? (
-                      <a href={f.settings} className="text-mist underline hover:text-parchment" aria-label={`Settings for ${f.name}`}>
-                        Settings
-                      </a>
-                    ) : (
-                      <Link to={`${base}/${f.settings}`} className="text-mist underline hover:text-parchment" aria-label={`Settings for ${f.name}`}>
-                        Settings
-                      </Link>
-                    ))}
-                </p>
+        {features(troupe).map((f) => {
+          // A feature's settings on its own tab are folded there for its storytellers only (#784).
+          const settings = f.settings && (canEdit || !settingsOnTab(f.settings)) ? f.settings : undefined;
+          return (
+            <li key={f.key} aria-label={f.name} className="flex items-start gap-3 py-3">
+              {canEdit && f.switchable ? (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={f.on}
+                  aria-label={f.name}
+                  disabled={save.isPending}
+                  onClick={() => save.mutate({ feature: f, on: !f.on })}
+                  className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:opacity-60 ${
+                    f.on ? "border-gold bg-gold/30" : "border-ash bg-night"
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 rounded-full transition-transform ${f.on ? "translate-x-6 bg-gold" : "translate-x-1 bg-mist"}`} />
+                </button>
+              ) : (
+                <span aria-hidden className="w-11 shrink-0" />
               )}
-            </div>
-          </li>
-        ))}
+              <div className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+                <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-parchment">{f.name}</span>
+                  <Badge tone={f.on ? "gold" : "mist"}>{f.state}</Badge>
+                </p>
+                <p className="text-xs text-mist">{f.adds}</p>
+                {(f.tab || settings) && (
+                  <p className="flex flex-wrap gap-x-4 text-xs">
+                    {f.tab && (
+                      <Link to={`${base}/${f.tab.to}`} className="text-mist underline hover:text-parchment">
+                        Open {f.tab.label}
+                      </Link>
+                    )}
+                    {settings &&
+                      (settings.startsWith("#") ? (
+                        <a href={settings} className="text-mist underline hover:text-parchment" aria-label={`Settings for ${f.name}`}>
+                          Settings
+                        </a>
+                      ) : (
+                        <Link to={`${base}/${settings}`} className="text-mist underline hover:text-parchment" aria-label={`Settings for ${f.name}`}>
+                          Settings
+                        </Link>
+                      ))}
+                  </p>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ul>
       <ErrorText error={save.error} />
     </Card>

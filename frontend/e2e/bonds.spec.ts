@@ -66,16 +66,19 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   const odile = await home(thrall.page, "Odile Marchand");
   const lucien = await home(regnant.page, "Lucien Vasse");
 
-  // Bonds are off by default: no Bonds screen. The lead switches them on.
+  // Bonds are off by default: no Bonds screen. The lead switches them on in the Features list, which starts them as Staff manages.
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}/settings`);
-  const off = l.getByRole("radio", { name: /^Off/ });
-  await expect(off).toBeChecked();
-  await expect(l.getByRole("radio", { name: /^Players manage/ })).toBeEnabled();
-  // Checked once the troupe saves it.
-  await l.getByRole("radio", { name: /^Staff manages/ }).click();
-  await expect(l.getByText(/^Blood bonds are tracked\./)).toBeVisible();
+  const bonds = l.getByRole("list", { name: "Features" }).getByRole("listitem", { name: "Blood bonds" });
+  await expect(bonds.getByRole("switch", { name: "Blood bonds" })).toHaveAttribute("aria-checked", "false");
+  await bonds.getByRole("switch", { name: "Blood bonds" }).click();
+  await expect(l.getByText("Blood bonds: switched on.")).toBeVisible();
+  await expect(bonds).toContainText("Staff manages");
+  // Their Settings, folded at the top of the Bonds tab, choose how they're kept: off is the switch's alone.
+  await bonds.getByRole("link", { name: "Settings for Blood bonds" }).click();
   await expect(l.getByRole("radio", { name: /^Staff manages/ })).toBeChecked();
+  await expect(l.getByRole("radio", { name: /^Players manage/ })).toBeEnabled();
+  await expect(l.getByRole("radio", { name: /^Off/ })).toHaveCount(0);
 
   // The first drink, on the Bonds screen under Characters.
   await l

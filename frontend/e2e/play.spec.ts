@@ -135,8 +135,8 @@ test("a troupe switches Play View tabs off: Pools goes from a player's Play View
   const tabs = p.getByRole("tablist", { name: "Play View" });
   await expect(tabs.getByRole("tab", { name: "Pools" })).toBeVisible();
 
-  // The lead switches Pools off in the troupe's settings.
-  await l.goto(`/troupes/${troupeId}/settings`);
+  // The lead switches Pools off in At game's settings, folded at the top of its tab (#784).
+  await l.goto(`/troupes/${troupeId}/play#settings`);
   const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Play View tabs", exact: true }) });
   const pools = setting.getByRole("checkbox", { name: "Pools", exact: true });
   await expect(pools).toBeChecked();
@@ -1012,7 +1012,7 @@ test("a troupe uploads its own rock, paper and scissors, names the set and previ
   const troupeId: string = (await made.json()).id;
 
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/settings`);
+  await l.goto(`/troupes/${troupeId}/play#settings`);
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Throw pictures", exact: true }) });
   await expect(card.getByText("None yet")).toHaveCount(3);
 

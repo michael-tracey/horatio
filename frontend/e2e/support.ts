@@ -22,6 +22,19 @@ export async function undoInHeader(page: Page, tap: string | RegExp) {
 }
 
 /**
+ * Switches one of a troupe's optional features on or off, by its row in the Features list
+ * of Troupe settings (#783), the one place each is switched (#784). Waits for the toast.
+ */
+export async function switchFeature(page: Page, troupeId: string, name: string, on: boolean) {
+  await page.goto(`/troupes/${troupeId}/settings`);
+  const toggle = page.getByRole("list", { name: "Features" }).getByRole("switch", { name, exact: true });
+  await expect(toggle).toHaveAttribute("aria-checked", String(!on));
+  await toggle.click();
+  await expect(page.getByText(`${name}: switched ${on ? "on" : "off"}.`)).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-checked", String(on));
+}
+
+/**
  * The site's main navigation in the top bar (#746): the bar itself on a wide screen;
  * below 1024px, behind the Menu button, which this opens if it isn't open already.
  * Characters, Troupes, Rulebook, Help, Custodian, the account link and Sign
