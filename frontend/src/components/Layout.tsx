@@ -99,9 +99,9 @@ function SiteLinks({ inCycle, isCustodian, link, onPick }: { inCycle: boolean; i
       <NavLink to="/troupes" className={({ isActive }) => link({ isActive: isActive || inCycle })} onClick={onPick}>
         Troupes
       </NavLink>
-      {/* Named apart from a troupe's own Rules tab under Customise. */}
-      <NavLink to="/rules" className={link} aria-label="Rules reference" onClick={onPick}>
-        Rules
+      {/* The book's rules: named apart from a troupe's own Rules and House rules (#778). */}
+      <NavLink to="/rules" className={link} onClick={onPick}>
+        Rulebook
       </NavLink>
       <NavLink to="/help" className={link} onClick={onPick}>
         Help

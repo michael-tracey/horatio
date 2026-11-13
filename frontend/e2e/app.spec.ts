@@ -85,7 +85,7 @@ test("the top bar is one line, on a phone too: the bell and a menu that holds th
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
     await menu.click();
     const nav = page.getByRole("navigation", { name: "Main" });
-    for (const name of ["Characters", "Troupes", "Rules reference", "Help", "Custodian"]) await expect(nav.getByRole("link", { name, exact: true })).toBeVisible();
+    for (const name of ["Characters", "Troupes", "Rulebook", "Help", "Custodian"]) await expect(nav.getByRole("link", { name, exact: true })).toBeVisible();
     await expect(nav.getByRole("link", { name: /^Your account: phonebar-custodian-with-a-long-name/ })).toContainText("(custodian)");
     await expect(nav.getByRole("button", { name: "Sign out" })).toBeVisible();
     await page.screenshot(shots("top-bar-menu"));

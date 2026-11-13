@@ -98,7 +98,7 @@ export function RulesPage() {
   return (
     <ClanNames name={clanName}>
       <PageTitle subtitle="Every trait, power, ritual, merit and flaw, with its book page and a short summary. Choose a troupe to see it as played there.">
-        Rules
+        Rulebook
       </PageTitle>
       <div className="flex flex-col gap-4">
         <div className="flex items-end gap-3">
