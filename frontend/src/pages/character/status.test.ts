@@ -9,7 +9,14 @@ const ending = (over: Partial<EndingOut>): EndingOut => ({
   games_left: 0,
   while_held: null,
   this_game: false,
+  boonbreaker: false,
   ...over,
+});
+
+describe("a Boonbreaker's Disgraced (#717)", () => {
+  it("lasts while the mark stands, as its text says", () => {
+    expect(endingText(ending({ boonbreaker: true, text: "While a Boonbreaker (p. 397)." }), day)).toBe("While a Boonbreaker (p. 397).");
+  });
 });
 
 describe("the fleeting cap", () => {

@@ -876,6 +876,12 @@ MESSAGES: dict[str, str] = {
     "boon.reopened": "{actor} reopened {debtor}'s {kind} boon to {creditor}{because}.",
     "house.boon_review": "{actor} set boons players report to {setting}.",
     "house.boon_harpy": "{actor} gave the Harpy {setting}.",
+    "house.boon_talons": "{actor} set the Harpy {setting}.",
+    "boon.talon_given": "{actor}{acting} made {character_name} a {word}, to {can}.",
+    "boon.talon_changed": "{actor}{acting} let {character_name}, a {word}, {can}.",
+    "boon.talon_removed": "{actor}{acting} took away {character_name}'s access as a {word}.",
+    "boon.audited": "{actor}{acting} audited {character_name}'s boons.",
+    "boon.audit_given": "{actor}{acting} gave {character_name} an audit of {audited}'s boons.",
     "boon.submitted": "{actor} reported {what} for review: {debtor} owes {creditor}{because}.",
     "boon.accepted": "{actor} accepted {debtor}'s {kind} boon to {creditor}{because}.",
     "boon.rejected": "{actor} didn't accept {debtor}'s {kind} boon to {creditor}{because}.",
@@ -883,6 +889,14 @@ MESSAGES: dict[str, str] = {
     "boon.flag_cleared": "{actor} cleared a flag ({what}) on {debtor}'s {kind} boon to"
     " {creditor}{because}.",
     "boon.linked": "{actor} linked the name {name} to {linked_to} on {what}{because}.",
+    # Boonbreakers (#717): on the character's log too, as the mark is public at court.
+    "boon.boonbreaker": "{actor} declared {character} a Boonbreaker{as_harpy}: {voided} of their"
+    " boons made void{disgraced}{because}.",
+    "boon.boonbreaker_appeal": "{actor} recorded {character}'s appeal to {to}: {outcome}{because}.",
+    "boon.boonbreaker_lifted": "{actor} lifted {character}'s Boonbreaker mark, restoring {restored}"
+    " of {of} voided boons{because}.",
+    "boon.status_loss": "{actor} recorded {debtor}'s ignored {kind} boon to {creditor}: {outcome}"
+    "{as_harpy}{because}.",
     "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
     " {level}{again}.",
     "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"

@@ -552,6 +552,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boon-audits/{audit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Audit
+         * @description One audit, as it was made: for whoever keeps the troupe's ledger and may see it,
+         *     and for the player of the character it was given to.
+         */
+        get: operations["read_audit_api_boon_audits__audit_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar/links": {
         parameters: {
             query?: never;
@@ -1171,6 +1192,27 @@ export interface paths {
          *     it counts now, or waits on staff, by the troupe's setting (horatio.bonds).
          */
         post: operations["report_meeting_api_characters__character_id__bonds__bond_id__meetings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/boon-audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Audits
+         * @description The audits given to the character, newest first: for its player, and the staff
+         *     of the troupe each was made in.
+         */
+        get: operations["character_audits_api_characters__character_id__boon_audits_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7850,6 +7892,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Audits
+         * @description The troupe's audits the caller sees, newest first, and whom they can audit and
+         *     give one to: for its staff, and a Harpy or Lesser Harpy who may perform audits.
+         */
+        get: operations["troupe_audits_api_troupes__troupe_id__boon_audits_get"];
+        put?: never;
+        /**
+         * Make Audit
+         * @description Audit a character's boons as the ledger holds them now; given at once to a
+         *     player character, if named.
+         */
+        post: operations["make_audit_api_troupes__troupe_id__boon_audits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-audits/{audit_id}/give": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give Audit
+         * @description Give an audit to a player character in play in the troupe, once.
+         */
+        post: operations["give_audit_api_troupes__troupe_id__boon_audits__audit_id__give_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-flags/{flag_id}/clear": {
         parameters: {
             query?: never;
@@ -8023,6 +8111,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-talons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boon Talons List
+         * @description Who has access to the ledger as a Lesser Harpy, with what each may do: for the
+         *     Harpy, who gives it, and for the troupe's running staff.
+         */
+        get: operations["boon_talons_list_api_troupes__troupe_id__boon_talons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-talons-setting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Talons
+         * @description Whether the troupe's Harpy may give others access to its boon ledger (#689),
+         *     and what it calls them. Only used while the Harpy has the full ledger.
+         */
+        put: operations["set_boon_talons_api_troupes__troupe_id__boon_talons_setting_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-talons/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Give Talon
+         * @description The Harpy gives a character access to the ledger, or changes what it allows,
+         *     as their character. Logged.
+         */
+        put: operations["give_talon_api_troupes__troupe_id__boon_talons__character_id__put"];
+        post?: never;
+        /**
+         * Take Talon
+         * @description Take a character's access to the ledger away: the Harpy, as their character, or
+         *     the troupe's running staff. Logged.
+         */
+        delete: operations["take_talon_api_troupes__troupe_id__boon_talons__character_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-weights": {
         parameters: {
             query?: never;
@@ -8037,6 +8193,72 @@ export interface paths {
          */
         put: operations["set_boon_weights_api_troupes__troupe_id__boon_weights_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boonbreakers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Boonbreakers
+         * @description Everyone marked a Boonbreaker in the troupe's ledger, standing marks first.
+         */
+        get: operations["troupe_boonbreakers_api_troupes__troupe_id__boonbreakers_get"];
+        put?: never;
+        /**
+         * Declare Boonbreaker
+         * @description Declare a character a Boonbreaker (p. 397): their open boons void, both ways,
+         *     and Disgraced while the mark stands.
+         */
+        post: operations["declare_boonbreaker_api_troupes__troupe_id__boonbreakers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boonbreakers/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boonbreaker Preview
+         * @description What declaring the character a Boonbreaker would make void, before it's done.
+         */
+        get: operations["boonbreaker_preview_api_troupes__troupe_id__boonbreakers_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boonbreakers/{mark_id}/appeals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Appeal Boonbreaker
+         * @description An appeal for mercy and its outcome (p. 398). Granted, the mark is lifted and
+         *     the boons named in `restore` stand again.
+         */
+        post: operations["appeal_boonbreaker_api_troupes__troupe_id__boonbreakers__mark_id__appeals_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8082,7 +8304,7 @@ export interface paths {
         /**
          * One Boon
          * @description A boon with its log. A Harpy given only the review queue (#688) opens only the
-         *     boons in it.
+         *     boons in it; a Lesser Harpy (#689) any boon.
          */
         get: operations["one_boon_api_troupes__troupe_id__boons__boon_id__get"];
         put?: never;
@@ -8234,6 +8456,27 @@ export interface paths {
          * @description The boon is settled: called in, forgiven, or formally ignored (p. 397).
          */
         post: operations["settle_api_troupes__troupe_id__boons__boon_id__settle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/status-loss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Status Loss
+         * @description For a great boon its debtor formally ignored (p. 395): staff or the Harpy took
+         *     the status they lost, with the status tools, or won't.
+         */
+        post: operations["answer_status_loss_api_troupes__troupe_id__boons__boon_id__status_loss_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12475,6 +12718,59 @@ export interface components {
             /** Troupe Name */
             troupe_name: string;
         };
+        /** AppealIn */
+        AppealIn: {
+            /** Against */
+            against?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** On */
+            on?: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "granted" | "refused";
+            /**
+             * Restore
+             * @default []
+             */
+            restore: string[];
+            /**
+             * To
+             * @enum {string}
+             */
+            to: "harpy" | "court";
+        };
+        /** AppealOut */
+        AppealOut: {
+            /** Against */
+            against: number | null;
+            /** By */
+            by: string;
+            /** Follows */
+            follows: string;
+            /** Note */
+            note: string;
+            /**
+             * On
+             * Format: date
+             */
+            on: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "granted" | "refused";
+            /**
+             * To
+             * @enum {string}
+             */
+            to: "harpy" | "court";
+        };
         /** AppearanceOut */
         AppearanceOut: {
             /** Loading Animation */
@@ -14375,6 +14671,144 @@ export interface components {
             boons: number;
             who: components["schemas"]["BoonStandingPartyOut"];
         };
+        /** BoonAuditChoice */
+        BoonAuditChoice: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** BoonAuditGiveIn */
+        BoonAuditGiveIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+        };
+        /** BoonAuditIn */
+        BoonAuditIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Given To Id */
+            given_to_id?: string | null;
+        };
+        /** BoonAuditLineOut */
+        BoonAuditLineOut: {
+            /** Conditions */
+            conditions: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /** Other */
+            other: string;
+            /** Reason */
+            reason: string;
+            /** Settled How */
+            settled_how?: ("called_in" | "forgiven" | "ignored") | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "standing" | "settled" | "departed";
+        };
+        /** BoonAuditOut */
+        BoonAuditOut: {
+            /** Age */
+            age: string | null;
+            /**
+             * Can Give
+             * @default false
+             */
+            can_give: boolean;
+            /** Clan */
+            clan: string | null;
+            /** Given At */
+            given_at: string | null;
+            /** Given To */
+            given_to: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Made At
+             * Format: date-time
+             */
+            made_at: string;
+            /** Made By */
+            made_by: string;
+            /** Name */
+            name: string;
+            /** Owed */
+            owed: components["schemas"]["BoonAuditLineOut"][];
+            /** Owed Count */
+            owed_count: number;
+            /** Owed Weight */
+            owed_weight: number;
+            /** Owes */
+            owes: components["schemas"]["BoonAuditLineOut"][];
+            /** Owes Count */
+            owes_count: number;
+            /** Owes Weight */
+            owes_weight: number;
+            /** Standing */
+            standing: ("active" | "final_death" | "off_field" | "gone") | null;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** BoonAuditSummaryOut */
+        BoonAuditSummaryOut: {
+            /**
+             * Can Give
+             * @default false
+             */
+            can_give: boolean;
+            /** Given At */
+            given_at: string | null;
+            /** Given To */
+            given_to: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Made At
+             * Format: date-time
+             */
+            made_at: string;
+            /** Made By */
+            made_by: string;
+            /** Name */
+            name: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
         /** BoonBandOut */
         BoonBandOut: {
             /** Count */
@@ -14713,6 +15147,8 @@ export interface components {
              * @enum {string}
              */
             state: "pending" | "registered" | "settled" | "void";
+            /** Status Loss */
+            status_loss?: ("due" | "taken" | "waived") | null;
             /**
              * Submitted At
              * Format: date-time
@@ -14745,6 +15181,11 @@ export interface components {
         };
         /** BoonPartyOut */
         BoonPartyOut: {
+            /**
+             * Boonbreaker
+             * @default false
+             */
+            boonbreaker: boolean;
             /** Character Id */
             character_id: string | null;
             /** Kind */
@@ -14951,6 +15392,41 @@ export interface components {
             weight: number;
             who: components["schemas"]["BoonStandingPartyOut"];
         };
+        /** BoonTalonsOut */
+        BoonTalonsOut: {
+            /** Choices */
+            choices: components["schemas"]["TalonChoice"][];
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "harpy" | "staff";
+            /** Talons */
+            talons: components["schemas"]["TalonOut"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /**
+             * Word
+             * @enum {string}
+             */
+            word: "Lesser Harpies" | "Talons";
+        };
+        /** BoonTalonsSettingIn */
+        BoonTalonsSettingIn: {
+            /** On */
+            on: boolean;
+            /**
+             * Word
+             * @default Lesser Harpies
+             * @enum {string}
+             */
+            word: "Lesser Harpies" | "Talons";
+        };
         /** BoonTradeIn */
         BoonTradeIn: {
             creditor: components["schemas"]["BoonPartyIn"];
@@ -14990,6 +15466,51 @@ export interface components {
             minor: number;
             /** Trivial */
             trivial: number;
+        };
+        /** BoonbreakerOut */
+        BoonbreakerOut: {
+            /** Appeals */
+            appeals: components["schemas"]["AppealOut"][];
+            character: components["schemas"]["BoonPartyOut"];
+            /** Declared As */
+            declared_as: string | null;
+            /**
+             * Declared At
+             * Format: date-time
+             */
+            declared_at: string;
+            /** Disgraced */
+            disgraced: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lifted At */
+            lifted_at: string | null;
+            /** Lifted Note */
+            lifted_note: string;
+            /** Note */
+            note: string;
+            refused: components["schemas"]["BoonOut"] | null;
+            /** Restored */
+            restored: string[];
+            /** Voided */
+            voided: components["schemas"]["BoonOut"][];
+        };
+        /** BoonbreakerPreviewOut */
+        BoonbreakerPreviewOut: {
+            /** Boons */
+            boons: components["schemas"]["BoonOut"][];
+            /** Owed By */
+            owed_by: number;
+            /** Owed To */
+            owed_to: number;
+        };
+        /** BoonbreakersOut */
+        BoonbreakersOut: {
+            /** Marks */
+            marks: components["schemas"]["BoonbreakerOut"][];
         };
         /** BreakIn */
         BreakIn: {
@@ -17243,6 +17764,18 @@ export interface components {
             /** Legacy Id */
             legacy_id: string;
         };
+        /** DeclareIn */
+        DeclareIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Note */
+            note: string;
+            /** Refused Boon Id */
+            refused_boon_id?: string | null;
+        };
         /** Decline */
         Decline: {
             /**
@@ -18266,6 +18799,11 @@ export interface components {
         };
         /** EndingOut */
         EndingOut: {
+            /**
+             * Boonbreaker
+             * @default false
+             */
+            boonbreaker: boolean;
             /** Games Left */
             games_left: number;
             /** Not Before */
@@ -19963,7 +20501,8 @@ export interface components {
         };
         /**
          * HarpyLedgerOut
-         * @description A ledger the character keeps as its troupe's Harpy (#688).
+         * @description A ledger the character keeps as its troupe's Harpy (#688), or as one of its
+         *     Lesser Harpies (#689).
          */
         HarpyLedgerOut: {
             /**
@@ -19971,6 +20510,42 @@ export interface components {
              * @enum {string}
              */
             access: "submissions" | "full";
+            /**
+             * Can Add
+             * @default true
+             */
+            can_add: boolean;
+            /**
+             * Can Audit
+             * @default true
+             */
+            can_audit: boolean;
+            /**
+             * Can Edit
+             * @default true
+             */
+            can_edit: boolean;
+            /**
+             * Can Review
+             * @default true
+             */
+            can_review: boolean;
+            /**
+             * Gives Access
+             * @default false
+             */
+            gives_access: boolean;
+            /**
+             * Role
+             * @default harpy
+             * @enum {string}
+             */
+            role: "harpy" | "talon";
+            /**
+             * Talon Word
+             * @default Lesser Harpy
+             */
+            talon_word: string;
             /** To Review */
             to_review: number;
             /**
@@ -24978,6 +25553,11 @@ export interface components {
             notify_on_trade: boolean;
             /** Other */
             other: string;
+            /**
+             * Other Boonbreaker
+             * @default false
+             */
+            other_boonbreaker: boolean;
             /** Other Id */
             other_id: string | null;
             /** Reason */
@@ -25009,6 +25589,11 @@ export interface components {
         };
         /** PlayBoonsOut */
         PlayBoonsOut: {
+            /**
+             * Boonbreaker
+             * @default false
+             */
+            boonbreaker: boolean;
             /** Can Report */
             can_report: boolean;
             /** Characters */
@@ -29911,6 +30496,16 @@ export interface components {
             /** Points */
             points: components["schemas"]["StatusPointOut"][];
         };
+        /** StatusLossIn */
+        StatusLossIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Taken */
+            taken: boolean;
+        };
         /** StatusOut */
         StatusOut: {
             /** About */
@@ -30414,6 +31009,61 @@ export interface components {
             amount: number;
             /** Label */
             label: string;
+        };
+        /** TalonChoice */
+        TalonChoice: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lesser Harpy */
+            lesser_harpy: boolean;
+            /** Name */
+            name: string;
+        };
+        /** TalonIn */
+        TalonIn: {
+            /**
+             * Can Add
+             * @default false
+             */
+            can_add: boolean;
+            /**
+             * Can Audit
+             * @default false
+             */
+            can_audit: boolean;
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit: boolean;
+        };
+        /** TalonOut */
+        TalonOut: {
+            /** Can Add */
+            can_add: boolean;
+            /** Can Audit */
+            can_audit: boolean;
+            /** Can Edit */
+            can_edit: boolean;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /**
+             * Given At
+             * Format: date-time
+             */
+            given_at: string;
+            /** Given By */
+            given_by: string;
+            /** In Play */
+            in_play: boolean;
+            /** Name */
+            name: string;
         };
         /**
          * TapIn
@@ -31363,6 +32013,22 @@ export interface components {
              */
             setting: "off" | "staff" | "players_report" | "players_manage";
         };
+        /** TroupeBoonAuditsOut */
+        TroupeBoonAuditsOut: {
+            /** Audits */
+            audits: components["schemas"]["BoonAuditSummaryOut"][];
+            /** Can Audit */
+            can_audit: boolean;
+            /** Recipients */
+            recipients: components["schemas"]["BoonAuditChoice"][];
+            /** Subjects */
+            subjects: components["schemas"]["BoonAuditChoice"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
         /** TroupeBoonSummaryOut */
         TroupeBoonSummaryOut: {
             /** Owed */
@@ -31616,6 +32282,17 @@ export interface components {
              * @default false
              */
             boon_review: boolean;
+            /**
+             * Boon Talon Word
+             * @default Lesser Harpies
+             * @enum {string}
+             */
+            boon_talon_word: "Lesser Harpies" | "Talons";
+            /**
+             * Boon Talons
+             * @default false
+             */
+            boon_talons: boolean;
             /**
              * Boons
              * @default false
@@ -34115,6 +34792,37 @@ export interface operations {
             };
         };
     };
+    read_audit_api_boon_audits__audit_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     links_api_calendar_links_get: {
         parameters: {
             query: {
@@ -35268,6 +35976,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_audits_api_characters__character_id__boon_audits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditSummaryOut"][];
                 };
             };
             /** @description Validation Error */
@@ -48256,6 +48995,108 @@ export interface operations {
             };
         };
     };
+    troupe_audits_api_troupes__troupe_id__boon_audits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeBoonAuditsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_audit_api_troupes__troupe_id__boon_audits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonAuditIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_audit_api_troupes__troupe_id__boon_audits__audit_id__give_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                audit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonAuditGiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     clear_api_troupes__troupe_id__boon_flags__flag_id__clear_post: {
         parameters: {
             query?: never;
@@ -48560,6 +49401,140 @@ export interface operations {
             };
         };
     };
+    boon_talons_list_api_troupes__troupe_id__boon_talons_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_talons_api_troupes__troupe_id__boon_talons_setting_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonTalonsSettingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_talon_api_troupes__troupe_id__boon_talons__character_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TalonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_talon_api_troupes__troupe_id__boon_talons__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     set_boon_weights_api_troupes__troupe_id__boon_weights_put: {
         parameters: {
             query?: never;
@@ -48582,6 +49557,141 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoonWeightsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_boonbreakers_api_troupes__troupe_id__boonbreakers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonbreakersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    declare_boonbreaker_api_troupes__troupe_id__boonbreakers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclareIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonbreakerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    boonbreaker_preview_api_troupes__troupe_id__boonbreakers_preview_get: {
+        parameters: {
+            query: {
+                character_id: string;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonbreakerPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    appeal_boonbreaker_api_troupes__troupe_id__boonbreakers__mark_id__appeals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                mark_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppealIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonbreakerOut"];
                 };
             };
             /** @description Validation Error */
@@ -48965,6 +50075,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BoonSettleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_status_loss_api_troupes__troupe_id__boons__boon_id__status_loss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusLossIn"];
             };
         };
         responses: {

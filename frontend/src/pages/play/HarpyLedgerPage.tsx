@@ -3,13 +3,15 @@ import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Empty, ErrorText, Loading, Select } from "../../components/ui";
-import { BoonsTab } from "../troupe/BoonsTab";
+import { BoonsTab, type LedgerKeeper } from "../troupe/BoonsTab";
+import { TalonsCard } from "../troupe/BoonTalons";
 
 /**
- * The boon ledger its Harpy keeps (#688), linked from the Play View's Boons tab: the
- * review queue, or the whole ledger, as the troupe lets its Harpy reach. Everything
- * done here is logged as done by the character. With no Harpy title, or no access,
- * there is nothing to keep.
+ * The boon ledger its Harpy keeps (#688), or one of its Lesser Harpies (#689), linked
+ * from the Play View's Boons tab: the review queue, or the whole ledger, as the troupe
+ * lets its Harpy reach and the Harpy lets a Lesser Harpy act. Everything done here is
+ * logged as done by the character. The Harpy also gives others access here. With no
+ * Harpy title or access given, or no access, there is nothing to keep.
  */
 export function HarpyLedgerPage() {
   const { characterId = "" } = useParams();
@@ -20,6 +22,17 @@ export function HarpyLedgerPage() {
   const [picked, setPicked] = useState<string | null>(null);
   const found = ledgers.isSuccess ? ledgers.data : [];
   const shown = found.find((l) => l.troupe_id === picked) ?? found[0];
+  const keeper: LedgerKeeper | null = shown
+    ? {
+        access: shown.access,
+        role: shown.role ?? "harpy",
+        add: shown.can_add ?? true,
+        edit: shown.can_edit ?? true,
+        review: shown.can_review ?? true,
+        audit: shown.can_audit ?? true,
+        word: shown.talon_word ?? "Lesser Harpy",
+      }
+    : null;
 
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
@@ -37,7 +50,9 @@ export function HarpyLedgerPage() {
         ) : ledgers.error ? (
           <ErrorText error={ledgers.error} />
         ) : !shown ? (
-          <Empty>This character keeps no boon ledger: it holds no Harpy title where the troupe gives its Harpy the ledger.</Empty>
+          <Empty>
+            This character keeps no boon ledger: it holds no Harpy title where the troupe gives its Harpy the ledger, and no Harpy has given it access.
+          </Empty>
         ) : (
           <>
             {found.length > 1 && (
@@ -49,8 +64,11 @@ export function HarpyLedgerPage() {
                 ))}
               </Select>
             )}
-            <p className="text-sm text-mist">As Harpy of {shown.troupe_name}.</p>
-            <BoonsTab key={shown.troupe_id} troupeId={shown.troupe_id} harpy={shown.access} />
+            <p className="text-sm text-mist">
+              As {keeper?.role === "talon" ? `a ${keeper.word}` : "Harpy"} of {shown.troupe_name}.
+            </p>
+            <BoonsTab key={shown.troupe_id} troupeId={shown.troupe_id} harpy={keeper} />
+            {shown.gives_access && <TalonsCard key={`talons-${shown.troupe_id}`} troupeId={shown.troupe_id} />}
           </>
         )}
       </main>
