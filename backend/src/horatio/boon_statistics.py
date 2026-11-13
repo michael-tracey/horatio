@@ -6,8 +6,9 @@ It builds on the standings (horatio.boon_standings): the same rows (`load`), the
 weights (`weights_of`), the same scope ("active" leaves out boons that involve
 someone dead or off-field), and each party's net from `compute`. `compute` here, like
 the standings', reads no database, so it can be tested on rows of its own. Only those
-who may read the standings read these (`boon_standings.can_read`): staff now, and the
-Harpy with full access to the ledger with #688.
+who may read the standings read these (`boon_standings.reader`): staff, and the
+Harpy with the full ledger where the troupe allows it (#749), who sees who has left
+only as the court knows it.
 
 **Time.** A boon has two dates: the in-game night it was made (`made_on`, which can
 go back decades) and the day it went in the ledger. The trends go by the day it went
@@ -21,7 +22,7 @@ hours after it ended: the Harpy typing in the night's boons as it ends.
 
 import uuid
 from collections import Counter, defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
@@ -327,11 +328,16 @@ def games_of(db: Session, troupe: Troupe, now: datetime) -> list[Game]:
 
 
 def statistics_of(
-    db: Session, troupe: Troupe, now: datetime, scope: Scope = "active"
+    db: Session,
+    troupe: Troupe,
+    now: datetime,
+    scope: Scope = "active",
+    court: Collection[uuid.UUID] | None = None,
 ) -> Statistics:
-    """The troupe's statistics, read from its ledger now."""
+    """The troupe's statistics, read from its ledger now; with `court`, as a Harpy reads
+    them (horatio.boon_standings.load)."""
     return compute(
-        standings.load(db, troupe),
+        standings.load(db, troupe, court),
         standings.weights_of(troupe),
         games_of(db, troupe, now),
         scope,

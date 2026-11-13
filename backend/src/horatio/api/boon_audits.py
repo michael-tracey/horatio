@@ -64,7 +64,7 @@ class BoonAuditSummaryOut(BaseModel):
 class BoonAuditOut(BoonAuditSummaryOut):
     clan: str | None
     age: str | None
-    # As the court knows it (horatio.boon_audits.court_standing).
+    # As the court knows it (horatio.boon_audits.court_standing, horatio.court_knows).
     standing: CourtStanding | None
     # Standing boons they owe and are owed (departed ones too), and what they weigh.
     owes_count: int

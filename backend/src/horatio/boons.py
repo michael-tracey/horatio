@@ -37,7 +37,7 @@ registered it.
 """
 
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime
 from typing import Any
@@ -45,7 +45,7 @@ from typing import Any
 from sqlalchemy import ColumnElement, and_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications
+from horatio import audit, court_knows, notifications
 from horatio.models import AuditEvent, Boon, BoonEvent, Character, Troupe, User
 from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.sheets import conflict, membership, unprocessable
@@ -170,11 +170,12 @@ def standing(character: Character | None) -> str | None:
     return character.left_reason or "retired"
 
 
-def departed(character: Character | None, reasons: bool = True) -> bool:
-    """Gone from play: dead or off-field. Without `reasons`, for those not told why a
-    character retired (a Harpy, #688), any retired character counts as gone."""
-    if not reasons:
-        return character is not None and character.status == "retired"
+def departed(character: Character | None, court: Collection[uuid.UUID] | None = None) -> bool:
+    """Gone from play: dead or off-field. With `court`, for those who learn of
+    departures only as the court knows them (a Harpy, horatio.court_knows), as the
+    troupe's Who's Who lists them."""
+    if court is not None:
+        return court_knows.departed(character, court)
     return standing(character) in DEPARTED
 
 
@@ -582,7 +583,10 @@ VIEWS = ("open", "departed", "settled", "void", "pending", "all")
 
 
 def in_view(
-    boon: Boon, characters: Mapping[uuid.UUID, Character], view: str, reasons: bool = True
+    boon: Boon,
+    characters: Mapping[uuid.UUID, Character],
+    view: str,
+    court: Collection[uuid.UUID] | None = None,
 ) -> bool:
     """Whether the boon belongs in one of the ledger's views: open, standing with both
     parties still in play; departed, standing but involving someone dead or
@@ -592,7 +596,7 @@ def in_view(
     if boon.state != "registered":
         return boon.state == view
     gone = any(
-        departed(characters.get(c), reasons)
+        departed(characters.get(c), court)
         for c in (boon.debtor_id, boon.creditor_id)
         if c is not None
     )
@@ -600,10 +604,12 @@ def in_view(
 
 
 def counts(
-    boons: Sequence[Boon], characters: Mapping[uuid.UUID, Character], reasons: bool = True
+    boons: Sequence[Boon],
+    characters: Mapping[uuid.UUID, Character],
+    court: Collection[uuid.UUID] | None = None,
 ) -> dict[str, int]:
     """How many boons are in each view."""
-    return {v: sum(1 for b in boons if in_view(b, characters, v, reasons)) for v in VIEWS}
+    return {v: sum(1 for b in boons if in_view(b, characters, v, court)) for v in VIEWS}
 
 
 # --- players (#686) -----------------------------------------------------------------------

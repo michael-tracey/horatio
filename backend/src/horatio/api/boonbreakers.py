@@ -116,7 +116,7 @@ def mark_out(
             else None
         )
 
-    who = party_out(character, "", keeper.staff)
+    who = party_out(character, "", keeper.court)
     who.boonbreaker = mark.lifted_at is None
     return BoonbreakerOut(
         id=mark.id,

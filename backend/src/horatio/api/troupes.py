@@ -137,6 +137,8 @@ class TroupeOut(BaseModel):
     boon_review: bool = False
     # The Harpy's access to the ledger (#688): none, the review queue, or all of it.
     boon_harpy: Literal["none", "submissions", "full"] = "none"
+    # The Harpy with the full ledger also reads its boon standings and statistics (#749).
+    boon_harpy_standings: bool = False
     # The Harpy may give others access to the ledger (#689), and what the troupe calls
     # them.
     boon_talons: bool = False
@@ -391,6 +393,7 @@ def one_out(
         boon_players_settle=troupe.boon_players_settle,
         boon_review=troupe.boon_review,
         boon_harpy=troupe.boon_harpy,  # type: ignore[arg-type]  # checked by the database
+        boon_harpy_standings=troupe.boon_harpy_standings,
         boon_talons=troupe.boon_talons,
         boon_talon_word=troupe.boon_talon_word,  # type: ignore[arg-type]  # checked by the database
         court_history_players=troupe.court_history_players,

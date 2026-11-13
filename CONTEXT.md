@@ -146,8 +146,12 @@ A troupe's record of its boons, kept by its running staff while the troupe's Boo
 _Avoid_: Boon registry, boon sheet
 
 **Harpy (ledger access)**:
-Whoever holds the Harpy title in a troupe (a Master Harpy too; with several, each), working its boon ledger as their character from the Play View, as far as the troupe's setting reaches: **none**; **receives submissions**, the review queue and word of each boon players report; or the **full ledger**, to register, edit, trade, pass on, settle, void and reopen boons as staff do. What they do is logged as done by their character. They never see what an edit changed, a boon's staff note, who entered a boon, or why a character retired. Access ends when the title does.
+Whoever holds the Harpy title in a troupe (a Master Harpy too; with several, each), working its boon ledger as their character from the Play View, as far as the troupe's setting reaches: **none**; **receives submissions**, the review queue and word of each boon players report; or the **full ledger**, to register, edit, trade, pass on, settle, void and reopen boons as staff do. What they do is logged as done by their character. They never see what an edit changed, a boon's staff note, who entered a boon, or why a character retired; who has left they see only **as the court knows it**. With the full ledger, the troupe can let them read the boon standings and statistics too. Access ends when the title does.
 _Avoid_: Boon keeper, ledger admin
+
+**As the court knows it**:
+Who has left, as a player who keeps the boon ledger in play (the Harpy) may learn it: what the troupe's Who's Who shows under **No longer with us**. A character listed there is gone, with why only if that says something in game (Final Death or Off-field); Inactive, which says only that a player stopped, is never shown; a character not listed there is still at court. Staff see why anyone left.
+_Avoid_: Public status, visible retirement
 
 **Lesser Harpy**:
 A character the troupe's Harpy gives access to its boon ledger, where the troupe lets the Harpy do so and the Harpy has the full ledger; a troupe may call them **Talons** instead. Each sees the ledger as the Harpy does, and may add boons, edit them (with settling and reviewing), and perform audits, as the Harpy chooses. The access belongs to the office, not to the Harpy who gave it: a new Harpy finds the list and keeps or removes each one. Staff see who has what, and may take it away. Holders of the Lesser Harpy title are offered first.

@@ -3,6 +3,7 @@ ledger, a Lesser Harpy allowed to), what it holds and leaves out, that it never
 changes after it is made, giving it to a player character whose player reads it,
 who sees which, and departures shown only as the court knows them (MET: VTM p. 379)."""
 
+import json
 from collections.abc import Callable
 from typing import Any
 
@@ -132,6 +133,52 @@ def test_departures_show_only_as_the_whos_who_lists_them(court: Audits) -> None:
     assert hugo["standing"] == "gone"  # never "inactive"
     assert ok(court.make(court.bram), 201)["standing"] == "off_field"
     assert ok(court.make(court.iris), 201)["standing"] == "active"
+
+
+def test_an_audit_of_a_retired_character_agrees_with_the_harpy_s_standings(
+    court: Audits,
+) -> None:
+    # One rule (horatio.court_knows, #749): an audit shows each departure as the
+    # Harpy's standings do, and never says "inactive".
+    court.one(court.bram, court.agnes)
+    court.one(court.hugo, court.agnes)
+    court.one(court.iris, court.agnes)
+    court.retire(court.bram, court.other, "off_field", listed=True)
+    court.retire(court.hugo, court.hugo_player, "inactive", listed=True)
+    court.retire(court.iris, court.iris_player, "final_death", listed=False)
+    ok(
+        court.troupe.storyteller.client.put(
+            f"/troupes/{court.troupe.id}/boon-harpy", json={"access": "full", "standings": True}
+        )
+    )
+    harpy = court.harpy_player
+
+    audits = {
+        name: ok(court.make(character, by=harpy), 201)
+        for name, character in (("Bram", court.bram), ("Hugo", court.hugo), ("Iris", court.iris))
+    }
+    standings = ok(
+        harpy.client.get(f"/troupes/{court.troupe.id}/boon-standings", params={"scope": "everyone"})
+    )
+    theirs = {c["who"]["name"]: c["who"]["standing"] for c in standings["characters"]}
+
+    # The audit's "gone" is the standings' "retired": listed, with no reason told.
+    said = {"gone": "retired"}
+    assert {n: said.get(a["standing"], a["standing"]) for n, a in audits.items()} == {
+        n: theirs[n] for n in audits
+    }
+    assert {n: a["standing"] for n, a in audits.items()} == {
+        "Bram": "off_field",
+        "Hugo": "gone",
+        "Iris": "active",
+    }
+    agnes = ok(court.make(court.agnes, by=harpy), 201)
+    assert {line["other"]: line["status"] for line in agnes["owed"]} == {
+        "Bram": "departed",
+        "Hugo": "departed",
+        "Iris": "standing",
+    }
+    assert "inactive" not in json.dumps([*audits.values(), agnes])
 
 
 # --- who makes one -------------------------------------------------------------------------

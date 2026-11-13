@@ -13,12 +13,12 @@ settled, or involves someone departed. Pending and void boons aren't in it, nor 
 boon's staff note, its log, or anything else staff-only.
 
 **Standing as the court knows it** (`court_standing`): an audit is something
-characters read, so it says only what the court knows. A character is shown as
-departed only as the troupe's Who's Who lists them under "No longer with us", with
-why only for Final Death or Off-field; an Inactive player's character is never shown
-as such (their player stopping says nothing in game), and a retired character the
-Who's Who doesn't list is at court as far as anyone knows. The same rule serves the
-Harpy's other views (#749).
+characters read, so it says only what the court knows, by the one rule the Harpy's
+views use too (horatio.court_knows, #749). A character is shown as departed only as
+the troupe's Who's Who lists them under "No longer with us", with why only for Final
+Death or Off-field; an Inactive player's character is never shown as such (their
+player stopping says nothing in game), and a retired character the Who's Who doesn't
+list is at court as far as anyone knows.
 
 **Who makes one:** the troupe's running staff, its Harpy with the full ledger, and
 Lesser Harpies the Harpy let perform audits (horatio.boon_harpy.keeper, "audit"). A
@@ -29,14 +29,15 @@ says who audited whom, when, as whom, and for whom; staff see every audit, and a
 Harpy or Lesser Harpy those made in play (not staff's).
 """
 
-from collections.abc import Sequence
+import uuid
+from collections.abc import Collection, Sequence
 from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, boon_standings, boons, notifications, social_age
+from horatio import audit, boon_standings, boons, court_knows, notifications, social_age
 from horatio.boon_harpy import Keeper
 from horatio.models import Boon, BoonAudit, Character, Troupe, TroupeMembership, User
 from horatio.sheets import unprocessable
@@ -48,29 +49,26 @@ COURT = {
     "off_field": "Off-field",
     "gone": "No longer with us",
 }
-# Why a listed character left, where the court is told: an Inactive player's
-# character only "is no longer with us".
-TOLD = ("final_death", "off_field")
 # What became of a boon, as an audit lists it.
 STATUS = {"standing": "Standing", "settled": "Settled", "departed": "Departed"}
 
 
-def court_standing(character: Character | None) -> str | None:
-    """A character's standing as the court knows it (the troupe's Who's Who): active,
-    or departed as listed under "No longer with us", with why only for Final Death
-    or Off-field. None for a name only."""
-    if character is None:
-        return None
-    if character.status != "retired" or not character.left_listed:
-        return "active"
-    return character.left_reason if character.left_reason in TOLD else "gone"
+def court_standing(character: Character | None, known: Collection[uuid.UUID]) -> str | None:
+    """A character's standing as the court knows it (horatio.court_knows), given the
+    troupe's Who's Who listing (`court_knows.listed`), in an audit's words: active,
+    Final Death, Off-field, or "gone" (listed, with no reason the court would know).
+    None for a name only."""
+    found = court_knows.standing(character, known)
+    return "gone" if found == court_knows.GONE else found
 
 
-def line(boon: Boon, other: Character | None, other_name: str) -> dict[str, Any]:
+def line(
+    boon: Boon, other: Character | None, other_name: str, known: Collection[uuid.UUID]
+) -> dict[str, Any]:
     """One boon, as an audit lists it."""
     if boon.state == "settled":
         state = "settled"
-    elif court_standing(other) in ("final_death", "off_field", "gone"):
+    elif court_knows.departed(other, known):
         state = "departed"
     else:
         state = "standing"
@@ -106,6 +104,7 @@ def contents_of(db: Session, troupe: Troupe, character: Character) -> dict[str, 
         for c in db.scalars(select(Character).where(Character.id.in_([i for i in ids if i])))
     }
     weights = boon_standings.weights_of(troupe)
+    known = court_knows.listed(db, troupe)
     owes = [b for b in found if b.debtor_id == character.id]
     owed = [b for b in found if b.creditor_id == character.id]
 
@@ -115,18 +114,18 @@ def contents_of(db: Session, troupe: Troupe, character: Character) -> dict[str, 
             other_id, other_name = (
                 (b.creditor_id, b.creditor_name) if debtor else (b.debtor_id, b.debtor_name)
             )
-            out.append(line(b, others.get(other_id) if other_id else None, other_name))
+            out.append(line(b, others.get(other_id) if other_id else None, other_name, known))
         return out
 
     def standing(side: Sequence[Boon]) -> list[Boon]:
         return [b for b in side if b.state == "registered"]
 
-    known = social_age.standings(db, [character.id]).get(character.id)
+    ages = social_age.standings(db, [character.id]).get(character.id)
     return {
         "name": character.name,
-        "clan": known.clan if known else None,
-        "age": known.age if known else None,
-        "standing": court_standing(character),
+        "clan": ages.clan if ages else None,
+        "age": ages.age if ages else None,
+        "standing": court_standing(character, known),
         "owes_count": len(standing(owes)),
         "owed_count": len(standing(owed)),
         "owes_weight": boon_standings.rounded(sum(weights[b.kind] for b in standing(owes))),

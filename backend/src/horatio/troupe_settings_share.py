@@ -718,6 +718,13 @@ SETTINGS: dict[str, Setting] = {
             ),
         ),
         Setting(
+            "boon_harpy_standings",
+            "at_game",
+            "The Harpy reads the boon standings and statistics",
+            bool,
+            on_off,
+        ),
+        Setting(
             "boon_talons",
             "at_game",
             "The Harpy may give others access to the boon ledger",
@@ -2402,6 +2409,7 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "boon_players_settle",
             "boon_review",
             "boon_harpy",
+            "boon_harpy_standings",
             "boon_talons",
             "boon_talon_word",
             "player_nominations",

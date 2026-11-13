@@ -2,7 +2,7 @@
 submissions, the full ledger), the Harpy reviewing and keeping the ledger as their
 character, never seeing an edit's changes, a staff note, who entered a boon or why a
 character retired, word of each boon players report, and access ending with the title
-(MET: VTM p. 379)."""
+(MET: VTM p. 379). Who has left, the Harpy learns only as the court knows it (#749)."""
 
 import json
 from collections.abc import Callable
@@ -174,6 +174,7 @@ def test_the_play_view_shows_the_harpy_their_ledger(court: Court) -> None:
             "can_review": True,
             "can_audit": True,
             "gives_access": False,
+            "sees_standings": False,
         }
     ]
     ledgers = ok(court.harpy_player.client.get(f"/characters/{court.hestia}/harpy-ledgers"))
@@ -250,7 +251,9 @@ def test_the_harpy_names_only_characters_players_may_know(court: Court) -> None:
     assert made.status_code == 201, made.text
 
 
-def test_the_harpy_sees_that_a_character_left_but_not_why(court: Court) -> None:
+def test_the_harpy_never_learns_of_a_departure_the_court_hasn_t_heard_of(court: Court) -> None:
+    # As the court knows it (#749): unlisted on the Who's Who, Bram is still at court
+    # for the Harpy (more in test_api_boon_harpy_standings).
     ok(court.access("full"))
     boon = court.one(court.bram, court.agnes)
     retired = court.other.client.post(
@@ -262,10 +265,11 @@ def test_the_harpy_sees_that_a_character_left_but_not_why(court: Court) -> None:
     theirs = ok(court.get(boon, by=court.harpy_player))
     staff = ok(court.get(boon))
 
-    assert theirs["debtor"]["standing"] == "retired"
+    assert theirs["debtor"]["standing"] == "active"
     assert staff["debtor"]["standing"] == "final_death"
-    assert theirs["departed"] is True
-    assert court.ledger("departed", by=court.harpy_player)["counts"]["departed"] == 1
+    assert theirs["departed"] is False
+    assert staff["departed"] is True
+    assert court.ledger("departed", by=court.harpy_player)["counts"]["departed"] == 0
 
 
 # --- the title ----------------------------------------------------------------------------

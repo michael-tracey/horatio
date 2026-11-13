@@ -6935,6 +6935,17 @@
             ],
             "title": "Access",
             "type": "string"
+          },
+          "standings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standings"
           }
         },
         "required": [
@@ -21703,6 +21714,11 @@
             ],
             "title": "Role",
             "type": "string"
+          },
+          "sees_standings": {
+            "default": false,
+            "title": "Sees Standings",
+            "type": "boolean"
           },
           "talon_word": {
             "default": "Lesser Harpy",
@@ -51667,6 +51683,11 @@
             "title": "Boon Harpy",
             "type": "string"
           },
+          "boon_harpy_standings": {
+            "default": false,
+            "title": "Boon Harpy Standings",
+            "type": "boolean"
+          },
           "boon_players_see": {
             "default": "intake",
             "enum": [
@@ -79084,7 +79105,7 @@
     },
     "/api/troupes/{troupe_id}/boon-harpy": {
       "put": {
-        "description": "How far the troupe's Harpy reaches into its boon ledger (#688): not at all, the\nreview queue and word of each boon players report, or the full ledger.",
+        "description": "How far the troupe's Harpy reaches into its boon ledger (#688): not at all, the\nreview queue and word of each boon players report, or the full ledger; and whether,\nwith the full ledger, the Harpy also reads its standings and statistics (#749).",
         "operationId": "set_boon_harpy_api_troupes__troupe_id__boon_harpy_put",
         "parameters": [
           {
@@ -79342,7 +79363,7 @@
     },
     "/api/troupes/{troupe_id}/boon-standings": {
       "get": {
-        "description": "Where everyone stands in the troupe's boon ledger, now: totals, open boons by\nkind, each party's net, the court, clans, ages and sects, how old open debt is,\nhow boons get settled, boons across clan and sect lines, and those who owe each\nother. \"active\" leaves out boons that involve someone dead or off-field.",
+        "description": "Where everyone stands in the troupe's boon ledger, now: totals, open boons by\nkind, each party's net, the court, clans, ages and sects, how old open debt is,\nhow boons get settled, boons across clan and sect lines, and those who owe each\nother. \"active\" leaves out boons that involve someone dead or off-field. A Harpy\n(#749) reads who has left only as the court knows it.",
         "operationId": "boon_standings_api_troupes__troupe_id__boon_standings_get",
         "parameters": [
           {
@@ -79400,7 +79421,7 @@
     },
     "/api/troupes/{troupe_id}/boon-statistics": {
       "get": {
-        "description": "The boon ledger's statistics: by month, who owes whom, debt between clans and\nsects, and each recent game's boons. \"active\" leaves out boons that involve\nsomeone dead or off-field.",
+        "description": "The boon ledger's statistics: by month, who owes whom, debt between clans and\nsects, and each recent game's boons. \"active\" leaves out boons that involve\nsomeone dead or off-field. A Harpy (#749) reads who has left only as the court\nknows it.",
         "operationId": "boon_statistics_api_troupes__troupe_id__boon_statistics_get",
         "parameters": [
           {

@@ -26,15 +26,21 @@ Harpy gave access (horatio.boon_talons, #689). It answers for one `need`:
 - "edit": editing, trading, passing on, settling, voiding and reopening them;
 - "audit": auditing a character's boons (#690).
 Audits (#690), Gallant's offers (#693) and Boonbreakers (#717) are meant to ask it too.
+
+A Harpy or a Lesser Harpy learns who has left only as the court knows it
+(horatio.court_knows, #749): their `Keeper` carries the troupe's Who's Who listing,
+and every view of the ledger they read goes by it. The troupe may also let them read
+its boon standings and statistics (`reads_standings`), by the same rule.
 """
 
+import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, boons, notifications, titles
+from horatio import audit, boons, court_knows, notifications, titles
 from horatio.models import Boon, Character, CharacterTitle, Troupe, User
 from horatio.sheets import unprocessable
 
@@ -61,12 +67,15 @@ HARPY_CAN = {
 @dataclass(frozen=True)
 class Keeper:
     """Someone who may work the troupe's ledger: its running staff (no character), a
-    Harpy, or a Lesser Harpy, as their character, with what they may do (`can`)."""
+    Harpy, or a Lesser Harpy, as their character, with what they may do (`can`). A
+    Harpy's or Lesser Harpy's `court` is who the troupe's Who's Who lists as gone
+    (horatio.court_knows.listed); None for staff, who see why anyone left."""
 
     character: Character | None
     can: frozenset[str] = EVERYTHING
     # "staff", "harpy" or "talon".
     role: str = "staff"
+    court: frozenset[uuid.UUID] | None = None
 
     @property
     def staff(self) -> bool:
@@ -85,6 +94,27 @@ def set_access(db: Session, user: User, troupe: Troupe, level: str) -> None:
         return
     troupe.boon_harpy = level
     audit.record(db, user, "house.boon_harpy", troupe_id=troupe.id, setting=ACCESS[level])
+
+
+def set_standings(db: Session, user: User, troupe: Troupe, on: bool) -> None:
+    """Whether the Harpy with the full ledger also reads the troupe's boon standings and
+    statistics (#749), with departures as the court knows them. Logged if it changes."""
+    if troupe.boon_harpy_standings == on:
+        return
+    troupe.boon_harpy_standings = on
+    audit.record(
+        db,
+        user,
+        "house.boon_harpy_standings",
+        troupe_id=troupe.id,
+        setting="let the Harpy read" if on else "kept from the Harpy",
+    )
+
+
+def reads_standings(troupe: Troupe) -> bool:
+    """Whether the troupe's setting lets its Harpy read the standings and statistics:
+    only with the full ledger. Lesser Harpies who may see the ledger follow it."""
+    return troupe.boon_harpy_standings and reaches(troupe, "full")
 
 
 def harpies(db: Session, troupe: Troupe) -> list[Character]:
@@ -146,12 +176,12 @@ def keeper(db: Session, user: User, troupe: Troupe, need: str = "view") -> Keepe
         return None
     harpy = harpy_of(db, user, troupe)
     if harpy is not None and need in HARPY_CAN[troupe.boon_harpy]:
-        return Keeper(harpy, HARPY_CAN[troupe.boon_harpy], "harpy")
+        return Keeper(harpy, HARPY_CAN[troupe.boon_harpy], "harpy", court_knows.listed(db, troupe))
     from horatio import boon_talons  # imports this module
 
     found = boon_talons.talon_of(db, user, troupe)
     if found is not None and need in boon_talons.can(found[1]):
-        return Keeper(found[0], boon_talons.can(found[1]), "talon")
+        return Keeper(found[0], boon_talons.can(found[1]), "talon", court_knows.listed(db, troupe))
     return None
 
 

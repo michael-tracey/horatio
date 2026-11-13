@@ -7990,7 +7990,8 @@ export interface paths {
         /**
          * Set Boon Harpy
          * @description How far the troupe's Harpy reaches into its boon ledger (#688): not at all, the
-         *     review queue and word of each boon players report, or the full ledger.
+         *     review queue and word of each boon players report, or the full ledger; and whether,
+         *     with the full ledger, the Harpy also reads its standings and statistics (#749).
          */
         put: operations["set_boon_harpy_api_troupes__troupe_id__boon_harpy_put"];
         post?: never;
@@ -8078,7 +8079,8 @@ export interface paths {
          * @description Where everyone stands in the troupe's boon ledger, now: totals, open boons by
          *     kind, each party's net, the court, clans, ages and sects, how old open debt is,
          *     how boons get settled, boons across clan and sect lines, and those who owe each
-         *     other. "active" leaves out boons that involve someone dead or off-field.
+         *     other. "active" leaves out boons that involve someone dead or off-field. A Harpy
+         *     (#749) reads who has left only as the court knows it.
          */
         get: operations["boon_standings_api_troupes__troupe_id__boon_standings_get"];
         put?: never;
@@ -8100,7 +8102,8 @@ export interface paths {
          * Boon Statistics
          * @description The boon ledger's statistics: by month, who owes whom, debt between clans and
          *     sects, and each recent game's boons. "active" leaves out boons that involve
-         *     someone dead or off-field.
+         *     someone dead or off-field. A Harpy (#749) reads who has left only as the court
+         *     knows it.
          */
         get: operations["boon_statistics_api_troupes__troupe_id__boon_statistics_get"];
         put?: never;
@@ -14984,6 +14987,8 @@ export interface components {
              * @enum {string}
              */
             access: "none" | "submissions" | "full";
+            /** Standings */
+            standings?: boolean | null;
         };
         /** BoonKindCount */
         BoonKindCount: {
@@ -20541,6 +20546,11 @@ export interface components {
              * @enum {string}
              */
             role: "harpy" | "talon";
+            /**
+             * Sees Standings
+             * @default false
+             */
+            sees_standings: boolean;
             /**
              * Talon Word
              * @default Lesser Harpy
@@ -32266,6 +32276,11 @@ export interface components {
              * @enum {string}
              */
             boon_harpy: "none" | "submissions" | "full";
+            /**
+             * Boon Harpy Standings
+             * @default false
+             */
+            boon_harpy_standings: boolean;
             /**
              * Boon Players See
              * @default intake

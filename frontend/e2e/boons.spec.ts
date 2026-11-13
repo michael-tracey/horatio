@@ -667,3 +667,66 @@ test("the Harpy audits a character's boons and gives it to another, whose player
   await expect(owes).toContainText("Standing");
   await r.screenshot(shots("boon-audit"));
 });
+
+test("where the troupe allows it, the Harpy reads the boon standings and statistics, with who has left as the court knows it (#749)", async ({ browser }) => {
+  const custodian = await person(browser, "hstand-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "hstand-lead");
+  const harpy = await person(browser, "hstand-harpy");
+  const player = await person(browser, "hstand-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Court Remembers ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const home = async (page: Page, name: string) => {
+    const id = await builtVampire(page, name, "Brujah", build);
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id;
+  };
+  const oriel = await home(harpy.page, "Oriel Vane");
+  const tamsin = await home(player.page, "Tamsin Rook");
+  const silas = await home(player.page, "Silas Crane");
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/characters/${oriel}/titles`, { titles: ["Harpy"] });
+  const owes = (debtor: string, creditor: string) => ({ debtor: { character_id: debtor }, creditor: { character_id: creditor }, kind: "minor", made_on: "2026-10-03", reason: "Information" });
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/boons`, { boons: [owes(tamsin, oriel), owes(silas, oriel)], note: "" });
+  // Silas's player stops, and lists him under No longer with us: the court knows he's gone, never that his player stopped.
+  await send(player.page, "POST", `/api/characters/${silas}/retire`, { reason: "inactive", note: "", listed: true });
+
+  // The lead gives the Harpy the full ledger, then the standings and statistics too.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/settings`);
+  await l.getByRole("radio", { name: /^The full ledger/ }).check();
+  await expect(l.getByText("Saved: The Harpy keeps the full ledger, and reviews the boons players report.")).toBeVisible();
+  const reads = l.getByRole("checkbox", { name: /^The Harpy also reads the boon standings and statistics/ });
+  await reads.check();
+  await expect(l.getByText("Saved: the Harpy reads the boon standings and statistics.")).toBeVisible();
+  await expect(reads).toBeChecked();
+
+  // Oriel's player opens the standings from her ledger page.
+  const h = harpy.page;
+  await h.goto(`/play/characters/${oriel}/ledger`);
+  await expect(h.getByText(`As Harpy of Court Remembers ${run}.`)).toBeVisible();
+  await h.getByRole("group", { name: "Show" }).getByRole("button", { name: "Standings" }).click();
+  await expect(h.getByText("Who has left is shown as the court knows it.")).toBeVisible();
+  await h.getByRole("radio", { name: "Everyone" }).check();
+  const standing = h.getByRole("table", { name: "Standing by character" });
+  await expect(standing).toContainText("Silas Crane (retired)");
+  await expect(standing).toContainText("Tamsin Rook");
+  await expect(h.locator("main")).not.toContainText("Inactive");
+  // The weights read only: changing them is the staff's.
+  await expect(h.getByRole("button", { name: "Change" })).toHaveCount(0);
+  await h.screenshot(shots("harpy-standings"));
+
+  await h.getByRole("group", { name: "Show" }).getByRole("button", { name: "Statistics" }).click();
+  await expect(h.getByRole("heading", { name: "Boon statistics" })).toBeVisible();
+  await expect(h.locator("main")).not.toContainText("Inactive");
+});
