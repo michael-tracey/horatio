@@ -10,13 +10,13 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import npc_picks, npcs, sheets
+from horatio import npc_copies, npc_picks, npcs, sheets
 from horatio.api.characters import CharacterOut, character_out, characters_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Character, NpcClaim, RuleSet, StockNpc
-from horatio.permissions import TroupeAction
+from horatio.models import Character, NpcClaim, RuleSet, StockNpc, Troupe
+from horatio.permissions import TroupeAction, visible_character
 from horatio.rules import stock
 from horatio.rules.npc_kinds import BuiltInPower, NpcKind, Resource, npc_kinds
 
@@ -396,6 +396,34 @@ def make_sheeted(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> S
         made = npcs.make_sheeted(db, user, npc)
     db.commit()
     return SheetedOut(character=character_out(db, npc), left_out=list(made.left_out))
+
+
+class NpcCopyOut(BaseModel):
+    # The new NPC, "[NPC] <name>".
+    character: CharacterOut
+    # What the copy could not carry over, by its label; empty for nothing.
+    left_out: list[str]
+
+
+@router.post("/characters/{character_id}/npc-copy", status_code=status.HTTP_201_CREATED)
+def copy_as_npc(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> NpcCopyOut:
+    """Copy a retired player character as a sheeted NPC of its home troupe, named
+    "[NPC] <name>" (horatio.npc_copies, #764), for the troupe's running staff. The
+    original stays as it is with its player, who isn't told."""
+    character = visible_character(db, user, character_id)
+    if character.kind != "pc":
+        raise HTTPException(status.HTTP_409_CONFLICT, f"{character.name} is already an NPC.")
+    if character.home_troupe_id is None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"{character.name} has no home troupe to keep it as an NPC."
+        )
+    troupe: Troupe = staff_troupe(db, user, character.home_troupe_id, TroupeAction.MANAGE_NPCS)
+    found = npc_copies.copy_as_npc(db, user, character, troupe)
+    db.commit()
+    return NpcCopyOut(
+        character=character_out(db, found.character),
+        left_out=[i.label for i in found.items if i.status == "cannot"],
+    )
 
 
 @router.put("/characters/{character_id}/npc/ratings")

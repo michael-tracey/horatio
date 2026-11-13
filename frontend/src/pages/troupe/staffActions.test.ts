@@ -26,8 +26,12 @@ describe("staffActions", () => {
     expect(staffActions({ ...npc, npc_form: "stock", givable: false }, storyteller).printing).toEqual(["badge"]);
   });
 
-  it("gives a retired character no equipment", () => {
-    expect(staffActions({ ...pc, retired: true }, storyteller).doing).toEqual(["xp", "status", "titles"]);
+  it("gives a retired character no equipment, and copies a retired PC at home here as an NPC (#764)", () => {
+    expect(staffActions({ ...pc, retired: true }, storyteller).doing).toEqual(["xp", "status", "titles", "npc"]);
+    expect(staffActions({ ...pc, retired: true }, assistant).doing).toEqual(["xp", "status", "titles", "npc"]);
+    expect(staffActions({ ...pc, retired: true, home: false }, storyteller).doing).toEqual(["titles"]);
+    expect(staffActions({ ...npc, retired: true, givable: false }, storyteller).doing).not.toContain("npc");
+    expect(staffActions({ ...pc, retired: true }, { ...storyteller, archived: true }).doing).not.toContain("npc");
   });
 
   it("in an archived troupe, open only to the custodian, gives no NPC away", () => {
