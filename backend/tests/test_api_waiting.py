@@ -78,7 +78,7 @@ def test_the_open_cycle_always_shows_first_with_its_due_date(troupe: Troupe) -> 
     [line] = response
     assert line["label"] == "October 2026: 0 of 1 submitted"
     assert line["count"] is None
-    assert line["link"] == f"/cycles/{cycle['id']}/participants"
+    assert line["link"] == f"/troupes/{troupe.id}/downtimes/{cycle['id']}/participants"
     assert line["due_at"] == cycle["closes_at"]
     # Before the rest of the work.
     character_id = new_character(troupe, troupe.player, "Bea")
@@ -105,7 +105,8 @@ def test_the_cycle_under_way_shows_submitted_unassigned_and_unwritten(troupe: Tr
         "cycle_unwritten": 4,
     }
     assert lines["cycle_open"]["label"] == "October 2026: 1 of 1 submitted"
-    assert lines["cycle_unwritten"]["link"] == f"/cycles/{cycle_id}/responses"
+    unwritten = lines["cycle_unwritten"]["link"]
+    assert unwritten == f"/troupes/{troupe.id}/downtimes/{cycle_id}/responses"
     # The same figures as the cycle's progress.
     progress = troupe.storyteller.client.get(f"/cycles/{cycle_id}/progress").json()
     assert progress["unassigned"] == 4
@@ -258,7 +259,7 @@ def test_results_ready_to_deliver_once_the_cycle_is_closed(troupe: Troupe) -> No
         troupe.storyteller.client.put(f"/responses/{written}", json={"body": "Done."})
     line = waiting(troupe, troupe.assistant)["deliveries"]
     assert line["count"] == 1
-    assert line["link"] == f"/cycles/{cycle_id}/delivery"
+    assert line["link"] == f"/troupes/{troupe.id}/downtimes/{cycle_id}/delivery"
     assert "deliveries" not in counts(troupe, troupe.narrator)
 
     assert troupe.storyteller.client.post(f"/cycles/{cycle_id}/deliver").status_code == 200
@@ -281,7 +282,7 @@ def test_allowance_shortfalls_in_the_open_cycle(troupe: Troupe) -> None:
 
     line = waiting(troupe, troupe.assistant)["shortfalls"]
     assert line["count"] == 1
-    assert line["link"] == f"/cycles/{cycle['id']}/participants"
+    assert line["link"] == f"/troupes/{troupe.id}/downtimes/{cycle['id']}/participants"
 
 
 def test_influence_entries_that_need_details_and_effects_ending_this_week(

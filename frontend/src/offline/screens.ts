@@ -33,7 +33,7 @@ export function screenName(pathname: string): string {
   if (new RegExp(`^/play/troupes/${ID}/scenes/${ID}`).test(path)) return "This scene";
   if (new RegExp(`^/play/troupes/${ID}/scenes?$`).test(path)) return "The Scenes page";
   if (path.startsWith("/check-in")) return "Check-in";
-  if (path.startsWith("/cycles/")) return "The downtime cycle";
+  if (path.startsWith("/cycles/") || new RegExp(`^/troupes/${ID}/downtimes/${ID}`).test(path)) return "The downtime cycle";
   if (path === "/troupes") return "The Troupes page";
   if (path.startsWith("/troupes/")) return "The troupe's page";
   if (path.startsWith("/custodian")) return "The Custodian page";

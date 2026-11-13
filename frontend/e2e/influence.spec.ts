@@ -298,7 +298,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   const cycleId = (await made.json()).id;
   const opened = await l.request.post(`/api/cycles/${cycleId}/open`, { headers });
   expect(opened.status(), await opened.text()).toBe(200);
-  await l.goto(`/cycles/${cycleId}/participants`);
+  await l.goto(`/troupes/${troupeId}/downtimes/${cycleId}/participants`);
   await l.getByRole("button", { name: /^More for / }).click();
   await expect(l.getByText(/1 influence elite/)).toBeVisible();
   await expect(l.getByText(/^-1 influence_elite: Spent at the \d+ \w+ game$/)).toHaveCount(2);
@@ -424,7 +424,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
 
   // The lead fills the first Gossip answer from the log: the result goes on the last,
   // strength 2, so the once-blocked entry shows, and never Agnes's own or who took them.
-  await l.goto(`/cycles/${cycleId}/responses`);
+  await l.goto(`/troupes/${troupeId}/downtimes/${cycleId}/responses`);
   const responses = l.getByRole("textbox", { name: "Response to Agnes" });
   await l.getByRole("button", { name: "Fill from the log" }).first().click();
   await expect(responses.nth(0)).toHaveValue("Combined with your other Gossip and Insider Trading actions: strength 2, results below.");
@@ -453,7 +453,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await l.getByLabel("Days to look back").fill("120");
   await l.getByRole("button", { name: "Save", exact: true }).click();
   await expect(l.getByText("120 days", { exact: true })).toBeVisible();
-  await l.goto(`/cycles/${cycleId}/responses`);
+  await l.goto(`/troupes/${troupeId}/downtimes/${cycleId}/responses`);
   await l.getByRole("button", { name: "Fill from the log" }).first().click();
   await expect(l.getByRole("textbox", { name: "Combined response: Ask again at the Herald." })).toHaveValue(/To keep the press out of the gala \(E2\)/);
 });

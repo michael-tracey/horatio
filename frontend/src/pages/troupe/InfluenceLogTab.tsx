@@ -11,6 +11,7 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { TYPE_NAMES } from "../../influence";
 import { BlockSources } from "./BlockSources";
+import { cyclePath } from "./cycles";
 import { EffectsCard, ResolveButton, TargetFields, targetBody, targetForm } from "./InfluenceEffects";
 import { logQuery, NO_FILTERS, sourceText, whoText, type LogFilters } from "./influenceLog";
 import { allowanceWarning, another, cycleDate, specializationGroups, type EntryFields } from "./logInfluence";
@@ -203,6 +204,7 @@ function Log({ troupeId }: { troupeId: string }) {
               ) : (
                 <EntryRow
                   key={entry.id}
+                  troupeId={troupeId}
                   entry={entry}
                   selected={selected.includes(entry.id)}
                   onSelect={(on) => setSelected(on ? [...selected, entry.id] : selected.filter((i) => i !== entry.id))}
@@ -226,12 +228,14 @@ function Log({ troupeId }: { troupeId: string }) {
 }
 
 function EntryRow({
+  troupeId,
   entry,
   selected,
   onSelect,
   onEdit,
   onDelete,
 }: {
+  troupeId: string;
   entry: InfluenceEntryOut;
   selected: boolean;
   onSelect: (on: boolean) => void;
@@ -260,14 +264,14 @@ function EntryRow({
         </span>
       </div>
       {entry.purpose && <p>{entry.purpose}</p>}
-      <BlockSources entry={entry} />
+      <BlockSources troupeId={troupeId} entry={entry} />
       <div className="flex flex-wrap items-center gap-2 text-xs text-mist">
         {entry.times > 1 && <Badge tone="gold">Logged {entry.times} times</Badge>}
         {entry.blocks > 0 && <Badge>{entry.blocks === 1 ? "1 block" : `${entry.blocks} blocks`}</Badge>}
         {entry.needs_details && <Badge tone="blood">Needs details</Badge>}
         {entry.effect && <Badge tone={entry.effect.active ? "gold" : "mist"}>{entry.effect.active ? entry.effect.text : `${entry.effect.text}, over`}</Badge>}
         {entry.cycle_id && entry.source === "downtime" ? (
-          <Link to={`/cycles/${entry.cycle_id}`} className="hover:text-gold">
+          <Link to={cyclePath(troupeId, entry.cycle_id)} className="hover:text-gold">
             {sourceText(entry)}
           </Link>
         ) : (

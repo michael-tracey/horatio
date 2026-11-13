@@ -954,7 +954,7 @@ A player can leave the home troupe for none, from the character's Home troupe ca
 
 ![A downtime cycle's Overview: where it stands, its dates, completion XP and progress.](images/running-a-troupe/cycle.png)
 
-A downtime cycle is one round of downtimes. Storytellers and assistant storytellers run it from **Downtimes › Cycles**. A cycle goes from **Draft** to **Open** to **Closed** to **Complete**. The player's side is in [Players](players.md#downtimes).
+A downtime cycle is one round of downtimes. Storytellers and assistant storytellers run it from **Downtimes › Cycles**: choose a cycle there to open it, inside the troupe's page, with its own tabs (**Overview**, **Form**, **Participants**, **Feeding**, **Responses**, **Aimed at**, **Projects** and **Delivery**) under the troupe's. A cycle goes from **Draft** to **Open** to **Closed** to **Complete**. The player's side is in [Players](players.md#downtimes).
 
 ### Creating a cycle
 
