@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { PlayReference, RosterEntry, SceneOut, TestPool } from "../../api/types";
+import { atGameCrumbs, Breadcrumb } from "../../components/Breadcrumb";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { useClanName } from "../../components/ClanNames";
 import { Button, ErrorText, Input, Loading } from "../../components/ui";
@@ -106,10 +107,8 @@ export function ScenePage() {
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2">
-          <Link to={list} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
-            ← Scenes{troupe.data ? ` of ${troupe.data.name}` : ""}
-          </Link>
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-1">
+          <Breadcrumb crumbs={[...atGameCrumbs(troupeId, troupe.data?.name), { label: "Scenes", to: list }]} />
           {awake && (
             <span className="rounded-full border border-ash px-2.5 py-0.5 text-xs whitespace-nowrap text-mist" title="Kept on while the Scene view is open, as your settings ask.">
               ☀ Screen awake
