@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional, switchFeature } from "./support";
 
 /** Equipment: giving it, reading it, equipping it and finding it. */
 
@@ -294,12 +294,9 @@ test("a storyteller gives a blessing that expires with the downtime cycle, its p
   });
   await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
 
-  // Items don't expire until the lead switches it on, in the troupe's settings.
+  // Items don't expire until the lead switches it on, in the Features list of the troupe's settings.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/settings`);
-  const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Items that expire", exact: true }) });
-  await setting.getByRole("checkbox", { name: /^Items can expire/ }).click();
-  await expect(setting.getByRole("checkbox", { name: /^Items can expire/ })).toBeChecked();
+  await switchFeature(l, troupe.id, "Items that expire", true);
 
   // From Maud's page, a special blessing that fades when the cycle closes.
   await l.goto(`/characters/${maud}`);

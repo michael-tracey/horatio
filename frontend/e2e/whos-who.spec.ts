@@ -347,7 +347,8 @@ test("sire lines: a player gives a sire from the menu, staff see the sire and bo
   await p.goto(`/troupes/${troupeId}/whos-who`);
   await expect(p.getByText("The troupe’s characters, for its players and staff. It is never public.")).toBeVisible();
   await expect(p.getByRole("button", { name: "Sire lines" })).toHaveCount(0);
-  await l.goto(`/troupes/${troupeId}/settings`);
+  // The Who's Who's own settings, folded at the top of its tab for the storytellers (#784).
+  await l.goto(`/troupes/${troupeId}/whos-who#settings`);
   // It changes once the troupe is saved, so click and wait for it.
   await l.getByRole("checkbox", { name: /Show the sire lines to players/ }).click();
   await expect(l.getByRole("checkbox", { name: /Show the sire lines to players/ })).toBeChecked();
@@ -514,7 +515,8 @@ test("pronouns: a player gives their own and their character's, the Who's Who sh
   const badge = l.getByRole("article", { name: "Badge for Ines" });
   await expect(badge.getByText("Neonate", { exact: false })).toBeVisible();
   await expect(badge.getByText("she/her")).toHaveCount(0);
-  await l.goto(`/troupes/${troupeId}/settings`);
+  // Badges are At game's settings, folded at the top of its tab (#784).
+  await l.goto(`/troupes/${troupeId}/play#settings`);
   const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
   await expect(setting.getByLabel(/^Print character pronouns/)).not.toBeChecked();
   await setting.getByLabel(/^Print character pronouns/).click();
