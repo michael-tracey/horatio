@@ -16,6 +16,10 @@ from horatio.models.backstories import (
 )
 from horatio.models.base import Base
 from horatio.models.bonds import BloodBond, BondEntry, BondReport
+from horatio.models.boon_audits import BoonAudit
+from horatio.models.boon_reviews import BoonFlag
+from horatio.models.boon_talons import BoonTalon
+from horatio.models.boonbreakers import Boonbreaker
 from horatio.models.boons import Boon, BoonEvent
 from horatio.models.characters import (
     AppliedHouseTrait,
@@ -120,6 +124,7 @@ from horatio.models.troupes import (
     XpRangeEntry,
 )
 from horatio.models.viewing import Viewing
+from horatio.models.vinculum import Vaulderie, VaulderieParticipant, VinculumTie
 from horatio.models.written_rules import WrittenRule
 from horatio.models.yorick_imports import YorickImport
 
@@ -130,7 +135,11 @@ __all__ = [
     "BondEntry",
     "BondReport",
     "Boon",
+    "BoonAudit",
     "BoonEvent",
+    "BoonFlag",
+    "BoonTalon",
+    "Boonbreaker",
     "BackstoryAnswer",
     "BackstoryFeedback",
     "BackstoryQuestion",
@@ -243,7 +252,10 @@ __all__ = [
     "TroupeStaff",
     "TroupeTitle",
     "User",
+    "Vaulderie",
+    "VaulderieParticipant",
     "Viewing",
+    "VinculumTie",
     "XpEntry",
     "XpRangeEntry",
     "YorickImport",

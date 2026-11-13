@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, PASSWORD } from "./support";
+import { closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, topBar } from "./support";
 
 /** Storytellers building NPCs, of every kind and form. */
 
@@ -12,8 +12,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   const lead = await person(browser, "npc-lead");
   const troupeName = `Court of Smoke ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   const created = custodian.page.waitForResponse((r) => r.url().endsWith("/api/troupes") && r.request().method() === "POST");
@@ -23,7 +22,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   // NPCs share the Characters list (#556): it opens on player characters, and shows NPCs at a choice.
@@ -76,7 +75,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
   // Titles are given on the troupe's Characters tab, where Everyone shows NPCs beside player characters.
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await expect(p.getByText("No player characters have joined this troupe yet.")).toBeVisible();
@@ -674,8 +673,7 @@ test("storytellers give an NPC powers, and one out of order is marked until it i
   const lead = await person(browser, "powers-lead");
   const troupeName = `Court of Kindling ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   const created = custodian.page.waitForResponse((r) => r.url().endsWith("/api/troupes") && r.request().method() === "POST");

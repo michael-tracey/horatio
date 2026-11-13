@@ -91,9 +91,13 @@ function ArchivedCard({ troupe: t }: { troupe: ArchivedTroupe }) {
           {!t.characters.length && <p className="text-mist">It had no characters.</p>}
         </div>
       </Card>
-      <Dialog title={acting === "settle" ? `Settle ${t.name}` : `Reopen ${t.name}`} open={acting !== null} onClose={() => setActing(null)}>
-        {acting && <Act troupe={t} what={acting} onDone={() => setActing(null)} />}
-      </Dialog>
+      {/* Only while open: a closed dialog still carries its title as a label, and
+          this list sits beside the New troupe form under Troupe management (#759). */}
+      {acting && (
+        <Dialog title={acting === "settle" ? `Settle ${t.name}` : `Reopen ${t.name}`} open onClose={() => setActing(null)}>
+          <Act troupe={t} what={acting} onDone={() => setActing(null)} />
+        </Dialog>
+      )}
     </li>
   );
 }

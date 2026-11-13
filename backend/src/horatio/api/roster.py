@@ -571,6 +571,7 @@ MESSAGES: dict[str, str] = {
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
     "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
+    "troupe.sire_lines": "{actor} set the troupe's sire lines to show {shown}.",
     "troupe.court_history": "{actor} set the court over time to show to {who}.",
     "troupe.play_tabs": "{actor} set the Play View's tabs for players: {tabs}.",
     "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
@@ -752,6 +753,7 @@ MESSAGES: dict[str, str] = {
     "identity.unaccepted": "{actor} noted {character}'s identity {name} as Accepted by no one.",
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
     "character.pronouns": "{actor} set {character}'s pronouns: {pronouns}.",
+    "character.sire": "{actor} set {character}'s sire: {sire}.",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "appearance.loading_animation": "{actor} chose the {animation} loading animation.",
@@ -872,6 +874,44 @@ MESSAGES: dict[str, str] = {
     "boon.settled": "{actor} marked {debtor}'s {kind} boon to {creditor} settled, {how}{because}.",
     "boon.voided": "{actor} made {debtor}'s {kind} boon to {creditor} void{because}.",
     "boon.reopened": "{actor} reopened {debtor}'s {kind} boon to {creditor}{because}.",
+    "house.boon_review": "{actor} set boons players report to {setting}.",
+    "house.boon_harpy": "{actor} gave the Harpy {setting}.",
+    "house.boon_harpy_standings": "{actor} {setting} the boon standings and statistics.",
+    "house.boon_talons": "{actor} set the Harpy {setting}.",
+    "boon.talon_given": "{actor}{acting} made {character_name} a {word}, to {can}.",
+    "boon.talon_changed": "{actor}{acting} let {character_name}, a {word}, {can}.",
+    "boon.talon_removed": "{actor}{acting} took away {character_name}'s access as a {word}.",
+    "boon.audited": "{actor}{acting} audited {character_name}'s boons.",
+    "boon.audit_given": "{actor}{acting} gave {character_name} an audit of {audited}'s boons.",
+    "boon.submitted": "{actor} reported {what} for review: {debtor} owes {creditor}{because}.",
+    "boon.accepted": "{actor} accepted {debtor}'s {kind} boon to {creditor}{because}.",
+    "boon.rejected": "{actor} didn't accept {debtor}'s {kind} boon to {creditor}{because}.",
+    "boon.flagged": "{actor} flagged {debtor}'s {kind} boon to {creditor} for review{because}.",
+    "boon.flag_cleared": "{actor} cleared a flag ({what}) on {debtor}'s {kind} boon to"
+    " {creditor}{because}.",
+    "boon.linked": "{actor} linked the name {name} to {linked_to} on {what}{because}.",
+    # Boonbreakers (#717): on the character's log too, as the mark is public at court.
+    "boon.boonbreaker": "{actor} declared {character} a Boonbreaker{as_harpy}: {voided} of their"
+    " boons made void{disgraced}{because}.",
+    "boon.boonbreaker_appeal": "{actor} recorded {character}'s appeal to {to}: {outcome}{because}.",
+    "boon.boonbreaker_lifted": "{actor} lifted {character}'s Boonbreaker mark, restoring {restored}"
+    " of {of} voided boons{because}.",
+    "boon.status_loss": "{actor} recorded {debtor}'s ignored {kind} boon to {creditor}: {outcome}"
+    "{as_harpy}{because}.",
+    "bond.vaulderie": "{actor} recorded a Vaulderie on {night}, {source}: {who}.",
+    "bond.vaulderie_reported": "{actor} reported {character}'s Vaulderie on {night}: {who}.",
+    "bond.vaulderie_approved": "{actor} approved the Vaulderie reported for {night}.",
+    "bond.vaulderie_declined": "{actor} declined the Vaulderie reported for {night}: {reason}",
+    "bond.vaulderie_withdrawn": "{actor} withdrew the Vaulderie they reported for {night}.",
+    "bond.vaulderie_removed": "{actor} took the Vaulderie of {night} out: {reason}",
+    "bond.vaulderie_lowered": "{thrall}'s bond to {regnant} was lowered to {level} by the"
+    " Vaulderie on {night}.",
+    "bond.vaulderie_ended": "{thrall}'s bond to {regnant} ended, lowered to nothing by the"
+    " Vaulderie on {night}.",
+    "bond.vinculum_tie": "{actor} entered a background tie between {one} and {other}, a Vinculum"
+    " of {rating} on {night}: {reason}",
+    "bond.vinculum_tie_removed": "{actor} took out the background tie between {one} and"
+    " {other}: {reason}",
     "boon.gallant_given": "{actor} gave {debtor} Gallant for repaying their {kind} boon to"
     " {creditor}{because}.",
     "boon.gallant_declined": "{actor} gave {debtor} no Gallant for repaying their {kind} boon"
@@ -901,6 +941,16 @@ MESSAGES: dict[str, str] = {
     "bond.thrall_died": "{character}'s bond to {regnant} ended: {character} met Final Death.",
     "bond.kept_cleared": "{actor} stopped showing {regnant}'s player the bond of {thrall}, who"
     " met Final Death.",
+    # Fading with time (#665): the drop goes in the troupe's log only, until the thrall's
+    # player is told it weakened, with the troupe's next downtime results.
+    "bond.dropped": "{thrall}'s full bond to {regnant} dropped to two drinks on {night}, after"
+    " three months without drinking.",
+    "bond.dropped_told": "{character}'s bond to {regnant} has weakened.",
+    "bond.meeting": "{actor} recorded {character} and {regnant} meeting on {night}, {source}.",
+    "bond.meeting_reported": "{actor} reported {character} and {regnant} meeting on {night},"
+    " {source}.",
+    "bond.immunity_overridden": "{actor} recorded {character}'s bond to {regnant} though a full"
+    " bond made them immune: {reason}",
     "bond.entry_changed": "{actor} changed a night in {character}'s bond to {regnant} from {was}"
     " to {night}: now {level}.",
     "bond.entry_removed": "{actor} took the night of {night} out of {character}'s bond to"

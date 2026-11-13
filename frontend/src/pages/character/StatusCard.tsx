@@ -2,14 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, HeldOut, StatusAbout, StatusIn, StatusOut, SuppressionOut } from "../../api/types";
+import { partyIn } from "../../bonds";
+import { apologyFor, STATUS_BOON_PAGE } from "../../boonStatus";
 import { DateInput } from "../../components/DateInput";
 import { EmptyState } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { PatronPicker } from "../../components/PatronPicker";
+import { useToast } from "../../components/Toast";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, Card, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { WhoPicker } from "../troupe/WhoPicker";
 import { capText, derivedLines, endingText, NO_RULES_YET, outsiderText, suppressedText, takenText, typeOrder } from "./status";
 
 /** What the status card needs of its character: the character page's, or a roster entry's. */
@@ -170,7 +174,98 @@ function HeldRow({ character, status, held }: { character: StatusCharacter; stat
       </span>
       {held.ending && <span className="text-xs text-gold">{endingText(held.ending, dates.day)}.</span>}
       <ErrorText error={remove.error} />
+      {status.staff && apologyFor(held.name) && <ApologyBoon character={character} held={held} />}
     </Line>
+  );
+}
+
+/**
+ * For staff: the boon an apology owes for a slip under Warned or Disgraced (MET: VTM
+ * p. 316), registered in the troupe's boon ledger, owed by the character to whoever
+ * was wronged: the status's patron unless staff say otherwise. Shown only where staff
+ * keep a ledger for the character.
+ */
+function ApologyBoon({ character, held }: { character: StatusCharacter; held: HeldOut }) {
+  const offer = apologyFor(held.name)!;
+  const toast = useToast();
+  const path = { params: { path: { character_id: character.id } } };
+  const ledger = useQuery({
+    queryKey: ["apology-boon", character.id],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/apology-boon", path)),
+    retry: false,
+  });
+  const [open, setOpen] = useState(false);
+  const [who, setWho] = useState("");
+  const [name, setName] = useState("");
+  const [night, setNight] = useState(today());
+  const [reason, setReason] = useState("");
+  const register = useAction(async () => {
+    const wronged = partyIn(who, name);
+    if (!wronged) return;
+    await unwrap(api.POST("/api/characters/{character_id}/apology-boon", { ...path, body: { held_id: held.id, wronged, made_on: night, reason } }));
+    toast({ message: `Registered ${offer.words} owed by ${character.name}.` });
+    setOpen(false);
+  });
+  if (!ledger.data) return null;
+  const characters = ledger.data.characters;
+  if (!open) {
+    // Owed to the status's patron, unless staff pick someone else: a character in the
+    // ledger, or the patron's name or words.
+    const patron = characters.find((c) => c.id === held.patron.id);
+    const named = held.patron.name || held.patron.text;
+    return (
+      <Button
+        variant="ghost"
+        className="min-h-8 self-start px-2 text-xs"
+        onClick={() => {
+          setWho(patron ? `c:${patron.id}` : named ? "name" : "");
+          setName(patron ? "" : named);
+          setOpen(true);
+        }}
+      >
+        Apology boon…
+      </Button>
+    );
+  }
+  return (
+    <form
+      aria-label={`Apology boon for a slip while ${held.name}`}
+      className="mt-1 flex flex-col gap-2 rounded border border-ash p-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        register.mutate(undefined);
+      }}
+    >
+      <p className="text-xs text-mist">
+        An apology and {offer.words} put a slip right while {held.name} ({STATUS_BOON_PAGE}). It goes in {ledger.data.troupe_name}&apos;s boon ledger, owed by {character.name}.
+      </p>
+      <Field label="Owed to: whoever was wronged">
+        <WhoPicker
+          characters={characters}
+          who={who}
+          name={name}
+          onChange={(w, n) => {
+            setWho(w);
+            setName(n);
+          }}
+        />
+      </Field>
+      <Field label="Night of the apology">
+        <DateInput value={night} onChange={(e) => setNight(e.target.value)} />
+      </Field>
+      <Field label="Reason" hint={`Left empty: “An apology for a slip while ${held.name}”.`}>
+        <Input maxLength={2000} value={reason} onChange={(e) => setReason(e.target.value)} />
+      </Field>
+      <span className="flex gap-2">
+        <Button type="submit" disabled={!partyIn(who, name) || !night || register.isPending}>
+          Register {offer.words}
+        </Button>
+        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </span>
+      <ErrorText error={register.error} />
+    </form>
   );
 }
 

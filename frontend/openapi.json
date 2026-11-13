@@ -125,6 +125,18 @@
         "title": "AbsenteeMarked",
         "type": "object"
       },
+      "AcceptIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "AcceptIn",
+        "type": "object"
+      },
       "ActionKindChoiceOut": {
         "properties": {
           "key": {
@@ -1181,6 +1193,190 @@
           "answers"
         ],
         "title": "AnswersIn",
+        "type": "object"
+      },
+      "ApologyBoonIn": {
+        "properties": {
+          "held_id": {
+            "format": "uuid",
+            "title": "Held Id",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "wronged": {
+            "$ref": "#/components/schemas/BoonPartyIn"
+          }
+        },
+        "required": [
+          "held_id",
+          "wronged",
+          "made_on"
+        ],
+        "title": "ApologyBoonIn",
+        "type": "object"
+      },
+      "ApologyChoicesOut": {
+        "description": "Where an apology's boon goes: the troupe whose ledger the character's Play\nView shows, and its characters, to name whoever was wronged.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "characters"
+        ],
+        "title": "ApologyChoicesOut",
+        "type": "object"
+      },
+      "AppealIn": {
+        "properties": {
+          "against": {
+            "anyOf": [
+              {
+                "maximum": 13.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Against"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
+          },
+          "outcome": {
+            "enum": [
+              "granted",
+              "refused"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "restore": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Restore",
+            "type": "array"
+          },
+          "to": {
+            "enum": [
+              "harpy",
+              "court"
+            ],
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "outcome"
+        ],
+        "title": "AppealIn",
+        "type": "object"
+      },
+      "AppealOut": {
+        "properties": {
+          "against": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Against"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "follows": {
+            "title": "Follows",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "on": {
+            "format": "date",
+            "title": "On",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "granted",
+              "refused"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "to": {
+            "enum": [
+              "harpy",
+              "court"
+            ],
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "outcome",
+          "against",
+          "note",
+          "follows",
+          "on",
+          "by"
+        ],
+        "title": "AppealOut",
         "type": "object"
       },
       "AppearanceOut": {
@@ -5106,8 +5302,13 @@
         "type": "object"
       },
       "BondAskOut": {
-        "description": "A drink a player reported, for staff to approve (horatio.bonds).",
+        "description": "A drink a player reported, or a meeting (#665), for staff to approve\n(horatio.bonds).",
         "properties": {
+          "kind": {
+            "default": "drink",
+            "title": "Kind",
+            "type": "string"
+          },
           "night": {
             "format": "date",
             "title": "Night",
@@ -5322,9 +5523,31 @@
             ],
             "title": "Last Drink"
           },
+          "last_met": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Met"
+          },
           "level": {
             "title": "Level",
             "type": "integer"
+          },
+          "next_change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/horatio__api__bonds__ChangeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "regnant": {
             "$ref": "#/components/schemas/PartyOut"
@@ -5376,6 +5599,15 @@
           "id": {
             "format": "uuid",
             "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "default": "drink",
+            "enum": [
+              "drink",
+              "meeting"
+            ],
+            "title": "Kind",
             "type": "string"
           },
           "night": {
@@ -5850,6 +6082,352 @@
         "title": "BoonActiveOut",
         "type": "object"
       },
+      "BoonAuditChoice": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "BoonAuditChoice",
+        "type": "object"
+      },
+      "BoonAuditGiveIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "BoonAuditGiveIn",
+        "type": "object"
+      },
+      "BoonAuditIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "given_to_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given To Id"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "BoonAuditIn",
+        "type": "object"
+      },
+      "BoonAuditLineOut": {
+        "properties": {
+          "conditions": {
+            "title": "Conditions",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "other": {
+            "title": "Other",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "settled_how": {
+            "anyOf": [
+              {
+                "enum": [
+                  "called_in",
+                  "forgiven",
+                  "ignored"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled How"
+          },
+          "status": {
+            "enum": [
+              "standing",
+              "settled",
+              "departed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "other",
+          "kind",
+          "made_on",
+          "reason",
+          "conditions",
+          "status"
+        ],
+        "title": "BoonAuditLineOut",
+        "type": "object"
+      },
+      "BoonAuditOut": {
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "can_give": {
+            "default": false,
+            "title": "Can Give",
+            "type": "boolean"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "given_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given At"
+          },
+          "given_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given To"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "made_at": {
+            "format": "date-time",
+            "title": "Made At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owed": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditLineOut"
+            },
+            "title": "Owed",
+            "type": "array"
+          },
+          "owed_count": {
+            "title": "Owed Count",
+            "type": "integer"
+          },
+          "owed_weight": {
+            "title": "Owed Weight",
+            "type": "number"
+          },
+          "owes": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditLineOut"
+            },
+            "title": "Owes",
+            "type": "array"
+          },
+          "owes_count": {
+            "title": "Owes Count",
+            "type": "integer"
+          },
+          "owes_weight": {
+            "title": "Owes Weight",
+            "type": "number"
+          },
+          "standing": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "final_death",
+                  "off_field",
+                  "gone"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standing"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "troupe_name",
+          "made_at",
+          "name",
+          "made_by",
+          "given_to",
+          "given_at",
+          "clan",
+          "age",
+          "standing",
+          "owes_count",
+          "owed_count",
+          "owes_weight",
+          "owed_weight",
+          "owes",
+          "owed"
+        ],
+        "title": "BoonAuditOut",
+        "type": "object"
+      },
+      "BoonAuditSummaryOut": {
+        "properties": {
+          "can_give": {
+            "default": false,
+            "title": "Can Give",
+            "type": "boolean"
+          },
+          "given_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given At"
+          },
+          "given_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given To"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "made_at": {
+            "format": "date-time",
+            "title": "Made At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "troupe_name",
+          "made_at",
+          "name",
+          "made_by",
+          "given_to",
+          "given_at"
+        ],
+        "title": "BoonAuditSummaryOut",
+        "type": "object"
+      },
       "BoonBandOut": {
         "properties": {
           "count": {
@@ -6092,6 +6670,12 @@
               "settled",
               "voided",
               "reopened",
+              "submitted",
+              "accepted",
+              "rejected",
+              "flagged",
+              "flag_cleared",
+              "linked",
               "gallant_given",
               "gallant_declined"
             ],
@@ -6113,6 +6697,88 @@
           "changes"
         ],
         "title": "BoonEventOut",
+        "type": "object"
+      },
+      "BoonFlagOut": {
+        "description": "A flag raised on a boon for review (horatio.boon_reviews, #687).",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "unmatched",
+              "duplicate",
+              "hand"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "other_boon_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other Boon Id"
+          },
+          "raised_at": {
+            "format": "date-time",
+            "title": "Raised At",
+            "type": "string"
+          },
+          "raised_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raised By"
+          },
+          "side": {
+            "anyOf": [
+              {
+                "enum": [
+                  "debtor",
+                  "creditor"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Side"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "side",
+          "detail",
+          "note",
+          "other_boon_id",
+          "raised_by",
+          "raised_at"
+        ],
+        "title": "BoonFlagOut",
         "type": "object"
       },
       "BoonFlowOut": {
@@ -6259,6 +6925,35 @@
           "net"
         ],
         "title": "BoonGroupOut",
+        "type": "object"
+      },
+      "BoonHarpyIn": {
+        "properties": {
+          "access": {
+            "enum": [
+              "none",
+              "submissions",
+              "full"
+            ],
+            "title": "Access",
+            "type": "string"
+          },
+          "standings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standings"
+          }
+        },
+        "required": [
+          "access"
+        ],
+        "title": "BoonHarpyIn",
         "type": "object"
       },
       "BoonKindCount": {
@@ -6567,6 +7262,11 @@
           "creditor": {
             "$ref": "#/components/schemas/BoonPartyOut"
           },
+          "creditor_disgraced": {
+            "default": false,
+            "title": "Creditor Disgraced",
+            "type": "boolean"
+          },
           "debtor": {
             "$ref": "#/components/schemas/BoonPartyOut"
           },
@@ -6587,6 +7287,20 @@
               }
             ],
             "title": "Events"
+          },
+          "flags": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BoonFlagOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flags"
           },
           "gallant": {
             "anyOf": [
@@ -6656,6 +7370,22 @@
             ],
             "title": "State",
             "type": "string"
+          },
+          "status_loss": {
+            "anyOf": [
+              {
+                "enum": [
+                  "due",
+                  "taken",
+                  "waived"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Loss"
           },
           "submitted_at": {
             "format": "date-time",
@@ -6745,6 +7475,11 @@
       },
       "BoonPartyOut": {
         "properties": {
+          "boonbreaker": {
+            "default": false,
+            "title": "Boonbreaker",
+            "type": "boolean"
+          },
           "character_id": {
             "anyOf": [
               {
@@ -6848,6 +7583,43 @@
           "settle"
         ],
         "title": "BoonPlayersIn",
+        "type": "object"
+      },
+      "BoonReviewIn": {
+        "properties": {
+          "hold": {
+            "title": "Hold",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hold"
+        ],
+        "title": "BoonReviewIn",
+        "type": "object"
+      },
+      "BoonReviewOut": {
+        "properties": {
+          "boons": {
+            "items": {
+              "$ref": "#/components/schemas/BoonOut"
+            },
+            "title": "Boons",
+            "type": "array"
+          },
+          "characters": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          }
+        },
+        "required": [
+          "boons"
+        ],
+        "title": "BoonReviewOut",
         "type": "object"
       },
       "BoonSettleIn": {
@@ -7350,6 +8122,81 @@
         "title": "BoonTallyOut",
         "type": "object"
       },
+      "BoonTalonsOut": {
+        "properties": {
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/TalonChoice"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "role": {
+            "enum": [
+              "harpy",
+              "staff"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "talons": {
+            "items": {
+              "$ref": "#/components/schemas/TalonOut"
+            },
+            "title": "Talons",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "word": {
+            "enum": [
+              "Lesser Harpies",
+              "Talons"
+            ],
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "enabled",
+          "word",
+          "role",
+          "talons",
+          "choices"
+        ],
+        "title": "BoonTalonsOut",
+        "type": "object"
+      },
+      "BoonTalonsSettingIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "word": {
+            "default": "Lesser Harpies",
+            "enum": [
+              "Lesser Harpies",
+              "Talons"
+            ],
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "BoonTalonsSettingIn",
+        "type": "object"
+      },
       "BoonTradeIn": {
         "properties": {
           "creditor": {
@@ -7448,6 +8295,148 @@
           "defaults"
         ],
         "title": "BoonWeightsOut",
+        "type": "object"
+      },
+      "BoonbreakerOut": {
+        "properties": {
+          "appeals": {
+            "items": {
+              "$ref": "#/components/schemas/AppealOut"
+            },
+            "title": "Appeals",
+            "type": "array"
+          },
+          "character": {
+            "$ref": "#/components/schemas/BoonPartyOut"
+          },
+          "declared_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Declared As"
+          },
+          "declared_at": {
+            "format": "date-time",
+            "title": "Declared At",
+            "type": "string"
+          },
+          "disgraced": {
+            "title": "Disgraced",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lifted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifted At"
+          },
+          "lifted_note": {
+            "title": "Lifted Note",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "restored": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Restored",
+            "type": "array"
+          },
+          "voided": {
+            "items": {
+              "$ref": "#/components/schemas/BoonOut"
+            },
+            "title": "Voided",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "character",
+          "note",
+          "declared_at",
+          "declared_as",
+          "refused",
+          "voided",
+          "restored",
+          "disgraced",
+          "appeals",
+          "lifted_at",
+          "lifted_note"
+        ],
+        "title": "BoonbreakerOut",
+        "type": "object"
+      },
+      "BoonbreakerPreviewOut": {
+        "properties": {
+          "boons": {
+            "items": {
+              "$ref": "#/components/schemas/BoonOut"
+            },
+            "title": "Boons",
+            "type": "array"
+          },
+          "owed_by": {
+            "title": "Owed By",
+            "type": "integer"
+          },
+          "owed_to": {
+            "title": "Owed To",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "boons",
+          "owed_by",
+          "owed_to"
+        ],
+        "title": "BoonbreakerPreviewOut",
+        "type": "object"
+      },
+      "BoonbreakersOut": {
+        "properties": {
+          "marks": {
+            "items": {
+              "$ref": "#/components/schemas/BoonbreakerOut"
+            },
+            "title": "Marks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "marks"
+        ],
+        "title": "BoonbreakersOut",
         "type": "object"
       },
       "BreakIn": {
@@ -8573,23 +9562,6 @@
           "grade"
         ],
         "title": "ChangeEquipmentIn",
-        "type": "object"
-      },
-      "ChangeOut": {
-        "properties": {
-          "cost": {
-            "title": "Cost",
-            "type": "integer"
-          },
-          "sheet": {
-            "$ref": "#/components/schemas/SheetOut"
-          }
-        },
-        "required": [
-          "cost",
-          "sheet"
-        ],
-        "title": "ChangeOut",
         "type": "object"
       },
       "ChannelIn": {
@@ -10194,6 +11166,82 @@
         "title": "CharacterReviewOut",
         "type": "object"
       },
+      "CharacterSireIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Clan",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "default": false,
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "title": "CharacterSireIn",
+        "type": "object"
+      },
+      "CharacterSireOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan",
+          "secret",
+          "can_change"
+        ],
+        "title": "CharacterSireOut",
+        "type": "object"
+      },
       "CharacterTitlesOut": {
         "properties": {
           "acting": {
@@ -10291,6 +11339,39 @@
           "choices"
         ],
         "title": "CharacterTitlesOut",
+        "type": "object"
+      },
+      "CharacterVinculumOut": {
+        "description": "For a character's Bonds card (#666).",
+        "properties": {
+          "ratings": {
+            "items": {
+              "$ref": "#/components/schemas/VinculumOut"
+            },
+            "title": "Ratings",
+            "type": "array"
+          },
+          "report_to": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieTroupeOut"
+            },
+            "title": "Report To",
+            "type": "array"
+          },
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieOut"
+            },
+            "title": "Reports",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ratings",
+          "report_to",
+          "reports"
+        ],
+        "title": "CharacterVinculumOut",
         "type": "object"
       },
       "CharacterXpIn": {
@@ -11549,6 +12630,18 @@
           "character_ids"
         ],
         "title": "ClanSection",
+        "type": "object"
+      },
+      "ClearIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "ClearIn",
         "type": "object"
       },
       "Cleared": {
@@ -13532,6 +14625,38 @@
         "title": "DecisionOut",
         "type": "object"
       },
+      "DeclareIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "refused_boon_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused Boon Id"
+          }
+        },
+        "required": [
+          "character_id",
+          "note"
+        ],
+        "title": "DeclareIn",
+        "type": "object"
+      },
       "Decline": {
         "properties": {
           "reason": {
@@ -15119,6 +16244,12 @@
             "title": "Note",
             "type": "string"
           },
+          "override": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Override",
+            "type": "string"
+          },
           "source": {
             "default": "staff",
             "enum": [
@@ -16294,6 +17425,11 @@
       },
       "EndingOut": {
         "properties": {
+          "boonbreaker": {
+            "default": false,
+            "title": "Boonbreaker",
+            "type": "boolean"
+          },
           "games_left": {
             "title": "Games Left",
             "type": "integer"
@@ -16351,6 +17487,12 @@
           "night": {
             "format": "date",
             "title": "Night",
+            "type": "string"
+          },
+          "override": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Override",
             "type": "string"
           },
           "reason": {
@@ -19004,6 +20146,20 @@
         "title": "FittedNpc",
         "type": "object"
       },
+      "FlagIn": {
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "FlagIn",
+        "type": "object"
+      },
       "FlawPlanOut": {
         "description": "A Lesser Generation or Thin Blooded flaw, and what the troupe's setting does.",
         "properties": {
@@ -19577,7 +20733,7 @@
         "type": "object"
       },
       "GallantOut": {
-        "description": "Gallant offered for a repaid boon's debtor (horatio.boon_gallant), which the\ncaller may give or decline.",
+        "description": "Gallant offered for a repaid boon's debtor (horatio.boon_gallant, #693), which\nthe caller may give or decline.",
         "properties": {
           "creditor": {
             "title": "Creditor",
@@ -20607,6 +21763,84 @@
           "handle"
         ],
         "title": "HandleIn",
+        "type": "object"
+      },
+      "HarpyLedgerOut": {
+        "description": "A ledger the character keeps as its troupe's Harpy (#688), or as one of its\nLesser Harpies (#689).",
+        "properties": {
+          "access": {
+            "enum": [
+              "submissions",
+              "full"
+            ],
+            "title": "Access",
+            "type": "string"
+          },
+          "can_add": {
+            "default": true,
+            "title": "Can Add",
+            "type": "boolean"
+          },
+          "can_audit": {
+            "default": true,
+            "title": "Can Audit",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "default": true,
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_review": {
+            "default": true,
+            "title": "Can Review",
+            "type": "boolean"
+          },
+          "gives_access": {
+            "default": false,
+            "title": "Gives Access",
+            "type": "boolean"
+          },
+          "role": {
+            "default": "harpy",
+            "enum": [
+              "harpy",
+              "talon"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "sees_standings": {
+            "default": false,
+            "title": "Sees Standings",
+            "type": "boolean"
+          },
+          "talon_word": {
+            "default": "Lesser Harpy",
+            "title": "Talon Word",
+            "type": "string"
+          },
+          "to_review": {
+            "title": "To Review",
+            "type": "integer"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "access",
+          "to_review"
+        ],
+        "title": "HarpyLedgerOut",
         "type": "object"
       },
       "HavenAdvantageChoiceOut": {
@@ -24593,6 +25827,7 @@
           "why": {
             "enum": [
               "embrace",
+              "sire",
               "domitor",
               "retainer"
             ],
@@ -24866,6 +26101,85 @@
         "title": "LeavingOut",
         "type": "object"
       },
+      "LeavingSharersOut": {
+        "properties": {
+          "background": {
+            "title": "Background",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "others": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Others",
+            "type": "array"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "background",
+          "troupe",
+          "others"
+        ],
+        "title": "LeavingSharersOut",
+        "type": "object"
+      },
+      "LeavingThrallOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "troupe"
+        ],
+        "title": "LeavingThrallOut",
+        "type": "object"
+      },
+      "LeavingWarningsOut": {
+        "description": "What retiring the character, or saying it met Final Death, could tell others\n(horatio.retiring), as the reader may know of it.",
+        "properties": {
+          "shared": {
+            "items": {
+              "$ref": "#/components/schemas/LeavingSharersOut"
+            },
+            "title": "Shared",
+            "type": "array"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          },
+          "thralls": {
+            "items": {
+              "$ref": "#/components/schemas/LeavingThrallOut"
+            },
+            "title": "Thralls",
+            "type": "array"
+          }
+        },
+        "required": [
+          "thralls",
+          "shared",
+          "staff"
+        ],
+        "title": "LeavingWarningsOut",
+        "type": "object"
+      },
       "LedTroupe": {
         "properties": {
           "id": {
@@ -25001,6 +26315,58 @@
           "url"
         ],
         "title": "Link",
+        "type": "object"
+      },
+      "LinkIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "everywhere": {
+            "default": false,
+            "title": "Everywhere",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "side": {
+            "enum": [
+              "debtor",
+              "creditor"
+            ],
+            "title": "Side",
+            "type": "string"
+          }
+        },
+        "required": [
+          "side",
+          "character_id"
+        ],
+        "title": "LinkIn",
+        "type": "object"
+      },
+      "LinkOut": {
+        "properties": {
+          "linked": {
+            "title": "Linked",
+            "type": "integer"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "linked",
+          "skipped"
+        ],
+        "title": "LinkOut",
         "type": "object"
       },
       "LinkedRetainer": {
@@ -27628,6 +28994,37 @@
         "title": "Me",
         "type": "object"
       },
+      "MeetingIn": {
+        "description": "The thrall and regnant met, which keeps a lesser bond from ending (#665).",
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "source": {
+            "default": "staff",
+            "enum": [
+              "game",
+              "downtime",
+              "staff"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "night"
+        ],
+        "title": "MeetingIn",
+        "type": "object"
+      },
       "MemberOut": {
         "properties": {
           "character_id": {
@@ -29104,6 +30501,12 @@
             "default": "",
             "maxLength": 2000,
             "title": "Note",
+            "type": "string"
+          },
+          "override": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Override",
             "type": "string"
           },
           "regnant": {
@@ -32776,6 +34179,11 @@
             "title": "Conditions",
             "type": "string"
           },
+          "creditor_disgraced": {
+            "default": false,
+            "title": "Creditor Disgraced",
+            "type": "boolean"
+          },
           "gallant": {
             "anyOf": [
               {
@@ -32814,6 +34222,11 @@
           "other": {
             "title": "Other",
             "type": "string"
+          },
+          "other_boonbreaker": {
+            "default": false,
+            "title": "Other Boonbreaker",
+            "type": "boolean"
           },
           "other_id": {
             "anyOf": [
@@ -32915,6 +34328,11 @@
       },
       "PlayBoonsOut": {
         "properties": {
+          "boonbreaker": {
+            "default": false,
+            "title": "Boonbreaker",
+            "type": "boolean"
+          },
           "can_report": {
             "title": "Can Report",
             "type": "boolean"
@@ -32924,6 +34342,14 @@
               "$ref": "#/components/schemas/CharacterChoice-Output"
             },
             "title": "Characters",
+            "type": "array"
+          },
+          "harpy": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/HarpyLedgerOut"
+            },
+            "title": "Harpy",
             "type": "array"
           },
           "owed": {
@@ -32953,6 +34379,14 @@
               }
             ],
             "title": "Owes"
+          },
+          "reports": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlayReportOut"
+            },
+            "title": "Reports",
+            "type": "array"
           },
           "see": {
             "enum": [
@@ -33125,6 +34559,14 @@
             },
             "title": "Traits",
             "type": "array"
+          },
+          "vinculum": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VinculumLine"
+            },
+            "title": "Vinculum",
+            "type": "array"
           }
         },
         "required": [
@@ -33138,6 +34580,85 @@
           "retainers"
         ],
         "title": "PlayReference",
+        "type": "object"
+      },
+      "PlayReportOut": {
+        "description": "A boon the character's player reported that waits for review, or that wasn't\naccepted lately, with the reason (#687). Shown to its player whatever else the\ntroupe lets them see: they reported it.",
+        "properties": {
+          "direction": {
+            "enum": [
+              "owes",
+              "owed"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "other": {
+            "title": "Other",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "rejected_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejected At"
+          },
+          "rejected_because": {
+            "title": "Rejected Because",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "rejected"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "direction",
+          "other",
+          "kind",
+          "made_on",
+          "reason",
+          "state",
+          "rejected_because",
+          "rejected_at"
+        ],
+        "title": "PlayReportOut",
         "type": "object"
       },
       "PlayStatusOut": {
@@ -33790,6 +35311,35 @@
         "title": "PlayerCharacter",
         "type": "object"
       },
+      "PlayerMeetingIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "source": {
+            "default": "game",
+            "enum": [
+              "game",
+              "downtime"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "night"
+        ],
+        "title": "PlayerMeetingIn",
+        "type": "object"
+      },
       "PlayerNominationsIn": {
         "properties": {
           "on": {
@@ -34315,6 +35865,61 @@
           "reset_expires_at"
         ],
         "title": "PlayerSummary",
+        "type": "object"
+      },
+      "PlayerVaulderieIn": {
+        "properties": {
+          "false_sabbat": {
+            "default": false,
+            "title": "False Sabbat",
+            "type": "boolean"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "officiant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartyIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "others": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieParticipantIn"
+            },
+            "maxItems": 40,
+            "title": "Others",
+            "type": "array"
+          },
+          "source": {
+            "default": "game",
+            "title": "Source",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "night",
+          "others"
+        ],
+        "title": "PlayerVaulderieIn",
         "type": "object"
       },
       "PoolChange": {
@@ -35107,6 +36712,45 @@
           "on"
         ],
         "title": "PowerOut",
+        "type": "object"
+      },
+      "PraisedClaimsOut": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "sect",
+          "characters"
+        ],
+        "title": "PraisedClaimsOut",
         "type": "object"
       },
       "Preferences": {
@@ -38525,6 +40169,20 @@
           "boons"
         ],
         "title": "RegisterBoonsIn",
+        "type": "object"
+      },
+      "RejectIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "RejectIn",
         "type": "object"
       },
       "RememberedMonthOut": {
@@ -43723,6 +45381,11 @@
       "SheetBondOut": {
         "description": "A bond on a character's Bonds card: who is on the other side, and its level.",
         "properties": {
+          "can_meet": {
+            "default": false,
+            "title": "Can Meet",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -44239,6 +45902,184 @@
           }
         },
         "title": "SireIn",
+        "type": "object"
+      },
+      "SireLineChoiceOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan"
+        ],
+        "title": "SireLineChoiceOut",
+        "type": "object"
+      },
+      "SireLineClanCount": {
+        "properties": {
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clan",
+          "count"
+        ],
+        "title": "SireLineClanCount",
+        "type": "object"
+      },
+      "SireLineNodeOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "sire_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Key"
+          }
+        },
+        "required": [
+          "key",
+          "character_id",
+          "name",
+          "clan",
+          "generation",
+          "left_reason",
+          "retired",
+          "kind",
+          "sire_key"
+        ],
+        "title": "SireLineNodeOut",
+        "type": "object"
+      },
+      "SireLinesOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/SireLineClanCount"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/SireLineNodeOut"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "players_see": {
+            "title": "Players See",
+            "type": "boolean"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "nodes",
+          "clans",
+          "staff",
+          "players_see"
+        ],
+        "title": "SireLinesOut",
         "type": "object"
       },
       "SkillPool": {
@@ -45309,6 +47150,25 @@
           "lost"
         ],
         "title": "StatusLineOut",
+        "type": "object"
+      },
+      "StatusLossIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "taken": {
+            "title": "Taken",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "taken"
+        ],
+        "title": "StatusLossIn",
         "type": "object"
       },
       "StatusOut": {
@@ -46658,6 +48518,101 @@
           "amount"
         ],
         "title": "TallyPartOut",
+        "type": "object"
+      },
+      "TalonChoice": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lesser_harpy": {
+            "title": "Lesser Harpy",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "lesser_harpy"
+        ],
+        "title": "TalonChoice",
+        "type": "object"
+      },
+      "TalonIn": {
+        "properties": {
+          "can_add": {
+            "default": false,
+            "title": "Can Add",
+            "type": "boolean"
+          },
+          "can_audit": {
+            "default": false,
+            "title": "Can Audit",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "default": false,
+            "title": "Can Edit",
+            "type": "boolean"
+          }
+        },
+        "title": "TalonIn",
+        "type": "object"
+      },
+      "TalonOut": {
+        "properties": {
+          "can_add": {
+            "title": "Can Add",
+            "type": "boolean"
+          },
+          "can_audit": {
+            "title": "Can Audit",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "given_at": {
+            "format": "date-time",
+            "title": "Given At",
+            "type": "string"
+          },
+          "given_by": {
+            "title": "Given By",
+            "type": "string"
+          },
+          "in_play": {
+            "title": "In Play",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "can_add",
+          "can_edit",
+          "can_audit",
+          "given_by",
+          "given_at",
+          "in_play"
+        ],
+        "title": "TalonOut",
         "type": "object"
       },
       "TapIn": {
@@ -49013,6 +50968,16 @@
             ],
             "title": "Setting",
             "type": "string"
+          },
+          "vaulderies_waiting": {
+            "default": 0,
+            "title": "Vaulderies Waiting",
+            "type": "integer"
+          },
+          "vinculum": {
+            "default": false,
+            "title": "Vinculum",
+            "type": "boolean"
           }
         },
         "required": [
@@ -49021,6 +50986,49 @@
           "characters"
         ],
         "title": "TroupeBondsOut",
+        "type": "object"
+      },
+      "TroupeBoonAuditsOut": {
+        "properties": {
+          "audits": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditSummaryOut"
+            },
+            "title": "Audits",
+            "type": "array"
+          },
+          "can_audit": {
+            "title": "Can Audit",
+            "type": "boolean"
+          },
+          "recipients": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditChoice"
+            },
+            "title": "Recipients",
+            "type": "array"
+          },
+          "subjects": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditChoice"
+            },
+            "title": "Subjects",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "can_audit",
+          "audits",
+          "subjects",
+          "recipients"
+        ],
+        "title": "TroupeBoonAuditsOut",
         "type": "object"
       },
       "TroupeBoonSummaryOut": {
@@ -49241,6 +51249,17 @@
               }
             ],
             "title": "Session Xp"
+          },
+          "sire_lines_players": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Lines Players"
           },
           "starting_xp": {
             "anyOf": [
@@ -49832,6 +51851,21 @@
             "title": "Blood Bonds",
             "type": "string"
           },
+          "boon_harpy": {
+            "default": "none",
+            "enum": [
+              "none",
+              "submissions",
+              "full"
+            ],
+            "title": "Boon Harpy",
+            "type": "string"
+          },
+          "boon_harpy_standings": {
+            "default": false,
+            "title": "Boon Harpy Standings",
+            "type": "boolean"
+          },
           "boon_players_see": {
             "default": "intake",
             "enum": [
@@ -49845,6 +51879,25 @@
           "boon_players_settle": {
             "default": false,
             "title": "Boon Players Settle",
+            "type": "boolean"
+          },
+          "boon_review": {
+            "default": false,
+            "title": "Boon Review",
+            "type": "boolean"
+          },
+          "boon_talon_word": {
+            "default": "Lesser Harpies",
+            "enum": [
+              "Lesser Harpies",
+              "Talons"
+            ],
+            "title": "Boon Talon Word",
+            "type": "string"
+          },
+          "boon_talons": {
+            "default": false,
+            "title": "Boon Talons",
             "type": "boolean"
           },
           "boons": {
@@ -50021,6 +52074,10 @@
             "title": "Session Xp",
             "type": "integer"
           },
+          "sire_lines_players": {
+            "title": "Sire Lines Players",
+            "type": "boolean"
+          },
           "starting_blood": {
             "anyOf": [
               {
@@ -50088,6 +52145,7 @@
           "badge_status",
           "badge_pronouns",
           "whos_who_negative",
+          "sire_lines_players",
           "quests_enabled",
           "quest_requests_per_cycle",
           "whos_who",
@@ -50628,6 +52686,55 @@
         "title": "TroupeTemplateOut",
         "type": "object"
       },
+      "TroupeVinculumOut": {
+        "description": "A Sabbat troupe's Vinculum, for its running staff: its Vaulderies (newest first,\nthose waiting first of all), its background ties, and every rating now.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/VinculumPersonOut"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "ratings": {
+            "items": {
+              "$ref": "#/components/schemas/VinculumRatingOut"
+            },
+            "title": "Ratings",
+            "type": "array"
+          },
+          "ties": {
+            "items": {
+              "$ref": "#/components/schemas/VinculumTieOut"
+            },
+            "title": "Ties",
+            "type": "array"
+          },
+          "vaulderies": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieOut"
+            },
+            "title": "Vaulderies",
+            "type": "array"
+          }
+        },
+        "required": [
+          "vaulderies",
+          "ties",
+          "people",
+          "ratings",
+          "characters"
+        ],
+        "title": "TroupeVinculumOut",
+        "type": "object"
+      },
       "UnavailableIn": {
         "properties": {
           "categories": {
@@ -50923,6 +53030,220 @@
         "title": "VariantQuality",
         "type": "object"
       },
+      "VaulderieDecideIn": {
+        "properties": {
+          "approve": {
+            "title": "Approve",
+            "type": "boolean"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approve"
+        ],
+        "title": "VaulderieDecideIn",
+        "type": "object"
+      },
+      "VaulderieIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "officiant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartyIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieParticipantIn"
+            },
+            "maxItems": 40,
+            "title": "Participants",
+            "type": "array"
+          },
+          "source": {
+            "default": "staff",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "night",
+          "participants"
+        ],
+        "title": "VaulderieIn",
+        "type": "object"
+      },
+      "VaulderieOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "officiant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartyOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieParticipantOut"
+            },
+            "title": "Participants",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "recorded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded By"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "night",
+          "participants",
+          "officiant",
+          "source",
+          "note",
+          "status",
+          "reason",
+          "recorded_by",
+          "at"
+        ],
+        "title": "VaulderieOut",
+        "type": "object"
+      },
+      "VaulderieParticipantIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "false_sabbat": {
+            "default": false,
+            "title": "False Sabbat",
+            "type": "boolean"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "VaulderieParticipantIn",
+        "type": "object"
+      },
+      "VaulderieParticipantOut": {
+        "properties": {
+          "false_sabbat": {
+            "title": "False Sabbat",
+            "type": "boolean"
+          },
+          "who": {
+            "$ref": "#/components/schemas/PartyOut"
+          }
+        },
+        "required": [
+          "who",
+          "false_sabbat"
+        ],
+        "title": "VaulderieParticipantOut",
+        "type": "object"
+      },
+      "VaulderieTroupeOut": {
+        "description": "A troupe its player can report the character's Vaulderies to, with the characters\nthey can name in it by id.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "characters"
+        ],
+        "title": "VaulderieTroupeOut",
+        "type": "object"
+      },
       "Venue": {
         "properties": {
           "access": {
@@ -51092,6 +53413,193 @@
           "ends_at"
         ],
         "title": "ViewingNow",
+        "type": "object"
+      },
+      "VinculumLine": {
+        "description": "A Vinculum the character feels, for the Play View's Sheet tab (#666).",
+        "properties": {
+          "effects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "toward": {
+            "title": "Toward",
+            "type": "string"
+          }
+        },
+        "required": [
+          "toward",
+          "rating",
+          "effects"
+        ],
+        "title": "VinculumLine",
+        "type": "object"
+      },
+      "VinculumOut": {
+        "description": "A Vinculum the character feels, on its Bonds card: toward whom, and its rating.",
+        "properties": {
+          "effects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "name",
+          "rating",
+          "effects"
+        ],
+        "title": "VinculumOut",
+        "type": "object"
+      },
+      "VinculumPersonOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "who": {
+            "$ref": "#/components/schemas/PartyOut"
+          }
+        },
+        "required": [
+          "key",
+          "who"
+        ],
+        "title": "VinculumPersonOut",
+        "type": "object"
+      },
+      "VinculumRatingOut": {
+        "properties": {
+          "felt_by": {
+            "title": "Felt By",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "toward": {
+            "title": "Toward",
+            "type": "string"
+          }
+        },
+        "required": [
+          "felt_by",
+          "toward",
+          "rating"
+        ],
+        "title": "VinculumRatingOut",
+        "type": "object"
+      },
+      "VinculumReasonIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "VinculumReasonIn",
+        "type": "object"
+      },
+      "VinculumTieIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "one": {
+            "$ref": "#/components/schemas/PartyIn"
+          },
+          "other": {
+            "$ref": "#/components/schemas/PartyIn"
+          },
+          "rating": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "one",
+          "other",
+          "rating",
+          "night",
+          "reason"
+        ],
+        "title": "VinculumTieIn",
+        "type": "object"
+      },
+      "VinculumTieOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "one": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "other": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "one",
+          "other",
+          "rating",
+          "night",
+          "reason"
+        ],
+        "title": "VinculumTieOut",
         "type": "object"
       },
       "VisibleNote": {
@@ -51768,6 +54276,10 @@
             "title": "Shows Negative",
             "type": "boolean"
           },
+          "sire_lines": {
+            "title": "Sire Lines",
+            "type": "boolean"
+          },
           "troupe_id": {
             "format": "uuid",
             "title": "Troupe Id",
@@ -51788,7 +54300,8 @@
           "departed",
           "seated",
           "can_represent",
-          "shows_negative"
+          "shows_negative",
+          "sire_lines"
         ],
         "title": "WhosWhoOut",
         "type": "object"
@@ -53201,6 +55714,35 @@
         "title": "TeachingOut",
         "type": "object"
       },
+      "horatio__api__bonds__ChangeOut": {
+        "description": "What time does next to a bond (#665): it drops to two drinks, or ends, on a day.",
+        "properties": {
+          "due": {
+            "title": "Due",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "drop",
+              "end"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "on": {
+            "format": "date",
+            "title": "On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "on",
+          "due"
+        ],
+        "title": "ChangeOut",
+        "type": "object"
+      },
       "horatio__api__downtime_effects__AppliedOut": {
         "properties": {
           "character_name": {
@@ -53472,6 +56014,23 @@
           "reason"
         ],
         "title": "AppliedOut",
+        "type": "object"
+      },
+      "horatio__api__sheets__ChangeOut": {
+        "properties": {
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetOut"
+          }
+        },
+        "required": [
+          "cost",
+          "sheet"
+        ],
+        "title": "ChangeOut",
         "type": "object"
       },
       "horatio__api__specializations__DetailChange": {
@@ -55135,6 +57694,50 @@
         ]
       }
     },
+    "/api/boon-audits/{audit_id}": {
+      "get": {
+        "description": "One audit, as it was made: for whoever keeps the troupe's ledger and may see it,\nand for the player of the character it was given to.",
+        "operationId": "read_audit_api_boon_audits__audit_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "audit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Audit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonAuditOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Audit",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/calendar/links": {
       "get": {
         "description": "The caller's calendar links, for a member of the troupe.",
@@ -55667,6 +58270,102 @@
         "summary": "Change Character",
         "tags": [
           "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/apology-boon": {
+      "get": {
+        "description": "For staff putting right a slip under Warned or Disgraced: the ledger its boon\ngoes in, and who could have been wronged.",
+        "operationId": "apology_choices_api_characters__character_id__apology_boon_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApologyChoicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apology Choices",
+        "tags": [
+          "boons"
+        ]
+      },
+      "post": {
+        "description": "Register the boon an apology owes for a slip (p. 316): minor under Warned, major\nunder Disgraced, owed by the character to whoever was wronged.",
+        "operationId": "apology_boon_api_characters__character_id__apology_boon_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApologyBoonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apology Boon",
+        "tags": [
+          "boons"
         ]
       }
     },
@@ -56712,6 +59411,118 @@
         "summary": "Withdraw Report",
         "tags": [
           "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/bonds/{bond_id}/meetings": {
+      "post": {
+        "description": "Its player logs the character meeting the other side of a bond it is in (#665):\nit counts now, or waits on staff, by the troupe's setting (horatio.bonds).",
+        "operationId": "report_meeting_api_characters__character_id__bonds__bond_id__meetings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerMeetingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Meeting",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/boon-audits": {
+      "get": {
+        "description": "The audits given to the character, newest first: for its player, and the staff\nof the troupe each was made in.",
+        "operationId": "character_audits_api_characters__character_id__boon_audits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BoonAuditSummaryOut"
+                  },
+                  "title": "Response Character Audits Api Characters  Character Id  Boon Audits Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Audits",
+        "tags": [
+          "boons"
         ]
       }
     },
@@ -59138,6 +61949,54 @@
         ]
       }
     },
+    "/api/characters/{character_id}/harpy-ledgers": {
+      "get": {
+        "description": "The ledgers the character's player keeps as it, the troupe's Harpy (#688): for\nthe Harpy's own page, linked from the Play View's Boons tab.",
+        "operationId": "character_harpy_ledgers_api_characters__character_id__harpy_ledgers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HarpyLedgerOut"
+                  },
+                  "title": "Response Character Harpy Ledgers Api Characters  Character Id  Harpy Ledgers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Harpy Ledgers",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/characters/{character_id}/haven": {
       "get": {
         "description": "The character's Haven as its player keeps it, and the advantages to choose from.",
@@ -60144,6 +63003,50 @@
           }
         },
         "summary": "Change Leaving",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/leaving/warnings": {
+      "get": {
+        "description": "What the retire dialog, and changing why a character left, warn of before it\ntells other players something they haven't been told (#748): its player's, and its\nhome troupe's running staff's, each as they may know of it.",
+        "operationId": "leaving_warnings_api_characters__character_id__leaving_warnings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeavingWarningsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Leaving Warnings",
         "tags": [
           "characters"
         ]
@@ -61409,7 +64312,7 @@
         ]
       },
       "post": {
-        "description": "A player reports a boon for their character, which goes in the troupe's ledger\nas theirs, done as the character.",
+        "description": "A player reports a boon for their character, which goes in the troupe's ledger\nas theirs, done as the character: standing, or waiting for review where the troupe\nholds reports for review (#687).",
         "operationId": "report_boon_api_characters__character_id__play_boons_post",
         "parameters": [
           {
@@ -62679,6 +65582,50 @@
         "summary": "Set Power Choices",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/praised-claims": {
+      "get": {
+        "description": "For spending Praised (p. 316): who in the troupe whose ledger the character's\nPlay View shows is Accepted by its sect and not already in its debt. Its player\nsees player characters; staff see the troupe's NPCs too.",
+        "operationId": "praised_claims_api_characters__character_id__praised_claims_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PraisedClaimsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Praised Claims",
+        "tags": [
+          "boons"
         ]
       }
     },
@@ -63995,6 +66942,160 @@
         ]
       }
     },
+    "/api/characters/{character_id}/sire": {
+      "get": {
+        "description": "The character's sire, as anyone who sees the character sees it.",
+        "operationId": "read_sire_api_characters__character_id__sire_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterSireOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Sire",
+        "tags": [
+          "sire lines"
+        ]
+      },
+      "put": {
+        "description": "Give the character its sire: a character the caller can see, or a name and\nclan; and whether the troupe's players see it.",
+        "operationId": "set_sire_api_characters__character_id__sire_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CharacterSireIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterSireOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Sire",
+        "tags": [
+          "sire lines"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/sire/choices": {
+      "get": {
+        "description": "The vampires that could be the character's sire, by name (`candidates`).",
+        "operationId": "sire_choices_api_characters__character_id__sire_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SireLineChoiceOut"
+                  },
+                  "title": "Response Sire Choices Api Characters  Character Id  Sire Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sire Choices",
+        "tags": [
+          "sire lines"
+        ]
+      }
+    },
     "/api/characters/{character_id}/specializations": {
       "get": {
         "operationId": "character_kinds_api_characters__character_id__specializations_get",
@@ -64901,7 +68002,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangeOut"
+                  "$ref": "#/components/schemas/horatio__api__sheets__ChangeOut"
                 }
               }
             },
@@ -64955,7 +68056,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangeOut"
+                  "$ref": "#/components/schemas/horatio__api__sheets__ChangeOut"
                 }
               }
             },
@@ -65009,7 +68110,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangeOut"
+                  "$ref": "#/components/schemas/horatio__api__sheets__ChangeOut"
                 }
               }
             },
@@ -65433,6 +68534,158 @@
         "summary": "Unavailable After",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/vaulderies": {
+      "post": {
+        "description": "Its player reports a Vaulderie the character took part in: it waits for the\ntroupe's running staff to approve it.",
+        "operationId": "report_vaulderie_api_characters__character_id__vaulderies_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerVaulderieIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/vaulderies/{vaulderie_id}/withdraw": {
+      "post": {
+        "description": "Take back a Vaulderie its player reported, while it waits.",
+        "operationId": "withdraw_vaulderie_api_characters__character_id__vaulderies__vaulderie_id__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "vaulderie_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vaulderie Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/vinculum": {
+      "get": {
+        "description": "The Vinculum ratings the character feels, as the reader may know of them, and\nfor its player, where they can report its Vaulderies and those they reported.",
+        "operationId": "character_vinculum_api_characters__character_id__vinculum_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterVinculumOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Vinculum",
+        "tags": [
+          "bonds"
         ]
       }
     },
@@ -75598,7 +78851,7 @@
     },
     "/api/troupes/{troupe_id}/bonds/known": {
       "get": {
-        "description": "The bonds Horatio can work out for the troupe that it doesn't keep yet: from its\ncharacters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).",
+        "description": "The bonds Horatio can work out for the troupe that it doesn't keep yet: from its\ncharacters' Embraces and the sires their sheets name, ghouls' domitors and vampires'\nghoul Retainers (#663, #739).",
         "operationId": "known_bonds_api_troupes__troupe_id__bonds_known_get",
         "parameters": [
           {
@@ -75863,6 +79116,60 @@
           }
         },
         "summary": "Clear Kept",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/confirm-change": {
+      "post": {
+        "description": "Staff confirm the change time has brought a bond, in a troupe where players\nreport and staff approve (#665): it drops to two drinks, or ends.",
+        "operationId": "confirm_change_api_troupes__troupe_id__bonds__bond_id__confirm_change_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Change",
         "tags": [
           "bonds"
         ]
@@ -76208,6 +79515,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/meetings": {
+      "post": {
+        "description": "Log the thrall and regnant meeting, such as in a downtime: it keeps a lesser bond\nfrom ending (#665).",
+        "operationId": "add_meeting_api_troupes__troupe_id__bonds__bond_id__meetings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Meeting",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/book-traits": {
       "get": {
         "description": "The troupe's changes to book traits, and the characters holding a trait it bans.",
@@ -76304,6 +79675,230 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boon-audits": {
+      "get": {
+        "description": "The troupe's audits the caller sees, newest first, and whom they can audit and\ngive one to: for its staff, and a Harpy or Lesser Harpy who may perform audits.",
+        "operationId": "troupe_audits_api_troupes__troupe_id__boon_audits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeBoonAuditsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Audits",
+        "tags": [
+          "boons"
+        ]
+      },
+      "post": {
+        "description": "Audit a character's boons as the ledger holds them now; given at once to a\nplayer character, if named.",
+        "operationId": "make_audit_api_troupes__troupe_id__boon_audits_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonAuditIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonAuditOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Audit",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-audits/{audit_id}/give": {
+      "post": {
+        "description": "Give an audit to a player character in play in the troupe, once.",
+        "operationId": "give_audit_api_troupes__troupe_id__boon_audits__audit_id__give_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "audit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Audit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonAuditGiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonAuditOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Audit",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-flags/{flag_id}/clear": {
+      "post": {
+        "description": "Clear a flag, with an optional note: the name is right as it is, say.",
+        "operationId": "clear_api_troupes__troupe_id__boon_flags__flag_id__clear_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "flag_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Flag Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClearIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clear",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boon-games": {
       "get": {
         "description": "The troupe's latest games already started, newest first: those its boons can be\nregistered at, for those who keep its ledger.",
@@ -76347,6 +79942,60 @@
           }
         },
         "summary": "Boon Games",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-harpy": {
+      "put": {
+        "description": "How far the troupe's Harpy reaches into its boon ledger (#688): not at all, the\nreview queue and word of each boon players report, or the full ledger; and whether,\nwith the full ledger, the Harpy also reads its standings and statistics (#749).",
+        "operationId": "set_boon_harpy_api_troupes__troupe_id__boon_harpy_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonHarpyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Boon Harpy",
         "tags": [
           "boons"
         ]
@@ -76460,9 +80109,105 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boon-review": {
+      "get": {
+        "description": "The review queue: every boon waiting for review or with a flag raised.",
+        "operationId": "review_queue_api_troupes__troupe_id__boon_review_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Queue",
+        "tags": [
+          "boons"
+        ]
+      },
+      "put": {
+        "description": "Whether boons the troupe's players report wait for review before they stand.",
+        "operationId": "set_boon_review_api_troupes__troupe_id__boon_review_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonReviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Boon Review",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boon-standings": {
       "get": {
-        "description": "Where everyone stands in the troupe's boon ledger, now: totals, open boons by\nkind, each party's net, the court, clans, ages and sects, how old open debt is,\nhow boons get settled, boons across clan and sect lines, and those who owe each\nother. \"active\" leaves out boons that involve someone dead or off-field.",
+        "description": "Where everyone stands in the troupe's boon ledger, now: totals, open boons by\nkind, each party's net, the court, clans, ages and sects, how old open debt is,\nhow boons get settled, boons across clan and sect lines, and those who owe each\nother. \"active\" leaves out boons that involve someone dead or off-field. A Harpy\n(#749) reads who has left only as the court knows it.",
         "operationId": "boon_standings_api_troupes__troupe_id__boon_standings_get",
         "parameters": [
           {
@@ -76520,7 +80265,7 @@
     },
     "/api/troupes/{troupe_id}/boon-statistics": {
       "get": {
-        "description": "The boon ledger's statistics: by month, who owes whom, debt between clans and\nsects, and each recent game's boons. \"active\" leaves out boons that involve\nsomeone dead or off-field.",
+        "description": "The boon ledger's statistics: by month, who owes whom, debt between clans and\nsects, and each recent game's boons. \"active\" leaves out boons that involve\nsomeone dead or off-field. A Harpy (#749) reads who has left only as the court\nknows it.",
         "operationId": "boon_statistics_api_troupes__troupe_id__boon_statistics_get",
         "parameters": [
           {
@@ -76576,6 +80321,220 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boon-talons": {
+      "get": {
+        "description": "Who has access to the ledger as a Lesser Harpy, with what each may do: for the\nHarpy, who gives it, and for the troupe's running staff.",
+        "operationId": "boon_talons_list_api_troupes__troupe_id__boon_talons_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonTalonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Boon Talons List",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-talons-setting": {
+      "put": {
+        "description": "Whether the troupe's Harpy may give others access to its boon ledger (#689),\nand what it calls them. Only used while the Harpy has the full ledger.",
+        "operationId": "set_boon_talons_api_troupes__troupe_id__boon_talons_setting_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonTalonsSettingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Boon Talons",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-talons/{character_id}": {
+      "delete": {
+        "description": "Take a character's access to the ledger away: the Harpy, as their character, or\nthe troupe's running staff. Logged.",
+        "operationId": "take_talon_api_troupes__troupe_id__boon_talons__character_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonTalonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Take Talon",
+        "tags": [
+          "boons"
+        ]
+      },
+      "put": {
+        "description": "The Harpy gives a character access to the ledger, or changes what it allows,\nas their character. Logged.",
+        "operationId": "give_talon_api_troupes__troupe_id__boon_talons__character_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TalonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonTalonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Talon",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boon-weights": {
       "put": {
         "description": "What each kind of boon weighs in the troupe's standings.",
@@ -76625,6 +80584,220 @@
           }
         },
         "summary": "Set Boon Weights",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boonbreakers": {
+      "get": {
+        "description": "Everyone marked a Boonbreaker in the troupe's ledger, standing marks first.",
+        "operationId": "troupe_boonbreakers_api_troupes__troupe_id__boonbreakers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonbreakersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Boonbreakers",
+        "tags": [
+          "boons"
+        ]
+      },
+      "post": {
+        "description": "Declare a character a Boonbreaker (p. 397): their open boons void, both ways,\nand Disgraced while the mark stands.",
+        "operationId": "declare_boonbreaker_api_troupes__troupe_id__boonbreakers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclareIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonbreakerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Declare Boonbreaker",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boonbreakers/preview": {
+      "get": {
+        "description": "What declaring the character a Boonbreaker would make void, before it's done.",
+        "operationId": "boonbreaker_preview_api_troupes__troupe_id__boonbreakers_preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonbreakerPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Boonbreaker Preview",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boonbreakers/{mark_id}/appeals": {
+      "post": {
+        "description": "An appeal for mercy and its outcome (p. 398). Granted, the mark is lifted and\nthe boons named in `restore` stand again.",
+        "operationId": "appeal_boonbreaker_api_troupes__troupe_id__boonbreakers__mark_id__appeals_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "mark_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mark Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppealIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonbreakerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Appeal Boonbreaker",
         "tags": [
           "boons"
         ]
@@ -76776,7 +80949,7 @@
         ]
       },
       "post": {
-        "description": "Register boons in the ledger: one, or a whole game's at once, each row as many\ntimes as its count. All or none: a row that can't be registered stops them all.",
+        "description": "Register boons in the ledger: one, or a whole game's at once, each row as many\ntimes as its count. All or none: a row that can't be registered stops them all. A\nHarpy (#688) registers them as their character, with no staff note.",
         "operationId": "register_api_troupes__troupe_id__boons_post",
         "parameters": [
           {
@@ -76834,7 +81007,7 @@
     },
     "/api/troupes/{troupe_id}/boons/{boon_id}": {
       "get": {
-        "description": "A boon with its log.",
+        "description": "A boon with its log. A Harpy given only the review queue (#688) opens only the\nboons in it; a Lesser Harpy (#689) any boon.",
         "operationId": "one_boon_api_troupes__troupe_id__boons__boon_id__get",
         "parameters": [
           {
@@ -76886,7 +81059,7 @@
         ]
       },
       "patch": {
-        "description": "Correct what a boon says, with a note. Its log keeps each field before and\nafter, which only the troupe's storytellers and assistant storytellers see.",
+        "description": "Correct what a boon says, with a note. Its log keeps each field before and\nafter, which only the troupe's storytellers and assistant storytellers see. A Harpy\n(#688) edits as their character, and never the staff note.",
         "operationId": "edit_api_troupes__troupe_id__boons__boon_id__patch",
         "parameters": [
           {
@@ -76948,9 +81121,137 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/accept": {
+      "post": {
+        "description": "A boon waiting for review stands: it was reviewed, perhaps edited first.",
+        "operationId": "accept_api_troupes__troupe_id__boons__boon_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/flags": {
+      "post": {
+        "description": "Flag a boon by hand for a ruling, with a note.",
+        "operationId": "flag_api_troupes__troupe_id__boons__boon_id__flags_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Flag",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boons/{boon_id}/gallant": {
       "post": {
-        "description": "Staff give the repaid boon's debtor Gallant, or decline to (pp. 402, 405).",
+        "description": "Staff, or a Harpy with the full ledger, give the repaid boon's debtor Gallant,\nor decline to (pp. 402, 405).",
         "operationId": "answer_gallant_api_troupes__troupe_id__boons__boon_id__gallant_post",
         "parameters": [
           {
@@ -77007,6 +81308,70 @@
           }
         },
         "summary": "Answer Gallant",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/link": {
+      "post": {
+        "description": "Put a character in place of a name on a boon, or on every boon naming it.",
+        "operationId": "link_api_troupes__troupe_id__boons__boon_id__link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Link",
         "tags": [
           "boons"
         ]
@@ -77071,6 +81436,70 @@
           }
         },
         "summary": "Pass On",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/reject": {
+      "post": {
+        "description": "A boon waiting for review isn't accepted, with a reason its reporter sees.",
+        "operationId": "reject_api_troupes__troupe_id__boons__boon_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reject",
         "tags": [
           "boons"
         ]
@@ -77199,6 +81628,70 @@
           }
         },
         "summary": "Settle",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/status-loss": {
+      "post": {
+        "description": "For a great boon its debtor formally ignored (p. 395): staff or the Harpy took\nthe status they lost, with the status tools, or won't.",
+        "operationId": "answer_status_loss_api_troupes__troupe_id__boons__boon_id__status_loss_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusLossIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Status Loss",
         "tags": [
           "boons"
         ]
@@ -86762,6 +91255,50 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/sire-lines": {
+      "get": {
+        "description": "Who sired whom: every vampire in the troupe for its staff; for its players, if\nthe troupe shows them, those on its Who's Who with the sires it shows.",
+        "operationId": "read_sire_lines_api_troupes__troupe_id__sire_lines_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SireLinesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Sire Lines",
+        "tags": [
+          "sire lines"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/specializations": {
       "get": {
         "description": "The troupe's lists for each kind of specialisation. They are the troupe's, for\nevery splat: a ghoul's kinds and catalogue are the vampire's.",
@@ -88044,6 +92581,349 @@
         "summary": "Set One Holder",
         "tags": [
           "titles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vaulderies": {
+      "post": {
+        "description": "Record a Vaulderie: it counts at once, and lowers each participant's blood bonds\nthe troupe keeps a step (the Errata's p. 434).",
+        "operationId": "record_vaulderie_api_troupes__troupe_id__vaulderies_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaulderieIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vaulderies/{vaulderie_id}/decide": {
+      "post": {
+        "description": "Approve a Vaulderie a player reported, or decline it with the reason.",
+        "operationId": "decide_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__decide_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "vaulderie_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vaulderie Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaulderieDecideIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vaulderies/{vaulderie_id}/remove": {
+      "post": {
+        "description": "Take a recorded Vaulderie out, with the reason: it no longer counts toward\nratings. The bonds it lowered stay lowered.",
+        "operationId": "remove_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "vaulderie_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vaulderie Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinculumReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vinculum": {
+      "get": {
+        "description": "The troupe's Vaulderies, background ties and every rating now, for its running\nstaff.",
+        "operationId": "troupe_vinculum_api_troupes__troupe_id__vinculum_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeVinculumOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Vinculum",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vinculum/ties": {
+      "post": {
+        "description": "Enter a background tie: two who shared Vaulderies before Horatio, at a rating\non a night (p. 435's example).",
+        "operationId": "add_tie_api_troupes__troupe_id__vinculum_ties_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinculumTieIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinculumTieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Tie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vinculum/ties/{tie_id}/remove": {
+      "post": {
+        "operationId": "remove_tie_api_troupes__troupe_id__vinculum_ties__tie_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "tie_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tie Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinculumReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeVinculumOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Tie",
+        "tags": [
+          "bonds"
         ]
       }
     },

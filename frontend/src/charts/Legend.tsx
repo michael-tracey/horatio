@@ -1,10 +1,14 @@
-/** One thing a legend names: its colour, and the mark it is drawn as (a bar's block, a line, a dot). */
-export type LegendItem = { key: string; label: string; colour: string; mark?: "rect" | "line" | "dot" };
+/**
+ * One thing a legend names: its colour, and the mark it is drawn as (a bar's block,
+ * a line, a dot). A line can carry its dash pattern, for charts that tell lines
+ * apart by dash as well as colour.
+ */
+export type LegendItem = { key: string; label: string; colour: string; mark?: "rect" | "line" | "dot"; dash?: string };
 
-function Swatch({ colour, mark = "rect" }: Pick<LegendItem, "colour" | "mark">) {
+function Swatch({ colour, mark = "rect", dash }: Pick<LegendItem, "colour" | "mark" | "dash">) {
   return (
-    <svg width={14} height={10} aria-hidden="true" className="shrink-0">
-      {mark === "line" && <line x1={1} x2={13} y1={5} y2={5} stroke={colour} strokeWidth={2} strokeLinecap="round" />}
+    <svg width={dash ? 22 : 14} height={10} aria-hidden="true" className="shrink-0">
+      {mark === "line" && <line x1={1} x2={dash ? 21 : 13} y1={5} y2={5} stroke={colour} strokeWidth={2} strokeLinecap="round" strokeDasharray={dash} />}
       {mark === "dot" && <circle cx={7} cy={5} r={4} fill={colour} />}
       {mark === "rect" && <rect x={1} y={1} width={12} height={8} rx={2} fill={colour} />}
     </svg>
@@ -25,7 +29,7 @@ export function Legend({ items, hidden, onToggle }: { items: LegendItem[]; hidde
         const off = hidden?.has(item.key) ?? false;
         const body = (
           <>
-            <Swatch colour={item.colour} mark={item.mark} />
+            <Swatch colour={item.colour} mark={item.mark} dash={item.dash} />
             <span className={off ? "line-through opacity-60" : undefined}>{item.label}</span>
           </>
         );

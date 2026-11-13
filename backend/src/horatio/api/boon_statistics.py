@@ -2,7 +2,7 @@
 whom, debt between clans and sects, and each game's activity, for the statistics
 page's charts; and the troupe's games a boon can be registered at.
 
-Those who may read the standings read these (`boon_standings.can_read`)."""
+Those who may read the standings read these (`boon_standings.reader`)."""
 
 import uuid
 from datetime import UTC, datetime
@@ -17,6 +17,7 @@ from horatio.api.boon_standings import (
     BoonWeightsOut,
     Scope,
     party_out,
+    standings_reader,
     standings_troupe,
     weights_out,
 )
@@ -131,9 +132,10 @@ def boon_statistics(
 ) -> BoonStatisticsOut:
     """The boon ledger's statistics: by month, who owes whom, debt between clans and
     sects, and each recent game's boons. "active" leaves out boons that involve
-    someone dead or off-field."""
-    troupe = standings_troupe(db, user, troupe_id)
-    found = statistics.statistics_of(db, troupe, datetime.now(UTC), scope)
+    someone dead or off-field. A Harpy (#749) reads who has left only as the court
+    knows it."""
+    troupe, reader = standings_reader(db, user, troupe_id)
+    found = statistics.statistics_of(db, troupe, datetime.now(UTC), scope, reader.court)
     return BoonStatisticsOut(
         scope=scope,
         weights=weights_out(troupe),

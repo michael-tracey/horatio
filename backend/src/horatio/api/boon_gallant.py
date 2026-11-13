@@ -1,6 +1,6 @@
 """Gallant for repaying a boon (horatio.boon_gallant, #693): answering the offer, by
-the troupe's running staff from the ledger, or by the creditor's player (or staff)
-from the Play View's Boons tab."""
+the troupe's running staff or the Harpy from the ledger, or by the creditor's player
+(or staff) from the Play View's Boons tab."""
 
 import uuid
 
@@ -49,16 +49,19 @@ def answer_gallant(
     db: DbSession,
     user: CurrentUser,
 ) -> BoonOut:
-    """Staff give the repaid boon's debtor Gallant, or decline to (pp. 402, 405)."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    """Staff, or a Harpy with the full ledger, give the repaid boon's debtor Gallant,
+    or decline to (pp. 402, 405)."""
+    troupe, keeper = ledger_troupe(db, user, troupe_id, "edit")
     boon = troupe_boon(db, troupe, boon_id)
     found = open_offer(db, boon)
     if body.give:
-        boon_gallant.give(db, user, troupe, boon, found, body.note)
+        boon_gallant.give(
+            db, user, troupe, boon, found, "staff", body.note, as_character=keeper.character
+        )
     else:
-        boon_gallant.decline(db, user, boon, found, body.note)
+        boon_gallant.decline(db, user, boon, found, body.note, as_character=keeper.character)
     db.commit()
-    return full_out(db, user, troupe, boon)
+    return full_out(db, user, troupe, boon, keeper)
 
 
 @router.post("/characters/{character_id}/play-boons/{boon_id}/gallant")
@@ -89,7 +92,16 @@ def answer_play_gallant(
         )
     as_character = None if staff else character
     if body.give:
-        boon_gallant.give(db, user, troupe, boon, found, body.note, as_character=as_character)
+        boon_gallant.give(
+            db,
+            user,
+            troupe,
+            boon,
+            found,
+            "staff" if staff else "player",
+            body.note,
+            as_character=as_character,
+        )
     else:
         boon_gallant.decline(db, user, boon, found, body.note, as_character=as_character)
     db.commit()

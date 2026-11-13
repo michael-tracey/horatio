@@ -5,7 +5,8 @@ import { api, unwrap } from "../../api/client";
 import { BOND_PAGE, levelName, levelText } from "../../bonds";
 import { InfoButton } from "../../components/InfoButton";
 import { Button, Card } from "../../components/ui";
-import { BondReportList, ReportDrinkForm } from "./BondReports";
+import { BondReportList, ReportDrinkForm, ReportMeetingForm } from "./BondReports";
+import { useVinculum, VinculumPart } from "./VinculumPart";
 
 /**
  * The character's blood bonds still felt, as the viewer may know them: those it is
@@ -21,11 +22,29 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/bonds", { params: { path: { character_id: characterId } } })),
     retry: false,
   });
+  const vinculum = useVinculum(characterId).data;
   const [reporting, setReporting] = useState(false);
+  const [meeting, setMeeting] = useState<string | null>(null);
   const b = bonds.data;
   const reports = b?.reports ?? [];
   const troupes = b?.report_to ?? [];
-  if (!b || (b.bound_to.length === 0 && b.bound_by.length === 0 && !b.manage_troupe_id && reports.length === 0 && troupes.length === 0)) return null;
+  const setting = troupes[0]?.setting ?? null;
+  // A lesser bond ends after months apart (#665): its player logs a meeting the
+  // storytellers wouldn't know of, such as one in a downtime.
+  function meetingButton(bondId: string, other: string, canMeet: boolean) {
+    if (!canMeet) return null;
+    if (meeting === bondId)
+      return <ReportMeetingForm characterId={characterId} bondId={bondId} name={name} other={other} setting={setting} onDone={() => setMeeting(null)} />;
+    return (
+      <button type="button" className="block text-xs text-mist underline hover:text-parchment" onClick={() => setMeeting(bondId)}>
+        Log a meeting with {other}
+      </button>
+    );
+  }
+  // The Vinculum (#666) shows here too, for a character in a Sabbat troupe.
+  const sabbat = !!vinculum && (vinculum.ratings.length > 0 || vinculum.report_to.length > 0 || vinculum.reports.length > 0);
+  if (!b || (b.bound_to.length === 0 && b.bound_by.length === 0 && !b.manage_troupe_id && reports.length === 0 && troupes.length === 0 && !sabbat))
+    return null;
   return (
     <Card
       dense
@@ -49,6 +68,7 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
                 <span className="text-parchment">Bound to {bond.name}</span>
                 <span className="block">{text.line}</span>
                 <span className="block text-xs text-mist">{text.effect}</span>
+                {meetingButton(bond.id, bond.name, bond.can_meet ?? false)}
               </li>
             );
           })}
@@ -61,6 +81,7 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
             {b.bound_by.map((bond) => (
               <li key={bond.id}>
                 {bond.name}: <span className="text-mist">{levelName(bond.level).toLowerCase()}</span>
+                {meetingButton(bond.id, bond.name, bond.can_meet ?? false)}
               </li>
             ))}
           </ul>
@@ -84,6 +105,7 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
           )}
         </div>
       )}
+      <VinculumPart characterId={characterId} name={name} />
       {b.manage_troupe_id && (
         <p className="mt-2 text-sm">
           <Link to={`/troupes/${b.manage_troupe_id}/bonds`} className="text-mist underline hover:text-parchment">

@@ -3,19 +3,23 @@ sire from the Embrace (MET: VTM p. 295), a ghoul's full bond to their domitor (p
 and a vampire's ghoul Retainers' to them; added while the troupe's Blood bonds setting
 isn't off, and for what came before, filled in when its running staff choose."""
 
+import uuid
 from collections.abc import Callable
+from datetime import UTC
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from horatio.models import Character
 from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_embrace import MALKAVIAN, NIGHT, embrace, vivian
 from tests.test_api_generation_until_accepted import make_home
 from tests.test_api_ghouls import bind, typed
 from tests.test_api_npc_kinds import made
 from tests.test_api_retainers import BOCEPHUS, give_retainers, make_npc, put
+from tests.test_api_sect_status import member
 
 pytestmark = pytest.mark.usefixtures("ghoul_rules")
 
@@ -136,6 +140,94 @@ def test_a_ghoul_accepted_by_its_home_troupe_is_bound_to_its_domitor(troupe: Tro
     # A full bond makes the ghoul immune to others: an Embrace by someone else adds none.
     embraced(troupe, ghoul)
     assert between(troupe, "Vivian", MALKAVIAN["name"]) == []
+
+
+def give_sire(troupe: Troupe, childe: str, **body: Any) -> None:
+    """Staff give the character its sire on the sheet (#707)."""
+    given = troupe.storyteller.client.put(f"/characters/{childe}/sire", json=body)
+    assert given.status_code == 200, given.text
+
+
+def made_on(troupe: Troupe, character_id: str) -> str:
+    """The day the character was made in Horatio, as the API gives dates."""
+    character = troupe.session.get(Character, uuid.UUID(character_id))
+    assert character is not None
+    return character.created_at.astimezone(UTC).date().isoformat()
+
+
+def test_the_sire_on_the_sheet_is_offered_and_filled_in_kept_secret(troupe: Troupe) -> None:
+    anna = member(troupe, "Anna")
+    elsa = made(troupe, name="Old Elsa", npc_kind="vampire")["id"]
+    give_sire(troupe, anna, character_id=elsa, secret=True)
+    track(troupe)
+    # Never added on its own: only offered.
+    assert bonds(troupe) == []
+
+    [item] = known(troupe).json()
+    assert (item["why"], item["level"], item["night"]) == ("sire", 1, made_on(troupe, anna))
+    assert (item["thrall"]["character_id"], item["regnant"]["character_id"]) == (anna, elsa)
+    assert "p. 295" in item["reason"]
+
+    filled = troupe.storyteller.client.post(f"/troupes/{troupe.id}/bonds/known")
+    assert filled.status_code == 200, filled.text
+    [added] = filled.json()["added"]
+    assert (added["thrall"]["name"], added["regnant"]["name"], added["level"]) == (
+        "Anna",
+        "Old Elsa",
+        1,
+    )
+    # A secret sire stays with those who know it: the childe's player, whose bond it
+    # is, and staff; the regnant's side sees it only once staff mark it known.
+    assert added["known_to_regnant"] is False
+    card = troupe.player.client.get(f"/characters/{anna}/bonds").json()
+    assert [b["name"] for b in card["bound_to"]] == ["Old Elsa"]
+    assert known(troupe).json() == []
+
+
+def test_a_sire_known_by_name_gives_a_bond_to_the_name(troupe: Troupe) -> None:
+    anna = member(troupe, "Anna")
+    give_sire(troupe, anna, name="Marcus", clan="Brujah")
+    track(troupe)
+
+    [item] = known(troupe).json()
+    assert item["why"] == "sire"
+    assert (item["regnant"]["character_id"], item["regnant"]["name"]) == (None, "Marcus")
+
+
+def test_no_sire_bond_where_one_stands_or_a_full_bond_makes_them_immune(troupe: Troupe) -> None:
+    anna = member(troupe, "Anna")
+    berit = member(troupe, "Berit")
+    give_sire(troupe, anna, name="Marcus", clan="Brujah")
+    give_sire(troupe, berit, name="Marcus", clan="Brujah")
+    track(troupe)
+    assert {i["thrall"]["name"] for i in known(troupe).json()} == {"Anna", "Berit"}
+
+    def enter(thrall: str, regnant: str, level: int) -> None:
+        entered = troupe.storyteller.client.post(
+            f"/troupes/{troupe.id}/bonds",
+            json={
+                "thrall": {"character_id": thrall},
+                "regnant": {"name": regnant},
+                "level": level,
+                "night": "2026-10-01",
+                "reason": "Known from before.",
+            },
+        )
+        assert entered.status_code == 201, entered.text
+
+    # Anna already has a bond to her sire; Berit is fully bound to someone else.
+    enter(anna, "Marcus", 1)
+    enter(berit, "Lady Vasquez", 3)
+    assert known(troupe).json() == []
+
+
+def test_an_embrace_in_play_isnt_offered_twice_from_the_sheet(troupe: Troupe) -> None:
+    ghoul = vivian(troupe)
+    embraced(troupe, ghoul)
+    track(troupe)
+    # The Embrace named her sire on the sheet too: one offer, from the Embrace.
+    [item] = known(troupe).json()
+    assert item["why"] == "embrace"
 
 
 def test_no_domitor_bond_is_added_while_bonds_are_off(troupe: Troupe) -> None:

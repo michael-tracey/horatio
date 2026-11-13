@@ -10,7 +10,7 @@ ledger can see:
   within the Camarilla (such as an elder of the Camarilla, a Prince, or even a
   Justicar)". Here: a Blood or Life boon, to a Camarilla character who holds an
   active title or is an Elder by social age. The book gives examples, not a test, so
-  this is only ever a suggestion for staff.
+  this is only ever a suggestion for staff and the Harpy.
 
 Neither is ever automatic. When a boon is settled as called in, the ledger *offers*
 Gallant for its debtor; whoever may answer the offer gives it or declines it, and
@@ -18,11 +18,12 @@ either way the answer goes in the boon's own log, so the offer is answered once.
 Reopening and settling the boon again makes a new offer.
 
 Who answers:
-- The troupe's running staff, either offer.
+- Whoever may settle the boon in the ledger (horatio.boon_harpy.keeper, "edit"): the
+  troupe's running staff, a Harpy with the full ledger (#688), or a Lesser Harpy the
+  Harpy let edit it (#689), either offer, as their character for a Harpy.
 - The creditor's player, a Social Nobility offer only, from the Play View's Boons tab,
   where the troupe shows creditors their boons and lets players keep their own status.
-  Where only staff add or remove status, staff answer it.
-- The Harpy will answer them too (#688); `staff_answers` is where that goes.
+  Where only staff add or remove status, staff and the Harpy answer it.
 
 Giving Gallant goes through horatio.sect_status, as any fleeting status does, with
 the creditor as its patron: the debtor's sheet and log show it, and its rules hold
@@ -35,6 +36,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import boons, sect_status, social_age
+from horatio.boon_harpy import Keeper
 from horatio.models import Boon, BoonEvent, Character, Troupe, User
 from horatio.sheets import conflict, sheet_rows
 
@@ -121,9 +123,10 @@ def offer(db: Session, boon: Boon) -> Offer | None:
     return Offer(debtor, creditor, tuple(reasons))
 
 
-def staff_answers(db: Session, user: User, troupe: Troupe) -> bool:
-    """The troupe's running staff answer any offer. (The Harpy, #688, joins here.)"""
-    return boons.can_manage(db, user, troupe)
+def keeper_answers(keeper: Keeper | None) -> bool:
+    """Whoever may settle boons in the ledger answers any offer: its running staff
+    (None, or a staff `Keeper`), or a Harpy or Lesser Harpy who may edit it."""
+    return keeper is None or "edit" in keeper.can
 
 
 def player_answers(troupe: Troupe, found: Offer, user: User) -> bool:
@@ -150,11 +153,14 @@ def give(
     troupe: Troupe,
     boon: Boon,
     found: Offer,
+    acting: sect_status.Acting,
     note: str = "",
     as_character: Character | None = None,
 ) -> None:
     """Give the debtor Gallant, with the creditor as its patron, and log it on the
-    boon. The caller has checked who may (`staff_answers`, `player_answers`)."""
+    boon. The caller has checked who may (`keeper_answers`, `player_answers`), and
+    says as whom: "staff" for staff and the Harpy, as for a Boonbreaker (#717);
+    "player" for the creditor's player."""
     debtor, creditor = found.debtor, found.creditor
     standing = sect_status.standing(db, debtor)
     if len(standing.fleeting) >= standing.fleeting_cap > 0:
@@ -174,7 +180,7 @@ def give(
         patron_text="" if patron is not None else creditor.name,
         story=story(boon, found),
         reason=note.strip() or f"Repaid a boon to {creditor.name}.",
-        acting=None if as_character is None else "player",
+        acting=acting,
     )
     answer(db, user, boon, found, "gallant_given", note, as_character)
 

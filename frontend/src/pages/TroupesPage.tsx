@@ -5,7 +5,6 @@ import { api, unwrap } from "../api/client";
 import type { TroupeOut } from "../api/types";
 import { Avatar } from "../components/Avatar";
 import { EmptyState } from "../components/EmptyState";
-import { PersonPicker } from "../components/PersonPicker";
 import { useToast } from "../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Textarea } from "../components/ui";
 import { useDates } from "../dates";
@@ -74,7 +73,7 @@ export function TroupesPage() {
       {me.data?.is_custodian ? (
         <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
           {list}
-          <NewTroupe />
+          <NewTroupePointer />
         </div>
       ) : (
         <div className="flex max-w-3xl flex-col gap-6">
@@ -124,35 +123,17 @@ function TroupeRow({ troupe: t, leadSuspended }: { troupe: TroupeOut; leadSuspen
   );
 }
 
-function NewTroupe() {
-  const [form, setForm] = useState({ name: "", description: "", lead_handle: "" });
-  const create = useAction(async () => {
-    await unwrap(api.POST("/api/troupes", { body: form }));
-    setForm({ name: "", description: "", lead_handle: "" });
-  });
+/** Setting up a troupe is the custodian's, under Custodian › Troupe management (#759). */
+function NewTroupePointer() {
   return (
     <Card title="New troupe">
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          create.mutate(undefined);
-        }}
-      >
-        <Field label="Name">
-          <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        </Field>
-        <Field label="Description">
-          <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        </Field>
-        <Field label="Lead storyteller" hint="Pick them from the list, or type a name or handle to find them. They need an account already.">
-          <PersonPicker required value={form.lead_handle} onChange={(lead_handle) => setForm({ ...form, lead_handle })} />
-        </Field>
-        <ErrorText error={create.error} />
-        <Button type="submit" disabled={create.isPending}>
-          Create troupe
-        </Button>
-      </form>
+      <p className="text-sm text-mist">
+        Set up a troupe and name its lead storyteller under{" "}
+        <Link to="/custodian/troupe-management#new" className="text-gold hover:underline">
+          Custodian › Troupe management
+        </Link>
+        , with the troupes people ask for and those archived.
+      </p>
     </Card>
   );
 }

@@ -180,7 +180,13 @@ def approval_items(
         elif approval.kind == "diablerie":
             summary = f"{character} says they committed diablerie"
         elif approval.kind == "bond_drink":
-            summary = f"{character}'s player reports a drink of vampire blood"
+            from horatio import bonds  # imports this module
+
+            report = bonds.report_for_approval(db, approval)
+            if report is not None and report.kind == "meeting":
+                summary = f"{character}'s player reports a meeting with their regnant or thrall"
+            else:
+                summary = f"{character}'s player reports a drink of vampire blood"
         elif approval.kind == "home_troupe_change":
             moving = moves.get(approval.id) is not None
             summary = f"{character} asks to {'move' if moving else 'make'} {troupe.name} its home"
@@ -235,7 +241,7 @@ def troupe_request_tasks(db: Session, user: User) -> list[Item]:
             troupe_id=None,
             troupe_name=None,
             summary=f"{requester} asks for a new troupe, {request.name}",
-            link="/custodian/troupe-requests",
+            link="/custodian/troupe-management#requests",
             at=request.created_at,
             read=False,
         )
@@ -330,7 +336,7 @@ def troupe_request_waiting(db: Session, request: TroupeRequest, requester: User)
         custodians,
         "troupe_request",
         f"{requester.display_name} asks for a new troupe, {request.name}",
-        "/custodian/troupe-requests",
+        "/custodian/troupe-management#requests",
     )
 
 
