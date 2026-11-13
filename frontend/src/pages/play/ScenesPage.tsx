@@ -11,6 +11,7 @@ import { abilities } from "../troupe/roles";
 import { SaveDeviceScene } from "./DeviceScene";
 import { useOnline } from "../../offline/connection";
 import { KeepScenes, NeedsSignal, ScenesStrip } from "../../offline/KeepScenes";
+import { useTitle } from "../../title";
 
 // How often to look for scenes other staff made or changed, as the Play View does.
 export const SCENE_REFRESH = 15_000;
@@ -71,6 +72,7 @@ export function ScenesPage() {
   const lead = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).lead : false;
   // With no signal, kept scenes open, but making, renaming and removing them wait for it (#503).
   const online = useOnline();
+  useTitle(troupe.data ? `Scenes · ${troupe.data.name}` : "Scenes");
 
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">

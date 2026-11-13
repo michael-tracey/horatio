@@ -9,6 +9,7 @@ import { usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { useSevenTaps } from "./jyhad/taps";
 import { BADGE_SIZES, grid, nameSize, pages, perPageText, SQUEEZE, standing, type BadgeSize } from "./badgeLayout";
+import { useTitle } from "../title";
 
 /** White with Horatio's colours as accents, or black on white for a printer without colour. */
 type Look = "horatio" | "plain";
@@ -81,6 +82,9 @@ type Item = { key: string; badge?: BadgeOut; staff?: StaffBadgeOut };
  * with cut marks in the margin along every cut line.
  */
 function Sheets({ items, back, troupe, printStatus = "all" }: { items: Item[]; back: string; troupe: string | null; printStatus?: string }) {
+  // One character's badge by its name; a troupe's by the troupe's.
+  const only = items.length === 1 ? (items[0]!.badge?.name ?? items[0]!.staff?.name) : undefined;
+  useTitle(`Print · ${only ?? troupe ?? "Badges"}`);
   const prefs = usePreferences();
   const [look, setLook] = useState<Look>("horatio");
   // The person's badge size, unless they pick another for this print.
