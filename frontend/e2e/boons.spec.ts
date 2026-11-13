@@ -141,10 +141,12 @@ test("staff see the boon standings: each character's net by the troupe's weights
   const owes = (debtor: string, creditor: string, kind: string) => ({ debtor: { character_id: debtor }, creditor: { character_id: creditor }, kind, made_on: "2026-10-03" });
   await send(l, "POST", `/api/troupes/${troupe.id}/boons`, { boons: [owes(isolde.id, casimir.id, "major"), owes(casimir.id, isolde.id, "minor")] });
 
-  // Under Characters, Boon standings: Casimir is owed a major and owes a minor.
+  // Under Characters › Boons, Standings: Casimir is owed a major and owes a minor.
   await l.goto(`/troupes/${troupe.id}`);
   await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
-  await l.getByRole("link", { name: "Boon standings", exact: true }).click();
+  await l.getByRole("link", { name: "Boons", exact: true }).click();
+  await l.getByRole("navigation", { name: "Boons", exact: true }).getByRole("link", { name: "Standings", exact: true }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/boons/standings$`));
   const standing = l.getByRole("table", { name: "Standing by character" });
   await expect(standing.getByRole("row", { name: /Casimir Wode/ })).toContainText("+2");
   await expect(standing.getByRole("row", { name: /Isolde Fenwright/ })).toContainText("−2");
@@ -225,10 +227,14 @@ test("staff see the boon statistics: the ledger over time, who owes whom, betwee
     boons: [owes({ character_id: wendeline.id }, { character_id: thaddeus.id }, "major"), owes({ name: "The Grey Countess" }, { character_id: wendeline.id }, "minor")],
   });
 
-  // Under Characters, Boon statistics: each of the four charts, every one with its table.
+  // The old address of Boon statistics, from before it joined Boons (#780), still leads there.
+  await l.goto(`/troupes/${troupe.id}/boon-statistics`);
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/boons/statistics$`));
+  // Under Characters › Boons, Statistics: each of the four charts, every one with its table.
   await l.goto(`/troupes/${troupe.id}`);
   await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
-  await l.getByRole("link", { name: "Boon statistics", exact: true }).click();
+  await l.getByRole("link", { name: "Boons", exact: true }).click();
+  await l.getByRole("navigation", { name: "Boons", exact: true }).getByRole("link", { name: "Statistics", exact: true }).click();
   for (const title of ["Boons registered", "Who owes whom", "Debt between clans", "Boons at each game"]) {
     await expect(l.getByRole("figure", { name: title })).toBeVisible();
   }
