@@ -431,7 +431,7 @@ The troupe's house options for locations are under [Location rules](#location-ru
 
 Narrators see the requests and quests assigned to them; storytellers and assistant storytellers see them all. A merit or flaw request can also be answered with a quest (see [Merit and flaw requests](#merit-and-flaw-requests)).
 
-On a character's page, its home troupe's storytellers and assistant storytellers, and the custodian, also have a **Quests** tab, beside **Projects**, while the troupe runs quests. It shows the quests the character leads or has joined, those still being built too, with how many of each one's requirements are met, and the character's quest requests and how they were answered. Open a quest for its objective, party, each requirement (met or not, and by whom) and its results so far, including any not yet sent. Nothing changes there: **Manage it in the troupe's Quests** opens it under **Downtimes › Quests**.
+On a character's page, its home troupe's storytellers and assistant storytellers, and the custodian, also have a **Quests** tab, beside **Projects**, while the troupe runs quests. It shows the quests the character leads or has joined, those still being built too, with how many of each one's requirements are met, and the character's quest requests and how they were answered. Open a quest for its objective, party, each requirement (met or not, and by whom) and its results so far, including any not yet sent. Nothing changes there: **Manage it in the troupe's Quests** opens it under **Downtimes › Quests**. On your own character there is one **Quests** tab, the player's, where you ask for a quest.
 
 ## Shared backgrounds
 
