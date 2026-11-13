@@ -20,7 +20,7 @@ import { LinesVeilsTab } from "./LinesVeilsTab";
 import { LocationsTab } from "./LocationsTab";
 import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
-import { MyWork, WorkTab } from "./WorkTab";
+import { OldWorkLink, WorkTab } from "./WorkTab";
 import { AgenciesTab } from "../news/AgenciesTab";
 import { PostsSection } from "../news/PostsSection";
 import { useGlance } from "../news/queries";
@@ -166,7 +166,8 @@ export function TroupePage() {
             label: "Downtimes",
             tabs: [
               ...(can.running ? [{ to: `${base}/downtimes`, label: "Cycles", count: counts.downtimes }] : []),
-              ...(can.staff ? [{ to: `${base}/work`, label: "My work", count: counts.work }] : []),
+              // A narrator's cycle opens on their own work in it, so My work stays open there (#789).
+              ...(can.staff ? [{ to: `${base}/work`, label: "My work", count: counts.work, ...(can.running ? {} : { also: `${base}/downtimes` }) }] : []),
               ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
               ...(can.running ? [{ to: `${base}/influence`, label: "Influence log", count: counts.influence }] : []),
               ...(can.staff && t.quests_enabled ? [{ to: `${base}/quests`, label: "Quests", count: counts.quests }] : []),
@@ -300,12 +301,12 @@ export function TroupePage() {
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
-        {can.running && (
+        {can.staff && (
           <Route
             path="downtimes/:cycleId/*"
             element={
               <Suspense fallback={<Loading />}>
-                <CyclePage troupeId={t.id} clanName={t.assamite_name} />
+                <CyclePage troupeId={t.id} clanName={t.assamite_name} running={can.running} />
               </Suspense>
             }
           />
@@ -313,7 +314,7 @@ export function TroupePage() {
         {can.running && <Route path="connectors" element={<ConnectorsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="share" element={<ShareSettingsTab troupe={t} canImport={can.storyteller && !t.archived} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}
-        {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} canLog={can.running} />} />}
+        {can.staff && <Route path="work/:cycleId" element={<OldWorkLink troupeId={t.id} />} />}
         {can.running && <Route path="influence/*" element={<InfluenceLogTab troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
         {can.staff && t.quests_enabled && <Route path="quests/*" element={<QuestsTab troupeId={t.id} running={can.running} />} />}

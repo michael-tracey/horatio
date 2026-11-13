@@ -484,10 +484,25 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Each cycle says when it is due and what is left to write.
   await expect(narrator.page.getByRole("link", { name: "November" }).getByText(/^Due .*, \d{1,2}:\d{2} [ap]m · 1 for you to write$/)).toBeVisible();
   await narrator.page.getByRole("link", { name: "November" }).click();
+  // The cycle's own My work (#789): a narrator sees only their work in it, and My work stays open.
+  await expect(narrator.page).toHaveURL(/\/troupes\/[^/]+\/downtimes\/[^/]+\/work$/);
+  await expect(narrator.page.getByRole("heading", { name: "November" })).toBeVisible();
+  await expect(narrator.page.getByRole("link", { name: "My work" })).toHaveAttribute("aria-current", "page");
+  await expect(narrator.page.getByRole("link", { name: "Fill tables" }).last()).toBeVisible();
   await narrator.page.getByLabel("Response to Agnes").fill("The docks are crowded tonight; you feed well and unseen.");
   await narrator.page.getByRole("button", { name: "Save response" }).click();
   await expect(narrator.page.getByText("Written", { exact: true })).toBeVisible();
+  // An old My work link for the cycle comes to the same place.
+  const cycleWork = new URL(narrator.page.url()).pathname;
+  const [, , troupeAt, , cycleAt] = cycleWork.split("/");
+  await narrator.page.goto(`/troupes/${troupeAt}/work/${cycleAt}`);
+  await expect(narrator.page).toHaveURL(new RegExp(`${cycleWork}$`));
+  await expect(narrator.page.getByText("Written", { exact: true })).toBeVisible();
   await narrator.page.screenshot(shots("narrator"));
+
+  // Storytellers have My work among the cycle's own tabs too, here with nothing of theirs.
+  await lead.page.getByRole("navigation", { name: "Cycle" }).getByRole("link", { name: "My work" }).click();
+  await expect(lead.page.getByText("Nothing assigned to you.")).toBeVisible();
 
   // The lead closes, told first what closing means while it isn't yet due.
   await lead.page.getByRole("link", { name: "Overview" }).click();

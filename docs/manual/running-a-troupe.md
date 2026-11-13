@@ -118,13 +118,13 @@ Members see any pinned announcements first, as banners (see [Announcements](#ann
 
 ### My work
 
-**Downtimes › My work** is every staff member's own list of downtimes to answer, one cycle at a time. In a cycle it shows what is **Assigned to you**, and for narrators what is **Open to any narrator**:
+**Downtimes › My work** is every staff member's own list of downtimes to answer, one cycle at a time. Choose a cycle to open its **My work** tab, inside the cycle; storytellers and assistant storytellers also find it among the cycle's own tabs, and narrators see that tab and nothing else of the cycle. It shows what is **Assigned to you**, and for narrators what is **Open to any narrator**:
 
 - **Take it** makes an any-narrator action yours.
 - **Decline** sends an action back to the storytellers and assistant storytellers to give to someone else.
 - Write the answer and choose **Save response**.
 
-Narrators see the player's answer and the question, never the character's sheet.
+Narrators see the player's answer and the question, never the character's sheet. For a random result, the tab links to the troupe's **Fill tables**, which belong to the whole troupe rather than one cycle.
 
 ## The Characters list
 
@@ -966,7 +966,7 @@ A player can leave the home troupe for none, from the character's Home troupe ca
 
 ![A downtime cycle's Overview: where it stands, its dates, completion XP and progress.](images/running-a-troupe/cycle.png)
 
-A downtime cycle is one round of downtimes. Storytellers and assistant storytellers run it from **Downtimes › Cycles**: choose a cycle there to open it, inside the troupe's page, with its own tabs (**Overview**, **Form**, **Participants**, **Feeding**, **Responses**, **Aimed at**, **Projects** and **Delivery**) under the troupe's. A cycle goes from **Draft** to **Open** to **Closed** to **Complete**. The player's side is in [Players](players.md#downtimes).
+A downtime cycle is one round of downtimes. Storytellers and assistant storytellers run it from **Downtimes › Cycles**: choose a cycle there to open it, inside the troupe's page, with its own tabs (**Overview**, **Form**, **Participants**, **Feeding**, **Responses**, **My work**, **Aimed at**, **Projects** and **Delivery**) under the troupe's. A cycle goes from **Draft** to **Open** to **Closed** to **Complete**. The player's side is in [Players](players.md#downtimes).
 
 ### Creating a cycle
 

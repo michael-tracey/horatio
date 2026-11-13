@@ -38,14 +38,24 @@ export function textOf(node: ReactNode): string {
   return "";
 }
 
-/** The tab a row would mark open at `pathname`: as NavLink does, and the deepest if more than one. */
-export function openTab<T extends { to: string; end?: boolean }>(tabs: T[], pathname: string): T | undefined {
+/** A tab of a row: where it goes, and `also` an address under which it is open too,
+ * such as a narrator's My work, open inside a cycle's own My work (#789). */
+type Openable = { to: string; end?: boolean; also?: string };
+
+/** Whether a tab is open at `pathname`: as NavLink marks it, or under its `also`. */
+export function tabOpens(t: Openable, pathname: string): boolean {
   const here = pathname.replace(/\/$/, "");
-  const opens = (t: T) => {
-    const to = t.to.replace(/\/$/, "");
-    return t.end ? here === to : here === to || here.startsWith(`${to}/`);
+  const under = (to: string) => {
+    const at = to.replace(/\/$/, "");
+    return here === at || here.startsWith(`${at}/`);
   };
-  return tabs.filter(opens).sort((a, b) => b.to.length - a.to.length)[0];
+  if (t.end) return here === t.to.replace(/\/$/, "");
+  return under(t.to) || (t.also !== undefined && under(t.also));
+}
+
+/** The tab a row would mark open at `pathname`: as NavLink does, and the deepest if more than one. */
+export function openTab<T extends Openable>(tabs: T[], pathname: string): T | undefined {
+  return tabs.filter((t) => tabOpens(t, pathname)).sort((a, b) => b.to.length - a.to.length)[0];
 }
 
 type Part = { text: string; node: Element | null };
