@@ -47,7 +47,7 @@ export function hasProfile(p: TroupeProfileOut): boolean {
 }
 
 /** The profile as the editor starts it: what is saved, ready to change. Whether
- * it is public is the Profile tab's switch, which saves on its own. */
+ * it is public is the Overview's Public switch, which saves on its own. */
 export function editable(p: TroupeProfileOut): TroupeProfileIn {
   return {
     contact_id: p.contact?.id ?? null,

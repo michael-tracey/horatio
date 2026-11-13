@@ -124,7 +124,7 @@ The bell always has every notification. In **Settings**, under **Notifications b
 
 You can put a troupe's games and downtime dates in your own calendar app, and it keeps itself up to date.
 
-1. Open the troupe from **Troupes**. On its **About** tab, the **Games** card lists the games to come.
+1. Open the troupe from **Troupes**. On its **Overview**, the **Games** card lists the games to come.
 2. Choose **Subscribe to the calendar**.
 3. Choose **Get the link**, either for that troupe only or for **All your troupes**.
 4. Choose **Copy the link** and paste it into your calendar app, or choose **Open in your calendar app**. The dialog says how for Google Calendar, Apple Calendar and Outlook.

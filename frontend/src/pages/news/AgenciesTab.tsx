@@ -9,6 +9,7 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
+import { BotLacks, FOR_POSTS } from "../troupe/botPermissions";
 import type { Kind } from "./posts";
 import { ACCEPT, MAX_BYTES } from "./PostForm";
 import { useAgencies } from "./queries";
@@ -110,7 +111,10 @@ function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels
         </span>
       </td>
       <td className={`${WIDE} py-2.5 pr-3 align-top`}>{about}</td>
-      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{channelName(channels, agency.discord_channel)}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>
+        {channelName(channels, agency.discord_channel)}
+        <BotLacks channel={channels?.channels.find((c) => c.id === agency.discord_channel)} needs={FOR_POSTS} what="its stories" />
+      </td>
       <td className="w-px py-1 text-right align-top">
         {!archived && (
           <ActionMenu label={`Actions for ${agency.name}`} variant="ghost">
@@ -297,6 +301,7 @@ function PostChannel({ kind, troupeId, channels, error, archived }: { kind: Kind
               ))}
             </Select>
           </Field>
+          <BotLacks channel={channels.channels.find((c) => c.id === chosen)} needs={FOR_POSTS} what={words.what.toLowerCase()} />
           {!channels.can_change && <p className="text-xs text-mist">Only storytellers choose channels.</p>}
           <ErrorText error={choose.error} />
         </div>

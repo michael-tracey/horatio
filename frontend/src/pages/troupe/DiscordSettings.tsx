@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import { Badge, Button, ErrorText, Field, Loading, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
+import { BotLacks, FOR_RESULTS, lacking } from "./botPermissions";
 
 type Settings = Record<string, unknown>;
 
@@ -53,7 +54,8 @@ export function DiscordSettings({
   if (!guild_id) {
     return (
       <div className="flex flex-col gap-2 text-sm">
-        <p>No Discord server is connected. Add the Horatio bot to the troupe's server; it only needs to see channels and send messages.</p>
+        <p>No Discord server is connected. Add the Horatio bot to the troupe's server. It asks to see channels and send messages, and for news and
+          announcements, to embed links and attach files.</p>
         {canEdit && (
           <div>
             <Button type="button" variant="secondary" onClick={() => invite.mutate(undefined)} disabled={invite.isPending}>
@@ -98,6 +100,7 @@ export function DiscordSettings({
           ))}
         </Select>
       </Field>
+      <BotLacks channel={channels.find((c) => c.id === testChannel)} needs={FOR_RESULTS} what="test results" />
       <div>
         <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">Each character's channel</h3>
         {missing.length > 0 && (
@@ -121,6 +124,11 @@ export function DiscordSettings({
             <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
               <span className="min-w-32 flex-1 text-parchment">{c.name}</span>
               {chosen[c.id] && !channels.find((ch) => ch.id === chosen[c.id])?.private && <Badge tone="blood">Not private</Badge>}
+              {lacking(channels.find((ch) => ch.id === chosen[c.id])?.missing, FOR_RESULTS).map((name) => (
+                <Badge key={name} tone="blood">
+                  Bot lacks {name}
+                </Badge>
+              ))}
               {canEdit && <Suggestion channel={channels.find((ch) => ch.id === suggested(c.id))} who={c.name} onUse={(id) => choose(c.id, id)} />}
               <Select
                 aria-label={`Discord channel for ${c.name}`}

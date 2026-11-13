@@ -71,6 +71,7 @@ game. An item that leaves the character is no longer equipped, and an equip tap 
 server had before the item last came to the character no longer counts.
 """
 
+import copy
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -1061,6 +1062,11 @@ class Replay:
     undone: set[uuid.UUID]
     # What switching a form or power also did, for the log, by event id.
     said: dict[uuid.UUID, list[str]] = field(default_factory=dict[uuid.UUID, list[str]])
+    # What each undone change would have changed where it happened, for one that
+    # arrived already undone and so never changed anything (issue #808).
+    would: dict[uuid.UUID, tuple[int, int] | None] = field(
+        default_factory=dict[uuid.UUID, tuple[int, int] | None]
+    )
 
 
 def replay(limits: Limits, events: Sequence[PlayEvent]) -> Replay:
@@ -1069,13 +1075,17 @@ def replay(limits: Limits, events: Sequence[PlayEvent]) -> Replay:
     undone = {e.undoes_id for e in events if e.kind == "undo" and e.undoes_id is not None}
     state = limits.start()
     changes: dict[uuid.UUID, tuple[int, int] | None] = {}
+    would: dict[uuid.UUID, tuple[int, int] | None] = {}
     said: dict[uuid.UUID, list[str]] = {}
     for event in in_order(events):
-        if event.kind == "undo" or event.id in undone:
+        if event.kind == "undo":
+            continue
+        if event.id in undone:
+            would[event.id] = apply(copy.deepcopy(state), limits, event, [])
             continue
         said[event.id] = []
         changes[event.id] = apply(state, limits, event, said[event.id])
-    return Replay(state, changes, undone, {k: v for k, v in said.items() if v})
+    return Replay(state, changes, undone, {k: v for k, v in said.items() if v}, would)
 
 
 def game_events(db: Session, game: PlayGame) -> list[PlayEvent]:
@@ -1083,12 +1093,16 @@ def game_events(db: Session, game: PlayGame) -> list[PlayEvent]:
 
 
 def refresh(db: Session, game: PlayGame, limits: Limits) -> Replay:
-    """Replay a game after taps arrive, keeping each change and the state."""
+    """Replay a game after taps arrive, keeping each change and the state. A tap
+    undone before it ever counted (sent with its undo, from a phone that was slow
+    or offline) takes what it would have changed, so the log reads as the phone did."""
     events = game_events(db, game)
     result = replay(limits, events)
     for event in events:
         if event.id in result.changes:
             event.before, event.after = result.changes[event.id] or (None, None)
+        elif event.id in result.would and event.before is None and event.after is None:
+            event.before, event.after = result.would[event.id] or (None, None)
     game.state = result.state
     return result
 

@@ -31,7 +31,6 @@ import { PlayersTab } from "./PlayersTab";
 import { QuestsTab } from "./QuestsTab";
 import { PlayHere } from "./PlayHere";
 import { PlayTab } from "./PlayTab";
-import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { TroupeImportPage } from "./TroupeImport";
@@ -120,7 +119,8 @@ export function TroupePage() {
       {!can.staff && !t.archived && <PlayHere troupe={t} />}
       <Routes>
         <Route index element={<OverviewTab troupe={t} can={can} />} />
-        <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
+        {/* The profile is on the Overview now (#781). */}
+        <Route path="profile" element={<Navigate to={base} replace />} />
         {/* One House rules tab (#782): players read it; running staff also find each kind of rule in its own part. */}
         <Route path="house-rules/*" element={can.running ? <RulesTab troupe={t} canEdit={can.storyteller} /> : <HouseRulesTab troupe={t} staff={false} />} />
         <Route path="setting" element={<SettingTab troupeId={t.id} staff={can.running} />} />

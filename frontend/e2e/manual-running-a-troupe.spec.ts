@@ -182,11 +182,12 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await send(l, "PUT", `/api/cycles/${cycle.id}/responses/assignment`, { response_ids: celestines.slice(0, 1), any_narrator: true });
   await send(l, "PUT", `/api/responses/${celestines[0]}`, { body: "The Harpies whisper that the Prince has not fed in public for a month." });
 
-  // About, for the lead: what waits on her, the games, and who may join.
+  // The Overview, for the lead: what waits on them, the games, and the profile (#781).
   await l.goto(base);
   await expect(l.getByRole("list", { name: "Waiting on you" })).toBeVisible();
   await expect(l.getByRole("list", { name: "Games to come" })).toBeVisible();
-  await shot(l, "about", undefined, 1100);
+  await expect(l.getByRole("region", { name: "Profile" })).toBeVisible();
+  await shot(l, "overview", undefined, 1100);
 
   // Staff.
   await l.goto(`${base}/staff`);

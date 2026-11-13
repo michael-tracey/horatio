@@ -29,6 +29,9 @@ class ChannelOut(BaseModel):
     name: str
     category: str | None
     private: bool
+    # Of View Channels, Send Messages, Embed Links and Attach Files, those the
+    # Horatio bot lacks here (#839), or None when Discord wouldn't say.
+    missing: list[str] | None = None
 
 
 class CharacterRef(BaseModel):
@@ -140,15 +143,16 @@ def discord_disconnect(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -
 
 @router.get("/troupes/{troupe_id}/discord")
 def discord_setup(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> DiscordSetup:
-    """The connected server, its text channels, and the troupe's characters, with
-    the channel each one's name suggests. One call to Discord."""
+    """The connected server, its text channels with the permissions the bot lacks in
+    each, and the troupe's characters, with the channel each one's name suggests.
+    Four calls to Discord."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.DELIVER_RESPONSES)
     row = connector_row(db, troupe.id, "discord")
     guild_id = row.settings.get("guild_id") if row else None
     found: list[discord.Channel] = []
     if guild_id and discord.configured():
         try:
-            found = discord.text_channels(guild_id)
+            found = discord.text_channels(guild_id, permissions=True)
         except SendError as failure:
             raise HTTPException(status.HTTP_502_BAD_GATEWAY, failure.reason) from None
     characters = [

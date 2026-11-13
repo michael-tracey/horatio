@@ -38,8 +38,8 @@ export function troupeTabGroups(t: TroupeTabsTroupe, can: ReturnType<typeof abil
       // The troupe itself: who's in it, what it says, and how it plays.
       label: "Troupe",
       tabs: [
-        { to: base, label: "About", end: true },
-        { to: `${base}/profile`, label: "Profile" },
+        // About and Profile in one (#781): the old profile address comes here.
+        { to: base, label: "Overview", end: true },
         // The Setting Style Document, for everyone to read before they build (#771).
         { to: `${base}/setting`, label: "Setting" },
         ...(t.whos_who ? [{ to: `${base}/whos-who`, label: "Who's Who" }] : []),

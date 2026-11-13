@@ -9351,8 +9351,9 @@ export interface paths {
         };
         /**
          * Discord Setup
-         * @description The connected server, its text channels, and the troupe's characters, with
-         *     the channel each one's name suggests. One call to Discord.
+         * @description The connected server, its text channels with the permissions the bot lacks in
+         *     each, and the troupe's characters, with the channel each one's name suggests.
+         *     Four calls to Discord.
          */
         get: operations["discord_setup_api_troupes__troupe_id__discord_get"];
         put?: never;
@@ -11062,7 +11063,7 @@ export interface paths {
         /**
          * Set Public
          * @description Show the profile to anyone, or only to people signed in, without touching
-         *     the rest of it: the Profile tab's switch, which saves at once.
+         *     the rest of it: the Public switch on the troupe's Overview, which saves at once.
          */
         put: operations["set_public_api_troupes__troupe_id__profile_public_put"];
         post?: never;
@@ -16569,6 +16570,8 @@ export interface components {
             category: string | null;
             /** Id */
             id: string;
+            /** Missing */
+            missing?: string[] | null;
             /** Name */
             name: string;
             /** Private */
