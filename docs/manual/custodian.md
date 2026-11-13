@@ -94,7 +94,7 @@ Archiving is how a troupe ends (see [Archiving a troupe](#archiving-a-troupe)). 
 
 ### Archiving a troupe
 
-A troupe's lead storyteller archives it, from the **Archive the troupe** card at the foot of the troupe's **Profile** tab. As the custodian you can do the same for any troupe. Horatio first shows what archiving will do, and asks for a reason, which everyone affected sees:
+A troupe's lead storyteller archives it, from the **Archive the troupe** card at the foot of the troupe's **Overview**. As the custodian you can do the same for any troupe. Horatio first shows what archiving will do, and asks for a reason, which everyone affected sees:
 
 - the characters it's home to are left with no home troupe, and visits to it end, so their players can ask another troupe to accept them;
 - an open downtime cycle ends without being answered or delivered, and games under way end;

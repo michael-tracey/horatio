@@ -50,16 +50,19 @@ Your request shows under **Your requests**, as Waiting, Approved or Declined, wi
 
 ### The troupe profile and public page
 
-The troupe's **Profile** tab is what it tells players and people thinking of joining. Storytellers and the lead edit it.
+The troupe's profile is what it tells players and people thinking of joining. It is on the troupe's **Overview**, the page a troupe opens on, under what is waiting on you and the games to come. Storytellers and the lead edit it there, one card at a time:
 
-1. Open the troupe, then **Profile**.
-2. Choose **Edit profile**.
-3. Fill in what you want to show: a portrait and banner, **Links**, **When it plays** (how often games run, and the upcoming games), **Where it plays** (city, venue, address, accessibility), **The setting** (chronicle, city, era; its themes and moods are under [Troupe settings](#the-setting)), **New players** (whether you are taking them, and a contact on the staff) and **Age and content** (a minimum age and content notes).
-4. Choose **Save profile**.
+1. Open the troupe. It opens on **Overview**.
+2. On the card you want to change, choose **Edit**. The cards are **Portrait and banner** (these save as soon as you choose them), **Links**, **When it plays** (how often games run, and the upcoming games), **Where it plays** (city, venue, address, accessibility), **The setting** (chronicle, city, era; its themes and moods are under [Troupe settings](#the-setting)), **New players** (whether you are taking them, and a contact on the staff) and **Age and content** (a minimum age and content notes).
+3. Choose **Save** on that card, or **Cancel** to leave it as it was. Saving one card leaves the others as they are.
 
-To add a game to the schedule, fill in **Game starts** and **Game ends** under Upcoming games and choose **Add game**. Times are in your time zone; everyone sees them in their own.
+While you edit them, every card shows, with "Nothing yet." on those still empty. Players see only the parts that have something in them.
 
-The **Public** switch at the top of the Profile tab decides who can see the profile:
+To add a game to the schedule, choose **Edit** on **When it plays**, fill in **Game starts** and **Game ends** under Upcoming games and choose **Add game**. Each game is added or removed at once. Times are in your time zone; everyone sees them in their own.
+
+The old **Profile** address, `/troupes/…/profile`, now opens the Overview.
+
+The **Public** switch above the profile decides who can see it:
 
 - **Signed-in only**, the default: only people signed in to Horatio.
 - **Public**: anyone with the link, even people not signed in. Use **Copy the link** to share it when recruiting. The venue's street address still shows only to people signed in.
@@ -80,7 +83,7 @@ To change someone's role, choose another in the list beside their name. **Remove
 
 ### Renaming or archiving the troupe
 
-Only the lead storyteller (and the custodian) can do these, on the **Profile** tab:
+Only the lead storyteller (and the custodian) can do these, at the foot of the troupe's **Overview**:
 
 - **Name and description**: change them and choose **Save**. The first lines of the description show on the troupe list.
 - **Archive the troupe**: choose **Archive troupe…**. Horatio first lists what archiving settles: the characters it is home to are left with no home troupe, visits end, an open downtime cycle ends without being answered, and games under way end. Give a **Reason**: everyone affected sees it. The troupe's history is kept, and the custodian can reopen it (see [Custodian](custodian.md#archived-troupes)).
@@ -91,7 +94,7 @@ A troupe's page has its tabs in groups, one for each job. Which tabs you see dep
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | About, Profile, Who's Who, News, Announcements, Nominations, House rules, Status, Staff, Log |
+| Troupe | Overview, Who's Who, News, Announcements, Nominations, House rules, Status, Staff, Log |
 | Characters | Approvals, Being built, Characters, Players, Lines and veils |
 | Games | At game, Scenes, Award XP |
 | Court | Titles, Court, Chronicle, Boons, Bonds, Web of obligation |
@@ -101,11 +104,11 @@ A troupe's page has its tabs in groups, one for each job. Which tabs you see dep
 
 A number on a tab is how much waits on you there, such as approvals to decide.
 
-## The About tab and what's waiting on you
+## The Overview and what's waiting on you
 
-![The About tab for a lead storyteller: Waiting on you, the games to come, the troupe summary and who may join.](images/running-a-troupe/about.png)
+![The troupe's Overview for a lead storyteller: Waiting on you, the games to come, and the start of the profile.](images/running-a-troupe/overview.png)
 
-The **About** tab is the troupe at a glance. For staff it starts with **Waiting on you**: one line for each kind of work, each a link straight to it. The lines you may see are:
+The troupe's **Overview** is the troupe at a glance, and where it opens. For staff it starts with **Waiting on you**: one line for each kind of work, each a link straight to it. The lines you may see are:
 
 - **Approvals waiting** and **Backstories to read**;
 - the open cycle, with how many have submitted and when it is **Due**, its day and time, such as "Due Sat 14 Nov, 6:00 pm (in 7 days)";
@@ -383,7 +386,7 @@ On the **Announcements** tab, **Announcements desk** opens the desk; **Write an 
 
 ### Pinning to the front page
 
-**Pin to the front page until** takes a day. Until the end of that day, the announcement is a banner at the top of the troupe's **About** tab for everyone in the troupe, and first on the Announcements tab. Each person can dismiss the banner for themselves; it stays pinned on the Announcements tab. It unpins itself after the day. To unpin it sooner, clear the day in the editor, or choose **Unpin** from its **⋯** on the desk.
+**Pin to the front page until** takes a day. Until the end of that day, the announcement is a banner at the top of the troupe's **Overview** for everyone in the troupe, and first on the Announcements tab. Each person can dismiss the banner for themselves; it stays pinned on the Announcements tab. It unpins itself after the day. To unpin it sooner, clear the day in the editor, or choose **Unpin** from its **⋯** on the desk.
 
 ### Important
 
@@ -1098,11 +1101,11 @@ Published memories show without names on the month's page, above its nominations
 
 ### The schedule
 
-Storytellers and the lead add games on the [troupe's Profile](#the-troupe-profile-and-public-page). Games to come show on the About tab, in the troupe's calendar, and on the public profile if it is public.
+Storytellers and the lead add games on the [troupe's profile](#the-troupe-profile-and-public-page), on its Overview. Games to come show on the Overview, in the troupe's calendar, and on the public profile if it is public.
 
 ### RSVPs and the calendar
 
-On the About tab, each game to come asks **Coming**, **Maybe** or **Not coming**; tapping your answer again takes it back. Players see how many said each; all staff can also **See who answered**, with the characters each plays here.
+On the Overview, each game to come asks **Coming**, **Maybe** or **Not coming**; tapping your answer again takes it back. Players see how many said each; all staff can also **See who answered**, with the characters each plays here.
 
 **Subscribe to the calendar** gives a link for the troupe's games and downtime dates, for this troupe or all your troupes, with how to add it in Google Calendar, Apple Calendar and Outlook. Keep it to yourself: anyone with it can see those dates.
 
@@ -1110,10 +1113,10 @@ On the About tab, each game to come asks **Coming**, **Maybe** or **Not coming**
 
 ![A game's night: check-in at the door with its code and QR code, and who came.](images/running-a-troupe/game-night.png)
 
-On the About tab, storytellers and assistant storytellers choose **Check-in and attendance** under a game to open its night. A line at its top leads back to the troupe and its **At game** tab. Check-in can open from 12 hours before the game starts.
+On the Overview, storytellers and assistant storytellers choose **Check-in and attendance** under a game to open its night. A line at its top leads back to the troupe and its **At game** tab. Check-in can open from 12 hours before the game starts.
 
 1. Choose **Open check-in**. The door gets a code and a QR code.
-2. Choose **Show at the door** for a full-screen code to hold up. Players scan it with their phone's camera, or type the code on the check-in page, then pick who they're playing. They can also tap **Check in** on the troupe's About tab.
+2. Choose **Show at the door** for a full-screen code to hold up. Players scan it with their phone's camera, or type the code on the check-in page, then pick who they're playing. They can also tap **Check in** on the troupe's Overview.
 3. Checking in starts the character's night on its Play View: Willpower full after a day's rest, and Blood as the troupe's settings say.
 4. **New code** replaces the code; **Close check-in** stops players checking in. You can still check people in by hand.
 
@@ -1188,7 +1191,7 @@ Completing a downtime gives the cycle's completion XP by itself, as the characte
 
 ### The XP floor and ceiling
 
-The **XP floor and ceiling** card (on the About tab and in Troupe settings) shows:
+The **XP floor and ceiling** card (on the Overview and in Troupe settings) shows:
 
 - **Ceiling**: the most XP a character here could have by now: the starting XP, every game's XP and every downtime's XP.
 - **Floor**: the same without the downtimes. New characters built for the troupe start at the floor.

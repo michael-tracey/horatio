@@ -26,7 +26,7 @@ function layout(can: ReturnType<typeof abilities>, t: TroupeTabsTroupe = troupe)
 }
 
 const storytellerLayout = {
-  Troupe: ["About", "Profile", "Who's Who", "News", "Announcements", "Nominations", "House rules", "Status", "Staff", "Log"],
+  Troupe: ["Overview", "Who's Who", "News", "Announcements", "Nominations", "House rules", "Status", "Staff", "Log"],
   Characters: ["Approvals", "Being built", "Characters", "Players", "Lines and veils"],
   Games: ["At game", "Scenes", "Award XP"],
   Court: ["Titles", "Court", "Chronicle", "Boons", "Bonds", "Web of obligation"],
@@ -47,7 +47,7 @@ describe("troupeTabGroups (#779)", () => {
 
   it("gives a narrator the troupe, lines and veils, and their downtime work", () => {
     expect(layout(abilities("narrator", false))).toEqual({
-      Troupe: ["About", "Profile", "Who's Who", "News", "Announcements", "Nominations", "House rules", "Status", "Staff"],
+      Troupe: ["Overview", "Who's Who", "News", "Announcements", "Nominations", "House rules", "Status", "Staff"],
       Characters: ["Lines and veils"],
       Court: ["Court", "Chronicle"],
       Downtimes: ["My work", "Fill tables", "Quests"],
@@ -56,7 +56,7 @@ describe("troupeTabGroups (#779)", () => {
 
   it("puts Court and Chronicle under Court for a player, as for staff", () => {
     expect(layout(abilities(null, false))).toEqual({
-      Troupe: ["About", "Profile", "Who's Who", "News", "Announcements", "Nominations", "House rules", "Status"],
+      Troupe: ["Overview", "Who's Who", "News", "Announcements", "Nominations", "House rules", "Status"],
       Court: ["Court", "Chronicle"],
     });
   });

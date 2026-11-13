@@ -1,22 +1,27 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import type { ProfilePerson, TroupeProfileOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { AtHandle } from "../../components/PersonPicker";
-import { Badge, Card } from "../../components/ui";
+import { Badge, Button, Card } from "../../components/ui";
 import { useDates } from "../../dates";
 import { withNext } from "../../next";
 import { filled, linksOf, newPlayersText, type LinkKind } from "./profile";
+import { Games, Pictures, ProfilePartEditor, type ProfilePart } from "./ProfileEditor";
 import { WrittenRulesList } from "./WrittenRulesList";
 
 /**
  * A troupe's profile: its portrait, links, schedule, venue, setting, new players
  * and age and content notes, each part shown only when it has something in it.
- * The Profile tab shows it to anyone signed in; the public page (/t/…) to anyone
- * at all when the troupe has made it public. `signedIn` decides whether staff
+ * The troupe's Overview shows it to anyone signed in; the public page (/t/…) to
+ * anyone at all when the troupe has made it public. `signedIn` decides whether staff
  * link to their own pages, which only people signed in can open.
+ *
+ * With `edit` (its storytellers, on the Overview, #781), every part shows, empty or
+ * not, each with its own Edit that changes that card in place; the portrait, links
+ * and new players get cards of their own.
  */
-export function TroupeProfileView({ profile: p, signedIn }: { profile: TroupeProfileOut; signedIn: boolean }) {
+export function TroupeProfileView({ profile: p, signedIn, edit = false }: { profile: TroupeProfileOut; signedIn: boolean; edit?: boolean }) {
   const dates = useDates();
   const [next, ...later] = p.games;
   const links = linksOf(p.links);
@@ -62,48 +67,79 @@ export function TroupeProfileView({ profile: p, signedIn }: { profile: TroupePro
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {(filled(p.schedule) || p.games.length > 0) && (
-          <Card title="When it plays">
-            {p.schedule && <p className="text-sm whitespace-pre-line">{p.schedule}</p>}
-            {p.games.length > 0 && (
-              <ul className={`flex flex-col gap-1 text-sm ${p.schedule ? "mt-3" : ""}`} aria-label="Upcoming games">
-                {[next!, ...later].map((g) => (
-                  <li key={g.id}>
-                    <time dateTime={g.starts_at}>{dates.game(g.starts_at, g.ends_at)}</time>
-                  </li>
+        {edit && (
+          <Card title="Portrait and banner">
+            <Pictures profile={p} />
+          </Card>
+        )}
+        {edit && (
+          <Part profile={p} part="links" title="Links" show={links.length > 0}>
+            <ul className="flex flex-col gap-1 text-sm">
+              {links.map((link) => (
+                <li key={link.kind}>
+                  <span className="text-mist">{link.label}:</span> <span className="break-all">{link.url}</span>
+                </li>
+              ))}
+            </ul>
+          </Part>
+        )}
+        <Part
+          profile={p}
+          part="when"
+          title="When it plays"
+          show={filled(p.schedule) || p.games.length > 0}
+          edit={edit}
+          more={<Games profile={p} />}
+        >
+          {p.schedule && <p className="text-sm whitespace-pre-line">{p.schedule}</p>}
+          {p.games.length > 0 && (
+            <ul className={`flex flex-col gap-1 text-sm ${p.schedule ? "mt-3" : ""}`} aria-label="Upcoming games">
+              {[next!, ...later].map((g) => (
+                <li key={g.id}>
+                  <time dateTime={g.starts_at}>{dates.game(g.starts_at, g.ends_at)}</time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Part>
+        <Part
+          profile={p}
+          part="where"
+          title="Where it plays"
+          show={filled(venue.region, venue.name, venue.address, venue.access) || venue.address_hidden}
+          edit={edit}
+        >
+          <dl className="flex flex-col gap-2 text-sm">
+            <Entry label="City or region">{venue.region}</Entry>
+            <Entry label="Venue">{venue.name}</Entry>
+            <Entry label="Address">
+              {venue.address ||
+                (venue.address_hidden && (
+                  <span className="text-mist">
+                    <Link to={withNext("/sign-in", `/t/${p.id}`)} className="text-gold underline">
+                      Sign in
+                    </Link>{" "}
+                    to see the address.
+                  </span>
                 ))}
-              </ul>
-            )}
-          </Card>
-        )}
-        {(filled(venue.region, venue.name, venue.address, venue.access) || venue.address_hidden) && (
-          <Card title="Where it plays">
+            </Entry>
+            <Entry label="Accessibility">{venue.access}</Entry>
+          </dl>
+        </Part>
+        <Part profile={p} part="setting" title="The setting" show={filled(setting.chronicle, setting.city, setting.era)} edit={edit}>
+          <dl className="flex flex-col gap-2 text-sm">
+            <Entry label="Chronicle">{setting.chronicle}</Entry>
+            <Entry label="Set in">{setting.city}</Entry>
+            <Entry label="Era">{setting.era}</Entry>
+          </dl>
+        </Part>
+        {edit && (
+          <Part profile={p} part="newcomers" title="New players" show={!!newPlayers || !!p.contact}>
             <dl className="flex flex-col gap-2 text-sm">
-              <Entry label="City or region">{venue.region}</Entry>
-              <Entry label="Venue">{venue.name}</Entry>
-              <Entry label="Address">
-                {venue.address ||
-                  (venue.address_hidden && (
-                    <span className="text-mist">
-                      <Link to={withNext("/sign-in", `/t/${p.id}`)} className="text-gold underline">
-                        Sign in
-                      </Link>{" "}
-                      to see the address.
-                    </span>
-                  ))}
-              </Entry>
-              <Entry label="Accessibility">{venue.access}</Entry>
+              <Entry label="Taking new players?">{newPlayers}</Entry>
+              <Entry label="Contact for new players">{p.contact && <Person person={p.contact} signedIn={signedIn} />}</Entry>
             </dl>
-          </Card>
-        )}
-        {filled(setting.chronicle, setting.city, setting.era) && (
-          <Card title="The setting">
-            <dl className="flex flex-col gap-2 text-sm">
-              <Entry label="Chronicle">{setting.chronicle}</Entry>
-              <Entry label="Set in">{setting.city}</Entry>
-              <Entry label="Era">{setting.era}</Entry>
-            </dl>
-          </Card>
+          </Part>
         )}
         <Card title="People">
           <dl className="flex flex-col gap-2 text-sm">
@@ -113,10 +149,19 @@ export function TroupeProfileView({ profile: p, signedIn }: { profile: TroupePro
             <Entry label="Contact for new players">{p.contact && <Person person={p.contact} signedIn={signedIn} />}</Entry>
           </dl>
         </Card>
-        {filled(p.content_notes) && (
-          <Card title="Content notes">
-            <p className="text-sm whitespace-pre-line">{p.content_notes}</p>
-          </Card>
+        {edit ? (
+          <Part profile={p} part="age" title="Age and content" show={p.min_age !== null || filled(p.content_notes)}>
+            <dl className="flex flex-col gap-2 text-sm">
+              <Entry label="Minimum age">{p.min_age !== null && `${p.min_age}+`}</Entry>
+              <Entry label="Content notes">{p.content_notes}</Entry>
+            </dl>
+          </Part>
+        ) : (
+          filled(p.content_notes) && (
+            <Card title="Content notes">
+              <p className="text-sm whitespace-pre-line">{p.content_notes}</p>
+            </Card>
+          )
         )}
         {p.written_rules.length > 0 && (
           <Card title="House rules" className="md:col-span-2">
@@ -125,6 +170,58 @@ export function TroupeProfileView({ profile: p, signedIn }: { profile: TroupePro
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * A part of the profile in its card. Read only, it shows only when it has something
+ * in it. With `edit` it always shows, and its Edit turns the card into that part's
+ * form (and `more`, what saves on its own, such as the games) until saved or cancelled.
+ */
+function Part({
+  profile,
+  part,
+  title,
+  show,
+  edit = true,
+  more,
+  children,
+}: {
+  profile: TroupeProfileOut;
+  part: ProfilePart;
+  title: string;
+  show: boolean;
+  edit?: boolean;
+  more?: ReactNode;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!edit) return show ? <Card title={title}>{children}</Card> : null;
+  const what = title.charAt(0).toLowerCase() + title.slice(1);
+  return (
+    <Card
+      title={title}
+      // Open, it takes the whole row: its form needs the room (the games' dates and Add game side by side).
+      className={open ? "md:col-span-2" : undefined}
+      actions={
+        !open && (
+          <Button variant="ghost" className="min-h-8 px-2" aria-label={`Edit ${what}`} onClick={() => setOpen(true)}>
+            Edit
+          </Button>
+        )
+      }
+    >
+      {open ? (
+        <div className="flex flex-col gap-4">
+          <ProfilePartEditor profile={profile} part={part} onDone={() => setOpen(false)} />
+          {more && <div className="border-t border-ash pt-4">{more}</div>}
+        </div>
+      ) : show ? (
+        children
+      ) : (
+        <p className="text-sm text-mist">Nothing yet.</p>
+      )}
+    </Card>
   );
 }
 

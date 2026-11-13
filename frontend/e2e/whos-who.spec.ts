@@ -270,7 +270,7 @@ test("the Who's Who: a player sees the court in rank order, their clan and Other
   // Someone with no character in the troupe sees no Who's Who, and the API refuses them.
   const o = outsider.page;
   await o.goto(`/troupes/${troupeId}`);
-  await expect(o.getByRole("link", { name: "Profile", exact: true })).toBeVisible();
+  await expect(o.getByRole("link", { name: "Overview", exact: true })).toBeVisible();
   await expect(o.getByRole("link", { name: "Who's Who" })).toHaveCount(0);
   const refused = await o.request.get(`/api/troupes/${troupeId}/whos-who`, { headers });
   expect(refused.status()).toBe(403);
