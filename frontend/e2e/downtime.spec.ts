@@ -224,7 +224,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Award", exact: true }).click();
   await expect(lead.page.getByRole("dialog")).toBeHidden();
 
-  // A game's XP for everyone at once, starting at the troupe's usual 8.
+  // A game's XP for everyone at once, starting at the troupe's usual 8, under Games.
+  await lead.page.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Games", exact: true }).click();
   await lead.page.locator("main").getByRole("link", { name: "Award XP", exact: true }).click();
   await expect(lead.page.getByLabel("XP for Agnes", { exact: true })).toHaveValue("8");
   await lead.page.getByRole("button", { name: "More XP for Agnes" }).click();
@@ -244,6 +245,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
   await expect(p.getByText("Awaiting approval").first()).toBeVisible();
+  await lead.page.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: /^Characters/ }).click();
   await lead.page.getByRole("link", { name: /Approvals/ }).click();
   await expect(lead.page.getByText(/Celerity 2 → 3, for 9 XP/)).toBeVisible();
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
@@ -265,16 +267,16 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(printed.getByText("Agnes", { exact: true }).first()).toBeVisible();
   await printed.close();
 
-  // The troupe page has Characters and Players groups: At game sits under Characters, NPCs
-  // are on its Characters list rather than a tab of their own (#556),
-  // and Players lists the player with their character, linking to their profile.
+  // The troupe page's Characters group holds Approvals, the Characters list and Players; NPCs
+  // are on its Characters list rather than a tab of their own (#556), At game and Award XP
+  // sit under Games (#779), and Players lists the player with their character, linking to their profile.
   const sections = lead.page.getByRole("navigation", { name: "Troupe sections" });
-  await expect(sections.getByRole("link", { name: "Players", exact: true })).toBeVisible();
-  await expect(sections.getByRole("link", { name: "People", exact: true })).toHaveCount(0);
+  await expect(sections.getByRole("link", { name: "Games", exact: true })).toBeVisible();
+  await expect(sections.getByRole("link", { name: "Players", exact: true })).toHaveCount(0);
   const characterTabs = lead.page.getByRole("navigation", { name: "Characters", exact: true });
-  for (const tab of ["At game", "Award XP", "Approvals"]) await expect(characterTabs.getByRole("link", { name: tab })).toBeVisible();
-  await expect(characterTabs.getByRole("link", { name: "NPCs" })).toHaveCount(0);
-  await sections.getByRole("link", { name: "Players", exact: true }).click();
+  for (const tab of ["Approvals", "Characters", "Players"]) await expect(characterTabs.getByRole("link", { name: tab, exact: true })).toBeVisible();
+  for (const tab of ["NPCs", "At game", "Award XP"]) await expect(characterTabs.getByRole("link", { name: tab })).toHaveCount(0);
+  await characterTabs.getByRole("link", { name: "Players", exact: true }).click();
   const playerRow = lead.page.getByRole("listitem").filter({ has: lead.page.getByRole("link", { name: /^player @/ }) }).first();
   await expect(playerRow.getByRole("link", { name: "Agnes", exact: true })).toBeVisible();
   await expect(playerRow.getByText("Home", { exact: true })).toBeVisible();
@@ -484,10 +486,25 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Each cycle says when it is due and what is left to write.
   await expect(narrator.page.getByRole("link", { name: "November" }).getByText(/^Due .*, \d{1,2}:\d{2} [ap]m · 1 for you to write$/)).toBeVisible();
   await narrator.page.getByRole("link", { name: "November" }).click();
+  // The cycle's own My work (#789): a narrator sees only their work in it, and My work stays open.
+  await expect(narrator.page).toHaveURL(/\/troupes\/[^/]+\/downtimes\/[^/]+\/work$/);
+  await expect(narrator.page.getByRole("heading", { name: "November" })).toBeVisible();
+  await expect(narrator.page.getByRole("link", { name: "My work" })).toHaveAttribute("aria-current", "page");
+  await expect(narrator.page.getByRole("link", { name: "Fill tables" }).last()).toBeVisible();
   await narrator.page.getByLabel("Response to Agnes").fill("The docks are crowded tonight; you feed well and unseen.");
   await narrator.page.getByRole("button", { name: "Save response" }).click();
   await expect(narrator.page.getByText("Written", { exact: true })).toBeVisible();
+  // An old My work link for the cycle comes to the same place.
+  const cycleWork = new URL(narrator.page.url()).pathname;
+  const [, , troupeAt, , cycleAt] = cycleWork.split("/");
+  await narrator.page.goto(`/troupes/${troupeAt}/work/${cycleAt}`);
+  await expect(narrator.page).toHaveURL(new RegExp(`${cycleWork}$`));
+  await expect(narrator.page.getByText("Written", { exact: true })).toBeVisible();
   await narrator.page.screenshot(shots("narrator"));
+
+  // Storytellers have My work among the cycle's own tabs too, here with nothing of theirs.
+  await lead.page.getByRole("navigation", { name: "Cycle" }).getByRole("link", { name: "My work" }).click();
+  await expect(lead.page.getByText("Nothing assigned to you.")).toBeVisible();
 
   // The lead closes, told first what closing means while it isn't yet due.
   await lead.page.getByRole("link", { name: "Overview" }).click();

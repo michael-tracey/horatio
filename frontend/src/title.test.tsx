@@ -2,7 +2,7 @@ import { cleanup, render } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
 import { GroupedTabs, PageTabs, PageTitle, Tabs } from "./components/ui";
-import { openTab, textOf, titleOf, useTitle } from "./title";
+import { openTab, tabOpens, textOf, titleOf, useTitle } from "./title";
 
 afterEach(cleanup);
 
@@ -45,6 +45,14 @@ describe("openTab", () => {
     expect(openTab(tabs, "/troupes/1/approvals/")?.label).toBe("Approvals");
     expect(openTab(tabs, "/troupes/1/rules/teachers")?.label).toBe("Rules");
     expect(openTab(tabs, "/troupes/1/rulesets")).toBeUndefined();
+  });
+
+  it("finds a tab open under its also address, as a narrator's My work is inside a cycle (#789)", () => {
+    const work = { to: "/troupes/1/work", label: "My work", also: "/troupes/1/downtimes" };
+    expect(tabOpens(work, "/troupes/1/work")).toBe(true);
+    expect(tabOpens(work, "/troupes/1/downtimes/7/work")).toBe(true);
+    expect(tabOpens(work, "/troupes/1/downtimesheet")).toBe(false);
+    expect(openTab([...tabs, work], "/troupes/1/downtimes/7/work")?.label).toBe("My work");
   });
 });
 

@@ -211,7 +211,7 @@ def test_staff_see_responses_for_them_to_write(troupe: Troupe) -> None:
     line = waiting(troupe, troupe.narrator)["my_responses"]
     # Their own, and the any-narrator pool.
     assert line["count"] == 2
-    assert line["link"] == f"/troupes/{troupe.id}/work/{scene.cycle['id']}"
+    assert line["link"] == f"/troupes/{troupe.id}/downtimes/{scene.cycle['id']}/work"
     assert counts(troupe, troupe.storyteller)["my_responses"] == 1
     assert "my_responses" not in counts(troupe, troupe.assistant)
 

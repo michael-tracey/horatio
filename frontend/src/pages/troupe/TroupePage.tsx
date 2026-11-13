@@ -20,7 +20,7 @@ import { LinesVeilsTab } from "./LinesVeilsTab";
 import { LocationsTab } from "./LocationsTab";
 import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
-import { MyWork, WorkTab } from "./WorkTab";
+import { OldWorkLink, WorkTab } from "./WorkTab";
 import { AgenciesTab } from "../news/AgenciesTab";
 import { PostsSection } from "../news/PostsSection";
 import { useGlance } from "../news/queries";
@@ -45,6 +45,7 @@ import { StaffTab } from "./StaffTab";
 import { StatusRulesTab } from "./StatusRulesSection";
 import { TablesTab } from "./TablesTab";
 import { TitlesTab } from "./TitlesTab";
+import { troupeTabGroups } from "./troupeTabs";
 import { useWaiting } from "./WaitingList";
 import { tabCounts } from "./waiting";
 import { WhosWhoTab } from "./WhosWhoTab";
@@ -108,83 +109,12 @@ export function TroupePage() {
       </PageTitle>
       <GroupedTabs
         label="Troupe sections"
-        groups={[
-          {
-            label: "Troupe",
-            tabs: [
-              { to: base, label: "About", end: true },
-              { to: `${base}/profile`, label: "Profile" },
-              ...(t.whos_who && !t.archived ? [{ to: `${base}/news`, label: "News", count: glance.data?.news_unread ?? 0, countLabel: "unread" }] : []),
-              ...(t.whos_who && !t.archived ? [{ to: `${base}/announcements`, label: "Announcements", count: glance.data?.announcements_unread ?? 0, countLabel: "unread" }] : []),
-              ...(t.whos_who ? [{ to: `${base}/whos-who`, label: "Who's Who" }] : []),
-              ...(t.nominations ? [{ to: `${base}/nominations`, label: t.player_nominations ? "Nominations" : "Remembrances" }] : []),
-              { to: `${base}/house-rules`, label: "House rules" },
-              { to: `${base}/status`, label: "Status" },
-              ...(!can.running && t.whos_who && t.court_history_players ? [{ to: `${base}/court`, label: "Court" }] : []),
-              ...(!can.running && t.whos_who && t.chronicle_players ? [{ to: `${base}/chronicle`, label: "Chronicle" }] : []),
-              ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
-              ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
-            ],
-          },
-          {
-            // Approvals first, as what a player most often waits on; the group still opens on the roster.
-            label: "Characters",
-            to: `${base}/characters`,
-            tabs: [
-              ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: counts.approvals }] : []),
-              ...(can.running && !t.archived
-                ? [{ to: `${base}/being-built`, label: "Being built", count: building.data?.count ?? 0, countLabel: "being built", countInGroup: false }]
-                : []),
-              ...(can.running ? [{ to: `${base}/characters`, label: "Characters", count: counts.characters }] : []),
-              ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
-              ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
-              ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
-              ...(can.running ? [{ to: `${base}/court`, label: "Court" }] : []),
-              ...(can.running ? [{ to: `${base}/chronicle`, label: "Chronicle" }] : []),
-              ...(can.running && (t.blood_bonds ?? "off") !== "off" ? [{ to: `${base}/bonds`, label: "Bonds" }] : []),
-              ...(can.running && t.boons ? [{ to: `${base}/boons`, label: "Boons" }] : []),
-              ...(can.running ? [{ to: `${base}/obligations`, label: "Web of obligation" }] : []),
-            ],
-          },
-          {
-            // The troupe's own catalogues: places, things and backgrounds characters share.
-            label: "World",
-            tabs: [
-              ...(can.running ? [{ to: `${base}/locations`, label: "Locations" }] : []),
-              ...(can.running ? [{ to: `${base}/equipment`, label: "Equipment" }] : []),
-              ...(can.running ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
-            ],
-          },
-          {
-            label: "Players",
-            tabs: [
-              ...(can.running ? [{ to: `${base}/players`, label: "Players" }] : []),
-              ...(can.staff ? [{ to: `${base}/lines-veils`, label: "Lines and veils" }] : []),
-            ],
-          },
-          {
-            label: "Downtimes",
-            tabs: [
-              ...(can.running ? [{ to: `${base}/downtimes`, label: "Cycles", count: counts.downtimes }] : []),
-              ...(can.staff ? [{ to: `${base}/work`, label: "My work", count: counts.work }] : []),
-              ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
-              ...(can.running ? [{ to: `${base}/influence`, label: "Influence log", count: counts.influence }] : []),
-              ...(can.staff && t.quests_enabled ? [{ to: `${base}/quests`, label: "Quests", count: counts.quests }] : []),
-            ],
-          },
-          {
-            label: "Customise",
-            tabs: [
-              ...(can.running ? [{ to: `${base}/customise`, label: "Overview" }] : []),
-              ...(can.running ? [{ to: `${base}/settings`, label: "Troupe settings" }] : []),
-              ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
-              ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
-              ...(can.running ? [{ to: `${base}/news-agencies`, label: "News" }] : []),
-              ...(can.running ? [{ to: `${base}/connectors`, label: "Connectors" }] : []),
-              ...(can.running ? [{ to: `${base}/share`, label: "Share settings" }] : []),
-            ],
-          },
-        ]}
+        groups={troupeTabGroups(t, can, {
+          ...counts,
+          building: building.data?.count,
+          newsUnread: glance.data?.news_unread,
+          announcementsUnread: glance.data?.announcements_unread,
+        })}
       />
       {!can.staff && !t.archived && <PlayHere troupe={t} />}
       <Routes>
@@ -300,12 +230,12 @@ export function TroupePage() {
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
-        {can.running && (
+        {can.staff && (
           <Route
             path="downtimes/:cycleId/*"
             element={
               <Suspense fallback={<Loading />}>
-                <CyclePage troupeId={t.id} clanName={t.assamite_name} />
+                <CyclePage troupeId={t.id} clanName={t.assamite_name} running={can.running} />
               </Suspense>
             }
           />
@@ -313,7 +243,7 @@ export function TroupePage() {
         {can.running && <Route path="connectors" element={<ConnectorsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="share" element={<ShareSettingsTab troupe={t} canImport={can.storyteller && !t.archived} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}
-        {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} canLog={can.running} />} />}
+        {can.staff && <Route path="work/:cycleId" element={<OldWorkLink troupeId={t.id} />} />}
         {can.running && <Route path="influence/*" element={<InfluenceLogTab troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
         {can.staff && t.quests_enabled && <Route path="quests/*" element={<QuestsTab troupeId={t.id} running={can.running} />} />}

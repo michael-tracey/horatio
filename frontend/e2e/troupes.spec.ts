@@ -127,14 +127,14 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // Boons are off: there's no Boons tab under Characters.
+  // Boons are off: there's no Boons tab under Court.
   const l = lead.page;
   // A group's tabs, under its name in the troupe's sections.
-  const characters = l.getByRole("navigation", { name: "Characters", exact: true });
+  const court = l.getByRole("navigation", { name: "Court", exact: true });
   const downtimes = l.getByRole("navigation", { name: "Downtimes", exact: true });
-  await l.goto(`/troupes/${troupeId}/characters`);
-  await expect(characters.getByRole("link", { name: "Approvals", exact: true })).toBeVisible();
-  await expect(characters.getByRole("link", { name: "Boons", exact: true })).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}/titles`);
+  await expect(court.getByRole("link", { name: "Titles", exact: true })).toBeVisible();
+  await expect(court.getByRole("link", { name: "Boons", exact: true })).toHaveCount(0);
 
   // Troupe settings list every feature, on or off, before the groups of settings.
   await l.goto(`/troupes/${troupeId}/settings`);
@@ -150,10 +150,10 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   await expect(boons.getByRole("switch", { name: "Boons" })).toHaveAttribute("aria-checked", "true");
   await expect(l.getByRole("checkbox", { name: /^Keep a boon ledger/ })).toHaveCount(0);
   await expect(l.getByRole("heading", { name: "Boons", exact: true })).toHaveCount(0);
-  // Its Settings link lands on its tab, under Characters, with its settings folded open at the top.
+  // Its Settings link lands on its tab, under Court, with its settings folded open at the top.
   await boons.getByRole("link", { name: "Settings for Boons" }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/boons#settings$`));
-  await expect(characters.getByRole("link", { name: "Boons", exact: true })).toBeVisible();
+  await expect(court.getByRole("link", { name: "Boons", exact: true })).toBeVisible();
   await expect(l.getByRole("radio", { name: /^Also what they're owed/ })).toBeVisible();
   await expect(l.getByRole("button", { name: "Register boons" })).toBeVisible();
   // Opened from the list, the tab has them folded away.
@@ -1279,12 +1279,15 @@ test("staff award XP, give equipment and print from a character's ⋯ on the Cha
   menu = await actions(a, "Casimir");
   await expect(menu.getByRole("menuitem")).toHaveText(["Play", "Give equipment…", "Status…", "Titles…", "List on the Who’s Who", "Print sheet", "Badge…"]);
 
-  // A narrator never sees character sheets, so has no Characters list at all.
+  // A narrator never sees character sheets, so has no Characters list at all: their
+  // Characters group holds only the troupe's lines and veils, and opens on them (#779).
   const n = narrator.page;
   await n.goto(`/troupes/${troupe.id}`);
   const sections = n.getByRole("navigation", { name: "Troupe sections" });
   await expect(sections.getByRole("link", { name: "Downtimes", exact: true })).toBeVisible();
-  await expect(sections.getByRole("link", { name: "Characters", exact: true })).toHaveCount(0);
+  await sections.getByRole("link", { name: "Characters", exact: true }).click();
+  await expect(n).toHaveURL(new RegExp(`/troupes/${troupe.id}/lines-veils$`));
+  await expect(n.getByRole("navigation", { name: "Characters", exact: true })).toHaveCount(0);
   await n.goto(`/troupes/${troupe.id}/characters`);
   await expect(n.getByRole("heading", { name: troupeName })).toBeVisible();
   await expect(n.getByRole("button", { name: "Actions for Odalys" })).toHaveCount(0);

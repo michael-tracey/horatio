@@ -7,7 +7,7 @@ import { useMotif } from "../loaders/useMotif";
 import { useOnline } from "../offline/connection";
 import { NeedsConnection } from "../offline/NeedsConnection";
 import { pipGroups } from "../ratings";
-import { openTab, textOf, useTitle } from "../title";
+import { openTab, tabOpens, textOf, useTitle } from "../title";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -254,7 +254,8 @@ export function CountBubble({ count, label }: { count: number; label: string }) 
 /** A tab, with a count of what waits on it, such as "2 new" (`countLabel` says what they are).
  * `countInGroup: false` keeps a count that isn't waiting on anyone (characters being
  * built, #774) out of its group's "waiting" total. */
-type Tab = { to: string; label: string; end?: boolean; count?: number; countLabel?: string; countInGroup?: boolean };
+/** A tab: `also` is another address under which it shows as open (see `tabOpens`). */
+type Tab = { to: string; label: string; end?: boolean; also?: string; count?: number; countLabel?: string; countInGroup?: boolean };
 
 /** How wide the fade is at an edge of a tab bar with more beyond it. */
 const FADE_PX = 32;
@@ -346,10 +347,8 @@ export function Tabs({ tabs }: { tabs: Tab[] }) {
  */
 export function GroupedTabs({ label, groups }: { label: string; groups: { label: string; tabs: Tab[]; to?: string }[] }) {
   const { pathname } = useLocation();
-  const here = pathname.replace(/\/$/, "");
-  const opens = (t: Tab) => (t.end ? here === t.to : here === t.to || here.startsWith(`${t.to}/`));
   const shown = groups.filter((g) => g.tabs.length > 0);
-  const open = shown.find((g) => g.tabs.some(opens));
+  const open = shown.find((g) => g.tabs.some((t) => tabOpens(t, pathname)));
   const row = useTabRow<HTMLElement>();
   useTitle(open && openTab(open.tabs, pathname)?.label, row.ref);
   return (
@@ -394,22 +393,21 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
     // A className of its own replaces the margin below.
     <nav aria-label={label} {...row} className={cx(ROW, "gap-2", className ?? "mb-5")}>
       {tabs.map((t) => (
-        <NavLink
+        // Marked open as NavLink would, and under its `also` address too.
+        <Link
           key={t.to}
           to={t.to}
-          end={t.end}
-          className={({ isActive }) =>
-            cx(
-              "shrink-0 rounded-full border px-3 py-1 text-sm whitespace-nowrap",
-              isActive ? "border-gold/60 bg-gold/10 text-parchment" : "border-ash text-mist hover:text-parchment",
-            )
-          }
+          aria-current={tabOpens(t, pathname) ? "page" : undefined}
+          className={cx(
+            "shrink-0 rounded-full border px-3 py-1 text-sm whitespace-nowrap",
+            tabOpens(t, pathname) ? "border-gold/60 bg-gold/10 text-parchment" : "border-ash text-mist hover:text-parchment",
+          )}
         >
           <span className="inline-flex items-center gap-1.5">
             {t.label}
             {t.count !== undefined && <CountBubble count={t.count} label={t.countLabel ?? "waiting"} />}
           </span>
-        </NavLink>
+        </Link>
       ))}
     </nav>
   );
