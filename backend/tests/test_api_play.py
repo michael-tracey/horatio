@@ -157,6 +157,28 @@ def test_undo_the_latest_tap(troupe: Troupe, agnes: str) -> None:
     assert again["blood"]["value"] == 9
 
 
+def test_a_tap_undone_before_it_was_sent_says_what_it_changed(troupe: Troupe, agnes: str) -> None:
+    # Spent and undone on the phone before either reached the server: they arrive
+    # together, and the log still reads as it did on the phone (issue #808).
+    send(troupe.player, agnes, tap("blood", -2))
+    spent = tap("blood", -1, at=1)
+    undo = {
+        "id": str(uuid.uuid4()),
+        "happened_at": (T0 + timedelta(minutes=2)).isoformat(),
+        "kind": "undo",
+        "undoes": spent["id"],
+    }
+    state = send(troupe.player, agnes, spent, undo)
+
+    assert state["blood"]["value"] == 8
+    assert texts(state) == ["Undid: Blood 8 → 7", "Blood 8 → 7", "Blood 10 → 8"]
+    assert [e["undone"] for e in state["log"]] == [False, True, False]
+
+    # A tap sent late that happened before it doesn't change what the undone one said it did.
+    state = send(troupe.player, agnes, tap("blood", -1, at=0))
+    assert texts(state)[:2] == ["Undid: Blood 8 → 7", "Blood 8 → 7"]
+
+
 def test_health_marks_normal_and_aggravated_damage(troupe: Troupe, agnes: str) -> None:
     state = send(
         troupe.player,
