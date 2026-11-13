@@ -133,6 +133,8 @@ class TroupeOut(BaseModel):
     # creditor's player may mark it settled there.
     boon_players_see: Literal["intake", "owes", "owed"] = "intake"
     boon_players_settle: bool = False
+    # The ledger judges the ban on no boons registered with the Harpy (#692).
+    boons_judge_ban: bool = False
     # Boons its players report wait for review before they stand (#687).
     boon_review: bool = False
     # The Harpy's access to the ledger (#688): none, the review queue, or all of it.
@@ -394,6 +396,7 @@ def one_out(
         boons=troupe.boons,
         boon_players_see=troupe.boon_players_see,  # type: ignore[arg-type]  # checked by the database
         boon_players_settle=troupe.boon_players_settle,
+        boons_judge_ban=troupe.boons_judge_ban,
         boon_review=troupe.boon_review,
         boon_harpy=troupe.boon_harpy,  # type: ignore[arg-type]  # checked by the database
         boon_harpy_standings=troupe.boon_harpy_standings,

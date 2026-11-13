@@ -176,6 +176,10 @@ class Troupe(Imported, Record):
     # A boon's creditor's player may mark it settled, called in or forgiven, from the
     # Play View (#686). Only with "owed", where they see it.
     boon_players_settle: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The ledger judges the Camarilla's ban on no boons registered with the Harpy (p. 403,
+    # horatio.sect_status, #692): off by default, for a ledger that holds every boon.
+    # While off, staff mark that ban by hand.
+    boons_judge_ban: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Boons its players report wait for review by its running staff (and the Harpy,
     # #688) before they stand (horatio.boon_reviews, #687); off, they stand at once.
     boon_review: Mapped[bool] = mapped_column(default=False, server_default="false")

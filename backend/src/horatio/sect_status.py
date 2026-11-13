@@ -76,6 +76,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit, social_age, titles
 from horatio.models import (
+    Boon,
     Boonbreaker,
     Character,
     CharacterTitle,
@@ -239,6 +240,10 @@ class Ban:
     by_sheet: bool | None
     marked: bool | None
     reason: str
+    # Its answer (`by_sheet`) comes from the boon ledger, not the sheet: the ban on no
+    # boons registered with the Harpy, in a troupe that keeps a ledger and has it judge
+    # that ban (issue #692).
+    from_ledger: bool = False
 
     @property
     def applies(self) -> bool:
@@ -551,6 +556,63 @@ def suppressions(db: Session, character: Character, held: Sequence[Held]) -> lis
     return found
 
 
+# The ban the boon ledger can judge (MET: VTM p. 403). Staff marks are kept under a
+# ban's words, so it is known by them, as the rules files have it.
+NO_BOONS_BAN = "No boons registered with the Harpy."
+# A boon the Harpy has registered, standing or since settled; pending and void ones
+# never were, and a Boonbreaker's boons are made void (horatio.boons,
+# horatio.boonbreakers).
+REGISTERED = ("registered", "settled")
+
+
+def boons_registered(db: Session, character: Character) -> bool | None:
+    """Whether the character has a boon registered, owed or owed to it, in the ledger
+    of any troupe it is in that keeps one and judges the ban by it; None when none of
+    them does (#692).
+
+    As the ledger's Open and Settled tabs have them: a settled boon is on record
+    whoever has left since, but a standing one counts only while its other side is in
+    play as the court knows it (horatio.court_knows, as the Harpy's standings judge
+    it, #754): gone only once the Who's Who lists them."""
+    from horatio import court_knows  # imports horatio.whos_who, which imports this module
+
+    keeping = {
+        t.id: t
+        for t in db.scalars(select(Troupe).where(Troupe.id.in_(current_troupe_ids(db, character))))
+        if t.boons and t.boons_judge_ban
+    }
+    if not keeping:
+        return None
+    found = db.scalars(
+        select(Boon).where(
+            Boon.troupe_id.in_(keeping),
+            Boon.state.in_(REGISTERED),
+            (Boon.debtor_id == character.id) | (Boon.creditor_id == character.id),
+        )
+    ).all()
+    if any(b.state == "settled" for b in found):
+        return True
+    others = {b.id: b.creditor_id if b.debtor_id == character.id else b.debtor_id for b in found}
+    # A name only, or a character in play, is in play for the court.
+    if any(other is None for other in others.values()):
+        return True
+    people = {
+        c.id: c for c in db.scalars(select(Character).where(Character.id.in_(others.values())))
+    }
+    if any(c.status != "retired" for c in people.values()):
+        return True
+    # Only retired ones left: gone only if their troupe's Who's Who lists them.
+    listed: dict[uuid.UUID, frozenset[uuid.UUID]] = {}
+    for boon in found:
+        if boon.troupe_id not in listed:
+            listed[boon.troupe_id] = court_knows.listed(db, keeping[boon.troupe_id])
+        other_id = others[boon.id]
+        other = people.get(other_id) if other_id is not None else None
+        if not court_knows.departed(other, listed[boon.troupe_id]):
+            return True
+    return False
+
+
 def bans_of(
     db: Session, character: Character, sect: SectData | None, sheet: Sequence[SheetTrait]
 ) -> list[Ban]:
@@ -568,15 +630,22 @@ def bans_of(
     found: list[Ban] = []
     for ban in sect.bans:
         mark = marks.get(ban.mark_key)
+        by_sheet = matches(ban.when, sheet, subject) if ban.when else None
+        from_ledger = False
+        if ban.when is None and ban.mark_key == NO_BOONS_BAN:
+            registered = boons_registered(db, character)
+            if registered is not None:
+                by_sheet, from_ledger = not registered, True
         found.append(
             Ban(
                 key=ban.mark_key,
                 level=ban.level,
                 applies_to=ban.applies_to,
                 page=ban.page,
-                by_sheet=matches(ban.when, sheet, subject) if ban.when else None,
+                by_sheet=by_sheet,
                 marked=mark.applies if mark else None,
                 reason=mark.reason if mark else "",
+                from_ledger=from_ledger,
             )
         )
     return found

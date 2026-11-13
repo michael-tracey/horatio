@@ -8044,6 +8044,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-ban": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Ban
+         * @description Whether the ledger judges the ban on no boons registered with the Harpy (p. 403):
+         *     for a ledger that holds every boon. Off, staff mark that ban by hand.
+         */
+        put: operations["set_boon_ban_api_troupes__troupe_id__boon_ban_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-flags/{flag_id}/clear": {
         parameters: {
             query?: never;
@@ -14317,6 +14338,8 @@ export interface components {
             applies_to: string;
             /** By Sheet */
             by_sheet: boolean | null;
+            /** From Ledger */
+            from_ledger: boolean;
             /** Key */
             key: string;
             /** Level */
@@ -32712,6 +32735,11 @@ export interface components {
              */
             boons: boolean;
             /**
+             * Boons Judge Ban
+             * @default false
+             */
+            boons_judge_ban: boolean;
+            /**
              * Chronicle Players
              * @default false
              */
@@ -49865,6 +49893,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_ban_api_troupes__troupe_id__boon_ban_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonLedgerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

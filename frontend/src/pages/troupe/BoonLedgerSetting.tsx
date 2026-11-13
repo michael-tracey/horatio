@@ -53,10 +53,14 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
           {on && <ReviewSetting troupe={troupe} />}
           {on && <HarpySetting troupe={troupe} />}
           {on && <TalonsSetting troupe={troupe} />}
+          {on && <JudgeBanSetting troupe={troupe} />}
         </div>
       )}
       {!canEdit && on && <p className="mt-2 text-sm">{PLAYERS_SEE.find((p) => p.value === troupe.boon_players_see)?.summary}</p>}
       {!canEdit && on && troupe.boon_review && <p className="mt-1 text-sm">Boons players report wait for review before they stand.</p>}
+      {!canEdit && on && troupe.boons_judge_ban && (
+        <p className="mt-1 text-sm">The ledger judges the Camarilla&apos;s ban on no boons registered with the Harpy.</p>
+      )}
       {!canEdit && on && <p className="mt-1 text-sm">{HARPY.find((h) => h.value === (troupe.boon_harpy ?? "none"))?.summary}</p>}
       {!canEdit && on && troupe.boon_harpy === "full" && troupe.boon_harpy_standings && (
         <p className="mt-1 text-sm">The Harpy also reads the boon standings and statistics, with who has left as the court knows it.</p>
@@ -278,5 +282,50 @@ function HarpySetting({ troupe }: { troupe: TroupeOut }) {
       <ErrorText error={save.error} />
       <ErrorText error={saveStandings.error} />
     </fieldset>
+  );
+}
+
+/**
+ * Whether the ledger judges the Camarilla's lesser status ban on no boons registered
+ * with the Harpy (MET: VTM p. 403, #692). Off by default: a ledger that doesn't yet
+ * hold every boon would put the whole court under the ban. Off, staff mark that ban.
+ */
+function JudgeBanSetting({ troupe }: { troupe: TroupeOut }) {
+  const toast = useToast();
+  // Shown as chosen at once, while it saves.
+  const [on, setOn] = useState(troupe.boons_judge_ban ?? false);
+  const save = useAction(async (next: boolean) => {
+    await unwrap(api.PUT("/api/troupes/{troupe_id}/boon-ban", { params: { path: { troupe_id: troupe.id } }, body: { on: next } }));
+    toast({
+      message: next
+        ? "The boon ledger now judges the ban on no boons registered with the Harpy."
+        : "Staff mark the ban on no boons registered with the Harpy again.",
+    });
+  });
+  return (
+    <div className="mt-2 border-t border-ash/60 pt-3">
+      <label className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={on}
+          disabled={save.isPending}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setOn(next);
+            save.mutate(next, { onError: () => setOn(troupe.boons_judge_ban ?? false) });
+          }}
+        />
+        <span>
+          Judge &ldquo;No boons registered&rdquo; from the boon ledger
+          <span className="block text-xs text-mist">
+            The Camarilla&apos;s lesser status ban on no boons registered with the Harpy (MET: VTM p. 403) then applies to any member with no boon in the
+            ledger, owed or owed to them. Switch it on once the ledger holds every boon, or the whole court comes under the ban. Off, staff mark that ban by
+            hand, and a mark always decides it.
+          </span>
+        </span>
+      </label>
+      <ErrorText error={save.error} />
+    </div>
   );
 }

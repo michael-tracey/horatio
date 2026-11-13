@@ -4551,6 +4551,10 @@
             ],
             "title": "By Sheet"
           },
+          "from_ledger": {
+            "title": "From Ledger",
+            "type": "boolean"
+          },
           "key": {
             "title": "Key",
             "type": "string"
@@ -4592,6 +4596,7 @@
           "applies_to",
           "page",
           "by_sheet",
+          "from_ledger",
           "marked",
           "reason",
           "applies"
@@ -52079,6 +52084,11 @@
             "title": "Boons",
             "type": "boolean"
           },
+          "boons_judge_ban": {
+            "default": false,
+            "title": "Boons Judge Ban",
+            "type": "boolean"
+          },
           "chronicle_players": {
             "default": false,
             "title": "Chronicle Players",
@@ -80053,6 +80063,60 @@
           }
         },
         "summary": "Give Audit",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-ban": {
+      "put": {
+        "description": "Whether the ledger judges the ban on no boons registered with the Harpy (p. 403):\nfor a ledger that holds every boon. Off, staff mark that ban by hand.",
+        "operationId": "set_boon_ban_api_troupes__troupe_id__boon_ban_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonLedgerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Boon Ban",
         "tags": [
           "boons"
         ]

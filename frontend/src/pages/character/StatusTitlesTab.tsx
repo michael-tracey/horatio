@@ -313,11 +313,15 @@ function BanPanel({ character, status, ban }: { character: CharacterOut; status:
       ? `Staff made ${character.name} exempt: ${ban.reason}`
       : ban.marked
         ? `Staff say it applies: ${ban.reason}`
-        : ban.by_sheet
-          ? `It applies: ${character.name}'s sheet shows it.`
-          : ban.by_sheet === false
-            ? `It does not apply: ${character.name}'s sheet does not show it.`
-            : "The sheet cannot show it: staff say whether it applies.";
+        : ban.from_ledger
+          ? ban.by_sheet
+            ? `It applies: the boon ledger has no boon of ${character.name}'s registered.`
+            : `It does not apply: the boon ledger has a boon of ${character.name}'s registered.`
+          : ban.by_sheet
+            ? `It applies: ${character.name}'s sheet shows it.`
+            : ban.by_sheet === false
+              ? `It does not apply: ${character.name}'s sheet does not show it.`
+              : "The sheet cannot show it: staff say whether it applies.";
   const page = pageLabel(ban.page);
   return (
     <div className="flex flex-col gap-3 text-sm">
@@ -336,7 +340,7 @@ function BanPanel({ character, status, ban }: { character: CharacterOut; status:
           {!ban.applies && <WithReason label="It applies" needed pending={mark.isPending} onConfirm={(reason) => mark.mutate({ mark: "applies", reason })} />}
           {ban.marked !== null && (
             <Button variant="ghost" className="min-h-8 px-2 text-xs" disabled={mark.isPending} onClick={() => mark.mutate({ mark: null, reason: "" })}>
-              As the sheet shows
+              {ban.from_ledger ? "As the ledger shows" : "As the sheet shows"}
             </Button>
           )}
         </div>
