@@ -277,6 +277,67 @@ describe("removing and signing out", () => {
     expect(client.getQueryData(["play", ROSA])).toBeUndefined();
     expect(client.getQueryData(["me"])).toBeNull();
   });
+
+  /** A shelf whose reads wait until `go` is called: a write caught between reading what was kept and
+   * writing it back. `reading` settles once one has started. */
+  function slowShelf() {
+    const shelf = memoryShelf();
+    const waiting: (() => void)[] = [];
+    let started = () => {};
+    const reading = new Promise<void>((resolve) => (started = resolve));
+    const get = shelf.get;
+    shelf.get = async <T,>(key: string) => {
+      started();
+      await new Promise<void>((resolve) => waiting.push(resolve));
+      return get<T>(key);
+    };
+    return { shelf, reading, go: () => waiting.splice(0).forEach((resolve) => resolve()) };
+  }
+
+  it("a save on its way when the person signs out writes nothing after it (#799)", async () => {
+    const { shelf, reading, go } = slowShelf();
+    const client = signedIn();
+    client.setQueryData(["play", ROSA], { blood: 7 });
+    const saving = save(client, ME, shelf);
+    await reading;
+    await forget(client, ME, shelf);
+    go();
+    expect(await saving).toBeNull();
+    expect(shelf.items.has(recordKey(ME))).toBe(false);
+  });
+
+  it("a refresh on its way when the person signs out writes nothing after it (#799)", async () => {
+    const { shelf, reading, go } = slowShelf();
+    const client = signedIn();
+    const refreshing = refresh(client, ME, shelf);
+    await reading;
+    await forget(client, ME, shelf);
+    go();
+    expect(await refreshing).toBeNull();
+    expect(shelf.items.has(recordKey(ME))).toBe(false);
+  });
+
+  it("a troupe's scenes being saved when the person signs out are not written after it (#799)", async () => {
+    const { shelf, reading, go } = slowShelf();
+    const client = signedIn();
+    client.setQueryData(["scenes", "troupe", false], [{ id: "scene" }]);
+    const saving = saveScenes(client, ME, "troupe", shelf);
+    await reading;
+    await forget(client, ME, shelf);
+    go();
+    expect(await saving).toBeNull();
+    expect(shelf.items.has(scenesKey(ME, "troupe"))).toBe(false);
+  });
+
+  it("a save on its way when keeping is turned off writes nothing after it", async () => {
+    const { shelf, reading, go } = slowShelf();
+    const saving = save(signedIn(), ME, shelf);
+    await reading;
+    await removeKept(ME, shelf);
+    go();
+    expect(await saving).toBeNull();
+    expect(shelf.items.has(recordKey(ME))).toBe(false);
+  });
 });
 
 describe("a troupe's kept scenes", () => {

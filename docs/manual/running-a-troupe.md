@@ -91,17 +91,17 @@ Only the lead storyteller (and the custodian) can do these, at the foot of the t
 
 ## Finding your way around a troupe
 
-A troupe's page has its tabs in groups, one for each job. Which tabs you see depends on your role, but a tab is always in the same group: players who may read the troupe's Court and Chronicle find them under **Court** too.
+A troupe's page has its tabs in groups, one for each job. Which tabs you see depends on your role, but a tab is always in the same group: players who may read the troupe's Court and Chronicle find them under **Court** too. The one exception is **House rules**, the same page read and changed: players and narrators find it under **Troupe**, storytellers and assistant storytellers under **Customise**, where they change it.
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | Overview, Setting, Who's Who, News, Announcements, Nominations, House rules, Staff, Log |
+| Troupe | Overview, Setting, Who's Who, News, Announcements, Nominations, House rules (players and narrators), Staff, Log |
 | Characters | Approvals, Being built, Characters, Players, Lines and veils |
 | Games | At game, Scenes, Award XP |
 | Court | Titles, Court, Chronicle, Boons, Bonds, Web of obligation |
 | Downtimes | Cycles, My work, Fill tables, Influence log, Quests |
 | World | Locations, Equipment, Shared backgrounds |
-| Customise | Overview, Troupe settings, Rules, Specialisations, News, Connectors, Share settings |
+| Customise | Overview, Troupe settings, House rules, Specialisations, News agencies, Connectors, Share settings |
 
 A number on a tab is how much waits on you there, such as approvals to decide.
 
@@ -323,7 +323,7 @@ Each story is one-off: there are no repeating stories. For a regular bulletin, *
 
 ### News agencies
 
-**Customise › News** lists the troupe's agencies. Storytellers and assistant storytellers keep them. **Add an agency** asks for:
+**Customise › News agencies** lists the troupe's agencies. Storytellers and assistant storytellers keep them. **Add an agency** asks for:
 
 - its **Name**, and a line of **Description** for staff;
 - its **Masthead colour**, shown behind its name, beside its stories and down the side of its Discord posts;
@@ -395,7 +395,7 @@ Tick **Important** for what can't wait, such as a game moved or cancelled. As it
 
 ### Announcements on Discord
 
-Under **Customise › News**, **Announcements on Discord** picks the troupe's announcements channel, separately from the news channel. An announcement goes there as a plain embed with its title, byline, message (split over several posts if it's long), picture and a **Read in Horatio** link. Editing it edits the post, and unpublishing deletes it. With no Discord server connected, or no announcements channel chosen, it's in the app only, and the desk says so.
+Under **Customise › News agencies**, **Announcements on Discord** picks the troupe's announcements channel, separately from the news channel. An announcement goes there as a plain embed with its title, byline, message (split over several posts if it's long), picture and a **Read in Horatio** link. Editing it edits the post, and unpublishing deletes it. With no Discord server connected, or no announcements channel chosen, it's in the app only, and the desk says so.
 
 Publishing, editing a published announcement, pinning and unpinning, unpublishing and using Important go in the [troupe log](#the-troupe-log).
 
@@ -493,7 +493,7 @@ Below it, nothing is changed: the Overview points to where things are.
 
 The **Features** list at the top has a row for each optional feature: Who's Who, News and announcements, the Play View, Boons, Blood bonds, Player Nominations, Remembrances, the court over time and the chronicle for players, Quests, Feeding, Golconda and Enlightened, and Items that expire. Each row says whether it's on, what it adds and which tabs appear with it, with **Open** to go to its tab once it's on, and **Settings** for the rest of its settings where it has more.
 
-Storytellers switch a feature on or off with the switch at the start of its row. This is the one place each is switched (Quests also under **Rules › Quests**). A feature switched off has no tab, and what was recorded with it is kept for when it's on again. Blood bonds switched on here are kept by staff; choose another way under its **Settings**. Feeding switched on here is feeding as the book has it, with its Vol. 2 options as they were. Who's Who and News are always on, and the Play View is switched tab by tab. Assistant storytellers see the list without the switches.
+Storytellers switch a feature on or off with the switch at the start of its row. This is the one place each is switched (Quests also under **House rules › Quests**). A feature switched off has no tab, and what was recorded with it is kept for when it's on again. Blood bonds switched on here are kept by staff; choose another way under its **Settings**. Feeding switched on here is feeding as the book has it, with its Vol. 2 options as they were. Who's Who and News are always on, and the Play View is switched tab by tab. Assistant storytellers see the list without the switches.
 
 - **Player Nominations**: players praise each other's roleplaying in their downtimes, for you to review and publish each month (see [Player Nominations](#player-nominations)). Switched off, none of it shows anywhere; what was written and published is kept for when it's on again.
 - **Remembrances**: ask the troupe for memories of a character who leaves play (see [Remembrances](#remembrances)). Independent of Player Nominations. Switched off, none can be opened or written and nothing of them shows, except those already published: they stay on the characters' pages and the Who's Who, because they belong to the people remembered.
@@ -515,7 +515,7 @@ The parts of the chronicle's Setting Style Document (MET: VTM pp. 331–336) tha
 The rest of the document is built from the troupe's own settings, so it's never typed twice and changes when they do:
 
 - **Setting**: from **Sects** under [Who may join](#who-may-join). One sect is the chronicle's setting for every character. With several, each is a faction: its characters are built by their own sect's costs and clan rarities, and play by this chronicle's mechanics (MET: VTM p. 334).
-- **Clan rarity adjustments**: the clans you rate yourselves under **Rules › Starting points › Clan rarity**, each beside the book's rarity for the setting, with the reason you give it there ("due to story"). Common, uncommon and rare clans with none say **Settings default**.
+- **Clan rarity adjustments**: the clans you rate yourselves under **House rules › Starting points › Clan rarity**, each beside the book's rarity for the setting, with the reason you give it there ("due to story"). Common, uncommon and rare clans with none say **Settings default**.
 - **Cost modifications**: your prices, your own merits and flaws that characters can take, and the book traits you ban or class differently.
 - **Setting-specific mechanics**: what a new character starts with, your changes to starting points, the checks that limit creation (your own and the book's you play differently), the game XP chart and monthly cap, and your other house rules. **Graduated XP cap** says **Yes** when the game XP chart gives less as a character earns more (p. 349).
 
@@ -577,15 +577,17 @@ Switching feeding off only hides it. What was recorded is kept and comes back if
 
 ## Customise: house rules
 
-**Customise › Rules** holds the troupe's changes to the rule set, one page each. A house rule applies to characters whose home troupe this is, and those being built for it. Players read them all on the troupe's **House rules** tab.
+**Customise › House rules** holds the troupe's changes to the rule set. It opens on **As players read it**: the troupe's **House rules** tab exactly as its players see it, everything the troupe plays differently from the book in one page. After it come the parts, one page each, where storytellers change the rules and assistant storytellers read them: Checks, Costs, Starting points, Downtime actions, Downtime keywords, Languages, House merits and flaws, Written rules, Book traits, Locations, Quests, Retainers, Backstories, Free changes and Teachers. A house rule applies to characters whose home troupe this is, and those being built for it.
+
+The tab was **Customise › Rules** before; links to its old addresses open the same part of **House rules**.
 
 Some pages (Costs, Starting points, Downtime actions, Book traits) have a picker for the splat they apply to, such as Vampire or Ghoul.
 
 ### Checks
 
-![Customise › Rules › Checks, showing the troupe's house rules, with one check played differently.](images/running-a-troupe/rules-checks.png)
+![Customise › House rules › Checks, showing the troupe's house rules, with one check played differently.](images/running-a-troupe/rules-checks.png)
 
-A check is a rule about what a sheet may hold, such as a clan-only merit or two flaws that cannot go together. The page opens on the troupe's **House rules**; choose **All checks** to see every one, folded in groups by kind, or search them all.
+A check is a rule about what a sheet may hold, such as a clan-only merit or two flaws that cannot go together. **Checks** opens on the troupe's **House rules**, the checks it plays differently; choose **All checks** to see every one, folded in groups by kind, or search them all.
 
 Choose how the troupe plays each check:
 
@@ -693,7 +695,7 @@ Choose **Add a written rule**, then give it a **Title**, a **Section** (such as 
 
 ### Book traits
 
-![Customise › Rules › Book traits, with a merit opened to ban it and give it the troupe's own wording.](images/running-a-troupe/book-trait.png)
+![Customise › House rules › Book traits, with a merit opened to ban it and give it the troupe's own wording.](images/running-a-troupe/book-trait.png)
 
 **Book traits** changes traits from the book. Search or browse under **Find a book trait**, open one, and in one panel:
 
@@ -705,7 +707,7 @@ Choose **Add a written rule**, then give it a **Title**, a **Section** (such as 
 
 ### Location rules
 
-**Locations** (under Rules) holds the troupe's **House options** for the book's Stock Locations (each on unless you switch it off), what going over the **Control limit** does (**Refuse** or **Only note it**), the troupe's own location qualities, and **The catalogue** as played here.
+**Locations** (under House rules) holds the troupe's **House options** for the book's Stock Locations (each on unless you switch it off), what going over the **Control limit** does (**Refuse** or **Only note it**), the troupe's own location qualities, and **The catalogue** as played here.
 
 ### Quest settings
 
@@ -756,7 +758,7 @@ Tick **Need an approved backstory before accepting a character** to make approva
 
 A connector the server isn't set up for says so; ask the custodian, who sets it up as in [Setting up Discord and email](custodian.md#setting-up-discord-and-email).
 
-The Discord channels for the troupe's news and its announcements are chosen apart from these, under **Customise › News** (see [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord)).
+The Discord channels for the troupe's news and its announcements are chosen apart from these, under **Customise › News agencies** (see [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord)).
 
 #### Adding the Horatio bot
 
@@ -829,7 +831,7 @@ An import merges. An item that matches one this troupe has replaces it: a house 
 
 ### What is and isn't carried
 
-Carried, where it differs from Horatio's default: the troupe settings, and everything under **Rules** (checks, costs, starting points, downtime actions, downtime keywords, languages, house merits and flaws, written rules, book traits, location rules, quest settings, Retainers, backstory settings, free changes and teachers). Also the troupe's specialisations, fill tables, and news agencies: an agency's name, description and colour only, never its picture or Discord channel. Archived house merits, retired keywords and retired agencies are left out.
+Carried, where it differs from Horatio's default: the troupe settings, and everything under **House rules** (checks, costs, starting points, downtime actions, downtime keywords, languages, house merits and flaws, written rules, book traits, location rules, quest settings, Retainers, backstory settings, free changes and teachers). Also the troupe's specialisations, fill tables, and news agencies: an agency's name, description and colour only, never its picture or Discord channel. Archived house merits, retired keywords and retired agencies are left out.
 
 Never carried:
 
@@ -839,7 +841,7 @@ Never carried:
 - connectors (Discord channels, tokens);
 - the troupe's titles and seated clans, its own equipment templates, house location qualities and backstory question sets.
 
-If the backstory settings coming in need questions this troupe doesn't have, the review says so: add them under **Rules › Backstories**.
+If the backstory settings coming in need questions this troupe doesn't have, the review says so: add them under **House rules › Backstories**.
 
 ## Approvals
 

@@ -62,7 +62,7 @@ function Checklist({ troupe, setup: s }: { troupe: TroupeOut; setup: SetupOut })
         rules > 0
           ? `${houseRules(rules)}. Anything else plays as the book has it.`
           : "None yet: everything plays as the book has it. Change what you play differently.",
-      to: `${base}/rules`,
+      to: `${base}/house-rules/checks`,
     },
     {
       label: "Staff",
@@ -159,11 +159,11 @@ export type RuleArea = { label: string; text: string; to: string };
  */
 export function differentAreas(s: SetupOut, base: string): RuleArea[] {
   const areas: (RuleArea | false)[] = [
-    s.checks > 0 && { label: "Checks", text: `${s.checks} of ${s.checks_total} played differently`, to: `${base}/rules` },
-    s.costs > 0 && { label: "Costs", text: s.costs === 1 ? "1 house price" : `${s.costs} house prices`, to: `${base}/rules/costs` },
-    s.starting > 0 && { label: "Starting points", text: houseRules(s.starting), to: `${base}/rules/starting` },
-    s.actions > 0 && { label: "Downtime actions", text: houseRules(s.actions), to: `${base}/rules/actions` },
-    s.house_traits > 0 && { label: "House merits and flaws", text: `${s.house_traits} of the troupe's own`, to: `${base}/rules/house-traits` },
+    s.checks > 0 && { label: "Checks", text: `${s.checks} of ${s.checks_total} played differently`, to: `${base}/house-rules/checks` },
+    s.costs > 0 && { label: "Costs", text: s.costs === 1 ? "1 house price" : `${s.costs} house prices`, to: `${base}/house-rules/costs` },
+    s.starting > 0 && { label: "Starting points", text: houseRules(s.starting), to: `${base}/house-rules/starting` },
+    s.actions > 0 && { label: "Downtime actions", text: houseRules(s.actions), to: `${base}/house-rules/actions` },
+    s.house_traits > 0 && { label: "House merits and flaws", text: `${s.house_traits} of the troupe's own`, to: `${base}/house-rules/house-traits` },
     s.other > 0 && { label: "Other house rules", text: s.other === 1 ? "1 setting unlike the book" : `${s.other} settings unlike the book`, to: `${base}/house-rules` },
   ];
   return areas.filter((a): a is RuleArea => !!a);
@@ -185,7 +185,7 @@ function HouseRules({ troupe, setup, canEdit }: { troupe: TroupeOut; setup: Setu
       {areas.length === 0 ? (
         <p className="text-sm text-mist">
           Everything plays as the book has it.{" "}
-          <Link to={`${base}/rules`} className="underline hover:text-parchment">
+          <Link to={`${base}/house-rules/checks`} className="underline hover:text-parchment">
             {canEdit ? "Change what you play differently" : "See the rules"}
           </Link>
           .

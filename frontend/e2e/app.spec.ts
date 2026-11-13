@@ -120,7 +120,7 @@ test("the browser tab names the page: the tab open, then the troupe or character
   await p.goto(`/troupes/${troupeId}/approvals`);
   await expect(p).toHaveTitle(`Approvals · ${troupe} · Horatio`);
   // A tab's own tabs come first.
-  await p.goto(`/troupes/${troupeId}/rules/teachers`);
+  await p.goto(`/troupes/${troupeId}/house-rules/teachers`);
   await expect(p.getByRole("link", { name: "Teachers", exact: true })).toHaveAttribute("aria-current", "page");
   expect(await p.title()).toMatch(new RegExp(`^Teachers · .+ · ${troupe} · Horatio$`));
 

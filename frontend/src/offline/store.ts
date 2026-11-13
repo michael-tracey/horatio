@@ -92,6 +92,34 @@ function summarise({ queries: _, ...rest }: Kept): KeptSummary {
 let restored: string | null = null;
 
 /**
+ * Moves on the moment a person signs out or turns keeping off. A write begun before
+ * it (an answer kept a second after it came, a refresh still fetching) is dropped
+ * rather than putting back on the device what was just cleared from it (#799).
+ */
+let clearedAt = 0;
+/** Writes on their way to the shelf, which clearing waits for before it removes anything. */
+const writing = new Set<Promise<void>>();
+
+/** Write a record, unless the device was cleared since `begun` or someone else is now signed in. */
+async function keep(client: QueryClient, userId: string, begun: number, shelf: Shelf, key: string, value: unknown): Promise<boolean> {
+  if (begun !== clearedAt || client.getQueryData<Me | null>(["me"])?.id !== userId) return false;
+  const put = shelf.put(key, value);
+  writing.add(put);
+  try {
+    await put;
+  } finally {
+    writing.delete(put);
+  }
+  return true;
+}
+
+/** Clearing begins: no write begun before now lands, and those already landing finish first. */
+async function stopWriting(): Promise<void> {
+  clearedAt += 1;
+  await Promise.allSettled([...writing]);
+}
+
+/**
  * Kept answers, to show until the server's own arrive and never to be taken for them:
  * each is asked for afresh as a screen opens it, however recently it was kept. Kept a
  * moment ago, before a change on another device or one made just before closing, the
@@ -157,6 +185,7 @@ function nothingThere(error: unknown): boolean {
 export async function save(client: QueryClient, userId: string, shelf: Shelf = indexedShelf, refreshed?: Refreshed): Promise<KeptSummary | null> {
   // Only ever the signed-in person's own answers, under their own key.
   if (client.getQueryData<Me | null>(["me"])?.id !== userId) return null;
+  const begun = clearedAt;
   const before = await shelf.get<Kept>(recordKey(userId));
   const list = client.getQueryData<CharacterListOut[]>(["characters"]);
   const ids = new Set(before?.characters.map((c) => c.id));
@@ -176,7 +205,7 @@ export async function save(client: QueryClient, userId: string, shelf: Shelf = i
     queries: [...queries.values()],
   };
   const record: Kept = { ...kept, bytes: new Blob([JSON.stringify(kept)]).size };
-  await shelf.put(recordKey(userId), record);
+  if (!(await keep(client, userId, begun, shelf, recordKey(userId), record))) return null;
   const found = summarise(record);
   told(found);
   return found;
@@ -257,6 +286,7 @@ export async function refresh(client: QueryClient, userId: string, shelf: Shelf 
 export async function removeKept(userId: string, shelf: Shelf = indexedShelf, storage: Storage | undefined = globalThis.localStorage): Promise<void> {
   setKeeping(userId, "off", storage);
   setKeptFor(null, storage);
+  await stopWriting();
   await shelf.remove(recordKey(userId));
   // Kept scenes need the device's setting: they go with it.
   await removeAllScenes(userId, shelf, storage);
@@ -266,6 +296,7 @@ export async function removeKept(userId: string, shelf: Shelf = indexedShelf, st
 /** Signing out: everything kept for the person on this device goes, unsent taps too, and the app forgets every answer it has. */
 export async function forget(client: QueryClient, userId: string, shelf: Shelf = indexedShelf, storage: Storage | undefined = globalThis.localStorage): Promise<void> {
   clearDevice(storage);
+  await stopWriting();
   await shelf.remove(recordKey(userId));
   await removeAllScenes(userId, shelf, storage);
   restored = null;
@@ -321,6 +352,7 @@ function setOf(k: Pick<KeptScenes, "troupeId" | "sceneIds" | "cards">): SceneSet
  * The scenes are the troupe's list's, and the cards those scenes hold, as the server last said. */
 export async function saveScenes(client: QueryClient, userId: string, troupeId: string, shelf: Shelf = indexedShelf, keptAt?: number): Promise<KeptScenesSummary | null> {
   if (client.getQueryData<Me | null>(["me"])?.id !== userId) return null;
+  const begun = clearedAt;
   const before = await shelf.get<KeptScenes>(scenesKey(userId, troupeId));
   // Every scene, as the All list last said, and any of the person's own made since.
   const all = client.getQueryData<{ id: string }[]>(["scenes", troupeId, false]);
@@ -347,7 +379,7 @@ export async function saveScenes(client: QueryClient, userId: string, troupeId: 
     queries: [...queries.values()],
   };
   const full: KeptScenes = { ...record, bytes: new Blob([JSON.stringify(record)]).size };
-  await shelf.put(scenesKey(userId, troupeId), full);
+  if (!(await keep(client, userId, begun, shelf, scenesKey(userId, troupeId), full))) return null;
   setKeptTroupes(userId, [...keptTroupes(userId), troupeId]);
   const found = summariseScenes(full);
   sceneSummaries.set(troupeId, found);

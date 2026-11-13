@@ -33,7 +33,7 @@ test("news: a storyteller makes an agency and schedules a story, it goes out, an
   const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
 
-  // The lead makes an agency under Customise › News.
+  // The lead makes an agency under Customise › News agencies.
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}/news-agencies`);
   await l.getByRole("button", { name: "Add an agency" }).click();
@@ -47,7 +47,7 @@ test("news: a storyteller makes an agency and schedules a story, it goes out, an
 
   // It writes a story on the News tab and schedules it for the next minute.
   await l.goto(`/troupes/${troupe.id}`);
-  await troupeTab(l, /^News/).click();
+  await troupeTab(l, /^News(?! agencies)/).click();
   await l.getByRole("link", { name: "News desk" }).click();
   await l.getByRole("link", { name: "Write a story" }).click();
   // The only agency is chosen already.
@@ -148,7 +148,7 @@ test("announcements: a storyteller pins one, a player sees its banner, dismisses
   await expect(p.getByRole("list", { name: "Pinned announcements" })).toHaveCount(0);
 
   // Not under News; under Announcements, pinned first and unread, until opened.
-  await troupeTab(p, /^News/).click();
+  await troupeTab(p, /^News(?! agencies)/).click();
   await expect(p.getByText("No stories yet.")).toBeVisible();
   await troupeTab(p, /^Announcements 1 unread$/).click();
   const notice = p.getByRole("link", { name: /^Unread: Pinned: New venue parking, from noticeboard-lead, Lead storyteller/ });

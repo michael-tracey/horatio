@@ -65,7 +65,7 @@ export function SettingDocument({ setting: s, editBase, print = false }: { setti
         </Part>
       )}
 
-      <Part tone={tone} title="Clan rarity adjustments" edit={editBase && { to: `${editBase}/rules/starting`, label: "Edit under Rules" }}>
+      <Part tone={tone} title="Clan rarity adjustments" edit={editBase && { to: `${editBase}/house-rules/starting`, label: "Edit under House rules" }}>
         <dl className="flex flex-col gap-2 text-sm">
           {rarityTiers(g.clan_rarity).map((tier) => (
             <div key={tier.rarity} className="grid gap-1 sm:grid-cols-[10rem_1fr]">
@@ -90,11 +90,11 @@ export function SettingDocument({ setting: s, editBase, print = false }: { setti
         </dl>
       </Part>
 
-      <Part tone={tone} title="Cost modifications" edit={editBase && { to: `${editBase}/rules/costs`, label: "Edit under Rules" }}>
+      <Part tone={tone} title="Cost modifications" edit={editBase && { to: `${editBase}/house-rules/costs`, label: "Edit under House rules" }}>
         <Lines lines={g.costs} />
       </Part>
 
-      <Part tone={tone} title="Setting-specific mechanics" edit={editBase && { to: `${editBase}/rules`, label: "Edit under Rules" }}>
+      <Part tone={tone} title="Setting-specific mechanics" edit={editBase && { to: `${editBase}/house-rules/checks`, label: "Edit under House rules" }}>
         <Lines lines={[initialXpText(g), ...g.mechanics]} />
       </Part>
 

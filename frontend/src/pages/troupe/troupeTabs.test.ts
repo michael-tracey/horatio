@@ -26,13 +26,13 @@ function layout(can: ReturnType<typeof abilities>, t: TroupeTabsTroupe = troupe)
 }
 
 const storytellerLayout = {
-  Troupe: ["Overview", "Setting", "Who's Who", "News", "Announcements", "Nominations", "House rules", "Staff", "Log"],
+  Troupe: ["Overview", "Setting", "Who's Who", "News", "Announcements", "Nominations", "Staff", "Log"],
   Characters: ["Approvals", "Being built", "Characters", "Players", "Lines and veils"],
   Games: ["At game", "Scenes", "Award XP"],
   Court: ["Titles", "Court", "Chronicle", "Boons", "Bonds", "Web of obligation"],
   Downtimes: ["Cycles", "My work", "Fill tables", "Influence log", "Quests"],
   World: ["Locations", "Equipment", "Shared backgrounds"],
-  Customise: ["Overview", "Troupe settings", "Rules", "Specialisations", "News", "Connectors", "Share settings"],
+  Customise: ["Overview", "Troupe settings", "House rules", "Specialisations", "News agencies", "Connectors", "Share settings"],
 };
 
 describe("troupeTabGroups (#779)", () => {
@@ -66,13 +66,25 @@ describe("troupeTabGroups (#779)", () => {
     expect(Object.keys(layout(abilities(null, false), quiet))).toEqual(["Troupe"]);
   });
 
-  it("keeps each tab in one group whoever is looking", () => {
+  it("keeps each tab in one group whoever is looking, but House rules", () => {
     const groupOf = (role: Parameters<typeof abilities>[0]) =>
       new Map(troupeTabGroups(troupe, abilities(role, false)).flatMap((g) => g.tabs.map((tab) => [tab.to, g.label] as const)));
     const lead = groupOf("lead_storyteller");
     for (const role of ["storyteller", "assistant_storyteller", "narrator", null] as const) {
-      for (const [to, group] of groupOf(role)) expect(group, `${to} for ${role}`).toBe(lead.get(to));
+      for (const [to, group] of groupOf(role)) {
+        if (to === "/troupes/t1/house-rules") continue;
+        expect(group, `${to} for ${role}`).toBe(lead.get(to));
+      }
     }
+  });
+
+  it("puts House rules under Customise for running staff, where they change it, and under Troupe for the rest (#782)", () => {
+    const houseRulesIn = (role: Parameters<typeof abilities>[0]) =>
+      troupeTabGroups(troupe, abilities(role, false)).find((g) => g.tabs.some((tab) => tab.to === "/troupes/t1/house-rules"))?.label;
+    expect(houseRulesIn("lead_storyteller")).toBe("Customise");
+    expect(houseRulesIn("assistant_storyteller")).toBe("Customise");
+    expect(houseRulesIn("narrator")).toBe("Troupe");
+    expect(houseRulesIn(null)).toBe("Troupe");
   });
 
   it("keeps a narrator's My work open inside a cycle, where their work opens (#789)", () => {
