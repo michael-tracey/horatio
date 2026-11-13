@@ -1,0 +1,105 @@
+# The book's sample themes and moods for a chronicle's Setting Style Document
+# (issue #770), from MET: VTM ch. 8, "Step One: Select Theme and Mood", pp. 324–326.
+# Read by horatio.setting_style; not part of any rule set, so nothing here changes
+# what a character can buy. Staff pick one to start an entry from it and edit it as
+# they like, or write their own.
+#
+# [[themes]] / [[moods]]
+#   key           stable, kept on the troupe's entry (book_key).
+#   name          as the book names it.
+#   page          the printed page.
+#   description   in our own words: a theme's questions, a mood's feel.
+
+# --- Themes (p. 325) -----------------------------------------------------------
+
+[[themes]]
+key = "love"
+name = "Love"
+page = 325
+description = "Can a vampire still love, and how is it unlike a mortal's love? What does love make us do, and what would we give up for it? Once lost, can it be found again, and does it last?"
+
+[[themes]]
+key = "hate"
+name = "Hate"
+page = 325
+description = "Where does hate take root, and what does it drive us to? Can we ever be free of it?"
+
+[[themes]]
+key = "betrayal"
+name = "Betrayal"
+page = 325
+description = "Why do we betray the people and causes we love or are sworn to guard? What does it cost the conscience, and how does it feel from either side?"
+
+[[themes]]
+key = "revenge"
+name = "Revenge"
+page = 325
+description = "Hot or cold? How does the wish for vengeance bend what we see and feel, and is it ever as sweet as we expected?"
+
+[[themes]]
+key = "rebellion"
+name = "Rebellion"
+page = 325
+description = "Why do we rebel, and where does accepting authority turn into rejecting it? Is rebellion the only way to change things, and must it be bloody?"
+
+[[themes]]
+key = "morality"
+name = "Morality"
+page = 325
+description = "How does the Embrace change right and wrong? Who keeps morals, and are they needed at all? Do any hold beyond one person, city or nation?"
+
+[[themes]]
+key = "chaos"
+name = "Chaos"
+page = 325
+description = "Why do things fall apart, and does anything last? Is chaos sometimes needed, and how do we live with it?"
+
+# --- Moods (pp. 325–326) -------------------------------------------------------
+
+[[moods]]
+key = "covetous"
+name = "Covetous"
+page = 325
+description = "Everyone wants something rare or one of a kind, so the nights turn on deals, schemes and politics."
+
+[[moods]]
+key = "desperate"
+name = "Desperate"
+page = 325
+description = "Fear, need or excitement push characters into reckless risks; nobody can afford to sit back. Suits a city under siege or a threat stronger than expected."
+
+[[moods]]
+key = "brooding"
+name = "Brooding"
+page = 326
+description = "Dark and ominous, heavy with the dread that something important is about to happen. Hard to keep up for long, but dramatic."
+
+[[moods]]
+key = "mysterious"
+name = "Mysterious"
+page = 326
+description = "Nobody and nothing is what it seems. Each riddle opens onto the next, and the characters grow paranoid as they dig."
+
+[[moods]]
+key = "festive"
+name = "Festive"
+page = 326
+description = "Celebration lowers everyone's guard and makes them bolder. A good start to a story, before the rug is pulled out."
+
+[[moods]]
+key = "bitter"
+name = "Bitter"
+page = 326
+description = "Everyone has a grudge. Tempers are short, friends become enemies fast, and small things turn savage."
+
+[[moods]]
+key = "decadent"
+name = "Decadent"
+page = 326
+description = "The world is rotting, breeding new ideas and debauchery alike. Characters choose whether to indulge or call for restraint."
+
+[[moods]]
+key = "exciting"
+name = "Exciting"
+page = 326
+description = "Threat follows threat with no time to catch a breath. Hard to sustain, but a ride the players will remember."

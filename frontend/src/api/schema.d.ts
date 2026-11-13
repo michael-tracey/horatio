@@ -6983,6 +6983,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/setting-presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Setting Presets
+         * @description The book's sample themes (p. 325) and moods (pp. 325-326), to start an entry
+         *     from: their descriptions are in our own words.
+         */
+        get: operations["read_setting_presets_api_setting_presets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shared-background-entries/{entry_id}": {
         parameters: {
             query?: never;
@@ -11228,6 +11249,92 @@ export interface paths {
          *     held here. Characters of the others are listed under Other on the Who's Who.
          */
         put: operations["set_seats_api_troupes__troupe_id__seats_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/setting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Setting
+         * @description The troupe's Setting Style Document as its staff write it. Anyone signed in
+         *     may read it: it is the chronicle's handout for players.
+         */
+        get: operations["read_setting_api_troupes__troupe_id__setting_get"];
+        /**
+         * Write Setting Text
+         * @description The subtitle, teaser, power and agency, all at once.
+         */
+        put: operations["write_setting_text_api_troupes__troupe_id__setting_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/setting/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Setting Entry
+         * @description Add a theme, mood or storyteller note, last in its list.
+         */
+        post: operations["add_setting_entry_api_troupes__troupe_id__setting_entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/setting/entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Setting Entry
+         * @description Change an entry's name and description; a note's text.
+         */
+        put: operations["change_setting_entry_api_troupes__troupe_id__setting_entries__entry_id__put"];
+        post?: never;
+        /** Remove Setting Entry */
+        delete: operations["remove_setting_entry_api_troupes__troupe_id__setting_entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/setting/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Order Setting Entries
+         * @description Put the themes, the moods or the notes in a new order.
+         */
+        put: operations["order_setting_entries_api_troupes__troupe_id__setting_order_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -29784,11 +29891,60 @@ export interface components {
              * @default
              */
             era: string;
+        };
+        /** SettingEntryIn */
+        SettingEntryIn: {
+            /** Book Key */
+            book_key?: string | null;
             /**
-             * Tone
+             * Description
              * @default
              */
-            tone: string;
+            description: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "theme" | "mood" | "note";
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
+        /** SettingEntryOut */
+        SettingEntryOut: {
+            /** Book Key */
+            book_key: string | null;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "theme" | "mood" | "note";
+            /** Name */
+            name: string;
+            /** Page */
+            page: number | null;
+        };
+        /** SettingEntryWords */
+        SettingEntryWords: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
         };
         /**
          * SettingItem
@@ -29803,6 +29959,78 @@ export interface components {
              */
             type: "setting";
             value: components["schemas"]["JsonValue"];
+        };
+        /** SettingOrderIn */
+        SettingOrderIn: {
+            /** Ids */
+            ids: string[];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "theme" | "mood" | "note";
+        };
+        /** SettingOut */
+        SettingOut: {
+            /** Agency */
+            agency: string;
+            /** Can Edit */
+            can_edit: boolean;
+            /** Chronicle */
+            chronicle: string;
+            /** Locale */
+            locale: string;
+            /** Moods */
+            moods: components["schemas"]["SettingEntryOut"][];
+            /** Notes */
+            notes: components["schemas"]["SettingEntryOut"][];
+            /** Power */
+            power: string;
+            /** Subtitle */
+            subtitle: string;
+            /** Teaser */
+            teaser: string;
+            /** Themes */
+            themes: components["schemas"]["SettingEntryOut"][];
+        };
+        /** SettingPresetOut */
+        SettingPresetOut: {
+            /** Description */
+            description: string;
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "theme" | "mood" | "note";
+            /** Name */
+            name: string;
+            /** Page */
+            page: number;
+        };
+        /** SettingTextIn */
+        SettingTextIn: {
+            /**
+             * Agency
+             * @default
+             */
+            agency: string;
+            /**
+             * Power
+             * @default
+             */
+            power: string;
+            /**
+             * Subtitle
+             * @default
+             */
+            subtitle: string;
+            /**
+             * Teaser
+             * @default
+             */
+            teaser: string;
         };
         /**
          * SettingsDocument
@@ -32928,8 +33156,7 @@ export interface components {
              * @default {
              *       "chronicle": "",
              *       "city": "",
-             *       "era": "",
-             *       "tone": ""
+             *       "era": ""
              *     }
              */
             setting: components["schemas"]["Setting"];
@@ -47780,6 +48007,26 @@ export interface operations {
             };
         };
     };
+    read_setting_presets_api_setting_presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingPresetOut"][];
+                };
+            };
+        };
+    };
     unlog_entry_api_shared_background_entries__entry_id__delete: {
         parameters: {
             query?: never;
@@ -56494,6 +56741,210 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeatsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_setting_api_troupes__troupe_id__setting_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_setting_text_api_troupes__troupe_id__setting_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingTextIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_setting_entry_api_troupes__troupe_id__setting_entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingEntryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_setting_entry_api_troupes__troupe_id__setting_entries__entry_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingEntryWords"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_setting_entry_api_troupes__troupe_id__setting_entries__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_setting_entries_api_troupes__troupe_id__setting_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingOrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingOut"];
                 };
             };
             /** @description Validation Error */

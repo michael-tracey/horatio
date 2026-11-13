@@ -42,7 +42,7 @@ export function hasProfile(p: TroupeProfileOut): boolean {
     p.games.length > 0 ||
     filled(p.venue.region, p.venue.name, p.venue.address, p.venue.access) ||
     p.venue.address_hidden ||
-    filled(p.setting.chronicle, p.setting.city, p.setting.era, p.setting.tone)
+    filled(p.setting.chronicle, p.setting.city, p.setting.era)
   );
 }
 

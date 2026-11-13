@@ -21,6 +21,7 @@ import { PlayTabsSetting } from "./PlayTabsSetting";
 import { ThrowImagesSetting } from "./ThrowImagesSetting";
 import { NominationsSetting } from "../nominations/NominationsSetting";
 import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
+import { SettingStyle } from "./SettingStyle";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { StatusBanClans } from "./StatusBanClans";
 import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
@@ -30,7 +31,7 @@ import { useCatalogue } from "../../catalogue";
 
 /**
  * The settings for the whole troupe, set once a season or so, by what they are
- * for: who may join, XP, status and titles, what happens at game, downtimes,
+ * for: the setting players read (#770), who may join, XP, status and titles, what happens at game, downtimes,
  * feeding, and what a clan is called. Its storytellers change them; the troupe's other running
  * staff read them. The troupe's rules for traits are on the Rules tab beside it.
  */
@@ -39,9 +40,12 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
   return (
     <div className="flex flex-col gap-8">
       <p className="text-sm text-mist">
-        {canEdit ? "Settings for the whole troupe. Each change takes effect straight away." : "Settings for the whole troupe. Its storytellers change them."}{" "}
+        {canEdit ? "Settings for the whole troupe. Each change takes effect straight away." : `Settings for the whole troupe. Its storytellers change them${troupe.my_role === "assistant_storyteller" && !troupe.archived ? "; you write the setting with them." : "."}`}{" "}
         What traits cost and what new characters start with are under Rules, beside this.
       </p>
+      <Group title="The setting">
+        <SettingStyle troupeId={troupe.id} />
+      </Group>
       <Group title="Who may join">
         <SplatsCard troupe={troupe} canEdit={canEdit} />
         <SectsCard troupe={troupe} canEdit={canEdit} />

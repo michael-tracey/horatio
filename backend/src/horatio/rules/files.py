@@ -640,7 +640,8 @@ def all_rule_set_files() -> Iterable[Path]:
     """Rule set files; `*_traits.toml`, `*_status.toml`, `*_checks.toml`,
     `*_grants.toml` and `*_equipment.toml` are parts they include, `*_powers.toml` is
     horatio.reference's quick notes, `*_npc_kinds.toml` is horatio.rules.npc_kinds'
-    NPC kinds, and `*_locations.toml` is horatio.rules.locations' catalogue."""
+    NPC kinds, `*_locations.toml` is horatio.rules.locations' catalogue, and
+    `*_setting.toml` is horatio.setting_style's sample themes and moods."""
     parts = (
         "_traits.toml",
         "_status.toml",
@@ -650,5 +651,6 @@ def all_rule_set_files() -> Iterable[Path]:
         "_powers.toml",
         "_npc_kinds.toml",
         "_locations.toml",
+        "_setting.toml",
     )
     return sorted(p for p in DATA_DIR.glob("*.toml") if not p.name.endswith(parts))
