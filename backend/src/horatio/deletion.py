@@ -59,6 +59,9 @@ from horatio.models import (
     TraitException,
     TroupeMembership,
     User,
+    Vaulderie,
+    VaulderieParticipant,
+    VinculumTie,
     XpEntry,
 )
 from horatio.sheets import conflict, memberships
@@ -226,6 +229,26 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         update(BondReport)
         .where(BondReport.regnant_id == cid)
         .values(regnant_id=None, regnant_name=name)
+    )
+    # A Vaulderie it took part in or officiated, and a background tie it is in, keep its
+    # name (#666).
+    db.execute(
+        update(VaulderieParticipant)
+        .where(VaulderieParticipant.character_id == cid)
+        .values(character_id=None, name=name)
+    )
+    db.execute(
+        update(Vaulderie)
+        .where(Vaulderie.officiant_id == cid)
+        .values(officiant_id=None, officiant_name=name)
+    )
+    db.execute(
+        update(VinculumTie).where(VinculumTie.one_id == cid).values(one_id=None, one_name=name)
+    )
+    db.execute(
+        update(VinculumTie)
+        .where(VinculumTie.other_id == cid)
+        .values(other_id=None, other_name=name)
     )
     # A boon it owes or holds keeps its name; its log forgets who it was done as.
     db.execute(update(Boon).where(Boon.debtor_id == cid).values(debtor_id=None, debtor_name=name))

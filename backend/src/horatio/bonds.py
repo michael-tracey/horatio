@@ -224,9 +224,10 @@ def parties(db: Session, bond: BloodBond) -> tuple[Party, Party]:
 # --- the level, from the log -------------------------------------------------------------
 
 
-# The lines of a bond's log that set its level outright: a bond entered by staff, and
-# a full bond dropped to two drinks with time (#665).
-SETS_LEVEL = ("entered", "dropped")
+# The lines of a bond's log that set its level outright: a bond entered by staff, a
+# full bond dropped to two drinks with time (#665), and a bond lowered a step by a
+# Vaulderie (#666).
+SETS_LEVEL = ("entered", "dropped", "vaulderie")
 
 
 def level_of(entries: Sequence[BondEntry]) -> int:
@@ -920,7 +921,7 @@ def next_change(
     since = max(start, met) if met is not None else start
     on = add_months(since, APART_MONTHS[at])
     # A bond just dropped to two drinks, by people long apart, ends with the drop.
-    dropped = [e.night for e in entries if e.kind == "dropped"]
+    dropped = [e.night for e in entries if e.kind in ("dropped", "vaulderie")]
     if dropped:
         on = max(on, max(dropped))
     return Change("end", on)

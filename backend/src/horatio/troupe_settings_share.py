@@ -959,6 +959,8 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "troupe_requests": "how the troupe began",
     "troupe_staff": "its staff are its own",
     "troupe_titles": "the troupe's titles aren't carried",
+    "vaulderies": PLAY,
+    "vinculum_ties": PLAY,
     "xp_range_entries": "the XP floor and ceiling's history is the troupe's own",
     "yorick_imports": "imports from Yorick are the troupe's own",
 }

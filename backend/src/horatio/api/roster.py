@@ -902,6 +902,20 @@ MESSAGES: dict[str, str] = {
     " of {of} voided boons{because}.",
     "boon.status_loss": "{actor} recorded {debtor}'s ignored {kind} boon to {creditor}: {outcome}"
     "{as_harpy}{because}.",
+    "bond.vaulderie": "{actor} recorded a Vaulderie on {night}, {source}: {who}.",
+    "bond.vaulderie_reported": "{actor} reported {character}'s Vaulderie on {night}: {who}.",
+    "bond.vaulderie_approved": "{actor} approved the Vaulderie reported for {night}.",
+    "bond.vaulderie_declined": "{actor} declined the Vaulderie reported for {night}: {reason}",
+    "bond.vaulderie_withdrawn": "{actor} withdrew the Vaulderie they reported for {night}.",
+    "bond.vaulderie_removed": "{actor} took the Vaulderie of {night} out: {reason}",
+    "bond.vaulderie_lowered": "{thrall}'s bond to {regnant} was lowered to {level} by the"
+    " Vaulderie on {night}.",
+    "bond.vaulderie_ended": "{thrall}'s bond to {regnant} ended, lowered to nothing by the"
+    " Vaulderie on {night}.",
+    "bond.vinculum_tie": "{actor} entered a background tie between {one} and {other}, a Vinculum"
+    " of {rating} on {night}: {reason}",
+    "bond.vinculum_tie_removed": "{actor} took out the background tie between {one} and"
+    " {other}: {reason}",
     "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
     " {level}{again}.",
     "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"
