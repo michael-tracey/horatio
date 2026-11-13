@@ -2378,7 +2378,7 @@ test("a troupe's Profile tab switches it public at once, About shows its XP rang
   // The lead sets them by hand in Customise's Troupe settings, with the rest of the troupe's settings.
   await l.getByRole("link", { name: "Change in Customise" }).first().click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings$`));
-  for (const group of ["Who may join", "XP", "Status and titles", "At game"]) await expect(l.getByRole("group", { name: group, exact: true })).toBeVisible();
+  for (const group of ["Who may join", "XP", "Status and titles", "Blood and diablerie"]) await expect(l.getByRole("group", { name: group, exact: true })).toBeVisible();
   await l.getByRole("button", { name: "Set by hand" }).click();
   await l.getByLabel("Floor", { exact: true }).fill("60");
   await l.getByLabel("Ceiling", { exact: true }).fill("75");
