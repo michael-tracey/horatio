@@ -42,7 +42,7 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   await characterTab(p, "Results");
   await expect(p.locator("main").getByRole("link", { name: "Quests", exact: true })).toHaveCount(0);
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/quests`);
+  await l.goto(`/troupes/${troupeId}/house-rules/quests`);
   await l.getByRole("button", { name: "Change quest settings" }).click();
   await l.getByLabel("Run quests in this troupe").check();
   await l.getByLabel("Requests per character per cycle").fill("1");

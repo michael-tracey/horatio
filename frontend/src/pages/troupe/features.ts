@@ -31,7 +31,7 @@ export type Feature = {
   /**
    * Where the rest of its settings are, under the troupe: folded at the top of its own tab
    * ("boons#settings", #784), a card on Troupe settings ("#feature-feeding") or another tab
-   * ("rules/quests"). None when the switch is all there is.
+   * ("house-rules/quests"). None when the switch is all there is.
    */
   settings?: string;
   /** It is switched on and off from the list. Who's Who and News are always on; the Play View goes tab by tab. */
@@ -159,7 +159,7 @@ export function features(troupe: TroupeOut): Feature[] {
       on: troupe.quests_enabled,
       state: troupe.quests_enabled ? `On, ${requests(troupe.quest_requests_per_cycle)} a character each cycle` : "Off",
       tab: troupe.quests_enabled ? { label: "Quests", to: "quests" } : undefined,
-      settings: "rules/quests",
+      settings: "house-rules/quests",
       switchable: true,
     },
     {

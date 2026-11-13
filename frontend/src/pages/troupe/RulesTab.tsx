@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { CheckOut } from "../../api/types";
+import type { CheckOut, TroupeOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { Explainer } from "../../components/Explainer";
 import { useToast } from "../../components/Toast";
@@ -16,6 +16,7 @@ import { BookTraitsSection } from "./BookTraitsSection";
 import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
 import { FreeChangesSettings } from "./FreeChangesSettings";
+import { HouseRulesTab } from "./HouseRulesTab";
 import { HouseTraitsSection } from "./HouseTraitsSection";
 import { KeywordsSection } from "./KeywordsSection";
 import { LanguagesSection } from "./LanguagesSection";
@@ -62,39 +63,45 @@ const STRENGTHS: { value: Strength; label: string; meaning: string; tone: "blood
 ];
 const strength = (value: string) => STRENGTHS.find((s) => s.value === value);
 
+/** The parts of the house rules staff change, each a section of the House rules tab (#782). */
+const RULE_SECTIONS = [
+  { path: "checks", label: "Checks" },
+  { path: "costs", label: "Costs" },
+  { path: "starting", label: "Starting points" },
+  { path: "actions", label: "Downtime actions" },
+  { path: "keywords", label: "Downtime keywords" },
+  { path: "languages", label: "Languages" },
+  { path: "house-traits", label: "House merits and flaws" },
+  { path: "written", label: "Written rules" },
+  { path: "book-traits", label: "Book traits" },
+  { path: "locations", label: "Locations" },
+  { path: "quests", label: "Quests" },
+  { path: "retainers", label: "Retainers" },
+  { path: "backstories", label: "Backstories" },
+  { path: "free-changes", label: "Free changes" },
+  { path: "teachers", label: "Teachers" },
+] as const;
+
 /**
- * The troupe's house rules, part by part: how it plays the rule set's checks,
- * what traits cost here, what new characters start with, how many downtime
- * actions characters get, how many languages Linguistics gives, and the troupe's
- * own merits and flaws. The status of
+ * The House rules tab for running staff (#782): what players read, then the troupe's
+ * house rules part by part: how it plays the rule set's checks, what traits cost
+ * here, what new characters start with, how many downtime actions characters get,
+ * how many languages Linguistics gives, and the troupe's own merits and flaws.
+ * Storytellers change them here; assistant storytellers read them. The status of
  * each sect is a reference of its own, in the Rulebook's Status (#787).
  */
-export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
-  const base = `/troupes/${troupeId}/rules`;
+export function RulesTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
+  const troupeId = troupe.id;
+  const base = `/troupes/${troupeId}/house-rules`;
   return (
     <>
       <PageTabs
         label="House rules"
-        tabs={[
-          { to: base, label: "Checks", end: true },
-          { to: `${base}/costs`, label: "Costs" },
-          { to: `${base}/starting`, label: "Starting points" },
-          { to: `${base}/actions`, label: "Downtime actions" },
-          { to: `${base}/keywords`, label: "Downtime keywords" },
-          { to: `${base}/languages`, label: "Languages" },
-          { to: `${base}/house-traits`, label: "House merits and flaws" },
-          { to: `${base}/written`, label: "Written rules" },
-          { to: `${base}/book-traits`, label: "Book traits" },
-          { to: `${base}/locations`, label: "Locations" },
-          { to: `${base}/quests`, label: "Quests" },
-          { to: `${base}/retainers`, label: "Retainers" },
-          { to: `${base}/backstories`, label: "Backstories" },
-          { to: `${base}/free-changes`, label: "Free changes" },
-          { to: `${base}/teachers`, label: "Teachers" },
-        ]}
+        tabs={[{ to: base, label: "As players read it", end: true }, ...RULE_SECTIONS.map((s) => ({ to: `${base}/${s.path}`, label: s.label }))]}
       />
       <Routes>
-        <Route index element={<ChecksSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route index element={<HouseRulesTab troupe={troupe} staff />} />
+        <Route path="checks" element={<ChecksSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="costs" element={<CostsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="actions" element={<AllowancesSection troupeId={troupeId} canEdit={canEdit} />} />
@@ -109,9 +116,22 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="backstories" element={<BackstorySettings troupeId={troupeId} />} />
         <Route path="free-changes" element={<FreeChangesSettings troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="teachers" element={<TeacherRules troupeId={troupeId} canEdit={canEdit} />} />
+        {/* A part that isn't one: back to what players read. */}
+        <Route path="*" element={<Navigate to={base} replace />} />
       </Routes>
     </>
   );
+}
+
+/**
+ * An old Customise › Rules address (`rules`, `rules/costs`, ...) goes to the same part
+ * of the House rules tab, keeping its query and anchor (#782). `rules` itself opened on
+ * Checks, so it goes there.
+ */
+export function OldRulesLink({ troupeId }: { troupeId: string }) {
+  const rest = useParams()["*"] ?? "";
+  const { search, hash } = useLocation();
+  return <Navigate to={`/troupes/${troupeId}/house-rules/${rest || "checks"}${search}${hash}`} replace />;
 }
 
 /**
@@ -120,7 +140,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
  * to characters whose home troupe this is. There are hundreds, so they come in
  * groups by kind, folded, and the page opens on the troupe's house rules alone; a
  * search looks through them all. A change saves at once, like the other settings
- * in Customise, and says so with a toast that can undo it.
+ * on House rules, and says so with a toast that can undo it.
  */
 function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const [query, setQuery] = useState("");

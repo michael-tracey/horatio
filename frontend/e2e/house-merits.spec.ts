@@ -19,7 +19,7 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
 
   // The lead makes two on the Rules tab: one only staff give, one players can take when building.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/house-traits`);
+  await l.goto(`/troupes/${troupeId}/house-rules/house-traits`);
   const row = (name: string) => l.getByRole("table", { name: "House merits and flaws" }).getByRole("row").filter({ hasText: name });
   const addOne = async (name: string, points: string, availability: string, description: string) => {
     await l.getByRole("button", { name: "Add a merit or flaw" }).click();
@@ -104,7 +104,7 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   await expect(l.getByRole("heading", { name: "House merits and flaws", exact: true })).toHaveCount(0);
 
   // Back on the list, each one's ⋯: one Lune holds can't be deleted, only archived and brought back.
-  await l.goto(`/troupes/${troupeId}/rules/house-traits`);
+  await l.goto(`/troupes/${troupeId}/house-rules/house-traits`);
   const actions = (name: string) => row(name).getByRole("button", { name: `Actions for ${name}` });
   await actions("Favour of the Crossroads").click();
   await expect(l.getByRole("menuitem", { name: /^Delete…/ })).toBeDisabled();
@@ -152,7 +152,7 @@ test("a house merit's effects: the ST builds Old Money from blocks, previews it,
 
   // The lead makes it from blocks: the first 2 dots of Resources free, and Resources 1 or more needed.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/house-traits`);
+  await l.goto(`/troupes/${troupeId}/house-rules/house-traits`);
   await l.getByRole("button", { name: "Add a merit or flaw" }).click();
   await l.getByLabel("Name").fill("Old Money");
   await l.getByLabel("Points").selectOption("2");
@@ -240,7 +240,7 @@ test("a house merit in play: the ST makes Battle Trance, a switch and a use a ga
 
   // The lead makes it from blocks: switched on in play, +2 on Brawl and −2 on Mental pools, and 1 use a game.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/house-traits`);
+  await l.goto(`/troupes/${troupeId}/house-rules/house-traits`);
   await l.getByRole("button", { name: "Add a merit or flaw" }).click();
   await l.getByLabel("Name").fill("Battle Trance");
   await l.getByLabel("Points").selectOption("2");

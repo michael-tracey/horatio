@@ -445,7 +445,7 @@ test("with free changes by games played, a new character drops a skill for its f
 
   // The lead gives new characters free changes for their first 3 games, under Rules.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/free-changes`);
+  await l.goto(`/troupes/${troupeId}/house-rules/free-changes`);
   await l.getByRole("button", { name: "Change free changes" }).click();
   await l.getByLabel(/^By games played/).check();
   await l.getByLabel("Games attended").fill("3");

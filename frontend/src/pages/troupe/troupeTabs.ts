@@ -25,12 +25,14 @@ export type TroupeTabCounts = {
 
 /**
  * A troupe's tabs, grouped by job (#779). A tab sits in the same group whoever is
- * looking; each sees only the tabs they may open, and a group with none is left out.
+ * looking, but for House rules (#782); each sees only the tabs they may open, and a
+ * group with none is left out.
  */
 export function troupeTabGroups(t: TroupeTabsTroupe, can: ReturnType<typeof abilities>, counts: TroupeTabCounts = {}): TabGroup[] {
   const base = `/troupes/${t.id}`;
   const live = !t.archived;
   const bonds = (t.blood_bonds ?? "off") !== "off";
+  const houseRules = { to: `${base}/house-rules`, label: "House rules" };
   return [
     {
       // The troupe itself: who's in it, what it says, and how it plays.
@@ -44,7 +46,9 @@ export function troupeTabGroups(t: TroupeTabsTroupe, can: ReturnType<typeof abil
         ...(t.whos_who && live ? [{ to: `${base}/news`, label: "News", count: counts.newsUnread ?? 0, countLabel: "unread" }] : []),
         ...(t.whos_who && live ? [{ to: `${base}/announcements`, label: "Announcements", count: counts.announcementsUnread ?? 0, countLabel: "unread" }] : []),
         ...(t.nominations ? [{ to: `${base}/nominations`, label: t.player_nominations ? "Nominations" : "Remembrances" }] : []),
-        { to: `${base}/house-rules`, label: "House rules" },
+        // The one tab read and edited in the same place (#782): players and narrators read it here,
+        // running staff find it under Customise, where they change it.
+        ...(!can.running ? [houseRules] : []),
         ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
         ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
       ],
@@ -107,9 +111,9 @@ export function troupeTabGroups(t: TroupeTabsTroupe, can: ReturnType<typeof abil
       tabs: [
         ...(can.running ? [{ to: `${base}/customise`, label: "Overview" }] : []),
         ...(can.running ? [{ to: `${base}/settings`, label: "Troupe settings" }] : []),
-        ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
+        ...(can.running ? [houseRules] : []),
         ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
-        ...(can.running ? [{ to: `${base}/news-agencies`, label: "News" }] : []),
+        ...(can.running ? [{ to: `${base}/news-agencies`, label: "News agencies" }] : []),
         ...(can.running ? [{ to: `${base}/connectors`, label: "Connectors" }] : []),
         ...(can.running ? [{ to: `${base}/share`, label: "Share settings" }] : []),
       ],

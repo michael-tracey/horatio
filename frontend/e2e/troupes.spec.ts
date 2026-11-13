@@ -23,7 +23,7 @@ test("a troupe changes what new characters start with and their downtime actions
   await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await l.getByRole("link", { name: "Customise", exact: true }).click();
-  await l.getByRole("link", { name: "Rules", exact: true }).click();
+  await l.getByRole("link", { name: "House rules", exact: true }).click();
   await l.getByRole("link", { name: "Starting points", exact: true }).click();
   await l.getByRole("button", { name: "Change starting Merits" }).click();
   await l.getByLabel("Points for merits").fill("9");
@@ -87,7 +87,7 @@ test("Customise opens on Overview, a setup checklist, the features and the house
 
   // Checks open on the troupe's house rules, of which there are none yet.
   await steps.getByRole("link", { name: /^House rules\W+to do/ }).click();
-  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/rules$`));
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules/checks$`));
   await expect(l.getByText("No house rules yet.")).toBeVisible();
   // All of them come in groups, folded, each with its count.
   await l.getByRole("button", { name: /^All checks/ }).click();
@@ -114,7 +114,7 @@ test("Customise opens on Overview, a setup checklist, the features and the house
   // The house rules now list Checks, linked into them.
   const differently = houseRules.getByRole("list", { name: "Played differently" });
   await expect(differently.getByRole("listitem")).toHaveCount(1);
-  await expect(differently.getByRole("link", { name: /^Checks\s*1 of \d+ played differently$/ })).toHaveAttribute("href", `/troupes/${troupeId}/rules`);
+  await expect(differently.getByRole("link", { name: /^Checks\s*1 of \d+ played differently$/ })).toHaveAttribute("href", `/troupes/${troupeId}/house-rules/checks`);
 });
 
 test("Troupe settings open on a Features list: each optional feature on or off, and switching one on brings its tab, its settings folded at the top (#783, #784)", async ({ browser }) => {
@@ -194,7 +194,7 @@ test("the lead builds a check of the troupe's own from blocks, and it refuses a 
 
   // The lead keeps Iron Will for the Ventrue: a trait from the catalogue, and a clan block.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules`);
+  await l.goto(`/troupes/${troupeId}/house-rules/checks`);
   await l.getByRole("button", { name: "Add a check" }).click();
   const form = l.getByRole("region", { name: "A new check" });
   await form.getByLabel("Kind of trait", { exact: true }).selectOption({ label: "Merits" });
@@ -242,7 +242,7 @@ test("a teacher rule asks for a teacher, and a Lore specialisation is bought fro
 
   // The lead adds the first example: Lore specialisations after creation, with a downtime action.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/teachers`);
+  await l.goto(`/troupes/${troupeId}/house-rules/teachers`);
   await expect(l.getByText("No teacher rules.")).toBeVisible();
   await l.getByRole("button", { name: "Add a rule" }).click();
   const form = l.getByRole("region", { name: "A new teacher rule" });
@@ -304,7 +304,7 @@ test("a troupe's players read its house rules: a price the lead changes shows th
 
   // The lead prices attributes at 4 XP a dot, with a note for players.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/costs`);
+  await l.goto(`/troupes/${troupeId}/house-rules/costs`);
   await l.getByRole("button", { name: "Change the price for All Attributes" }).click();
   await l.getByLabel("How it's priced").selectOption({ label: "The same for each dot" });
   await l.getByLabel("XP per dot").fill("4");
@@ -343,7 +343,9 @@ test("on a phone the house rules tabs wrap onto more rows, so Teachers shows wit
   const troupeId: string = (await made.json()).id;
 
   const l = lead.page;
+  // Customise › Rules became the House rules tab (#782): its old address opens Checks there.
   await l.goto(`/troupes/${troupeId}/rules`);
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules/checks$`));
   const tabs = l.getByRole("navigation", { name: "House rules" });
   const teachers = tabs.getByRole("link", { name: "Teachers", exact: true });
   await expect(teachers).toBeInViewport();
@@ -361,7 +363,7 @@ test("on a phone the house rules tabs wrap onto more rows, so Teachers shows wit
   await l.keyboard.press("Tab");
   await expect(teachers).toBeFocused();
   await l.keyboard.press("Enter");
-  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/rules/teachers$`));
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules/teachers$`));
   await expect(teachers).toHaveAttribute("aria-current", "page");
   await expect(teachers).toBeInViewport();
   await l.screenshot(shots("house-rules-tabs-phone"));
@@ -382,7 +384,7 @@ test("a lead prices skills at 1× for Generation background 2, and a Generation 
 
   // The lead adds a price only for Generation background 2, with no JSON: rising, at 1 XP.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/costs`);
+  await l.goto(`/troupes/${troupeId}/house-rules/costs`);
   await l.getByRole("button", { name: "Add a price" }).click();
   await l.getByLabel("Category").selectOption({ label: "Skills" });
   await l.getByRole("button", { name: "Add a condition" }).click();
@@ -430,9 +432,9 @@ test("a lead chooses the accelerated chart of languages, and the House rules tab
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // Customise › Rules › Languages: the book's one per dot until the lead picks a chart.
+  // Customise › House rules › Languages: the book's one per dot until the lead picks a chart.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/languages`);
+  await l.goto(`/troupes/${troupeId}/house-rules/languages`);
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Languages from Linguistics" }) });
   await expect(card.getByLabel(/^Book/)).toBeChecked();
   await card.getByLabel(/Accelerated chart/).click();
@@ -464,9 +466,9 @@ test("a troupe's written rules: the lead adds and orders them, and a player read
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // The lead writes three rules under Customise › Rules › Written rules, one about a merit.
+  // The lead writes three rules under Customise › House rules › Written rules, one about a merit.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules`);
+  await l.goto(`/troupes/${troupeId}/house-rules/checks`);
   await l.getByRole("link", { name: "Written rules", exact: true }).click();
   const add = async (title: string, section: string, body: string, trait?: [string, string]) => {
     await l.getByRole("button", { name: "Add a rule" }).click();
@@ -620,7 +622,7 @@ test("players read the whole setting on its tab, in print, on the profile when s
   await send(l, "POST", `/api/troupes/${troupeId}/setting/entries`, { kind: "mood", name: "Brooding", description: "" });
 
   // The lead gives a clan rarity a reason, under Rules' starting points.
-  await l.goto(`/troupes/${troupeId}/rules/starting`);
+  await l.goto(`/troupes/${troupeId}/house-rules/starting`);
   const rarity = l.locator("section").filter({ has: l.getByRole("heading", { name: "Clan rarity", exact: true }) });
   await rarity.getByRole("button", { name: "Change clan rarity" }).click();
   await rarity.getByLabel("Lasombra rarity").selectOption("uncommon");
@@ -758,7 +760,7 @@ test("a lead bans a merit on the Book traits page: it is greyed out with the rea
 
   // The lead finds Lucky in the catalogue and bans it, with a reason.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/book-traits`);
+  await l.goto(`/troupes/${troupeId}/house-rules/book-traits`);
   await l.getByRole("searchbox", { name: "Search book traits" }).fill("lucky");
   await l.getByRole("list", { name: "Book traits found" }).getByRole("button", { name: /^Lucky/ }).click();
   await l.getByLabel("Banned in this troupe").check();
@@ -864,7 +866,7 @@ test("a lead makes Soul Shard a general flaw on the Book traits page, and a play
 
   // The lead opens Soul Shard, a Sabbat flaw by the book, and makes it General here.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/book-traits`);
+  await l.goto(`/troupes/${troupeId}/house-rules/book-traits`);
   await l.getByLabel("Category", { exact: true }).selectOption({ label: "Flaws" });
   await l.getByRole("searchbox", { name: "Search book traits" }).fill("soul shard");
   await l.getByRole("list", { name: "Book traits found" }).getByRole("button", { name: /^Soul Shard/ }).click();
@@ -915,7 +917,7 @@ test("a lead opens a book trait from far down the list: its panel opens under it
 
   // Every merit, forty of them shown: the lead opens the last.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/book-traits`);
+  await l.goto(`/troupes/${troupeId}/house-rules/book-traits`);
   await l.getByLabel("Category", { exact: true }).selectOption({ label: "Merits" });
   await expect(l.getByText(/^Showing 40 of \d+\./)).toBeVisible();
   const found = l.getByRole("list", { name: "Book traits found" });
@@ -2311,9 +2313,9 @@ test("with Retainer upkeep on, checking in starts the night with the upkeep as i
   const asked = await send(p, "POST", `/api/characters/${perpetua}/home-troupe`, { troupe_id: troupeId });
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
 
-  // The lead switches upkeep on under Customise › Rules › Retainers: 1 Blood a game.
+  // The lead switches upkeep on under Customise › House rules › Retainers: 1 Blood a game.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/retainers`);
+  await l.goto(`/troupes/${troupeId}/house-rules/retainers`);
   await expect(l.getByText("None.").first()).toBeVisible();
   await l.getByRole("button", { name: "Change Retainer rules" }).click();
   await l.getByLabel("Retainers cost upkeep").check();
@@ -2559,7 +2561,7 @@ test("a troupe's Profile tab switches it public at once, About shows its XP rang
   await expect(l.getByText("(30 starting + 30 set by hand)")).toBeVisible();
   await expect(l.getByText("(30 starting + 45 set by hand)")).toBeVisible();
   // Starting points leads there for them, and the log on About has the change.
-  await l.goto(`/troupes/${troupeId}/rules/starting`);
+  await l.goto(`/troupes/${troupeId}/house-rules/starting`);
   await expect(l.getByRole("heading", { name: "XP floor and ceiling" })).toHaveCount(0);
   await expect(l.getByRole("link", { name: "Troupe settings", exact: true }).last()).toHaveAttribute("href", `/troupes/${troupeId}/settings`);
   await l.goto(`/troupes/${troupeId}`);

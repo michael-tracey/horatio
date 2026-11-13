@@ -213,8 +213,8 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await expect(l.getByRole("heading", { name: "New NPC" })).toBeVisible();
   await shot(l, "npcs", undefined, 1100);
 
-  // Rules › Checks, on the troupe's house rules.
-  await l.goto(`${base}/rules`);
+  // House rules › Checks, on the troupe's house rules.
+  await l.goto(`${base}/house-rules/checks`);
   await expect(l.getByRole("button", { name: /^House rules \(2\)/ })).toBeVisible();
   await shot(l, "rules-checks", undefined, 1200);
 
@@ -230,8 +230,8 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await expect(form.getByRole("region", { name: "Preview" })).toContainText("Iron Will: refused unless the clan is Ventrue");
   await shot(l, "own-check", form, 1200);
 
-  // Rules › Book traits: a merit banned, with the troupe's wording.
-  await l.goto(`${base}/rules/book-traits`);
+  // House rules › Book traits: a merit banned, with the troupe's wording.
+  await l.goto(`${base}/house-rules/book-traits`);
   await l.getByRole("searchbox", { name: "Search book traits" }).fill("lucky");
   await l.getByRole("list", { name: "Book traits found" }).getByRole("button", { name: /^Lucky/ }).click();
   await l.getByLabel("Banned in this troupe").check();

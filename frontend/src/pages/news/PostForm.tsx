@@ -110,7 +110,7 @@ export function PostForm({
       ) : (
         <div className="flex flex-col gap-4">
           {kind === "news" && (
-            <Field label="Agency" hint={usable.length === 0 ? "Make an agency first, under Customise › News." : undefined}>
+            <Field label="Agency" hint={usable.length === 0 ? "Make an agency first, under Customise › News agencies." : undefined}>
               <Select value={fields.agency_id ?? ""} onChange={(e) => set({ agency_id: e.target.value || null })}>
                 <option value="">Choose an agency…</option>
                 {usable.map((a) => (

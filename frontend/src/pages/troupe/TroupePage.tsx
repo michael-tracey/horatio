@@ -35,7 +35,7 @@ import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { TroupeImportPage } from "./TroupeImport";
-import { RulesTab } from "./RulesTab";
+import { OldRulesLink, RulesTab } from "./RulesTab";
 import { SettingsTab } from "./SettingsTab";
 import { SettingTab } from "./SettingTab";
 import { SetupTab } from "./SetupTab";
@@ -121,7 +121,8 @@ export function TroupePage() {
       <Routes>
         <Route index element={<OverviewTab troupe={t} can={can} />} />
         <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
-        <Route path="house-rules" element={<HouseRulesTab troupe={t} staff={can.running} />} />
+        {/* One House rules tab (#782): players read it; running staff also find each kind of rule in its own part. */}
+        <Route path="house-rules/*" element={can.running ? <RulesTab troupe={t} canEdit={can.storyteller} /> : <HouseRulesTab troupe={t} staff={false} />} />
         <Route path="setting" element={<SettingTab troupeId={t.id} staff={can.running} />} />
         {/* The status reference moved into the Rulebook, with this troupe chosen (#787). */}
         <Route path="status" element={<Navigate to={statusLink(t.id)} replace />} />
@@ -229,7 +230,8 @@ export function TroupePage() {
         {can.running && <Route path="settings" element={<SettingsTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {/* The status reference was a part of Rules, then the Troupe group's Status tab, before the Rulebook. */}
         <Route path="rules/status" element={<Navigate to={statusLink(t.id)} replace />} />
-        {can.running && <Route path="rules/*" element={<RulesTab troupeId={t.id} canEdit={can.storyteller} />} />}
+        {/* Customise › Rules became the House rules tab (#782): an old address goes to the same part of it. */}
+        <Route path="rules/*" element={<OldRulesLink troupeId={t.id} />} />
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}

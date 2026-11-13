@@ -15,7 +15,7 @@ import { useAgencies } from "./queries";
 import { Masthead } from "./Story";
 
 /**
- * Customise › News (#510): the troupe's news agencies, each with its masthead and
+ * Customise › News agencies (#510, #782): the troupe's news agencies, each with its masthead and
  * perhaps a Discord channel of its own, the troupe's news channel for the rest, and
  * its announcements channel (#511), chosen apart so the two never mix.
  * Storytellers and assistant storytellers keep the agencies; only storytellers
