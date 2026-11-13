@@ -140,19 +140,21 @@ def test_replacing_naming_and_removing_go_in_the_troupe_log(
     assert not list(kept.rglob("*.webp"))
     assert troupe.storyteller.client.delete(f"/troupes/{troupe.id}/throw-images").status_code == 404
 
+    # A test runs in one transaction, so every event has the same created_at and
+    # their order is the database's to choose: count them, not their order.
     actions = session.scalars(
-        select(AuditEvent.action)
-        .where(AuditEvent.action.startswith("troupe.throw_image"))
-        .order_by(AuditEvent.created_at)
+        select(AuditEvent.action).where(AuditEvent.action.startswith("troupe.throw_image"))
     ).all()
-    assert actions == [
-        "troupe.throw_image_uploaded",
-        "troupe.throw_image_uploaded",
-        "troupe.throw_image_uploaded",
-        "troupe.throw_image_replaced",
-        "troupe.throw_images_named",
-        "troupe.throw_images_removed",
-    ]
+    assert sorted(actions) == sorted(
+        [
+            "troupe.throw_image_uploaded",
+            "troupe.throw_image_uploaded",
+            "troupe.throw_image_uploaded",
+            "troupe.throw_image_replaced",
+            "troupe.throw_images_named",
+            "troupe.throw_images_removed",
+        ]
+    )
     messages = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
     assert "storyteller gave the troupe a new picture for Rock." in messages
     assert "storyteller named the troupe's throw pictures: Land of the Sky bones." in messages
