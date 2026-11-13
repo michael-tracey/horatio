@@ -6,6 +6,7 @@ import { Avatar } from "../../components/Avatar";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
+import { BeingBuiltTab } from "./BeingBuiltTab";
 import { BondsPages } from "./BondsPages";
 import { BoonsPages } from "./BoonsPages";
 import { ConnectorsTab } from "./ConnectorsTab";
@@ -69,6 +70,13 @@ export function TroupePage() {
   const counts = tabCounts(waiting.data);
   // What its members haven't read of its news (#510) and its announcements (#511), each counted apart.
   const glance = useGlance(troupeId, !!troupe.data?.whos_who && !troupe.data.archived);
+  // Characters built to its rules whose players haven't asked to join yet (#774).
+  const running = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).running : false;
+  const building = useQuery({
+    queryKey: ["builds-count", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/builds/count", { params: { path: { troupe_id: troupeId } } })),
+    enabled: running && !troupe.data?.archived,
+  });
 
   if (troupe.isPending) return <Loading />;
   if (troupe.error) return <ErrorText error={troupe.error} />;
@@ -119,6 +127,9 @@ export function TroupePage() {
             to: `${base}/characters`,
             tabs: [
               ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: counts.approvals }] : []),
+              ...(can.running && !t.archived
+                ? [{ to: `${base}/being-built`, label: "Being built", count: building.data?.count ?? 0, countLabel: "being built", countInGroup: false }]
+                : []),
               ...(can.running ? [{ to: `${base}/characters`, label: "Characters", count: counts.characters }] : []),
               ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
@@ -235,6 +246,7 @@ export function TroupePage() {
         {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
+        {can.running && !t.archived && <Route path="being-built" element={<BeingBuiltTab troupeId={t.id} />} />}
         {can.running && <Route path="customise" element={<SetupTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {can.running && <Route path="settings" element={<SettingsTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {/* The status reference was a part of Rules until it moved to the Troupe group. */}

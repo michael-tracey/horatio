@@ -57,6 +57,32 @@ export function PrintPage() {
   );
 }
 
+/** The sheet of a character being built to a troupe's rules, for its staff to read
+ * before the player asks to join (#774): not theirs to change or play. */
+export function BuildPrintPage() {
+  const { troupeId = "", characterId = "" } = useParams();
+  const sheet = useQuery({
+    queryKey: ["print-build", troupeId, characterId],
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/troupes/{troupe_id}/builds/{character_id}/print", {
+          params: { path: { troupe_id: troupeId, character_id: characterId } },
+        }),
+      ),
+  });
+
+  const pips = usePrintedPips();
+  if (sheet.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
+  if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
+  return (
+    <AsPips.Provider value={pips}>
+      <PrintShell back={`/troupes/${troupeId}/being-built`}>
+        <Sheet sheet={sheet.data} />
+      </PrintShell>
+    </AsPips.Provider>
+  );
+}
+
 /**
  * Several of a troupe's sheets in one document, each starting on a new page:
  * those named in `?characters=`, in that order, or every character in the troupe.

@@ -245,8 +245,10 @@ export function CountBubble({ count, label }: { count: number; label: string }) 
   );
 }
 
-/** A tab, with a count of what waits on it, such as "2 new" (`countLabel` says what they are). */
-type Tab = { to: string; label: string; end?: boolean; count?: number; countLabel?: string };
+/** A tab, with a count of what waits on it, such as "2 new" (`countLabel` says what they are).
+ * `countInGroup: false` keeps a count that isn't waiting on anyone (characters being
+ * built, #774) out of its group's "waiting" total. */
+type Tab = { to: string; label: string; end?: boolean; count?: number; countLabel?: string; countInGroup?: boolean };
 
 /** How wide the fade is at an edge of a tab bar with more beyond it. */
 const FADE_PX = 32;
@@ -346,7 +348,7 @@ export function GroupedTabs({ label, groups }: { label: string; groups: { label:
       <nav aria-label={label} {...row} className={cx(ROW, "gap-x-1 border-b border-ash")}>
         {shown.map((g) => {
           const active = g === open;
-          const counts = g.tabs.filter((t) => t.count !== undefined);
+          const counts = g.tabs.filter((t) => t.count !== undefined && t.countInGroup !== false);
           const total = counts.reduce((sum, t) => sum + (t.count ?? 0), 0);
           return (
             <Link

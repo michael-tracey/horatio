@@ -8675,6 +8675,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/builds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Being Built
+         * @description Characters built to the troupe's rules, with no request yet to make it home:
+         *     the most recently changed first.
+         */
+        get: operations["being_built_api_troupes__troupe_id__builds_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/builds/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Being Built Count
+         * @description How many are being built, for the tab.
+         */
+        get: operations["being_built_count_api_troupes__troupe_id__builds_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/builds/{character_id}/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Print Build
+         * @description The sheet of a character being built here, to read: staff see it, but neither
+         *     change it nor open its Play View, as it isn't in the troupe.
+         */
+        get: operations["print_build_api_troupes__troupe_id__builds__character_id__print_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/character-backups": {
         parameters: {
             query?: never;
@@ -15835,6 +15897,54 @@ export interface components {
             because: components["schemas"]["TraitRefOut"][];
             /** Category */
             category: string;
+        };
+        /** BuildCount */
+        BuildCount: {
+            /** Count */
+            count: number;
+        };
+        /** BuildEntry */
+        BuildEntry: {
+            /** Broken */
+            broken: string[];
+            /**
+             * Changed At
+             * Format: date-time
+             */
+            changed_at: string;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Clan */
+            clan: string | null;
+            /** Creation Complete */
+            creation_complete: boolean;
+            /** Picture */
+            picture: string | null;
+            /** Player Handle */
+            player_handle: string;
+            /**
+             * Player Id
+             * Format: uuid
+             */
+            player_id: string;
+            /** Player Name */
+            player_name: string;
+            /** Sect */
+            sect: string | null;
+            /** Splat */
+            splat: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** To Place */
+            to_place: string[];
         };
         /** BuildingTroupe */
         BuildingTroupe: {
@@ -51073,6 +51183,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    being_built_api_troupes__troupe_id__builds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuildEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    being_built_count_api_troupes__troupe_id__builds_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuildCount"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    print_build_api_troupes__troupe_id__builds__character_id__print_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintedSheet"];
                 };
             };
             /** @description Validation Error */
