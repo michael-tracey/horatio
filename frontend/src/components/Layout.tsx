@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useMatch } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { useMe } from "../hooks";
 import { useAppearance } from "../loaders/useMotif";
 import { NeedsConnection } from "../offline/NeedsConnection";
@@ -18,8 +18,6 @@ export function Layout() {
 
   const link = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-parchment" : "text-mist hover:text-parchment";
-  // A downtime cycle's pages belong to its troupe.
-  const inCycle = !!useMatch("/cycles/*");
 
   // Until we know who is signed in, carry on the loading screen from index.html;
   // offline, with nothing kept here, there is no knowing.
@@ -51,7 +49,7 @@ export function Layout() {
             <>
               {/* The whole bar from lg up; below it, the bell and a menu, so the bar stays one line (#746). */}
               <nav aria-label="Main" className="hidden items-center gap-x-4 text-sm whitespace-nowrap lg:flex">
-                <SiteLinks inCycle={inCycle} isCustodian={me.data.is_custodian} link={link} />
+                <SiteLinks isCustodian={me.data.is_custodian} link={link} />
                 <NotificationBell />
                 <AccountLink name={me.data.display_name} isCustodian={me.data.is_custodian} className={(state) => `inline-flex min-w-0 items-center gap-1.5 ${link(state)}`} short />
                 <button className="text-mist hover:text-parchment" onClick={signOut.signOut}>
@@ -60,7 +58,7 @@ export function Layout() {
               </nav>
               <div className="flex items-center gap-1 lg:hidden">
                 <NotificationBell />
-                <SiteMenu name={me.data.display_name} isCustodian={me.data.is_custodian} inCycle={inCycle} onSignOut={signOut.signOut} />
+                <SiteMenu name={me.data.display_name} isCustodian={me.data.is_custodian} onSignOut={signOut.signOut} />
               </div>
             </>
           )}
@@ -90,13 +88,13 @@ export function Layout() {
 type LinkClass = (state: { isActive: boolean }) => string;
 
 /** The places every signed-in person can go, then Custodian for the custodian. */
-function SiteLinks({ inCycle, isCustodian, link, onPick }: { inCycle: boolean; isCustodian: boolean; link: LinkClass; onPick?: () => void }) {
+function SiteLinks({ isCustodian, link, onPick }: { isCustodian: boolean; link: LinkClass; onPick?: () => void }) {
   return (
     <>
       <NavLink to="/characters" className={link} onClick={onPick}>
         Characters
       </NavLink>
-      <NavLink to="/troupes" className={({ isActive }) => link({ isActive: isActive || inCycle })} onClick={onPick}>
+      <NavLink to="/troupes" className={link} onClick={onPick}>
         Troupes
       </NavLink>
       {/* Named apart from a troupe's own Rules tab under Customise. */}
@@ -136,7 +134,7 @@ function AccountLink({ name, isCustodian, className, short = false, onPick }: { 
  * to another page closes it; it takes focus as it opens and gives it back to the
  * button when Escape closes it.
  */
-export function SiteMenu({ name, isCustodian, inCycle, onSignOut }: { name: string; isCustodian: boolean; inCycle: boolean; onSignOut: () => void }) {
+export function SiteMenu({ name, isCustodian, onSignOut }: { name: string; isCustodian: boolean; onSignOut: () => void }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const button = useRef<HTMLButtonElement>(null);
@@ -189,7 +187,7 @@ export function SiteMenu({ name, isCustodian, inCycle, onSignOut }: { name: stri
       {open && (
         <div ref={panel} id={id} className="absolute inset-x-0 top-full z-30 border-b border-ash bg-dusk shadow-xl print:hidden">
           <nav aria-label="Main" className="mx-auto flex max-w-5xl flex-col divide-y divide-ash/60 py-1">
-            <SiteLinks inCycle={inCycle} isCustodian={isCustodian} link={(state) => `block ${item(state)}`} onPick={close} />
+            <SiteLinks isCustodian={isCustodian} link={(state) => `block ${item(state)}`} onPick={close} />
             <AccountLink name={name} isCustodian={isCustodian} className={(state) => `flex items-center gap-2 ${item(state)}`} onPick={close} />
             <button
               className="block px-4 py-3 text-left text-base text-mist hover:bg-ash/40 hover:text-parchment"

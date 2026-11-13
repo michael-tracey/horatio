@@ -56,6 +56,8 @@ const BoonStatisticsPage = lazy(() => import("./BoonStatisticsPage").then((m) =>
 const CourtTab = lazy(() => import("./CourtTab").then((m) => ({ default: m.CourtTab })));
 // The chronicle (#711) too.
 const ChronicleTab = lazy(() => import("./ChronicleTab").then((m) => ({ default: m.ChronicleTab })));
+// A downtime cycle's pages (#776), as they loaded apart when they were a page of their own.
+const CyclePage = lazy(() => import("./CyclePage").then((m) => ({ default: m.CyclePage })));
 // The web of obligation (#709) draws with the chart kit too.
 const ObligationWeb = lazy(() => import("./ObligationWeb").then((m) => ({ default: m.ObligationWeb })));
 
@@ -268,6 +270,16 @@ export function TroupePage() {
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
+        {can.running && (
+          <Route
+            path="downtimes/:cycleId/*"
+            element={
+              <Suspense fallback={<Loading />}>
+                <CyclePage troupeId={t.id} clanName={t.assamite_name} />
+              </Suspense>
+            }
+          />
+        )}
         {can.running && <Route path="connectors" element={<ConnectorsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="share" element={<ShareSettingsTab troupe={t} canImport={can.storyteller && !t.archived} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}

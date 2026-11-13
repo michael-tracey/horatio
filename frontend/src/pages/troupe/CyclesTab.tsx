@@ -6,7 +6,7 @@ import { DateInput } from "../../components/DateInput";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading } from "../../components/ui";
 import { useDates, type Dates } from "../../dates";
 import { useAction } from "../../hooks";
-import { cycleLine, cycleStatus } from "./cycles";
+import { cycleLine, cyclePath, cycleStatus } from "./cycles";
 
 /** A datetime input's value some days from now, on the storyteller's clock. */
 function inDays(days: number, dates: Dates): string {
@@ -58,7 +58,7 @@ export function CyclesTab({ troupeId }: { troupeId: string }) {
           <ul className="divide-y divide-ash">
             {cycles.data.map((c) => (
               <li key={c.id}>
-                <Link to={`/cycles/${c.id}`} className="group flex items-center justify-between gap-2 py-3">
+                <Link to={cyclePath(troupeId, c.id)} className="group flex items-center justify-between gap-2 py-3">
                   <span className="min-w-0">
                     <span className="block group-hover:text-gold">{c.name}</span>
                     <span className="block text-xs text-mist">{cycleLine(c, (at) => dates.due(at))}</span>

@@ -28,7 +28,7 @@ const AccountPage = lazy(() => import("./pages/AccountPage").then((m) => ({ defa
 const CheckInPage = lazy(() => import("./pages/CheckInPage").then((m) => ({ default: m.CheckInPage })));
 const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then((m) => ({ default: m.CharacterPage })));
 const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then((m) => ({ default: m.CustodianPage })));
-const CyclePage = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.CyclePage })));
+const OldCycleLink = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.OldCycleLink })));
 const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ default: m.PlayPage })));
 const HarpyLedgerPage = lazy(() => import("./pages/play/HarpyLedgerPage").then((m) => ({ default: m.HarpyLedgerPage })));
 const ScenePage = lazy(() => import("./pages/play/ScenePage").then((m) => ({ default: m.ScenePage })));
@@ -142,7 +142,8 @@ export const routes = createRoutesFromElements(
         <Route path="/troupes" element={<TroupesPage />} />
         <Route path="/troupes/:troupeId/*" element={<ForTroupe><TroupePage /></ForTroupe>} />
         <Route path="/rules" element={<RulesPage />} />
-        <Route path="/cycles/:cycleId/*" element={<CyclePage />} />
+        {/* A cycle now lives under its troupe (#776): old links go on there. */}
+        <Route path="/cycles/:cycleId/*" element={<OldCycleLink />} />
         <Route path="/players/:userId" element={<PlayerPage />} />
         <Route path="/account/*" element={<AccountPage />} />
         <Route path="/custodian/*" element={<CustodianPage />} />

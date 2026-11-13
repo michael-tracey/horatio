@@ -14,6 +14,8 @@ describe("screenName", () => {
     expect(screenName(`/play/troupes/${ID}/scenes`)).toBe("The Scenes page");
     expect(screenName(`/play/troupes/${ID}/scenes/${ID}`)).toBe("This scene");
     expect(screenName(`/troupes/${ID}/check-in`)).toBe("The troupe's page");
+    expect(screenName(`/troupes/${ID}/downtimes/${ID}/responses`)).toBe("The downtime cycle");
+    expect(screenName(`/cycles/${ID}`)).toBe("The downtime cycle");
     expect(screenName("/check-in/ABCD")).toBe("Check-in");
     expect(screenName("/custodian/people")).toBe("The Custodian page");
     expect(screenName(`/play/characters/${ID}`)).toBe("This Play View");

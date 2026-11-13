@@ -166,7 +166,7 @@ def cycle_work(asked: Asked) -> list[WaitingLine]:
     lines: list[WaitingLine] = []
     for cycle in asked.under_way("open", "closed"):
         progress = cycle_progress(asked.db, cycle)
-        base = f"/cycles/{cycle.id}"
+        base = f"/troupes/{cycle.troupe_id}/downtimes/{cycle.id}"
         if cycle.status == "open":
             submitted = f"{progress.submitted} of {progress.participants} submitted"
             lines.append(
@@ -225,7 +225,7 @@ def deliveries(asked: Asked) -> list[WaitingLine]:
             kind="deliveries",
             label=f"{cycle.name}: results ready to deliver",
             count=sum(r.finished and r.due for r in responses.readiness(asked.db, cycle)),
-            link=f"/cycles/{cycle.id}/delivery",
+            link=f"/troupes/{cycle.troupe_id}/downtimes/{cycle.id}/delivery",
         )
         for cycle in asked.under_way("closed")
     ]
@@ -293,7 +293,7 @@ def shortfalls(asked: Asked) -> list[WaitingLine]:
                 kind="shortfalls",
                 label=f"{cycle.name}: allowance shortfalls",
                 count=sum(bool(downtimes.shortfall(db, p, adjusted[p.id])) for p in participants),
-                link=f"/cycles/{cycle.id}/participants",
+                link=f"/troupes/{cycle.troupe_id}/downtimes/{cycle.id}/participants",
             )
         )
     return lines
