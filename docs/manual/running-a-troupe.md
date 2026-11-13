@@ -809,6 +809,10 @@ If the backstory settings coming in need questions this troupe doesn't have, the
 
 Each approval says what was asked and when, with **Open sheet**. Add a **Note to the player** if you like, then **Approve** or **Decline**. The player sees the player's side in [Players](players.md#spending-xp).
 
+### Being built
+
+**Characters › Being built** lists the characters players are building to this troupe's rules that haven't asked to make it home yet, newest change first, with a count on the tab. Each shows its player, its clan and sect once chosen, and whether it's **In creation** (with the picks still to place) or **Finished, not yet submitted**. It also lists the rules Finish creation would refuse it on as it stands. **Read the sheet** opens the sheet to read and print; you can't change it or open its Play View. Once its player asks to join, it leaves this list for Approvals.
+
 ### Characters asking to join
 
 A character asking to make the troupe its home is marked **Asking to make this home**. Before approving, settle:
