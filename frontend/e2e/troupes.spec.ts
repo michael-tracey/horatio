@@ -1219,10 +1219,10 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await request.getByRole("button", { name: "Approve and make the troupe" }).click();
   await expect(requests.getByRole("link", { name: troupeName })).toBeVisible();
 
-  // What is running, and that the database is on its latest migration.
-  await c.getByRole("link", { name: "System", exact: true }).click();
+  // What is running, on the Site tab, and that the database is on its latest migration.
+  await c.getByRole("link", { name: "Site", exact: true }).click();
   await expect(c.getByText("Up to date", { exact: true })).toBeVisible();
-  await c.screenshot(shots("custodian-system"));
+  await c.screenshot(shots("custodian-site"));
 
   // The asker now leads it.
   await a.reload();
