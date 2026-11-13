@@ -300,7 +300,7 @@ The server, username and password stay in `deploy/production.env`: change them t
 The **Discord** card says whether the Horatio bot can work, and if not, which of the three settings are missing (see [Discord: the Horatio app and its bot](#discord-the-horatio-app-and-its-bot)).
 
 - **What it uses:** the client ID. The client secret and bot token only show as **Set** or **Not set**, never their values.
-- **For Discord's developer portal:** the **OAuth2 redirect** to register, made from `HORATIO_PUBLIC_URL`, and an **Invite link for the bot**, each with **Copy**. The invite adds the bot to a server by hand; troupes connect their own servers from **Customise › Connectors**, which tells Horatio which server is theirs.
+- **For Discord's developer portal:** the **OAuth2 redirect** to register, made from `HORATIO_PUBLIC_URL`, and an **Invite link for the bot**, each with **Copy**. The invite adds the bot to a server by hand, asking for the [four permissions the bot uses](#discord-the-horatio-app-and-its-bot); troupes connect their own servers from **Customise › Connectors**, which tells Horatio which server is theirs.
 - **Check the bot:** asks Discord who the bot is, with the server's token, and shows its name and how many servers it's in. A refused token says so, naming the setting.
 - **Troupes connected:** each troupe that has connected a Discord server, its server's name, how many characters have a channel for their results, whether it has a test channel, and which posts have a channel.
 - **Discord posts that failed lately:** results, quests' news and posts to Discord that failed or are being tried again, each with when and why, and **Retry** for one Horatio gave up on.
