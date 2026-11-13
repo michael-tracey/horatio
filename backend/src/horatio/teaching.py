@@ -3,7 +3,7 @@
 The book has a teacher for a discipline dot (core, p. 112), which waits on the home
 troupe with the teacher the player names (horatio.sheets). A troupe can ask one for
 other traits too, with teacher rules (horatio.rules.teachers) its storytellers make
-under Customise › Rules › Teachers. With none, nothing changes.
+in the Settings at the top of Characters › Approvals (#785). With none, nothing changes.
 
 When a player buys a trait a rule is about, for a character the rule applies to,
 the purchase needs a teacher: a character of the troupe who holds the trait at the

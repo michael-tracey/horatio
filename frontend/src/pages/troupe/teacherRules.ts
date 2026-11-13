@@ -1,5 +1,5 @@
 /**
- * A troupe's teacher rules, as the form under Customise › House rules › Teachers makes
+ * A troupe's teacher rules, as the form in the Settings at the top of Characters › Approvals makes
  * them: which traits, for whom (the house checks' blocks, horatio.rules.house_checks),
  * when, what the teacher must hold, and what learning costs besides; turned into
  * what the server takes (horatio.rules.teachers), and back again to change one.

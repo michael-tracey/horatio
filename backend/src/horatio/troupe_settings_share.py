@@ -2258,8 +2258,9 @@ def warnings(target: Target, document: SettingsDocument) -> list[str]:
         target.db, target.troupe, archived=False
     ):
         found.append(
-            "Backstory questions aren't carried, and this troupe has none: add some under "
-            "Rules › Backstories, or players won't be able to write a backstory from questions."
+            "Backstory questions aren't carried, and this troupe has none: add some in the "
+            "Settings at the top of Characters › Approvals, or players won't be able to write "
+            "a backstory from questions."
         )
     return found
 

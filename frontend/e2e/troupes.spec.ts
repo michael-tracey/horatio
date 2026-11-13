@@ -241,8 +241,10 @@ test("a teacher rule asks for a teacher, and a Lore specialisation is bought fro
   await backstoryOptional(lead.page, troupeId);
 
   // The lead adds the first example: Lore specialisations after creation, with a downtime action.
+  // Teachers moved from House rules to the Settings at the top of Approvals (#785): the old address opens them there.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/house-rules/teachers`);
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/approvals#settings-teachers$`));
   await expect(l.getByText("No teacher rules.")).toBeVisible();
   await l.getByRole("button", { name: "Add a rule" }).click();
   const form = l.getByRole("region", { name: "A new teacher rule" });
@@ -334,7 +336,7 @@ test("a troupe's players read its house rules: a price the lead changes shows th
   await p.screenshot(shots("house-rules"));
 });
 
-test("on a phone the house rules tabs wrap onto more rows, so Teachers shows without scrolling sideways, and Tab walks across the rows (#649)", async ({ browser }) => {
+test("on a phone the house rules tabs wrap onto more rows, so the last shows without scrolling sideways, and Tab walks across the rows (#649)", async ({ browser }) => {
   const custodian = await person(browser, "tabwrap-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "tabwrap-lead", { viewport: { width: 360, height: 780 }, isMobile: true, hasTouch: true });
@@ -347,25 +349,27 @@ test("on a phone the house rules tabs wrap onto more rows, so Teachers shows wit
   await l.goto(`/troupes/${troupeId}/rules`);
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules/checks$`));
   const tabs = l.getByRole("navigation", { name: "House rules" });
-  const teachers = tabs.getByRole("link", { name: "Teachers", exact: true });
-  await expect(teachers).toBeInViewport();
+  const bookTraits = tabs.getByRole("link", { name: "Book traits", exact: true });
+  await expect(bookTraits).toBeInViewport();
+  // The parts that set up a feature moved to that feature's tab (#785).
+  for (const name of ["Locations", "Quests", "Retainers", "Backstories", "Free changes", "Teachers"]) await expect(tabs.getByRole("link", { name, exact: true })).toHaveCount(0);
   expect(await l.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(await tabs.evaluate((nav) => nav.scrollWidth <= nav.clientWidth)).toBe(true);
   // More than one row, and the longest label still on one line.
   const checks = (await tabs.getByRole("link", { name: "Checks", exact: true }).boundingBox())!;
   const longest = (await tabs.getByRole("link", { name: "House merits and flaws", exact: true }).boundingBox())!;
-  const last = (await teachers.boundingBox())!;
+  const last = (await bookTraits.boundingBox())!;
   expect(last.y).toBeGreaterThan(checks.y);
   expect(longest.height).toBe(checks.height);
 
   // The keyboard goes through every tab in order, across the rows.
-  await tabs.getByRole("link", { name: "Free changes", exact: true }).focus();
+  await tabs.getByRole("link", { name: "Written rules", exact: true }).focus();
   await l.keyboard.press("Tab");
-  await expect(teachers).toBeFocused();
+  await expect(bookTraits).toBeFocused();
   await l.keyboard.press("Enter");
-  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules/teachers$`));
-  await expect(teachers).toHaveAttribute("aria-current", "page");
-  await expect(teachers).toBeInViewport();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules/book-traits$`));
+  await expect(bookTraits).toHaveAttribute("aria-current", "page");
+  await expect(bookTraits).toBeInViewport();
   await l.screenshot(shots("house-rules-tabs-phone"));
 });
 
@@ -2313,9 +2317,11 @@ test("with Retainer upkeep on, checking in starts the night with the upkeep as i
   const asked = await send(p, "POST", `/api/characters/${perpetua}/home-troupe`, { troupe_id: troupeId });
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
 
-  // The lead switches upkeep on under Customise › House rules › Retainers: 1 Blood a game.
+  // The lead switches upkeep on in the Settings at the top of Characters: 1 Blood a game. The
+  // Rules tab's old address for Retainers opens them there (#782, #785).
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/house-rules/retainers`);
+  await l.goto(`/troupes/${troupeId}/rules/retainers`);
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/characters#settings-retainers$`));
   await expect(l.getByText("None.").first()).toBeVisible();
   await l.getByRole("button", { name: "Change Retainer rules" }).click();
   await l.getByLabel("Retainers cost upkeep").check();

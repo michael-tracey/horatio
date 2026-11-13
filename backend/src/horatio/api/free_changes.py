@@ -1,5 +1,6 @@
-"""A troupe's free changes for new characters (horatio.free_changes, issue #439), under
-Customise › Rules: none, by date or by games played, and the traits never refunded."""
+"""A troupe's free changes for new characters (horatio.free_changes, issue #439), in the
+Settings at the top of Characters › Approvals: none, by date or by games played, and the
+traits never refunded."""
 
 import uuid
 from typing import Literal

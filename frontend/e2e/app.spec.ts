@@ -120,9 +120,9 @@ test("the browser tab names the page: the tab open, then the troupe or character
   await p.goto(`/troupes/${troupeId}/approvals`);
   await expect(p).toHaveTitle(`Approvals · ${troupe} · Horatio`);
   // A tab's own tabs come first.
-  await p.goto(`/troupes/${troupeId}/house-rules/teachers`);
-  await expect(p.getByRole("link", { name: "Teachers", exact: true })).toHaveAttribute("aria-current", "page");
-  expect(await p.title()).toMatch(new RegExp(`^Teachers · .+ · ${troupe} · Horatio$`));
+  await p.goto(`/troupes/${troupeId}/house-rules/costs`);
+  await expect(p.getByRole("link", { name: "Costs", exact: true })).toHaveAttribute("aria-current", "page");
+  expect(await p.title()).toMatch(new RegExp(`^Costs · .+ · ${troupe} · Horatio$`));
 
   const character = await p.request.post("/api/characters", { headers: { "X-Horatio": "1" }, data: { splat: "vampire", name: "Tabitha Tallis" } });
   expect(character.status(), await character.text()).toBe(201);

@@ -1,5 +1,5 @@
 """Retainer upkeep and growth (issue #442): house rules some troupes play, each off
-unless the troupe switches it on under Customise › Rules › Retainers. The book has
+unless the troupe switches it on in the Settings at the top of Characters. The book has
 neither.
 
 Upkeep is an amount of Blood or Willpower for each Retainer (or each ghoul Retainer
