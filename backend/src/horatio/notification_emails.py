@@ -36,13 +36,16 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from horatio import delivery, preferences, suspensions
+from horatio import audit, delivery, mail_sender, preferences, suspensions
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
+from horatio.mail_sender import Sender
 from horatio.models import EmailNotice, Troupe, User
 from horatio.preferences import Preferences
 
 log = logging.getLogger(__name__)
+# Logged when Horatio stops trying to email someone their notifications.
+GAVE_UP = "mail.gave_up"
 
 
 @dataclass(frozen=True)
@@ -204,9 +207,9 @@ def to(user: User) -> str:
     return formataddr((user.display_name, user.email))
 
 
-def one_email(user: User, notice: EmailNotice) -> EmailMessage:
+def one_email(user: User, notice: EmailNotice, sender: Sender | None = None) -> EmailMessage:
     """One notification, as it happened."""
-    mail = email.new_message(to(user), line(notice).removesuffix("."))
+    mail = email.new_message(to(user), line(notice).removesuffix("."), sender)
     why = (
         "Its staff marked this important, so it comes to everyone in the troupe.\n"
         if notice.forced
@@ -221,7 +224,9 @@ def one_email(user: User, notice: EmailNotice) -> EmailMessage:
     return mail
 
 
-def digest_email(user: User, notices: list[EmailNotice]) -> EmailMessage:
+def digest_email(
+    user: User, notices: list[EmailNotice], sender: Sender | None = None
+) -> EmailMessage:
     """Every notification waiting, by kind, each kind with its own way to stop it."""
     sections: list[str] = []
     for topic in TOPICS:
@@ -231,7 +236,7 @@ def digest_email(user: User, notices: list[EmailNotice]) -> EmailMessage:
         lines = "\n".join(f"- {line(n)}\n  {absolute(n.link)}" for n in these)
         stop = f"Stop emails about {about(topic.name)}: {unsubscribe_url(user, topic.name)}"
         sections.append(f"{topic.title}\n\n{lines}\n\n{stop}")
-    mail = email.new_message(to(user), f"Horatio: {len(notices)} notifications today")
+    mail = email.new_message(to(user), f"Horatio: {len(notices)} notifications today", sender)
     mail.set_content(
         f"Hello {user.display_name},\n\nHere is the day's news from Horatio.\n\n"
         + "\n\n\n".join(sections)
@@ -262,8 +267,13 @@ def send_to(db: Session, user: User, notices: list[EmailNotice], at: datetime) -
         batches = [wanted]
     else:
         batches = [[n] for n in due]
+    sender = mail_sender.sender(db)
     for batch in batches:
-        mail = one_email(user, batch[0]) if len(batch) == 1 else digest_email(user, batch)
+        mail = (
+            one_email(user, batch[0], sender)
+            if len(batch) == 1
+            else digest_email(user, batch, sender)
+        )
         try:
             email.deliver(mail)
         except SendError as error:
@@ -274,6 +284,16 @@ def send_to(db: Session, user: User, notices: list[EmailNotice], at: datetime) -
                 notice.due_at = at + delivery.backoff(attempts)
             if not error.retry or attempts >= delivery.MAX_ATTEMPTS:
                 log.warning("gave up emailing notifications to %s: %s", user.id, error.reason)
+                # For the custodian's Mail card (#833): the bell still has them.
+                audit.record(
+                    db,
+                    None,
+                    GAVE_UP,
+                    member=user.display_name,
+                    user_id=user.id,
+                    count=len(batch),
+                    error=error.reason,
+                )
                 for notice in batch:
                     db.delete(notice)
             continue

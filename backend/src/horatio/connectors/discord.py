@@ -96,6 +96,41 @@ def invite_url(state: str) -> str:
     return f"{AUTHORIZE}?{urlencode(query)}"
 
 
+def bot_invite_url() -> str:
+    """Discord's page for adding the bot to a server by hand, asking for the
+    permissions Horatio needs. A troupe connects its own server from its Connectors
+    tab instead (`invite_url`), so Horatio learns which server is theirs."""
+    query = {
+        "client_id": get_settings().discord_client_id,
+        "scope": "bot",
+        "permissions": str(PERMISSIONS),
+    }
+    return f"{AUTHORIZE}?{urlencode(query)}"
+
+
+@dataclass(frozen=True)
+class Bot:
+    """Who Discord says the bot is, and how many servers it is in."""
+
+    id: str
+    name: str
+    servers: int
+    # Discord lists at most 200 servers at once: there may be more.
+    more: bool
+
+
+def whoami() -> Bot:
+    """Ask Discord who the bot is, with its token. Raises SendError."""
+    me = request("GET", "/users/@me").json()
+    guilds = request("GET", "/users/@me/guilds", params={"limit": 200}).json()
+    return Bot(
+        id=str(me["id"]),
+        name=str(me.get("username") or ""),
+        servers=len(guilds),
+        more=len(guilds) >= 200,
+    )
+
+
 def client() -> httpx.Client:
     return httpx.Client(
         base_url=API,

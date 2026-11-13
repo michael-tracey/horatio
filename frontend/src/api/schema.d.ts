@@ -7064,6 +7064,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/site/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discord Status */
+        get: operations["discord_status_api_site_discord_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/site/discord/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Bot
+         * @description Ask Discord who the bot is, with the server's token.
+         */
+        post: operations["check_bot_api_site_discord_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/site/mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mail */
+        get: operations["mail_api_site_mail_get"];
+        /**
+         * Set Mail
+         * @description Who Horatio's emails come from: a From name and address over the server's,
+         *     and a default Reply-To. Blank puts back the server's.
+         */
+        put: operations["set_mail_api_site_mail_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/site/mail/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Mail
+         * @description Send a test email to the custodian's own address, now.
+         */
+        post: operations["test_mail_api_site_mail_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/suspensions": {
         parameters: {
             query?: never;
@@ -15998,6 +16077,26 @@ export interface components {
             /** Marks */
             marks: components["schemas"]["BoonbreakerOut"][];
         };
+        /** BotOut */
+        BotOut: {
+            /** Detail */
+            detail?: string | null;
+            /** Id */
+            id?: string | null;
+            /**
+             * More
+             * @default false
+             */
+            more: boolean;
+            /** Name */
+            name?: string | null;
+            /** Ok */
+            ok: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Servers */
+            servers?: number | null;
+        };
         /** BreakIn */
         BreakIn: {
             /** Reason */
@@ -17671,6 +17770,26 @@ export interface components {
         Confirmed: {
             /** Email */
             email: string;
+        };
+        /** ConnectedTroupe */
+        ConnectedTroupe: {
+            /** Archived */
+            archived: boolean;
+            /** Characters */
+            characters: number;
+            /** Posts */
+            posts: string[];
+            /** Server */
+            server: string | null;
+            /** Test Channel */
+            test_channel: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** ConnectorChange */
         ConnectorChange: {
@@ -24021,6 +24140,26 @@ export interface components {
             expires_at: string;
             /** Url */
             url: string;
+        };
+        /** MailIn */
+        MailIn: {
+            /** From Address */
+            from_address?: string | null;
+            /** From Name */
+            from_name?: string | null;
+            /** Reply To */
+            reply_to?: string | null;
+        };
+        /** MailTestOut */
+        MailTestOut: {
+            /** Detail */
+            detail?: string | null;
+            /** Ok */
+            ok: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** To */
+            to: string;
         };
         /** MatchIn */
         MatchIn: {
@@ -30920,6 +31059,104 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /** SiteDiscordOut */
+        SiteDiscordOut: {
+            /** Bot Token Set */
+            bot_token_set: boolean;
+            /** Client Id */
+            client_id: string | null;
+            /** Client Secret Set */
+            client_secret_set: boolean;
+            /** Failures */
+            failures: components["schemas"]["SiteFailure"][];
+            /** Invite */
+            invite: string | null;
+            /** Missing */
+            missing: string[];
+            /** On */
+            on: boolean;
+            /** Redirect */
+            redirect: string;
+            /** Troupes */
+            troupes: components["schemas"]["ConnectedTroupe"][];
+            /** Where */
+            where: string;
+        };
+        /** SiteFailure */
+        SiteFailure: {
+            /** About */
+            about: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Attempts */
+            attempts: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "results" | "quest" | "post" | "notifications";
+            /** Link */
+            link: string | null;
+            /** Post Id */
+            post_id: string | null;
+            /** Reason */
+            reason: string;
+            /** Retry */
+            retry: ("delivery" | "post") | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "failed" | "retrying";
+            /** Troupe Id */
+            troupe_id: string | null;
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
+        /** SiteMailOut */
+        SiteMailOut: {
+            /** Failures */
+            failures: components["schemas"]["SiteFailure"][];
+            /** From Address */
+            from_address: string | null;
+            /** From Name */
+            from_name: string | null;
+            /** Host */
+            host: string | null;
+            /** Off Reason */
+            off_reason: string | null;
+            /** On */
+            on: boolean;
+            /** Password Set */
+            password_set: boolean;
+            /** Port */
+            port: number;
+            /** Reply To */
+            reply_to: string | null;
+            /**
+             * Security
+             * @enum {string}
+             */
+            security: "ssl" | "starttls" | "none";
+            /** Security Note */
+            security_note: string | null;
+            /** Sends From */
+            sends_from: string | null;
+            /** Server From */
+            server_from: string | null;
+            /** Username */
+            username: string | null;
+            /** Where */
+            where: string;
         };
         /** SkillPool */
         SkillPool: {
@@ -48406,6 +48643,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_status_api_site_discord_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteDiscordOut"];
+                };
+            };
+        };
+    };
+    check_bot_api_site_discord_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BotOut"];
+                };
+            };
+        };
+    };
+    mail_api_site_mail_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteMailOut"];
+                };
+            };
+        };
+    };
+    set_mail_api_site_mail_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteMailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_mail_api_site_mail_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTestOut"];
                 };
             };
         };

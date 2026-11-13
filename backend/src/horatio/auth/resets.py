@@ -21,7 +21,7 @@ from urllib.parse import quote, unquote
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from horatio import suspensions
+from horatio import mail_sender, suspensions
 from horatio.audit import record
 from horatio.auth.sessions import hash_token
 from horatio.config import get_settings
@@ -198,7 +198,9 @@ def email_reset(db: Session, user: User, url: str, by: User | None) -> str | Non
     """Email `user` their link, made by the custodian `by` or asked for by themselves
     (None), and log it. The mail server's refusal, if it refused."""
     mail = email.new_message(
-        formataddr((user.display_name, user.email)), "Reset your Horatio password"
+        formataddr((user.display_name, user.email)),
+        "Reset your Horatio password",
+        mail_sender.sender(db),
     )
     mail.set_content(reset_email_text(user, url, by))
     about = {"member": user.display_name, "user_id": user.id}

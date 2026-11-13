@@ -8444,6 +8444,79 @@
         "title": "BoonbreakersOut",
         "type": "object"
       },
+      "BotOut": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "more": {
+            "default": false,
+            "title": "More",
+            "type": "boolean"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "BotOut",
+        "type": "object"
+      },
       "BreakIn": {
         "properties": {
           "reason": {
@@ -13132,6 +13205,60 @@
           "email"
         ],
         "title": "Confirmed",
+        "type": "object"
+      },
+      "ConnectedTroupe": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "posts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Posts",
+            "type": "array"
+          },
+          "server": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server"
+          },
+          "test_channel": {
+            "title": "Test Channel",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "archived",
+          "server",
+          "characters",
+          "test_channel",
+          "posts"
+        ],
+        "title": "ConnectedTroupe",
         "type": "object"
       },
       "ConnectorChange": {
@@ -29266,6 +29393,85 @@
           "expires_at"
         ],
         "title": "MadeClaimLink",
+        "type": "object"
+      },
+      "MailIn": {
+        "properties": {
+          "from_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Address"
+          },
+          "from_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Name"
+          },
+          "reply_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply To"
+          }
+        },
+        "title": "MailIn",
+        "type": "object"
+      },
+      "MailTestOut": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "to"
+        ],
+        "title": "MailTestOut",
         "type": "object"
       },
       "MatchIn": {
@@ -46847,6 +47053,362 @@
           "players_see"
         ],
         "title": "SireLinesOut",
+        "type": "object"
+      },
+      "SiteDiscordOut": {
+        "properties": {
+          "bot_token_set": {
+            "title": "Bot Token Set",
+            "type": "boolean"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret_set": {
+            "title": "Client Secret Set",
+            "type": "boolean"
+          },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/SiteFailure"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "invite": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "redirect": {
+            "title": "Redirect",
+            "type": "string"
+          },
+          "troupes": {
+            "items": {
+              "$ref": "#/components/schemas/ConnectedTroupe"
+            },
+            "title": "Troupes",
+            "type": "array"
+          },
+          "where": {
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "required": [
+          "on",
+          "missing",
+          "client_id",
+          "client_secret_set",
+          "bot_token_set",
+          "redirect",
+          "invite",
+          "where",
+          "troupes",
+          "failures"
+        ],
+        "title": "SiteDiscordOut",
+        "type": "object"
+      },
+      "SiteFailure": {
+        "properties": {
+          "about": {
+            "title": "About",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "results",
+              "quest",
+              "post",
+              "notifications"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "post_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Id"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "retry": {
+            "anyOf": [
+              {
+                "enum": [
+                  "delivery",
+                  "post"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry"
+          },
+          "state": {
+            "enum": [
+              "failed",
+              "retrying"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "state",
+          "at",
+          "reason",
+          "attempts",
+          "troupe_id",
+          "troupe_name",
+          "about",
+          "link",
+          "retry",
+          "post_id"
+        ],
+        "title": "SiteFailure",
+        "type": "object"
+      },
+      "SiteMailOut": {
+        "properties": {
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/SiteFailure"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "from_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Address"
+          },
+          "from_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Name"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          },
+          "off_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Off Reason"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "password_set": {
+            "title": "Password Set",
+            "type": "boolean"
+          },
+          "port": {
+            "title": "Port",
+            "type": "integer"
+          },
+          "reply_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply To"
+          },
+          "security": {
+            "enum": [
+              "ssl",
+              "starttls",
+              "none"
+            ],
+            "title": "Security",
+            "type": "string"
+          },
+          "security_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Security Note"
+          },
+          "sends_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sends From"
+          },
+          "server_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server From"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "where": {
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "required": [
+          "on",
+          "off_reason",
+          "host",
+          "port",
+          "security",
+          "security_note",
+          "username",
+          "password_set",
+          "server_from",
+          "from_name",
+          "from_address",
+          "reply_to",
+          "sends_from",
+          "where",
+          "failures"
+        ],
+        "title": "SiteMailOut",
         "type": "object"
       },
       "SkillPool": {
@@ -77717,6 +78279,132 @@
         "summary": "Log Entry",
         "tags": [
           "shared backgrounds"
+        ]
+      }
+    },
+    "/api/site/discord": {
+      "get": {
+        "operationId": "discord_status_api_site_discord_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiscordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Discord Status",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/discord/check": {
+      "post": {
+        "description": "Ask Discord who the bot is, with the server's token.",
+        "operationId": "check_bot_api_site_discord_check_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Check Bot",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/mail": {
+      "get": {
+        "operationId": "mail_api_site_mail_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteMailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Mail",
+        "tags": [
+          "site"
+        ]
+      },
+      "put": {
+        "description": "Who Horatio's emails come from: a From name and address over the server's,\nand a default Reply-To. Blank puts back the server's.",
+        "operationId": "set_mail_api_site_mail_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteMailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Mail",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/mail/test": {
+      "post": {
+        "description": "Send a test email to the custodian's own address, now.",
+        "operationId": "test_mail_api_site_mail_test_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailTestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Test Mail",
+        "tags": [
+          "site"
         ]
       }
     },

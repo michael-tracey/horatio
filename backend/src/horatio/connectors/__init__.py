@@ -14,6 +14,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any, ClassVar
 
+from horatio.mail_sender import Sender
+
 
 @dataclass(frozen=True)
 class Recipient:
@@ -34,6 +36,8 @@ class Message:
     text: str
     # Where to read it in Horatio.
     link: str
+    # Who an email of it comes from (horatio.mail_sender); None for the server's own.
+    sender: Sender | None = None
 
 
 class SendError(Exception):
