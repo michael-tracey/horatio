@@ -11,6 +11,7 @@ import { BadgeNote } from "../character/Badge";
 import { StatusCard } from "../character/StatusCard";
 import { EquipmentEditor } from "./EquipmentEditor";
 import { ClaimLink, GiveToPlayer } from "./GiveNpc";
+import { MakeNpc } from "./MakeNpc";
 import { abilities } from "./roles";
 import { staffActions, type StaffAction, type Staffing } from "./staffActions";
 import { titleGives, titleGroups, titleStatusWords } from "./titleGroups";
@@ -39,6 +40,7 @@ const LABELS: Record<Exclude<StaffAction, "listing">, string> = {
   titles: "Titles…",
   give: "Give to a player…",
   claim: "Claim link…",
+  npc: "Make an NPC…",
   sheet: "Print sheet",
   badge: "Badge…",
   jyhad: "Show Jyhad card",
@@ -111,6 +113,9 @@ export function StaffActions({ troupeId, entry, staffing }: { troupeId: string; 
       </Dialog>
       <Dialog title={`Claim link for ${name}`} open={open === "claim"} onClose={close} phoneFull>
         <ClaimLink npcId={entry.character_id} />
+      </Dialog>
+      <Dialog title={`Make an NPC of ${name}`} open={open === "npc"} onClose={close} phoneFull>
+        {open === "npc" && <MakeNpc characterId={entry.character_id} name={name} onDone={close} />}
       </Dialog>
       <Dialog title={`${name}'s badge`} open={open === "badge"} onClose={close} phoneFull>
         <BadgeNote character={{ id: entry.character_id }} troupeId={troupeId} onDone={close} />

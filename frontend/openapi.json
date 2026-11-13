@@ -31008,6 +31008,26 @@
         "title": "NpcCandidateOut",
         "type": "object"
       },
+      "NpcCopyOut": {
+        "properties": {
+          "character": {
+            "$ref": "#/components/schemas/CharacterOut"
+          },
+          "left_out": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Left Out",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character",
+          "left_out"
+        ],
+        "title": "NpcCopyOut",
+        "type": "object"
+      },
       "NpcKeptOffOut": {
         "properties": {
           "category": {
@@ -62524,7 +62544,7 @@
     },
     "/api/characters/{character_id}/log": {
       "get": {
-        "description": "Everything that happened to the character, newest first. Its player sees it\nall; a troupe's staff see the sheet's own history and what happened in their\ntroupe, not in the character's other troupes.",
+        "description": "Everything that happened to the character, newest first. Its player sees it\nall but its copy as an NPC (horatio.npc_copies); a troupe's staff see the sheet's\nown history and what happened in their troupe, not in the character's other\ntroupes.",
         "operationId": "character_log_api_characters__character_id__log_get",
         "parameters": [
           {
@@ -62806,6 +62826,50 @@
         "summary": "Nominations About",
         "tags": [
           "nominations"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/npc-copy": {
+      "post": {
+        "description": "Copy a retired player character as a sheeted NPC of its home troupe, named\n\"[NPC] <name>\" (horatio.npc_copies, #764), for the troupe's running staff. The\noriginal stays as it is with its player, who isn't told.",
+        "operationId": "copy_as_npc_api_characters__character_id__npc_copy_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpcCopyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Copy As Npc",
+        "tags": [
+          "npcs"
         ]
       }
     },

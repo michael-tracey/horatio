@@ -190,6 +190,7 @@ Each character's **⋯**, at the end of its row, holds what you can do for it, p
 - **Titles…**: the titles it holds here, each with × to take it away, and the troupe's titles to give it another, or a new one you type.
 - **List on the Who's Who** or **Take off the Who's Who** (NPCs): for an NPC without a title (one with a title is listed anyway).
 - **Give to a player…** and **Claim link…** (NPCs, for storytellers): on a finished sheeted vampire or ghoul (see [Giving an NPC to a player](#giving-an-npc-to-a-player)).
+- **Make an NPC…** (retired player characters whose home troupe this is): copies it as an NPC (see [Making an NPC of a retired character](#making-an-npc-of-a-retired-character)).
 - **Print sheet**: its sheet, in a new tab. A Stock NPC has no sheet to print.
 - **Badge…**: shows what others can see of it, takes a note for its badge, and prints it.
 - **Show Jyhad card**: its card, for a vampire with a picture.
@@ -255,6 +256,15 @@ For someone who hasn't signed up yet, send a **claim link** instead:
 While a link is out, the NPC's row says **Claim link out**. **Claim link…** shows when it expires and who made it; **Cancel the link** stops it working, and **Make a new link** replaces it. Giving the NPC directly also ends its link.
 
 A character given to the wrong person is put right by the custodian [moving it to the right player](custodian.md#moving-a-character-to-another-player). It can't be turned back into an NPC.
+
+### Making an NPC of a retired character
+
+When a player's character turns villain, or its player can no longer run it, staff can take a copy of it to play as an NPC. Only a retired character can be copied, however it left: Final Death too, as a character believed dead may not be. Its home troupe's storytellers and assistant storytellers can do it, from **⋯ › Make an NPC…** on its row of the Characters list (take off the **Is active** filter to see retired characters) or on its own page.
+
+- The troupe gets a new sheeted NPC named **[NPC] *name***, so it doesn't collide with the original. It has the original's sheet as it stands (clan, sect, disciplines, merits and flaws, backgrounds, Humanity or Path), its sire, backstory and picture.
+- The original stays as it is, retired, in its player's characters. Changing one never changes the other.
+- Its boons, blood bonds, titles, status, equipment, Retainers' records and Who's Who listing stay with the original: give the NPC what it needs by hand. The NPC starts off the Who's Who, with no XP history.
+- Its player isn't told, so a turn to villainy can stay a surprise in play. The NPC's log, the original's log and the troupe log say who made the copy and when; the player's own view of the original's log leaves it out.
 
 ## Titles and status
 
