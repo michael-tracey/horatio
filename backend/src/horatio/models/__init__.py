@@ -124,6 +124,7 @@ from horatio.models.troupes import (
     XpRangeEntry,
 )
 from horatio.models.viewing import Viewing
+from horatio.models.vinculum import Vaulderie, VaulderieParticipant, VinculumTie
 from horatio.models.written_rules import WrittenRule
 from horatio.models.yorick_imports import YorickImport
 
@@ -251,7 +252,10 @@ __all__ = [
     "TroupeStaff",
     "TroupeTitle",
     "User",
+    "Vaulderie",
+    "VaulderieParticipant",
     "Viewing",
+    "VinculumTie",
     "XpEntry",
     "XpRangeEntry",
     "YorickImport",

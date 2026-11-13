@@ -158,6 +158,26 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
           </ul>
         </Panel>
       )}
+      {/* The Vinculum ratings the character feels with a rules effect, and what each costs (#666, core p. 434). */}
+      {(reference.vinculum ?? []).length > 0 && (
+        <Panel title="Vinculum">
+          <ul className="text-sm">
+            {(reference.vinculum ?? []).map((v) => (
+              <li key={v.toward} className="border-b border-ash/60 py-1 last:border-0">
+                <p className="text-parchment">
+                  {v.toward}
+                  <span className="text-mist"> · Vinculum {v.rating}</span>
+                </p>
+                {v.effects.map((e) => (
+                  <p key={e} className="text-xs text-mist">
+                    {e}
+                  </p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
       {[...groups].map(([name, traits]) => (
         <Panel key={name} title={name}>
           <ul className="text-sm">
