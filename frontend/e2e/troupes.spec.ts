@@ -56,7 +56,7 @@ test("a troupe changes what new characters start with and their downtime actions
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
 
-test("Customise opens on Overview, a setup checklist and the house settings, and Checks come in folded groups that a search looks through (#377)", async ({ browser }) => {
+test("Customise opens on Overview, a setup checklist, the features and the house rules that differ, and Checks come in folded groups that a search looks through (#377)", async ({ browser }) => {
   const custodian = await person(browser, "tally-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "tally-lead");
@@ -74,9 +74,15 @@ test("Customise opens on Overview, a setup checklist and the house settings, and
   const steps = l.getByRole("list", { name: "Setting up" });
   await expect(steps.getByRole("listitem")).toHaveCount(4);
   await expect(l.getByText("0 of 4 done")).toBeVisible();
-  const glance = l.locator("section").filter({ has: l.getByRole("heading", { name: "House settings at a glance" }) });
-  await expect(glance.getByText(/^0 of \d+ played differently$/)).toBeVisible();
-  await expect(glance.getByText(/Discord: not set up on this server/)).toBeVisible();
+  // Then the features, on or off, each pointing to its tab or to Troupe settings, and nothing to change here.
+  const featuresCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Features", exact: true }) });
+  await expect(featuresCard.getByRole("list", { name: "Features at a glance" }).getByRole("listitem").first()).toBeVisible();
+  await expect(featuresCard.getByRole("link", { name: "Switch them in Troupe settings" })).toHaveAttribute("href", `/troupes/${troupeId}/settings`);
+  await expect(l.locator("main").getByRole("switch")).toHaveCount(0);
+  // And the house rules: none yet, so everything plays as the book has it.
+  const houseRules = l.locator("section").filter({ has: l.getByRole("heading", { name: "House rules", exact: true }) });
+  await expect(houseRules.getByText("Everything plays as the book has it.")).toBeVisible();
+  await expect(houseRules.getByRole("list", { name: "Played differently" })).toHaveCount(0);
   await l.screenshot(shots("customise-overview"));
 
   // Checks open on the troupe's house rules, of which there are none yet.
@@ -105,7 +111,10 @@ test("Customise opens on Overview, a setup checklist and the house settings, and
   // Overview counts it.
   await l.getByRole("link", { name: "Overview", exact: true }).click();
   await expect(steps.getByRole("link", { name: /^House rules\W+done/ })).toBeVisible();
-  await expect(glance.getByText(/^1 of \d+ played differently$/)).toBeVisible();
+  // The house rules now list Checks, linked into them.
+  const differently = houseRules.getByRole("list", { name: "Played differently" });
+  await expect(differently.getByRole("listitem")).toHaveCount(1);
+  await expect(differently.getByRole("link", { name: /^Checks\s*1 of \d+ played differently$/ })).toHaveAttribute("href", `/troupes/${troupeId}/rules`);
 });
 
 test("Troupe settings open on a Features list: each optional feature on or off, and switching one on brings its tab, its settings folded at the top (#783, #784)", async ({ browser }) => {

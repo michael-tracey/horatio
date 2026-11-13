@@ -1,16 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { SetupOut, TroupeOut } from "../../api/types";
 import { Badge, Card, ErrorText, Loading } from "../../components/ui";
-import { sectsText, useSplatsText } from "./SettingsTab";
+import { features } from "./features";
 
 /**
  * The first tab of Customise (issue #377): the few things a new lead sets up
- * first, each done or not with a link to where it is done, then the troupe's house
- * settings at a glance, each with the tab that changes it. Everything else in
- * Customise can stay as the book has it.
+ * first, each done or not with a link to where it is done; then the troupe's
+ * features, on or off, and the parts of its rules it plays differently from the
+ * book (#786). Nothing is changed here: each line points to where it is.
  */
 export function SetupTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const setup = useQuery({
@@ -27,7 +26,8 @@ export function SetupTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: bool
   return (
     <div className="flex flex-col gap-6">
       <Checklist troupe={troupe} setup={setup.data} />
-      <AtAGlance troupe={troupe} setup={setup.data} canEdit={canEdit} />
+      <Features troupe={troupe} canEdit={canEdit} />
+      <HouseRules troupe={troupe} setup={setup.data} canEdit={canEdit} />
     </div>
   );
 }
@@ -111,75 +111,97 @@ function Checklist({ troupe, setup: s }: { troupe: TroupeOut; setup: SetupOut })
   );
 }
 
-const STATUS_BY: Record<string, string> = { players: "players keep their own", staff: "staff only" };
-const TITLES_BY: Record<string, string> = { players: "players choose their own", staff: "staff give them" };
-const CONNECTOR_STATE: Record<SetupOut["connectors"][number]["state"], string> = {
-  on: "on",
-  test: "on, in test mode",
-  off: "off",
-  unavailable: "not set up on this server",
-};
-
-/** The troupe's settings in a line each, with where each is changed. */
-function AtAGlance({ troupe, setup: s, canEdit }: { troupe: TroupeOut; setup: SetupOut; canEdit: boolean }) {
+/** The troupe's features, each on or off and linked to its tab; switched in Troupe settings. */
+function Features({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const base = `/troupes/${troupe.id}`;
-  // Assistant storytellers read the settings; storytellers change them.
-  const action = canEdit ? "Change" : "See";
-  const { text: splats } = useSplatsText(troupe);
-  const asBook = (n: number, what: (n: number) => string) => (n > 0 ? what(n) : "As the book has it");
+  const all = features(troupe);
+  const on = all.filter((f) => f.on).length;
   return (
-    <Card title="House settings at a glance">
-      <dl className="flex flex-col divide-y divide-ash text-sm">
-        <SettingRow action={action} label="Who may join" to={`${base}/settings`}>
-          {splats} player characters. {sectsText(troupe.allowed_sects)}
-        </SettingRow>
-        <SettingRow action={action} label="XP" to={`${base}/settings`}>
-          {troupe.session_xp} a game and {troupe.downtime_xp} a downtime. New characters start at {troupe.xp_floor} XP; the ceiling is{" "}
-          {troupe.xp_ceiling}.
-        </SettingRow>
-        <SettingRow action={action} label="Status and titles" to={`${base}/settings`}>
-          Status on sheets: {STATUS_BY[troupe.status_by] ?? troupe.status_by}. Titles: {TITLES_BY[troupe.titles_by] ?? troupe.titles_by}.
-        </SettingRow>
-        <SettingRow action={action} label="Checks" to={`${base}/rules`}>
-          {s.checks} of {s.checks_total} played differently
-        </SettingRow>
-        <SettingRow action={action} label="Costs" to={`${base}/rules/costs`}>
-          {asBook(s.costs, (n) => (n === 1 ? "1 house price" : `${n} house prices`))}
-        </SettingRow>
-        <SettingRow action={action} label="Starting points" to={`${base}/rules/starting`}>
-          {asBook(s.starting, houseRules)}
-        </SettingRow>
-        <SettingRow action={action} label="Downtime actions" to={`${base}/rules/actions`}>
-          {asBook(s.actions, houseRules)}
-        </SettingRow>
-        <SettingRow action={action} label="House merits and flaws" to={`${base}/rules/house-traits`}>
-          {s.house_traits > 0 ? `${s.house_traits} of the troupe's own` : "None"}
-        </SettingRow>
-        <SettingRow action={action} label="Quests" to={`${base}/rules/quests`}>
-          {troupe.quests_enabled
-            ? `On: ${troupe.quest_requests_per_cycle} ${troupe.quest_requests_per_cycle === 1 ? "request" : "requests"} a character each cycle`
-            : "Off"}
-        </SettingRow>
-        <SettingRow action={action} label="Connectors" to={`${base}/connectors`}>
-          {s.connectors.length === 0
-            ? "Results reach players in Horatio."
-            : `In Horatio, always. ${s.connectors.map((c) => `${c.name}: ${CONNECTOR_STATE[c.state]}`).join(". ")}.`}
-        </SettingRow>
-      </dl>
+    <Card
+      title="Features"
+      actions={
+        <Link to={`${base}/settings`} className="text-xs text-mist underline hover:text-parchment">
+          {canEdit ? "Switch them in Troupe settings" : "See them in Troupe settings"}
+        </Link>
+      }
+    >
+      <p className="mb-2 text-sm text-mist">{`${on} of ${all.length} on.`}</p>
+      <ul aria-label="Features at a glance" className="flex flex-col divide-y divide-ash text-sm">
+        {all.map((f) => (
+          <li key={f.key} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2">
+            {f.tab ? (
+              <Link to={`${base}/${f.tab.to}`} className="text-parchment underline decoration-ash hover:text-gold">
+                {f.name}
+              </Link>
+            ) : (
+              <span className="text-parchment">{f.name}</span>
+            )}
+            <Badge tone={f.on ? "gold" : "mist"}>{f.state}</Badge>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-xs text-mist">
+        Who may join, XP, status and titles and the setting are on{" "}
+        <Link to={`${base}/settings`} className="underline hover:text-parchment">
+          Troupe settings
+        </Link>{" "}
+        too.
+      </p>
     </Card>
   );
 }
 
-function SettingRow({ label, to, action, children }: { label: string; to: string; action: string; children: ReactNode }) {
+export type RuleArea = { label: string; text: string; to: string };
+
+/**
+ * The parts of the troupe's rules it plays differently from the book, a line each
+ * with where it is: none when everything plays as the book has it.
+ */
+export function differentAreas(s: SetupOut, base: string): RuleArea[] {
+  const areas: (RuleArea | false)[] = [
+    s.checks > 0 && { label: "Checks", text: `${s.checks} of ${s.checks_total} played differently`, to: `${base}/rules` },
+    s.costs > 0 && { label: "Costs", text: s.costs === 1 ? "1 house price" : `${s.costs} house prices`, to: `${base}/rules/costs` },
+    s.starting > 0 && { label: "Starting points", text: houseRules(s.starting), to: `${base}/rules/starting` },
+    s.actions > 0 && { label: "Downtime actions", text: houseRules(s.actions), to: `${base}/rules/actions` },
+    s.house_traits > 0 && { label: "House merits and flaws", text: `${s.house_traits} of the troupe's own`, to: `${base}/rules/house-traits` },
+    s.other > 0 && { label: "Other house rules", text: s.other === 1 ? "1 setting unlike the book" : `${s.other} settings unlike the book`, to: `${base}/house-rules` },
+  ];
+  return areas.filter((a): a is RuleArea => !!a);
+}
+
+/** Where the troupe plays differently from the book, each linked into its rules. */
+function HouseRules({ troupe, setup, canEdit }: { troupe: TroupeOut; setup: SetupOut; canEdit: boolean }) {
+  const base = `/troupes/${troupe.id}`;
+  const areas = differentAreas(setup, base);
   return (
-    <div className="flex flex-col gap-0.5 py-2 sm:flex-row sm:items-baseline sm:gap-4">
-      <dt className="text-mist sm:w-44 sm:shrink-0">{label}</dt>
-      <dd className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3">
-        <span>{children}</span>
-        <Link to={to} className="text-xs text-mist underline hover:text-parchment" aria-label={`${action}: ${label}`}>
-          {action}
+    <Card
+      title="House rules"
+      actions={
+        <Link to={`${base}/house-rules`} className="text-xs text-mist underline hover:text-parchment">
+          Read them as players do
         </Link>
-      </dd>
-    </div>
+      }
+    >
+      {areas.length === 0 ? (
+        <p className="text-sm text-mist">
+          Everything plays as the book has it.{" "}
+          <Link to={`${base}/rules`} className="underline hover:text-parchment">
+            {canEdit ? "Change what you play differently" : "See the rules"}
+          </Link>
+          .
+        </p>
+      ) : (
+        <ul aria-label="Played differently" className="flex flex-col divide-y divide-ash text-sm">
+          {areas.map((a) => (
+            <li key={a.label}>
+              <Link to={a.to} className="flex flex-wrap items-baseline justify-between gap-x-3 py-2 hover:text-gold">
+                <span className="text-parchment">{a.label}</span>
+                <span className="text-mist">{a.text}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }

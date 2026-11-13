@@ -197,7 +197,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   // Customise › Overview.
   await l.goto(`${base}/customise`);
   await expect(l.getByRole("list", { name: "Setting up" })).toBeVisible();
-  await shot(l, "customise-overview", undefined, 1100);
+  await shot(l, "customise-overview", undefined, 1750);
 
   // The Characters list, with the print choices open.
   await l.goto(`${base}/characters`);
