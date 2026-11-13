@@ -195,6 +195,37 @@ def test_an_elder_counts_as_someone_of_significance(court: Court) -> None:
     assert court.get(blood)["gallant"]["reasons"] == ["great"]
 
 
+def test_a_harpy_with_the_full_ledger_answers_as_their_character(court: Court) -> None:
+    harpy_player = sign_up(court.troupe.client_for, "harpy-693")
+    hestia = member(court.troupe, "Hestia", player=harpy_player)
+    entitle(court.troupe, hestia, "Harpy")
+    entitle(court.troupe, court.agnes, "Prince")
+    life = court.boon("life")
+    court.settle(life)
+    path = f"{court.path}/{life['id']}"
+
+    # Reaching only the review queue, the Harpy neither sees the boon nor answers.
+    ok(
+        court.troupe.storyteller.client.put(
+            f"/troupes/{court.troupe.id}/boon-harpy", json={"access": "submissions"}
+        )
+    )
+    assert court.answer(life, True, by=harpy_player).status_code != 200
+
+    ok(
+        court.troupe.storyteller.client.put(
+            f"/troupes/{court.troupe.id}/boon-harpy", json={"access": "full"}
+        )
+    )
+    assert ok(harpy_player.client.get(path))["gallant"]["reasons"] == ["great"]
+    given = ok(court.answer(life, True, by=harpy_player))
+
+    assert given["gallant"] is None
+    last = given["events"][-1]
+    assert (last["kind"], last["as_character"]) == ("gallant_given", "Hestia")
+    assert held(court.other, court.bram) == ["Gallant"]
+
+
 def test_where_only_staff_change_status_staff_answer(court: Court) -> None:
     noble(court)
     ok(
