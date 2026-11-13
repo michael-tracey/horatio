@@ -25,9 +25,9 @@ describe("the parts of the rules a troupe plays differently (#786)", () => {
   it("names each part that differs, linked into its rules, and leaves out the rest", () => {
     const areas = differentAreas({ ...book, checks: 3, costs: 1, house_traits: 2, other: 1 }, "/troupes/t");
     expect(areas).toEqual([
-      { label: "Checks", text: "3 of 450 played differently", to: "/troupes/t/rules" },
-      { label: "Costs", text: "1 house price", to: "/troupes/t/rules/costs" },
-      { label: "House merits and flaws", text: "2 of the troupe's own", to: "/troupes/t/rules/house-traits" },
+      { label: "Checks", text: "3 of 450 played differently", to: "/troupes/t/house-rules/checks" },
+      { label: "Costs", text: "1 house price", to: "/troupes/t/house-rules/costs" },
+      { label: "House merits and flaws", text: "2 of the troupe's own", to: "/troupes/t/house-rules/house-traits" },
       { label: "Other house rules", text: "1 setting unlike the book", to: "/troupes/t/house-rules" },
     ]);
   });

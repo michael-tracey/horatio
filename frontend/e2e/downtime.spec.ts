@@ -377,7 +377,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.screenshot(shots("log"));
   // The troupe's rules: the lead can play a check differently.
   await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
-  await lead.page.getByRole("link", { name: "Rules", exact: true }).click();
+  await lead.page.getByRole("link", { name: "House rules", exact: true }).click();
+  await lead.page.getByRole("link", { name: "Checks", exact: true }).click();
   await lead.page.getByLabel("Search checks").fill("Calm Heart");
   await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
   await expect(lead.page.getByRole("button", { name: "House rules (1)" })).toBeVisible();
@@ -1952,7 +1953,7 @@ test("staff reorder the troupe's keywords, and filter and order the responses by
   await send(b, "POST", `/api/characters/${bram}/downtime/submit`);
 
   // The lead moves Narrative to the top, and renames Perform.
-  await l.goto(`/troupes/${troupe}/rules/keywords`);
+  await l.goto(`/troupes/${troupe}/house-rules/keywords`);
   const table = l.getByRole("table", { name: "Downtime keywords" });
   await expect(table.getByRole("row").nth(1)).toContainText("Feed");
   for (let i = 0; i < 8; i++) {

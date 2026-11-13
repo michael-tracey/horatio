@@ -37,7 +37,8 @@ const BOOK_XP = 30;
  * What the troupe plays differently from the book, for its players to read before
  * they build or buy: its own prices, starting points, checks, merits and flaws,
  * downtime actions and other house rules, and how backstories are written. Read
- * only; its storytellers change them under Customise.
+ * only: running staff see it as the House rules tab's first part, and change the
+ * rules in the parts after it (#782).
  */
 export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boolean }) {
   const named = useClanName();
@@ -65,18 +66,11 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm text-mist">
           What {troupe.name} plays differently from the book. They apply to characters whose home troupe this is, and to characters being built for it.
-          Everything not listed here is as written.
+          Everything not listed here is as written.{staff && " This is what players read; the parts above hold each kind of house rule in full."}
         </p>
-        <span className="flex flex-wrap gap-x-4 gap-y-1">
-          <Link to={`/rules?troupe=${troupe.id}`} className="text-sm text-mist underline hover:text-parchment">
-            Browse every rule as played here
-          </Link>
-          {staff && (
-            <Link to={`/troupes/${troupe.id}/rules`} className="text-sm text-mist underline hover:text-parchment">
-              See them in Customise
-            </Link>
-          )}
-        </span>
+        <Link to={`/rules?troupe=${troupe.id}`} className="text-sm text-mist underline hover:text-parchment">
+          Browse every rule as played here
+        </Link>
       </div>
 
       {nothing && (

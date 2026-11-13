@@ -21,7 +21,7 @@ type Picked = { splat: string; category: string; name: string; from: "changed" |
 const samePick = (a: Picked, b: Picked) => a.splat === b.splat && a.category === b.category && a.name === b.name && a.from === b.from;
 
 /**
- * Customise › Rules › Book traits: the troupe's own changes to traits from the book.
+ * Customise › House rules › Book traits: the troupe's own changes to traits from the book.
  * Storytellers search or browse the catalogue, open a trait, and change it in one
  * panel, under the row they opened it from: ban it, with a reason the players see, give it wording of the troupe's
  * own, and move a merit or flaw to another category. Those who already hold a banned trait keep it; they are listed here for

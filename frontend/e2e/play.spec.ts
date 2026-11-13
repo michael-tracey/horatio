@@ -61,7 +61,7 @@ test("a troupe's house wording on a power shows on the Play View, marked as the 
 
   // The lead gives Presence the troupe's own wording, added to the book's.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/book-traits`);
+  await l.goto(`/troupes/${troupeId}/house-rules/book-traits`);
   await l.getByLabel("Category").selectOption({ label: "Disciplines" });
   await l.getByRole("searchbox", { name: "Search book traits" }).fill("presence");
   await l.getByRole("list", { name: "Book traits found" }).getByRole("button", { name: /^Presence/ }).click();

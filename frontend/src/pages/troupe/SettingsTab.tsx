@@ -27,7 +27,7 @@ import { useCatalogue } from "../../catalogue";
  * feature, on or off (#783). A feature with a tab of its own keeps the rest of its settings
  * folded at the top of that tab (#784). Its storytellers change them; the troupe's other
  * running staff read them (assistant storytellers write the setting too). The troupe's rules
- * for traits are on the Rules tab beside it.
+ * for traits are on the House rules tab beside it (#782).
  */
 export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const base = `/troupes/${troupe.id}`;
@@ -35,7 +35,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
     <div className="flex flex-col gap-8">
       <p className="text-sm text-mist">
         {canEdit ? "Settings for the whole troupe. Each change takes effect straight away." : `Settings for the whole troupe. Its storytellers change them${troupe.my_role === "assistant_storyteller" && !troupe.archived ? "; you write the setting with them." : "."}`}{" "}
-        A feature with a tab of its own has the rest of its settings at the top of that tab. What traits cost and what new characters start with are under Rules,
+        A feature with a tab of its own has the rest of its settings at the top of that tab. What traits cost and what new characters start with are under House rules,
         beside this.
       </p>
       <FeaturesList troupe={troupe} canEdit={canEdit} />

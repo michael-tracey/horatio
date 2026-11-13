@@ -447,7 +447,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await expect(e3.getByText(/Blocked by Agnes in Winter, accepted by gossip-lead/)).toBeVisible();
 
   // A longer lookback finds the action from 100 days back.
-  await l.goto(`/troupes/${troupeId}/rules/actions`);
+  await l.goto(`/troupes/${troupeId}/house-rules/actions`);
   await expect(l.getByText("90 days", { exact: true })).toBeVisible();
   await l.getByRole("button", { name: "Change how far lookups look back" }).click();
   await l.getByLabel("Days to look back").fill("120");
