@@ -30,8 +30,8 @@ export type Feature = {
   tab?: { label: string; to: string };
   /**
    * Where the rest of its settings are, under the troupe: folded at the top of its own tab
-   * ("boons#settings", #784), a card on Troupe settings ("#feature-feeding") or another tab
-   * ("house-rules/quests"). None when the switch is all there is.
+   * ("boons#settings", #784; "quests#settings-quests", #785) or a card on Troupe settings
+   * ("#feature-feeding"). None when the switch is all there is.
    */
   settings?: string;
   /** It is switched on and off from the list. Who's Who and News are always on; the Play View goes tab by tab. */
@@ -44,11 +44,30 @@ export const settingsAnchor = (key: FeatureKey) => `feature-${key.replace(/_/g, 
 /** The id of the folded Settings at the top of a feature's own tab (#784). */
 export const SETTINGS_HASH = "settings";
 
+/** The house-rule parts that set up a feature, moved to the tab where staff meet it (#785). */
+export type SettingsPart = "locations" | "quests" | "retainers" | "backstories" | "teachers" | "free-changes";
+
+/** Where each part now lives, under the troupe: its tab, folded open at the part (`#settings-<part>`). */
+export const PART_HOMES: Record<SettingsPart, string> = {
+  locations: "locations",
+  quests: "quests",
+  retainers: "characters",
+  backstories: "approvals",
+  teachers: "approvals",
+  "free-changes": "approvals",
+};
+
+/** The id of a part's card in its tab's folded Settings. */
+export const settingsPart = (part: SettingsPart) => `${SETTINGS_HASH}-${part}`;
+
+/** A part's new home, from an old House rules or Rules address (#785). */
+export const partHome = (part: SettingsPart) => `${PART_HOMES[part]}#${settingsPart(part)}`;
+
 /** A feature's settings folded at the top of its tab: for storytellers only, as only they change them. */
 const onTab = (to: string) => `${to}#${SETTINGS_HASH}`;
 
 /** Whether a feature's settings link lands on its tab's folded Settings, which only those who may change them see. */
-export const settingsOnTab = (settings: string) => settings.endsWith(`#${SETTINGS_HASH}`);
+export const settingsOnTab = (settings: string) => settings.endsWith(`#${SETTINGS_HASH}`) || settings.includes(`#${SETTINGS_HASH}-`);
 
 const onOff = (on: boolean) => (on ? "On" : "Off");
 const requests = (n: number) => (n === 1 ? "1 request" : `${n} requests`);
@@ -159,7 +178,7 @@ export function features(troupe: TroupeOut): Feature[] {
       on: troupe.quests_enabled,
       state: troupe.quests_enabled ? `On, ${requests(troupe.quest_requests_per_cycle)} a character each cycle` : "Off",
       tab: troupe.quests_enabled ? { label: "Quests", to: "quests" } : undefined,
-      settings: "house-rules/quests",
+      settings: troupe.quests_enabled ? partHome("quests") : undefined,
       switchable: true,
     },
     {

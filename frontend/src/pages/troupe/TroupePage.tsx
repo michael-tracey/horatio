@@ -12,7 +12,7 @@ import { BoonsPages } from "./BoonsPages";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { EquipmentTab } from "./EquipmentTab";
-import { TabSettings } from "./FeatureSettings";
+import { PartSettings, TabSettings } from "./FeatureSettings";
 import { GameNightPage } from "./GameNight";
 import { HouseRulesTab } from "./HouseRulesTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
@@ -145,7 +145,17 @@ export function TroupePage() {
         {t.nominations && (
           <Route path="nominations" element={<NominationsTab troupeId={t.id} canStar={can.running} nominations={!!t.player_nominations} remembrances={!!t.remembrances} />} />
         )}
-        {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} canEmail={can.storyteller} />} />}
+        {can.running && (
+          <Route
+            path="characters"
+            element={
+              <>
+                <PartSettings troupeId={t.id} place="characters" canEdit={can.storyteller} />
+                <RosterTab troupeId={t.id} canEmail={can.storyteller} />
+              </>
+            }
+          />
+        )}
         {can.running && !t.archived && <Route path="characters/import" element={<TroupeImportPage troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
@@ -222,9 +232,29 @@ export function TroupePage() {
           />
         )}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
-        {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
+        {can.running && (
+          <Route
+            path="locations/*"
+            element={
+              <>
+                <PartSettings troupeId={t.id} place="locations" canEdit={can.storyteller} />
+                <LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />
+              </>
+            }
+          />
+        )}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
-        {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
+        {can.running && (
+          <Route
+            path="approvals"
+            element={
+              <>
+                <PartSettings troupeId={t.id} place="approvals" canEdit={can.storyteller} />
+                <ApprovalsTab troupeId={t.id} />
+              </>
+            }
+          />
+        )}
         {can.running && !t.archived && <Route path="being-built" element={<BeingBuiltTab troupeId={t.id} />} />}
         {can.running && <Route path="customise" element={<SetupTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {can.running && <Route path="settings" element={<SettingsTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
@@ -251,7 +281,17 @@ export function TroupePage() {
         {can.staff && <Route path="work/:cycleId" element={<OldWorkLink troupeId={t.id} />} />}
         {can.running && <Route path="influence/*" element={<InfluenceLogTab troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
-        {can.staff && t.quests_enabled && <Route path="quests/*" element={<QuestsTab troupeId={t.id} running={can.running} />} />}
+        {can.staff && t.quests_enabled && (
+          <Route
+            path="quests/*"
+            element={
+              <>
+                {can.running && <PartSettings troupeId={t.id} place="quests" canEdit={can.storyteller} />}
+                <QuestsTab troupeId={t.id} running={can.running} />
+              </>
+            }
+          />
+        )}
       </Routes>
       {/* Every starred nomination, for the troupe's players and staff (#470). */}
       {t.nominations && t.player_nominations && <NominationsFooter troupeId={t.id} />}

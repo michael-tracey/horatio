@@ -2,7 +2,7 @@
 a character, its player can still drop or lower traits for their full XP back, as
 during creation, instead of under the troupe's normal rules once in play.
 
-A troupe chooses one of three under Customise › Rules:
+A troupe chooses one of three in the Settings at the top of Characters › Approvals:
 
 - **None** (the default): the character is locked on acceptance, as it always was.
   Only dots bought since come back; the accepted sheet is for storytellers to lower.

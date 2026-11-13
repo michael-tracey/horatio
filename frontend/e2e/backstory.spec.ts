@@ -46,7 +46,8 @@ test("a troupe asks its questions only: the lead loads the template and rewords 
 
   // The lead chooses the questions only, and loads the template.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/house-rules/backstories`);
+  // Backstories are set in the Settings at the top of Approvals, where they're approved (#785).
+  await l.goto(`/troupes/${troupe.id}/approvals#settings-backstories`);
   await l.getByRole("button", { name: "Change backstory settings" }).click();
   await l.getByRole("radio", { name: /The questions only/ }).check();
   await l.getByRole("button", { name: "Save", exact: true }).click();

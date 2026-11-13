@@ -27,12 +27,11 @@ export const FOCUS_MERITS = [
   ...flaws(["Stolen Potential"]),
 ];
 
-/** Merits that make dots in a skill free (both spellings of Blood of the Tzimisce are in the data), Chosen of Cappadocius' specialisations, and the skill Skill Aptitude raises. */
+/** Merits that make dots in a skill free, Chosen of Cappadocius' specialisations, and the skill Skill Aptitude raises. */
 export const SKILL_MERITS = merits([
   "All the Best Toys",
   "Artist's Blessing",
   "Blood of the Tzimisce",
-  "Blood of Tzimisce",
   "Seasoned Traveler",
   "Chosen of Cappadocius",
   "Skill Aptitude",

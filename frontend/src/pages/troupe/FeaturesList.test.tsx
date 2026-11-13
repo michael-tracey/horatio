@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
 import type { TroupeOut } from "../../api/types";
 import { FeaturesList } from "./FeaturesList";
-import { features, type FeatureKey } from "./features";
+import { features, partHome, PART_HOMES, type FeatureKey } from "./features";
 
 afterEach(cleanup);
 
@@ -111,5 +111,25 @@ describe("the Features list (#783)", () => {
     expect(list.getByRole("link", { name: "Open Boons" })).toBeTruthy();
     expect(list.queryByRole("link", { name: "Settings for Boons" })).toBeNull();
     expect(list.getByRole("link", { name: "Settings for Feeding" })).toBeTruthy();
+  });
+
+  it("sends Quests' settings to the Quests tab while quests are on, and has none while they're off (#785)", () => {
+    expect(features(TROUPE).find((f) => f.key === "quests")?.settings).toBeUndefined();
+    const list = show({ ...TROUPE, quests_enabled: true }, true);
+    expect(list.getByRole("link", { name: "Settings for Quests" }).getAttribute("href")).toBe("/troupes/t1/quests#settings-quests");
+  });
+});
+
+describe("the parts moved out of House rules (#785)", () => {
+  it("each has a home on a tab, opened at its card", () => {
+    expect(PART_HOMES).toEqual({
+      locations: "locations",
+      quests: "quests",
+      retainers: "characters",
+      backstories: "approvals",
+      teachers: "approvals",
+      "free-changes": "approvals",
+    });
+    expect(partHome("teachers")).toBe("approvals#settings-teachers");
   });
 });

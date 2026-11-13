@@ -429,7 +429,7 @@ The troupe's house options for locations are under [Location rules](#location-ru
 
 ### Quests
 
-> **If your troupe uses this:** quests are off until a storyteller switches them on under [Quest settings](#quest-settings).
+> **If your troupe uses this:** quests are off until a storyteller switches them on in the [Features list](#features). How many each character may ask for is under [Quest settings](#quest-settings).
 
 **Downtimes › Quests** has two tabs:
 
@@ -493,7 +493,7 @@ Below it, nothing is changed: the Overview points to where things are.
 
 The **Features** list at the top has a row for each optional feature: Who's Who, News and announcements, the Play View, Boons, Blood bonds, Player Nominations, Remembrances, the court over time and the chronicle for players, Quests, Feeding, Golconda and Enlightened, and Items that expire. Each row says whether it's on, what it adds and which tabs appear with it, with **Open** to go to its tab once it's on, and **Settings** for the rest of its settings where it has more.
 
-Storytellers switch a feature on or off with the switch at the start of its row. This is the one place each is switched (Quests also under **House rules › Quests**). A feature switched off has no tab, and what was recorded with it is kept for when it's on again. Blood bonds switched on here are kept by staff; choose another way under its **Settings**. Feeding switched on here is feeding as the book has it, with its Vol. 2 options as they were. Who's Who and News are always on, and the Play View is switched tab by tab. Assistant storytellers see the list without the switches.
+Storytellers switch a feature on or off with the switch at the start of its row. This is the one place each is switched. A feature switched off has no tab, and what was recorded with it is kept for when it's on again. Blood bonds switched on here are kept by staff; choose another way under its **Settings**. Feeding switched on here is feeding as the book has it, with its Vol. 2 options as they were. Who's Who and News are always on, and the Play View is switched tab by tab. Assistant storytellers see the list without the switches.
 
 - **Player Nominations**: players praise each other's roleplaying in their downtimes, for you to review and publish each month (see [Player Nominations](#player-nominations)). Switched off, none of it shows anywhere; what was written and published is kept for when it's on again.
 - **Remembrances**: ask the troupe for memories of a character who leaves play (see [Remembrances](#remembrances)). Independent of Player Nominations. Switched off, none can be opened or written and nothing of them shows, except those already published: they stay on the characters' pages and the Who's Who, because they belong to the people remembered.
@@ -525,6 +525,8 @@ Every member reads the whole document on the troupe's **Setting** tab, beside **
 
 Who's Who, At game, Boons and Bonds each have **Settings** at the top of their tab, folded away until opened, for storytellers. A feature's **Settings** link in the Features list opens them.
 
+The house rules that set up a feature rather than a rule are folded the same way at the top of the tab where you meet that feature: Locations on **World › Locations**, quest requests on **Downtimes › Quests**, Retainers on **Characters › Characters**, and Backstories, Teachers and Free changes on **Characters › Approvals**, where what they ask for is reviewed. Storytellers change them there and assistant storytellers read them, as before under House rules; links to their old House rules addresses open them there (see [Settings moved from House rules](#settings-moved-from-house-rules)).
+
 - **Who's Who**: whether it also shows the negative status each character carries into a game here, and whether players see its sire lines.
 - **At game** (**Games › At game**), for the Play View and the game itself:
   - **Play View tabs**: a switch for each of the Play View's tabs (Sheet, Tracker, Pools, Status, Equipment, Throws, and Boons while the troupe keeps a boon ledger), all on to begin with. A tab switched off doesn't show on your players' Play Views; with the Tracker off, the strip of Blood, Willpower and health on the other tabs goes too. Staff always see every tab on NPCs. A visiting character keeps its home troupe's tabs. Switch every tab off if your players keep their sheets in Horatio but don't play from it: the card says what that does before it's saved. Its player characters then have no **Play**, check-in doesn't open the Play View, and phones don't keep the Play View for a game with no signal. Staff still run NPCs, the At game tab and scenes as before, with every tab on an NPC; a player character with no Play View can't be put in a scene.
@@ -533,6 +535,48 @@ Who's Who, At game, Boons and Bonds each have **Settings** at the top of their t
   - **Throw pictures**: your troupe's own rock, paper and scissors for the Throws tab, instead of Horatio's. Upload a picture for each (JPEG, PNG, WebP or HEIC, up to 10 MB); Horatio keeps it whole on a square, transparency and all, and strips anything else the file carries. Give the set a name if you like. The preview shows them as the Throws tab will, in Dark or Ultra goth, so you can check they read at arm's length. The set is offered to your players only once all three are there. Replace any one, or remove the set to go back to Horatio's. Each change goes in the troupe log.
 - **Boons** (see [Boons](#boons)): what players see of the ledger in the Play View's Boons tab, whether a boon's creditor's player may mark it settled, whether boons players report wait for review, how far the Harpy reaches into it, whether the Harpy may give others access as Lesser Harpies, and whether the ledger judges the Camarilla's ban on no boons registered.
 - **Bonds** (see [Blood bonds](#blood-bonds)): how Horatio keeps them: **Staff manages**, **Players report and staff approves** or **Players manage**.
+
+### Settings moved from House rules
+
+Each of these sits in the **Settings** at the top of its tab.
+
+#### Location rules
+
+**World › Locations** has the troupe's location rules in its Settings: the **House options** for the book's Stock Locations (each on unless you switch it off), what going over the **Control limit** does (**Refuse** or **Only note it**), the troupe's own location qualities, and **The catalogue** as played here.
+
+#### Quest settings
+
+> **If your troupe uses this:** quests are off by default.
+
+Quests are switched on in the [Features list](#features). While they're off, players see nothing of them. With them on, **Downtimes › Quests** has **Quest requests** in its Settings: choose **Change** to set the **Requests per character per cycle**.
+
+#### Retainers
+
+> **If your troupe uses this:** both rules are off unless switched on.
+
+**Characters › Characters** has **Retainers** in its Settings, which sets house rules the book doesn't have: **Upkeep**, in Blood or Willpower, each game or each month; and **Growth**, XP a month for each Retainer.
+
+#### Backstories
+
+**Characters › Approvals** has **Backstories** in its Settings, where backstories are approved. It sets **How backstories are written**:
+
+- **Free text only**, the default;
+- **Free text or the questions**: each player chooses;
+- **The questions only**: players answer the troupe's questions, then can edit what they build.
+
+Tick **Need an approved backstory before accepting a character** to make approval a step in joining (it is on for a new troupe). Under **Questions**, make question sets (such as a Short Form) and their questions: a long or short answer, a year, a choice, a scale between two poles, or a heading only, each shown always or only by social age, sect or a trait on the sheet.
+
+#### Free changes
+
+> **If your troupe uses this:** a new troupe has no free changes.
+
+**Free changes for new characters**, in the Settings of **Characters › Approvals** where each change is reviewed, lets a player lower or remove traits for their full XP for a while after the troupe accepts the character, as during creation. Each change is reviewed on the Approvals tab. Choose **No free changes**, **By date** (a number of days from acceptance) or **By games played** (until the character has attended a number of the troupe's games). List under **Never refunded** the traits that keep the normal rules.
+
+#### Teachers
+
+> **If your troupe uses this:** by default only discipline dots need a teacher.
+
+**Teachers**, in the Settings of **Characters › Approvals**, adds kinds of trait that need a teacher here. A rule names which traits, for whom (everyone or only characters who meet a condition) and when (after creation only, or always), what the teacher must hold, and what learning takes. **Start from an example** fills one in. Removing a rule stops it applying at once; purchases already waiting keep their teacher.
 
 ### Who may join
 
@@ -577,9 +621,9 @@ Switching feeding off only hides it. What was recorded is kept and comes back if
 
 ## Customise: house rules
 
-**Customise › House rules** holds the troupe's changes to the rule set. It opens on **As players read it**: the troupe's **House rules** tab exactly as its players see it, everything the troupe plays differently from the book in one page. After it come the parts, one page each, where storytellers change the rules and assistant storytellers read them: Checks, Costs, Starting points, Downtime actions, Downtime keywords, Languages, House merits and flaws, Written rules, Book traits, Locations, Quests, Retainers, Backstories, Free changes and Teachers. A house rule applies to characters whose home troupe this is, and those being built for it.
+**Customise › House rules** holds the troupe's changes to the rule set. It opens on **As players read it**: the troupe's **House rules** tab exactly as its players see it, everything the troupe plays differently from the book in one page. After it come the parts, one page each, where storytellers change the rules and assistant storytellers read them: Checks, Costs, Starting points, Downtime actions, Downtime keywords, Languages, House merits and flaws, Written rules and Book traits. Locations, Quests, Retainers, Backstories, Free changes and Teachers set up a feature rather than a rule, so they're in the Settings at the top of that feature's tab (see [Settings moved from House rules](#settings-moved-from-house-rules)). A house rule applies to characters whose home troupe this is, and those being built for it.
 
-The tab was **Customise › Rules** before; links to its old addresses open the same part of **House rules**.
+The tab was **Customise › Rules** before; links to its old addresses open the same part of **House rules**, or the tab a moved part now sits on.
 
 Some pages (Costs, Starting points, Downtime actions, Book traits) have a picker for the splat they apply to, such as Vampire or Ghoul.
 
@@ -705,44 +749,6 @@ Choose **Add a written rule**, then give it a **Title**, a **Section** (such as 
 
 **Changed in this troupe** lists every book trait you have changed.
 
-### Location rules
-
-**Locations** (under House rules) holds the troupe's **House options** for the book's Stock Locations (each on unless you switch it off), what going over the **Control limit** does (**Refuse** or **Only note it**), the troupe's own location qualities, and **The catalogue** as played here.
-
-### Quest settings
-
-> **If your troupe uses this:** quests are off by default.
-
-Under **Quests**, tick **Run quests in this troupe** and set the **Requests per character per cycle**. While quests are off, players see nothing of them.
-
-### Retainers
-
-> **If your troupe uses this:** both rules are off unless switched on.
-
-**Retainers** sets house rules the book doesn't have: **Upkeep**, in Blood or Willpower, each game or each month; and **Growth**, XP a month for each Retainer.
-
-### Backstories
-
-**Backstories** sets **How backstories are written**:
-
-- **Free text only**, the default;
-- **Free text or the questions**: each player chooses;
-- **The questions only**: players answer the troupe's questions, then can edit what they build.
-
-Tick **Need an approved backstory before accepting a character** to make approval a step in joining (it is on for a new troupe). Under **Questions**, make question sets (such as a Short Form) and their questions: a long or short answer, a year, a choice, a scale between two poles, or a heading only, each shown always or only by social age, sect or a trait on the sheet.
-
-### Free changes
-
-> **If your troupe uses this:** a new troupe has no free changes.
-
-**Free changes for new characters** lets a player lower or remove traits for their full XP for a while after the troupe accepts the character, as during creation. Each change is reviewed on the Approvals tab. Choose **No free changes**, **By date** (a number of days from acceptance) or **By games played** (until the character has attended a number of the troupe's games). List under **Never refunded** the traits that keep the normal rules.
-
-### Teachers
-
-> **If your troupe uses this:** by default only discipline dots need a teacher.
-
-**Teachers** adds kinds of trait that need a teacher here. A rule names which traits, for whom (everyone or only characters who meet a condition) and when (after creation only, or always), what the teacher must hold, and what learning takes. **Start from an example** fills one in. Removing a rule stops it applying at once; purchases already waiting keep their teacher.
-
 ### Specialisations
 
 **Customise › Specialisations** holds the troupe's own lists of specialisations, one kind at a time: the areas its influences cover, the notable people Contacts can be, and so on. Where a kind has a list, characters choose from it. Choose **Make our own list** (or **Edit our list**), one a line, then **Save our list**.
@@ -841,7 +847,7 @@ Never carried:
 - connectors (Discord channels, tokens);
 - the troupe's titles and seated clans, its own equipment templates, house location qualities and backstory question sets.
 
-If the backstory settings coming in need questions this troupe doesn't have, the review says so: add them under **House rules › Backstories**.
+If the backstory settings coming in need questions this troupe doesn't have, the review says so: add them in the **Settings** at the top of **Characters › Approvals** (see [Backstories](#backstories)).
 
 ## Approvals
 
