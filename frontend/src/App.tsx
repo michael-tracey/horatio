@@ -49,6 +49,7 @@ const BuildPrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ def
 const ChartKitPage = lazy(() => import("./pages/charts/ChartKitPage").then((m) => ({ default: m.ChartKitPage })));
 const WhosWhoPrintPage = lazy(() => import("./pages/WhosWhoPrintPage").then((m) => ({ default: m.WhosWhoPrintPage })));
 const BoonAuditPrintPage = lazy(() => import("./pages/BoonAuditPrintPage").then((m) => ({ default: m.BoonAuditPrintPage })));
+const SettingPrintPage = lazy(() => import("./pages/SettingPrintPage").then((m) => ({ default: m.SettingPrintPage })));
 
 function ToScenes() {
   const { troupeId = "" } = useParams();
@@ -94,6 +95,7 @@ export const routes = createRoutesFromElements(
       <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
       <Route path="/print/troupes/:troupeId/whos-who" element={<ForTroupe><WhosWhoPrintPage /></ForTroupe>} />
       <Route path="/print/boon-audits/:auditId" element={<BoonAuditPrintPage />} />
+      <Route path="/print/setting/:troupeId" element={<ForTroupe><SettingPrintPage /></ForTroupe>} />
       <Route path="/print/characters/:characterId/badge" element={<ForCharacter><CharacterBadgePage /></ForCharacter>} />
       {/* Found by tapping the clan symbol seven times (#537): no link leads here for a player. */}
       <Route path="/print/characters/:characterId/jyhad" element={<ForCharacter><JyhadCardPage /></ForCharacter>} />

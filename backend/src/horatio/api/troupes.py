@@ -58,10 +58,15 @@ class TroupeOut(BaseModel):
     session_xp: int
     downtime_xp: int
     # The XP a character had when the chronicle began, and the troupe's XP floor
-    # and ceiling now (horatio.xp_range): a new character built for it starts at the floor.
+    # and ceiling now (horatio.xp_range).
     starting_xp: int
     xp_floor: int
     xp_ceiling: int
+    # The optional New Character Incentive (MET: VTM p. 349), and what a new character
+    # built for it starts with: the floor, or with the incentive on, the starting XP and
+    # a quarter of the XP a character could have earned here (horatio.xp_range).
+    new_character_incentive: bool = False
+    new_character_xp: int = 0
     # House rule: the blood characters start a game with; None for full.
     starting_blood: int | None
     # House rule: how many days back influence lookups look, from their cycle's close.
@@ -183,6 +188,7 @@ class TroupeChanges(BaseModel):
     session_xp: int | None = Field(default=None, ge=0, le=100)
     downtime_xp: int | None = Field(default=None, ge=0, le=100)
     starting_xp: int | None = Field(default=None, ge=0, le=10000)
+    new_character_incentive: bool | None = None
     status_by: Literal["players", "staff"] | None = None
     titles_by: Literal["players", "staff"] | None = None
     status_at_checkin: bool | None = None
@@ -366,6 +372,8 @@ def one_out(
         starting_xp=troupe.starting_xp,
         xp_floor=figures.floor,
         xp_ceiling=figures.ceiling,
+        new_character_incentive=troupe.new_character_incentive,
+        new_character_xp=xp_range.new_character_xp(troupe, figures),
         starting_blood=troupe.starting_blood,
         influence_lookback_days=troupe.influence_lookback_days,
         diablerie_flaws=troupe.diablerie_flaws,
@@ -652,6 +660,17 @@ def change_troupe(
         audit.record(
             db, user, "troupe.starting_xp", troupe_id=troupe.id, starting_xp=troupe.starting_xp
         )
+    if body.new_character_incentive is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.new_character_incentive != troupe.new_character_incentive:
+            troupe.new_character_incentive = body.new_character_incentive
+            audit.record(
+                db,
+                user,
+                "troupe.new_character_incentive",
+                troupe_id=troupe.id,
+                state="switched on" if body.new_character_incentive else "switched off",
+            )
     db.commit()
     return troupe_out(db, user, troupe)
 

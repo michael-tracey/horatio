@@ -12784,6 +12784,21 @@
       },
       "ClanRarityIn": {
         "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
           "rarities": {
             "additionalProperties": {
               "enum": [
@@ -12863,6 +12878,11 @@
               }
             ],
             "title": "House"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
           }
         },
         "required": [
@@ -21650,6 +21670,79 @@
         "title": "GatheredOut",
         "type": "object"
       },
+      "GeneratedOut": {
+        "properties": {
+          "clan_rarity": {
+            "items": {
+              "$ref": "#/components/schemas/RarityChangeOut"
+            },
+            "title": "Clan Rarity",
+            "type": "array"
+          },
+          "costs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Costs",
+            "type": "array"
+          },
+          "graduated": {
+            "title": "Graduated",
+            "type": "boolean"
+          },
+          "incentive": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IncentiveOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "initial_xp": {
+            "title": "Initial Xp",
+            "type": "integer"
+          },
+          "mechanics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Mechanics",
+            "type": "array"
+          },
+          "sects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sects",
+            "type": "array"
+          },
+          "setting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setting"
+          }
+        },
+        "required": [
+          "sects",
+          "setting",
+          "clan_rarity",
+          "costs",
+          "initial_xp",
+          "incentive",
+          "graduated",
+          "mechanics"
+        ],
+        "title": "GeneratedOut",
+        "type": "object"
+      },
       "GiftIn": {
         "properties": {
           "amount": {
@@ -24117,6 +24210,35 @@
           "running"
         ],
         "title": "ImportSummaryOut",
+        "type": "object"
+      },
+      "IncentiveOut": {
+        "description": "The New Character Incentive in figures (p. 349): the starting XP, the most XP a\ncharacter could have earned here, a quarter of it, and the two together.",
+        "properties": {
+          "base": {
+            "title": "Base",
+            "type": "integer"
+          },
+          "bonus": {
+            "title": "Bonus",
+            "type": "integer"
+          },
+          "earned": {
+            "title": "Earned",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "base",
+          "earned",
+          "bonus",
+          "total"
+        ],
+        "title": "IncentiveOut",
         "type": "object"
       },
       "InfluenceActionOut": {
@@ -40126,6 +40248,42 @@
         "title": "RareDisciplinesIn",
         "type": "object"
       },
+      "RarityChangeOut": {
+        "description": "A clan the troupe rates itself: its rarity here, the book's in the troupe's\nsetting (None when each character goes by its own sect's), and why.",
+        "properties": {
+          "book": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "rarity": {
+            "title": "Rarity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clan",
+          "rarity",
+          "book",
+          "note"
+        ],
+        "title": "RarityChangeOut",
+        "type": "object"
+      },
       "RarityOut": {
         "description": "How rare a clan is: in the troupe's setting, or in each sect's as the book has it.\nIts bloodlines are as rare as it.",
         "properties": {
@@ -44642,9 +44800,17 @@
             "title": "Can Edit",
             "type": "boolean"
           },
+          "can_publish": {
+            "default": false,
+            "title": "Can Publish",
+            "type": "boolean"
+          },
           "chronicle": {
             "title": "Chronicle",
             "type": "string"
+          },
+          "generated": {
+            "$ref": "#/components/schemas/GeneratedOut"
           },
           "locale": {
             "title": "Locale",
@@ -44668,6 +44834,10 @@
             "title": "Power",
             "type": "string"
           },
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          },
           "subtitle": {
             "title": "Subtitle",
             "type": "string"
@@ -44682,9 +44852,14 @@
             },
             "title": "Themes",
             "type": "array"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
           }
         },
         "required": [
+          "troupe",
           "chronicle",
           "locale",
           "subtitle",
@@ -44694,6 +44869,8 @@
           "themes",
           "moods",
           "notes",
+          "generated",
+          "public",
           "can_edit"
         ],
         "title": "SettingOut",
@@ -44735,6 +44912,19 @@
           "description"
         ],
         "title": "SettingPresetOut",
+        "type": "object"
+      },
+      "SettingPublicIn": {
+        "properties": {
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "public"
+        ],
+        "title": "SettingPublicIn",
         "type": "object"
       },
       "SettingTextIn": {
@@ -51788,6 +51978,17 @@
             ],
             "title": "Name"
           },
+          "new_character_incentive": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Character Incentive"
+          },
           "play_tabs_off": {
             "anyOf": [
               {
@@ -52575,6 +52776,16 @@
             "title": "Name",
             "type": "string"
           },
+          "new_character_incentive": {
+            "default": false,
+            "title": "New Character Incentive",
+            "type": "boolean"
+          },
+          "new_character_xp": {
+            "default": 0,
+            "title": "New Character Xp",
+            "type": "integer"
+          },
           "new_players": {
             "anyOf": [
               {
@@ -53060,6 +53271,11 @@
           },
           "setting": {
             "$ref": "#/components/schemas/Setting"
+          },
+          "setting_document": {
+            "default": false,
+            "title": "Setting Document",
+            "type": "boolean"
           },
           "venue": {
             "$ref": "#/components/schemas/VenueOut"
@@ -91759,7 +91975,7 @@
     },
     "/api/troupes/{troupe_id}/setting": {
       "get": {
-        "description": "The troupe's Setting Style Document as its staff write it. Anyone signed in\nmay read it: it is the chronicle's handout for players.",
+        "description": "The troupe's Setting Style Document: what its staff write, and what its own\nsettings give. Anyone signed in may read it, as it is the chronicle's handout for\nplayers; anyone at all when its profile is public and shows it.",
         "operationId": "read_setting_api_troupes__troupe_id__setting_get",
         "parameters": [
           {
@@ -92071,6 +92287,60 @@
           }
         },
         "summary": "Order Setting Entries",
+        "tags": [
+          "setting style"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setting/public": {
+      "put": {
+        "description": "Show the document on the troupe's profile too, or not: off unless its\nstorytellers switch it on. A public profile shows it to anyone at all.",
+        "operationId": "show_setting_on_profile_api_troupes__troupe_id__setting_public_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingPublicIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Show Setting On Profile",
         "tags": [
           "setting style"
         ]

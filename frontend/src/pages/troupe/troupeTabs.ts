@@ -38,6 +38,8 @@ export function troupeTabGroups(t: TroupeTabsTroupe, can: ReturnType<typeof abil
       tabs: [
         { to: base, label: "About", end: true },
         { to: `${base}/profile`, label: "Profile" },
+        // The Setting Style Document, for everyone to read before they build (#771).
+        { to: `${base}/setting`, label: "Setting" },
         ...(t.whos_who ? [{ to: `${base}/whos-who`, label: "Who's Who" }] : []),
         ...(t.whos_who && live ? [{ to: `${base}/news`, label: "News", count: counts.newsUnread ?? 0, countLabel: "unread" }] : []),
         ...(t.whos_who && live ? [{ to: `${base}/announcements`, label: "Announcements", count: counts.announcementsUnread ?? 0, countLabel: "unread" }] : []),

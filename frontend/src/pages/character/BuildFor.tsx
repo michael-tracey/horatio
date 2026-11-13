@@ -19,7 +19,7 @@ export function BuildFor({
   value: string | null;
   onChange: (troupeId: string | null) => void;
   disabled?: boolean;
-  /** Say what XP a new character starts with: the troupe's XP floor, or the rule set's. */
+  /** Say what XP a new character starts with: the troupe's XP floor (or its New Character Incentive), or the rule set's. */
   newCharacter?: boolean;
   /** Offer only the troupes that take characters of this splat (a ghoul's). */
   splat?: string;
@@ -27,7 +27,11 @@ export function BuildFor({
   const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
   const troupe = troupes.data?.find((t) => t.id === value);
   const offered = troupes.data?.filter((t) => !splat || t.id === value || t.allowed_splats.includes(splat));
-  const start = !newCharacter ? "" : troupe ? ` It starts with ${troupe.xp_floor} XP, ${troupe.name}'s XP floor.` : " It starts with 30 XP.";
+  const start = !newCharacter
+    ? ""
+    : troupe
+      ? ` It starts with ${troupe.new_character_xp} XP, ${troupe.new_character_incentive ? `${troupe.name}'s New Character Incentive` : `${troupe.name}'s XP floor`}.`
+      : " It starts with 30 XP.";
   // Left on the book's rules while there are troupes: say why choosing one matters.
   const why =
     value === null && !disabled && offered?.length

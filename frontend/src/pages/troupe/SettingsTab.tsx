@@ -10,6 +10,7 @@ import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
 import { FeedingTerritories } from "./FeedingTerritories";
 import { GameXpCard } from "./GameXpSettings";
+import { NewCharacterIncentive } from "./NewCharacterIncentive";
 import { SettingStyle } from "./SettingStyle";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { FeaturesList } from "./FeaturesList";
@@ -57,6 +58,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
           }
         />
         <GameXpCard troupeId={troupe.id} canEdit={canEdit} sessionXp={troupe.session_xp} />
+        <NewCharacterIncentive troupeId={troupe.id} canEdit={canEdit} />
       </Group>
       <Group title="Status and titles">
         <StatusSetting troupe={troupe} canEdit={canEdit} />

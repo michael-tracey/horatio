@@ -11,6 +11,7 @@ import { BookTraitChanges } from "./BookTraitChanges";
 import { writtenStrength } from "./checkStrength";
 import { pageText } from "./bookPage";
 import { GameXpRules } from "./GameXpSettings";
+import { startingText } from "./NewCharacterIncentive";
 import { Chart } from "./LanguagesSection";
 import { WrittenRulesList } from "./WrittenRulesList";
 
@@ -52,7 +53,7 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
   if (rules.error) return <ErrorText error={rules.error} />;
   const r = rules.data;
   const words = written.data?.rules ?? [];
-  const xp = troupe.xp_floor !== BOOK_XP;
+  const xp = troupe.new_character_xp !== BOOK_XP;
   const bySplat = (pick: (s: SplatHouseRulesOut) => unknown[]) => r.splats.filter((s) => pick(s).length > 0);
   const costs = bySplat((s) => s.costs);
   const starting = bySplat((s) => s.starting);
@@ -117,7 +118,7 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
         <Card title="Starting points">
           {xp && (
             <ul className="divide-y divide-ash">
-              <Row subject="Experience" now={`${troupe.xp_floor} XP, the troupe's XP floor`} book={`${BOOK_XP} XP`} />
+              <Row subject="Experience" now={startingText(troupe)} book={`${BOOK_XP} XP`} />
             </ul>
           )}
           {starting.map((s) => (
