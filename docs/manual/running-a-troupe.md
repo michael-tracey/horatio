@@ -647,7 +647,7 @@ The **⋯** at the end of a row holds **Change…**, **Archive** (or **Bring bac
 
 ### Written rules
 
-**Written rules** are rules in words alone, which players read on the House rules tab, by section, and in the rules browser.
+**Written rules** are rules in words alone, which players read on the House rules tab, by section, and in the **Rulebook**.
 
 Choose **Add a written rule**, then give it a **Title**, a **Section** (such as Disciplines or FAQ), and the rule in Markdown. Link it to a trait with **About a trait** and **Which one**, and to a **Book page**, if you like. Move rules up and down within a section. A tick chooses whether the troupe's profile shows them too, for people thinking of joining.
 

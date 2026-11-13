@@ -24,7 +24,7 @@ export async function undoInHeader(page: Page, tap: string | RegExp) {
 /**
  * The site's main navigation in the top bar (#746): the bar itself on a wide screen;
  * below 1024px, behind the Menu button, which this opens if it isn't open already.
- * Characters, Troupes, Rules reference, Help, Custodian, the account link and Sign
+ * Characters, Troupes, Rulebook, Help, Custodian, the account link and Sign
  * out are all in it.
  */
 export async function topBar(page: Page): Promise<Locator> {
