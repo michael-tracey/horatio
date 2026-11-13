@@ -788,7 +788,7 @@ export function BoonStatisticsPage({ troupeId, harpy = false }: { troupeId: stri
       <Card title="Boon statistics">
         <p className="mb-3 text-sm text-mist">
           How the boon ledger has moved over time, who owes whom, and how debt runs between clans and sects ({BOON_PAGE}). Weights are the troupe&apos;s, as on{" "}
-          {harpy ? "the standings" : <Link to="../boon-standings">Boon standings</Link>}; every chart can be read as a table.
+          {harpy ? "the standings" : <Link to={`/troupes/${troupeId}/boons/standings`}>Standings</Link>}; every chart can be read as a table.
           {harpy && " Who has left is shown as the court knows it."}
         </p>
         <fieldset className="flex flex-wrap items-center gap-2 text-sm">
