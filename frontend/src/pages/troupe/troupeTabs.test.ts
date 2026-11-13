@@ -75,6 +75,15 @@ describe("troupeTabGroups (#779)", () => {
     }
   });
 
+  it("keeps a narrator's My work open inside a cycle, where their work opens (#789)", () => {
+    const work = (role: Parameters<typeof abilities>[0]) =>
+      troupeTabGroups(troupe, abilities(role, false))
+        .find((g) => g.label === "Downtimes")
+        ?.tabs.find((tab) => tab.label === "My work");
+    expect(work("narrator")?.also).toBe("/troupes/t1/downtimes");
+    expect(work("storyteller")?.also).toBeUndefined();
+  });
+
   it("opens Characters on the roster, and Scenes on the scenes page", () => {
     const groups = troupeTabGroups(troupe, abilities("storyteller", false));
     expect(groups.find((g) => g.label === "Characters")?.to).toBe("/troupes/t1/characters");
