@@ -10,6 +10,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } 
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
+import { cyclePath } from "../troupe/cycles";
 import { LogInfluenceButton } from "../troupe/LogInfluence";
 import { blocksText, filterHistory, historySource, monthText, NO_HISTORY_FILTERS, thisMonth, type HistoryFilters } from "./influenceHistory";
 
@@ -144,7 +145,7 @@ function HistoryRow({
         ? `/play/characters/${characterId}`
         : null
       : entry.cycle_id && staffHere
-        ? `/cycles/${entry.cycle_id}`
+        ? cyclePath(entry.troupe_id, entry.cycle_id)
         : entry.source === "downtime" && mine
           ? `/characters/${characterId}/results`
           : null;

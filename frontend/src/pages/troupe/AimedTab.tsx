@@ -5,6 +5,7 @@ import type { AimedOut, CycleOut, TargetOut } from "../../api/types";
 import { Badge, Empty, ErrorText, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { COUNTER_NAMES, type Counter } from "../character/aim";
+import { cyclePath } from "./cycles";
 import { STATUS_NAMES } from "./responsesList";
 
 /**
@@ -33,7 +34,7 @@ export function AimedTab({ cycle }: { cycle: CycleOut }) {
           </h2>
           <ul className="flex flex-col gap-2">
             {target.actions.map((a) => (
-              <AimedAction key={a.response_id} cycleId={cycle.id} target={target} action={a} />
+              <AimedAction key={a.response_id} cycle={cycle} target={target} action={a} />
             ))}
           </ul>
         </section>
@@ -42,7 +43,7 @@ export function AimedTab({ cycle }: { cycle: CycleOut }) {
   );
 }
 
-function AimedAction({ cycleId, target, action: a }: { cycleId: string; target: TargetOut; action: AimedOut }) {
+function AimedAction({ cycle, target, action: a }: { cycle: CycleOut; target: TargetOut; action: AimedOut }) {
   const pair = useAction((responseId: string) =>
     unwrap(api.PUT("/api/responses/{response_id}/pairing", { params: { path: { response_id: a.response_id } }, body: { response_id: responseId || null } })),
   );
@@ -54,7 +55,7 @@ function AimedAction({ cycleId, target, action: a }: { cycleId: string; target: 
           <strong className="text-parchment">{a.character_name}</strong> · {a.question}
           {counter && <Badge tone="gold" className="ml-2">{counter}</Badge>}
         </span>
-        <Link to={`/cycles/${cycleId}/responses#response-${a.response_id}`} className="text-gold underline hover:text-parchment">
+        <Link to={`${cyclePath(cycle.troupe_id, cycle.id, "responses")}#response-${a.response_id}`} className="text-gold underline hover:text-parchment">
           Response ({STATUS_NAMES[a.status as keyof typeof STATUS_NAMES]?.toLowerCase() ?? a.status})
         </Link>
       </div>

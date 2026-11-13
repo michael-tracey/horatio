@@ -9,11 +9,11 @@ function Where() {
   return <p data-testid="where">{useLocation().pathname}</p>;
 }
 
-function setup({ isCustodian = false, at = "/characters", inCycle = false } = {}) {
+function setup({ isCustodian = false, at = "/characters" } = {}) {
   const onSignOut = vi.fn();
   render(
     <MemoryRouter initialEntries={[at]}>
-      <SiteMenu name="Ines Ferreira-Valadares" isCustodian={isCustodian} inCycle={inCycle} onSignOut={onSignOut} />
+      <SiteMenu name="Ines Ferreira-Valadares" isCustodian={isCustodian} onSignOut={onSignOut} />
       <button>Elsewhere</button>
       <Routes>
         <Route path="*" element={<Where />} />
@@ -50,8 +50,8 @@ describe("SiteMenu", () => {
     expect(screen.getByRole("link", { name: /Your account/ }).textContent).toContain("(custodian)");
   });
 
-  it("marks the page you are on, and Troupes within a downtime cycle", () => {
-    const { button } = setup({ at: "/cycles/abc", inCycle: true });
+  it("marks the page you are on, and Troupes within a troupe's downtime cycle", () => {
+    const { button } = setup({ at: "/troupes/t1/downtimes/abc" });
     fireEvent.click(button);
     expect(screen.getByRole("link", { name: "Troupes" }).getAttribute("class")).toContain("text-parchment");
     expect(screen.getByRole("link", { name: "Characters" }).getAttribute("class")).not.toContain("bg-ash/40 text-parchment");

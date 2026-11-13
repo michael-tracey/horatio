@@ -36,6 +36,7 @@ const CHECKED: Record<string, number> = {
   "pages/troupe/QuestsTab.tsx": 1, // a menu's options
   "pages/troupe/ResponsesTab.tsx": 1, // menus' options
   "pages/troupe/RosterTab.tsx": 1, // only once the search has answered
+  "pages/troupe/SettingStyle.tsx": 1, // a menu's options
   "pages/troupe/SettingsTab.tsx": 1, // isPending beside it
   "pages/troupe/ShareSettingsTab.tsx": 1, // shown when there are some
   "pages/troupe/TitlesTab.tsx": 1, // isPending first

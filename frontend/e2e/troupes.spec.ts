@@ -505,6 +505,83 @@ test("a troupe's written rules: the lead adds and orders them, and a player read
   await expect(onProfile.getByTestId("written-rule")).toHaveCount(3);
 });
 
+test("staff write the setting: a theme from the book, a mood of their own, put in order by dragging, and a note (#770)", async ({ browser }) => {
+  const custodian = await person(browser, "motif-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "motif-lead");
+  const assistant = await person(browser, "motif-assistant");
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Court of Motifs ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const staffed = await lead.page.request.put(`/api/troupes/${troupeId}/staff`, {
+    headers: { "X-Horatio": "1" },
+    data: { handle: assistant.handle, role: "assistant_storyteller" },
+  });
+  expect(staffed.status(), await staffed.text()).toBe(200);
+
+  // The lead starts a theme from the book's Betrayal, and changes its questions.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const setting = l.getByRole("group", { name: "The setting" });
+  const card = (title: string) => setting.locator("section").filter({ has: l.getByRole("heading", { name: title, exact: true }) });
+  await card("Themes").getByRole("button", { name: "Add a theme" }).click();
+  const theme = l.getByRole("dialog", { name: "Add a theme" });
+  await theme.getByLabel("Start from").selectOption({ label: "Betrayal (p. 325)" });
+  await expect(theme.getByLabel("Name")).toHaveValue("Betrayal");
+  await expect(theme.getByLabel("Description, in Markdown")).toHaveValue(/betray/);
+  await theme.getByLabel("Description, in Markdown").fill("Who will sell out the **Prince**?");
+  await theme.getByRole("button", { name: "Add it" }).click();
+  await expect(theme).toBeHidden();
+  const betrayal = card("Themes").getByRole("button", { name: "Betrayal", exact: true });
+  await betrayal.click();
+  await expect(betrayal).toHaveAttribute("aria-expanded", "true");
+  await expect(card("Themes").getByRole("region", { name: "Betrayal" }).locator("strong")).toHaveText("Prince");
+  await expect(card("Themes").getByRole("region", { name: "Betrayal" })).toContainText("From the book's sample, MET: VTM p. 325");
+
+  // A mood of the troupe's own, then the book's Brooding, which is offered once.
+  const addMood = async (from: string | null, name: string, description: string) => {
+    await card("Moods").getByRole("button", { name: "Add a mood" }).click();
+    const dialog = l.getByRole("dialog", { name: "Add a mood" });
+    if (from) await dialog.getByLabel("Start from").selectOption({ label: from });
+    await dialog.getByLabel("Name").fill(name);
+    await dialog.getByLabel("Description, in Markdown").fill(description);
+    await dialog.getByRole("button", { name: "Add it" }).click();
+    await expect(dialog).toBeHidden();
+  };
+  await addMood(null, "Rain-soaked", "Grey, cold and *close*.");
+  await addMood("Brooding (p. 326)", "Brooding", "Something is coming.");
+  const moods = card("Moods").getByRole("list", { name: "Moods" }).getByRole("button");
+  await expect(moods).toHaveText(["Rain-soaked", "Brooding"]);
+
+  // Brooding dragged onto Rain-soaked goes first; the buttons move it back.
+  await card("Moods").getByRole("listitem").filter({ hasText: "Brooding" }).dragTo(card("Moods").getByRole("listitem").filter({ hasText: "Rain-soaked" }));
+  await expect(moods).toHaveText(["Brooding", "Rain-soaked"]);
+  await moods.filter({ hasText: "Brooding" }).click();
+  await card("Moods").getByRole("button", { name: "Move Brooding later" }).click();
+  await expect(moods).toHaveText(["Rain-soaked", "Brooding"]);
+  await l.reload();
+  await expect(moods).toHaveText(["Rain-soaked", "Brooding"]);
+
+  // An assistant storyteller writes a storyteller note and the scope.
+  const a = assistant.page;
+  await a.goto(`/troupes/${troupeId}/settings`);
+  const theirs = a.getByRole("group", { name: "The setting" }).locator("section");
+  const notes = theirs.filter({ has: a.getByRole("heading", { name: "Storyteller notes", exact: true }) });
+  await notes.getByRole("button", { name: "Add a note" }).click();
+  const note = a.getByRole("dialog", { name: "Add a note" });
+  await note.getByLabel("The note, in Markdown").fill("Characters are no older than ten years past the Embrace.");
+  await note.getByRole("button", { name: "Add it" }).click();
+  await expect(notes.getByRole("list", { name: "Storyteller notes" })).toContainText("ten years past the Embrace");
+  const scope = theirs.filter({ has: a.getByRole("heading", { name: "Scope", exact: true }) });
+  await scope.getByLabel("Power").fill("Neonates and ancillae.");
+  await scope.getByRole("button", { name: "Save scope" }).click();
+  await expect(scope.getByRole("button", { name: "Save scope" })).toBeDisabled();
+  await l.reload();
+  await expect(card("Scope").getByLabel("Power")).toHaveValue("Neonates and ancillae.");
+  await a.screenshot(shots("setting-style"));
+});
+
 test("a player looks up the rules: a power by name and by its summary, then as played in a troupe, a house price shown and a banned merit hidden (#422)", async ({ browser }) => {
   const custodian = await person(browser, "rulebook-custodian");
   makeCustodian(custodian.email);
@@ -1844,7 +1921,6 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
   await l.getByLabel("Accessibility").fill("Step-free access and a quiet room.");
   await l.getByLabel("Chronicle").fill("Leeds by Night");
   await l.getByLabel("Era").fill("Modern nights");
-  await l.getByLabel("Tone").fill("Slow-burning political horror.");
   await l.getByLabel("Taking new players?").selectOption({ label: "Welcoming new players" });
   await l.getByLabel("Contact for new players").selectOption({ label: `profile-lead (@${lead.handle})` });
   await l.getByLabel("Minimum age").fill("18");

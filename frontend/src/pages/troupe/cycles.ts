@@ -12,6 +12,12 @@ export const STANDING_NAMES: Record<Standing, string> = { submitted: "Submitted"
 
 const CYCLE_STATUS: Record<string, string> = { draft: "Draft", open: "Open", closed: "Closed", complete: "Complete" };
 
+/** Where a cycle's pages are: under its troupe's Downtimes (#776), with `page`
+ * one of its tabs ("responses") when given. */
+export function cyclePath(troupeId: string, cycleId: string, page = ""): string {
+  return `/troupes/${troupeId}/downtimes/${cycleId}${page ? `/${page}` : ""}`;
+}
+
 /** A cycle's status as a badge says it: "Open". */
 export function cycleStatus(status: string): string {
   return CYCLE_STATUS[status] ?? status;

@@ -21,6 +21,7 @@ import { PlayTabsSetting } from "./PlayTabsSetting";
 import { ThrowImagesSetting } from "./ThrowImagesSetting";
 import { NominationsSetting } from "../nominations/NominationsSetting";
 import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
+import { SettingStyle } from "./SettingStyle";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { FeaturesList } from "./FeaturesList";
 import { settingsAnchor, type FeatureKey } from "./features";
@@ -32,20 +33,23 @@ import { useCatalogue } from "../../catalogue";
 
 /**
  * The settings for the whole troupe, set once a season or so, by what they are
- * for: who may join, XP, status and titles, what happens at game, downtimes,
- * feeding, and what a clan is called, under the Features list: every optional feature, on or
- * off (#783). Its storytellers change them; the troupe's other running staff read them. The
- * troupe's rules for traits are on the Rules tab beside it.
+ * for: the setting players read (#770), who may join, XP, status and titles, what happens at game,
+ * downtimes, feeding, and what a clan is called, under the Features list: every optional feature, on or
+ * off (#783). Its storytellers change them; the troupe's other running staff read them (assistant
+ * storytellers write the setting too). The troupe's rules for traits are on the Rules tab beside it.
  */
 export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const base = `/troupes/${troupe.id}`;
   return (
     <div className="flex flex-col gap-8">
       <p className="text-sm text-mist">
-        {canEdit ? "Settings for the whole troupe. Each change takes effect straight away." : "Settings for the whole troupe. Its storytellers change them."}{" "}
+        {canEdit ? "Settings for the whole troupe. Each change takes effect straight away." : `Settings for the whole troupe. Its storytellers change them${troupe.my_role === "assistant_storyteller" && !troupe.archived ? "; you write the setting with them." : "."}`}{" "}
         What traits cost and what new characters start with are under Rules, beside this.
       </p>
       <FeaturesList troupe={troupe} canEdit={canEdit} />
+      <Group title="The setting">
+        <SettingStyle troupeId={troupe.id} />
+      </Group>
       <Group title="Who may join">
         <SplatsCard troupe={troupe} canEdit={canEdit} />
         <SectsCard troupe={troupe} canEdit={canEdit} />

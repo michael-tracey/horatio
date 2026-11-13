@@ -296,7 +296,7 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   });
   await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
   const l = lead.page;
-  await l.goto(`/cycles/${cycle.id}/form`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/form`);
   const form = l.locator("section").filter({ has: l.getByRole("heading", { name: "Quest action" }) });
   await expect(form.getByLabel("Spends")).toHaveValue("general");
 
@@ -325,7 +325,7 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   await send(lead.page, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: false });
 
   // The lead answers beside the quest: one success, and both responses show it.
-  await l.goto(`/cycles/${cycle.id}/responses`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/responses`);
   const forAgnes = l.getByRole("region", { name: "Quest: The Drowned Archive" }).first();
   await expect(forAgnes.getByText("Complex 2 · Downtime only · Scenario 1 of 2")).toBeVisible();
   await expect(forAgnes.getByText("Still to meet: A boat at night")).toBeVisible();
@@ -345,7 +345,7 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
 
   // The delivery sends it, and the quest moves on to scenario 2, still for downtime only.
   // Their feeding is still to answer, so both are partly written; the lead sends them anyway.
-  await l.goto(`/cycles/${cycle.id}/delivery`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/delivery`);
   await l.getByLabel("Also deliver the 2 partly written, with what's written so far").check();
   await l.getByRole("button", { name: "Deliver 2 downtimes" }).click();
   await expect(l.getByText("Delivered 2 downtimes.", { exact: false })).toBeVisible();

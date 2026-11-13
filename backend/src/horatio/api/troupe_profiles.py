@@ -64,8 +64,7 @@ class Setting(BaseModel):
     chronicle: Short = ""
     city: Short = ""
     era: Short = ""
-    # A short line on its tone.
-    tone: Short = ""
+    # Its tone is in its Setting Style Document's moods (horatio.setting_style).
 
 
 class Profile(BaseModel):

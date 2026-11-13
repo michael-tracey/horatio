@@ -819,7 +819,7 @@ test("staff use the Discord channels names suggest, and delivering warns of a ch
   expect(saved.channels).toEqual({ [ids["Léontine Marsh"]!]: "201" });
 
   // Delivering names Cassius first, and goes ahead only when asked.
-  await l.goto(`/cycles/${cycle.id}/delivery`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/delivery`);
   const deliverCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Deliver results" }) });
   await expect(deliverCard.getByText(/ of 2 downtimes have every response written\.$/)).toBeVisible();
   // Their feeding, if the troupe asks for it, is unanswered: those go too.
@@ -917,7 +917,7 @@ test("staff share out a cycle's responses by character, and assign several in on
 
   // The responses come by character, each with how many are written; one folds away.
   const l = lead.page;
-  await l.goto(`/cycles/${cycle.id}/responses`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/responses`);
   const clementine = l.getByRole("region", { name: "Clementine" });
   const barnaby = l.getByRole("region", { name: "Barnaby" });
   await expect(clementine.getByRole("button", { name: "Clementine 0 of 2 responses written" })).toBeVisible();
@@ -963,7 +963,7 @@ test("a player aims an action at another character, and only staff see who", asy
   const lead = await person(browser, "dtaim-lead");
   const bramPlayer = await person(browser, "dtaim-bram");
   const agnesPlayer = await person(browser, "dtaim-agnes");
-  const { bram, agnes, cycle, open } = await feedingTroupe(custodian, lead, bramPlayer, `Aimed Night ${run}`, agnesPlayer);
+  const { troupe, bram, agnes, cycle, open } = await feedingTroupe(custodian, lead, bramPlayer, `Aimed Night ${run}`, agnesPlayer);
   await open();
 
   const b = bramPlayer.page;
@@ -981,7 +981,7 @@ test("a player aims an action at another character, and only staff see who", asy
 
   // Staff see it under Agnes, and follow it to its response.
   const l = lead.page;
-  await l.goto(`/cycles/${cycle}/aimed`);
+  await l.goto(`/troupes/${troupe}/downtimes/${cycle}/aimed`);
   const atAgnes = l.getByRole("region", { name: "Aimed at Agnes" });
   await expect(atAgnes.getByText("Follow Agnes home from Elysium.")).toBeVisible();
   await expect(atAgnes.getByText("Bram", { exact: true })).toBeVisible();
@@ -1023,7 +1023,7 @@ test("a project a player proposes advances over two cycles until it finishes", a
   await expect(book.getByText("Proposed")).toBeVisible();
 
   // Staff confirm it from the cycle's Projects tab.
-  await l.goto(`/cycles/${cycle}/projects`);
+  await l.goto(`/troupes/${troupe}/downtimes/${cycle}/projects`);
   const theirs = l.getByRole("listitem", { name: "Bram: The Book of Nod" });
   await theirs.getByRole("button", { name: "Confirm" }).click();
   await expect(theirs.getByText("Under way")).toBeVisible();
@@ -1176,10 +1176,14 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   await l.screenshot(shots("troupe-cycles"));
   await row.click();
 
-  // The cycle keeps its troupe in view, and while open its progress is who has submitted.
-  const trail = l.getByRole("navigation", { name: "Breadcrumb" });
-  await expect(trail.getByRole("link", { name: troupeName })).toBeVisible();
-  await expect(trail.getByRole("link", { name: "Downtimes" })).toHaveAttribute("href", `/troupes/${troupe.id}/downtimes`);
+  // The cycle opens inside its troupe, under Downtimes › Cycles (#776), and while
+  // open its progress is who has submitted.
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/downtimes/${cycle.id}$`));
+  await expect(l.getByRole("heading", { level: 1, name: troupeName })).toBeVisible();
+  await expect(l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: /^Downtimes/ })).toHaveAttribute("aria-current", "true");
+  await expect(l.getByRole("navigation", { name: "Downtimes" }).getByRole("link", { name: /^Cycles/ })).toHaveAttribute("aria-current", "page");
+  await expect(l.getByRole("heading", { level: 2, name: "Chase month" })).toBeVisible();
+  await expect(l).toHaveTitle(`Overview · Chase month · Cycles · ${troupeName} · Horatio`);
   await expect(l.getByText("1 of 1 submitted")).toBeVisible();
   await expect(l.getByRole("progressbar", { name: "Submitted" })).toBeVisible();
   await expect(l.getByText(/^7 days left · accepted until [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m$/)).toBeVisible();
@@ -1189,6 +1193,7 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   // Staff add Tobias from Participants.
   await l.getByRole("link", { name: "Participants" }).click();
   await expect(l.getByText("1 submitted", { exact: true })).toBeVisible();
+  await expect(l).toHaveTitle(`Participants · Chase month · Cycles · ${troupeName} · Horatio`);
   await l.getByRole("button", { name: "Add a character" }).click();
   const adding = l.getByRole("region", { name: "Add a character" });
   await adding.getByLabel("Character").selectOption({ label: `Tobias Wren (@${wren.handle})` });
@@ -1204,6 +1209,12 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   await expect(l.getByRole("row", { name: /Ivy Thorne/ })).toHaveCount(0);
   await l.getByRole("link", { name: "Overview" }).click();
   await l.getByRole("link", { name: "See who hasn't submitted" }).click();
+  await expect(l.getByRole("button", { name: "Not submitted (1)" })).toHaveAttribute("aria-pressed", "true");
+
+  // An old link from before the cycle moved inside its troupe, in a bookmark or an
+  // old notice, lands on the same tab of it (#776).
+  await l.goto(`/cycles/${cycle.id}/participants?show=not-submitted`);
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/downtimes/${cycle.id}/participants\\?show=not-submitted$`));
   await expect(l.getByRole("button", { name: "Not submitted (1)" })).toHaveAttribute("aria-pressed", "true");
 
   // Reminding says first who it reaches.
@@ -1457,7 +1468,7 @@ test("staff give an item from a response, and the player receives it with the re
 
   // The lead answers, and gives the rifle from the response with the Equipment tab's editor.
   const l = lead.page;
-  await l.goto(`/cycles/${cycle.id}/responses`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/responses`);
   await l.getByLabel("Response to Dorcas").fill("A dealer at the docks owes you one.");
   await l.getByRole("button", { name: "Save response" }).click();
   const receives = l.getByRole("region", { name: "What Dorcas receives" });
@@ -1493,7 +1504,7 @@ test("staff give an item from a response, and the player receives it with the re
   await l.getByRole("table", { name: "Equipment", exact: true }).getByRole("row", { name: row }).getByRole("button", { name: `Actions for ${row}` }).click();
   await l.getByRole("menu", { name: `Actions for ${row}` }).getByRole("menuitem", { name: "History" }).click();
   await l.getByRole("dialog", { name: "History of Sniper rifle" }).getByRole("link", { name: "From the Beyond means month downtime" }).click();
-  await expect(l).toHaveURL(new RegExp(`/cycles/${cycle.id}/responses#response-`));
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/downtimes/${cycle.id}/responses#response-`));
   await expect(l.getByLabel("Response to Dorcas")).toHaveValue("A dealer at the docks owes you one.");
 });
 
@@ -1546,7 +1557,7 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   });
   await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
   const l = lead.page;
-  await l.goto(`/cycles/${cycle.id}/feeding`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/feeding`);
   await l.getByLabel("Feeding for Brujah").fill("2");
   await l.getByLabel("Reason for Brujah").fill("riots downtown");
   await l.getByRole("listitem").filter({ hasText: "Brujah" }).getByRole("button", { name: "Save" }).click();
@@ -1699,14 +1710,14 @@ test("what the book gives and takes: Science's own action, Quick Hands, Quick Wo
 
   // Staff see the same breakdown, and the technique beside her feeding.
   const l = lead.page;
-  await l.goto(`/cycles/${cycle.id}/participants`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/participants`);
   await l.getByRole("button", { name: "More for Ottilie" }).click();
   await expect(l.getByRole("list", { name: "Where Ottilie's actions come from" }).getByText("+2 general from Quick Hands, Quick Work")).toBeVisible();
-  await l.goto(`/cycles/${cycle.id}/feeding`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/feeding`);
   await expect(l.getByText(/Using Quick Hands, Quick Work this cycle: two more actions, no feeding/)).toBeVisible();
 
   // The lead answers the painting with Crafts: Resources +1 for the month.
-  await l.goto(`/cycles/${cycle.id}/responses`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/responses`);
   await l.getByRole("button", { name: "Effects on allowances and backgrounds…" }).click();
   const effects = l.getByRole("region", { name: "Effects of Ottilie's action" });
   await effects.getByLabel("Effect").selectOption("crafts");
@@ -1800,7 +1811,7 @@ test("a troupe that doesn't track feeding sees none of it, and switching it back
   await expect(l.getByText("Not tracked: no feeding in downtimes, results or at the next game")).toBeVisible();
 
   // No Feeding tab on the cycle, and no Feeding section on Bram's form.
-  await l.goto(`/cycles/${cycle}`);
+  await l.goto(`/troupes/${troupe}/downtimes/${cycle}`);
   await expect(l.getByRole("link", { name: "Participants", exact: true })).toBeVisible();
   await expect(l.getByRole("link", { name: "Feeding", exact: true })).toHaveCount(0);
   await b.goto(`/characters/${bram}/downtime`);
@@ -1822,7 +1833,7 @@ test("a troupe that doesn't track feeding sees none of it, and switching it back
   await l.goto(`/troupes/${troupe}/settings`);
   await feedingCard(l).getByRole("radio", { name: /Book feeding/ }).click();
   await expect(l.getByText("Feeding is tracked again, with what was recorded before.")).toBeVisible();
-  await l.goto(`/cycles/${cycle}`);
+  await l.goto(`/troupes/${troupe}/downtimes/${cycle}`);
   await l.getByRole("link", { name: "Feeding", exact: true }).click();
   const card2 = l.locator("section").filter({ has: l.getByRole("heading", { name: "Bram" }) });
   await expect(card2.getByText("1 feeding action (The night market)")).toBeVisible();
@@ -1853,7 +1864,7 @@ test("with Blood Resonance, the player hunts for a humor and staff answer with t
   await expect(b.getByText("Submitted", { exact: true })).toBeVisible();
 
   // The lead answers with what he hunted for, and a Dyscrasia.
-  await l.goto(`/cycles/${cycle}/feeding`);
+  await l.goto(`/troupes/${troupe}/downtimes/${cycle}/feeding`);
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Bram" }) });
   await expect(card.getByText("0 feeding actions · hunting sanguine blood")).toBeVisible();
   await expect(card.getByLabel("Resonance fed on")).toHaveValue("sanguine");
@@ -1949,7 +1960,7 @@ test("staff reorder the troupe's keywords, and filter and order the responses by
   await l.screenshot(shots("rules-keywords"));
 
   // On the Responses tab: filtered by keyword, and in the resolution order, Narrative first now.
-  await l.goto(`/cycles/${cycle}/responses`);
+  await l.goto(`/troupes/${troupe}/downtimes/${cycle}/responses`);
   await l.getByRole("combobox", { name: /^Keyword/ }).selectOption("Recital");
   await expect(l.getByText("Sing at the Elysium")).toBeVisible();
   await expect(l.getByText("Hunt the late trains")).toHaveCount(0);
@@ -2013,7 +2024,7 @@ test("feeding territories: a holder patrols hers, a poacher is caught there, and
   await expect(b.getByText("Submitted", { exact: true })).toBeVisible();
 
   // The lead sees both feeding in the Docks, and marks Bram caught by Agnes's patrol.
-  await l.goto(`/cycles/${cycle}/feeding`);
+  await l.goto(`/troupes/${troupe}/downtimes/${cycle}/feeding`);
   await expect(l.getByText("Feeding here: Agnes, Bram")).toBeVisible();
   const bramCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Bram" }) });
   await expect(bramCard.getByText(/^Poaching in Docks\./)).toBeVisible();
@@ -2048,7 +2059,7 @@ test("with the Rack, staff lay out the cycle's vessels and a player takes one in
   await expect(rackBox).toBeChecked();
 
   // The lead lays out the cards the book suggests for one player: 2.
-  await l.goto(`/cycles/${cycle}/feeding`);
+  await l.goto(`/troupes/${troupe}/downtimes/${cycle}/feeding`);
   const rack = l.locator("section").filter({ has: l.getByRole("heading", { name: "The Rack" }) });
   await expect(rack.getByText("The book suggests 2 for 1 taking part (p. 306).")).toBeVisible();
   await expect(l.getByRole("heading", { name: "Feeding by clan" })).toHaveCount(0);

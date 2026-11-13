@@ -12,6 +12,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, S
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { DiscardForm, GiveForm } from "../character/ItemActions";
+import { cyclePath } from "./cycles";
 import { EquipmentEditor, useEquipmentRules, useTroupeTemplates } from "./EquipmentEditor";
 import { factsText, givenText, kindText, qualityText, type Kind } from "./equipment";
 import { itemsCsv, readSearch, searchQuery, STATUS_NAMES, writeSearch, type ItemSearch, type Sort, type Status } from "./equipmentSearch";
@@ -581,7 +582,7 @@ function History({ troupeId, item }: { troupeId: string; item: EquipmentItemOut 
           {e.downtime ? (
             <>
               {" ("}
-              <Link to={`/cycles/${e.downtime.cycle_id}/responses#response-${e.downtime.response_id}`} className="text-gold hover:text-parchment">
+              <Link to={`${cyclePath(troupeId, e.downtime.cycle_id, "responses")}#response-${e.downtime.response_id}`} className="text-gold hover:text-parchment">
                 {e.reason}
               </Link>
               )

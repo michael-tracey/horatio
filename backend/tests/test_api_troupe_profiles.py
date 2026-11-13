@@ -42,7 +42,6 @@ PROFILE: dict[str, Any] = {
         "chronicle": "Lords of the Night",
         "city": "Leeds",
         "era": "Modern nights",
-        "tone": "Political intrigue, slow-burning horror.",
     },
     "new_players": "welcoming",
     "min_age": 18,

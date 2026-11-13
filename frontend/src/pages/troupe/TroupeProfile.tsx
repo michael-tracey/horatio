@@ -96,13 +96,12 @@ export function TroupeProfileView({ profile: p, signedIn }: { profile: TroupePro
             </dl>
           </Card>
         )}
-        {filled(setting.chronicle, setting.city, setting.era, setting.tone) && (
+        {filled(setting.chronicle, setting.city, setting.era) && (
           <Card title="The setting">
             <dl className="flex flex-col gap-2 text-sm">
               <Entry label="Chronicle">{setting.chronicle}</Entry>
               <Entry label="Set in">{setting.city}</Entry>
               <Entry label="Era">{setting.era}</Entry>
-              <Entry label="Tone">{setting.tone}</Entry>
             </dl>
           </Card>
         )}
