@@ -74,6 +74,7 @@ export function BuildPrintPage() {
   });
 
   const pips = usePrintedPips();
+  useTitle(sheet.data ? `Print · ${sheet.data.character_name}` : "Print");
   if (sheet.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
   if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
   return (
