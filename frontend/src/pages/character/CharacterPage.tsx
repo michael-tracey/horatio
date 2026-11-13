@@ -6,6 +6,7 @@ import type { CharacterOut } from "../../api/types";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { BackstoryTab, useBackstoryStanding } from "./BackstoryTab";
+import { characterTabGroups, type TabGroup } from "./characterTabs";
 import { CreationWizard } from "./creation/Wizard";
 import { choiceName } from "./creation/logic";
 import { abilities, roleLabel } from "../troupe/roles";
@@ -234,42 +235,19 @@ export function CharacterPage() {
       {pronouns}
       {sire}
       <CharacterTabs
-        groups={[
-          { label: "Create", tabs: creating ? [{ to: `${base}/create`, label: "Create" }] : [] },
-          {
-            label: "Sheet",
-            tabs: [
-              { to: base, label: "Sheet", end: true },
-              { to: `${base}/status`, label: "Status & Titles" },
-              { to: `${base}/equipment`, label: "Equipment" },
-              ...(creating ? [] : [{ to: `${base}/xp`, label: "Experience" }]),
-              ...(shared.data?.length ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
-            ],
-          },
-          {
-            label: "Between games",
-            tabs: [
-              ...(mine && !creating
-                ? [
-                    { to: `${base}/downtime`, label: "Downtime", count: waiting.data?.due ? 1 : 0, countLabel: "due" },
-                    { to: `${base}/results`, label: "Results", count: waiting.data ? newResults(waiting.data.delivered, seen) : 0, countLabel: "new" },
-                    ...(quests.data?.enabled ? [{ to: `${base}/quests`, label: "Quests" }] : []),
-                  ]
-                : []),
-              ...(influence && !creating ? [{ to: `${base}/influence`, label: "Influence" }] : []),
-              ...(keepsProjects && !creating ? [{ to: `${base}/projects`, label: "Projects" }] : []),
-              ...(staffQuests && quests.data?.enabled ? [{ to: `${base}/quests`, label: "Quests" }] : []),
-            ],
-          },
-          {
-            label: "About",
-            tabs: [
-              ...(mine ? [{ to: `${base}/troupes`, label: "Troupes" }] : []),
-              ...(backstory.data?.read ? [{ to: `${base}/backstory`, label: "Backstory" }] : []),
-              { to: `${base}/log`, label: "Log" },
-            ],
-          },
-        ]}
+        groups={characterTabGroups({
+          base,
+          mine,
+          creating,
+          staffQuests,
+          questsOn: !!quests.data?.enabled,
+          influence,
+          keepsProjects,
+          shared: !!shared.data?.length,
+          backstory: !!backstory.data?.read,
+          due: waiting.data?.due ? 1 : 0,
+          newResults: waiting.data ? newResults(waiting.data.delivered, seen) : 0,
+        })}
       />
       <Routes>
         {/* Badges are the staff's to print; whoever else sees the page is staff. */}
@@ -295,7 +273,8 @@ export function CharacterPage() {
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}
         <Route path="shared" element={<CharacterShared characterId={c.id} />} />
         {keepsProjects && <Route path="projects" element={<ProjectsCard characterId={c.id} />} />}
-        {staffQuests && quests.data?.enabled && <Route path="quests/*" element={<QuestsTab characterId={c.id} staffOf={home.data?.id} />} />}
+        {/* One Quests route, as one tab (#788): its player's view, else its staff's. */}
+        {quests.data?.enabled && (mine || staffQuests) && <Route path="quests/*" element={<QuestsTab characterId={c.id} staffOf={mine ? undefined : home.data?.id} />} />}
         {backstory.data?.read && <Route path="backstory" element={<BackstoryTab character={c} />} />}
         {creating && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (
@@ -303,7 +282,6 @@ export function CharacterPage() {
             <Route path="troupes" element={<TroupesTab character={c} />} />
             <Route path="downtime" element={<DowntimeTab characterId={c.id} />} />
             <Route path="results" element={<ResultsTab characterId={c.id} />} />
-            {quests.data?.enabled && <Route path="quests/*" element={<QuestsTab characterId={c.id} />} />}
           </>
         )}
       </Routes>
@@ -371,13 +349,11 @@ function Header({ character, children }: { character: CharacterOut; children: Re
   );
 }
 
-type Group = Parameters<typeof GroupedTabs>[0]["groups"][number];
-
 /**
  * A PC's tabs: on a phone in groups, with the open group's tabs under them; on
  * a wider screen all in one row, as they fit. A group of one shows as its tab.
  */
-function CharacterTabs({ groups }: { groups: Group[] }) {
+function CharacterTabs({ groups }: { groups: TabGroup[] }) {
   const named = groups.map((g) => (g.tabs.length === 1 ? { ...g, label: g.tabs[0]!.label } : g));
   return (
     <>
