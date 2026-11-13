@@ -461,6 +461,10 @@ Troupes can send downtime results, news and announcements to Discord, and result
 
 Both are server settings: environment variables starting `HORATIO_`. On a server deployed with `deploy/deploy.sh` they go in `deploy/production.env`; on your own computer, in `backend/.env`. No troupe ever sees or stores them.
 
+To make `production.env`, copy the blank sample, [deploy/production.env.example](https://github.com/michael-tracey/horatio/blob/main/deploy/production.env.example), and fill it in. It lists every setting, with notes on where to get each value, and repeats the steps below.
+
+The passwords, the client secret and the bot token stay in that file and on the server. Horatio never stores them in its database or shows them on any page.
+
 `HORATIO_PUBLIC_URL` must be the site's address, such as `https://horatio.example.org`: Discord sends people back there, and links in messages point there.
 
 ### Discord: the Horatio app and its bot
