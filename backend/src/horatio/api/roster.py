@@ -391,6 +391,11 @@ MESSAGES: dict[str, str] = {
     "downtime.cycle_ended": "{actor} ended the downtime cycle {name} unanswered, as the troupe"
     " was archived.",
     "troupe.profile_changed": "{actor} changed the troupe's profile.",
+    "troupe.setting_text": "{actor} changed the setting's {parts}.",
+    "troupe.setting_entry_added": "{actor} added the {kind} {name} to the setting.",
+    "troupe.setting_entry_changed": "{actor} changed the setting's {kind} {name}.",
+    "troupe.setting_entry_removed": "{actor} removed the {kind} {name} from the setting.",
+    "troupe.setting_entries_ordered": "{actor} put the setting's {kind} in order: {names}.",
     "troupe.public": "{actor} made the troupe's profile {state}.",
     "troupe.game_added": "{actor} added a game to the troupe's schedule.",
     "troupe.game_removed": "{actor} took a game off the troupe's schedule.",

@@ -14,7 +14,7 @@ const bare: TroupeProfileOut = {
   schedule: "",
   games: [],
   venue: { region: "", name: "", address: "", address_hidden: false, access: "" },
-  setting: { chronicle: "", city: "", era: "", tone: "" },
+  setting: { chronicle: "", city: "", era: "" },
   new_players: null,
   contact: null,
   lead: { id: "u1", handle: "night_owl", display_name: "Mara" },

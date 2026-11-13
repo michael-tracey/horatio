@@ -93,10 +93,8 @@ export function ProfileEditor({ profile, onDone }: { profile: TroupeProfileOut; 
               <Field label="Era">
                 <Input maxLength={200} value={setting.era} onChange={(e) => set({ setting: { ...setting, era: e.target.value } })} />
               </Field>
-              <Field label="Tone" hint="A short line.">
-                <Input maxLength={200} value={setting.tone} onChange={(e) => set({ setting: { ...setting, tone: e.target.value } })} />
-              </Field>
             </div>
+            <p className="mt-2 text-xs text-mist">Its themes, moods and the rest of its Setting Style Document are under Troupe settings › The setting.</p>
           </Part>
 
           <Part title="New players">

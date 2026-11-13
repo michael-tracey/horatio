@@ -901,6 +901,10 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "free_changes_since": "set to the time of import when free changes are switched on",
     "rules_version": "kept by the database, changing with the troupe's rules",
     "bond_clock_from": "the day its own bonds' clocks start from, not a setting (#665)",
+    "setting_subtitle": "the chronicle's setting is its own",
+    "setting_teaser": "the chronicle's setting is its own",
+    "setting_power": "the chronicle's setting is its own",
+    "setting_agency": "the chronicle's setting is its own",
 }
 
 # The tables that belong to a troupe and are exported, each in its section.
@@ -939,6 +943,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "boon_talons": PLAY,
     "boonbreakers": PLAY,
     "boons": PLAY,
+    "chronicle_motifs": "the chronicle's setting is its own",
     "calendar_feeds": "people's own calendar links",
     "character_titles": PLAY,
     "characters": PLAY,

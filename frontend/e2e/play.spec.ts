@@ -237,7 +237,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await p.getByRole("button", { name: "Change starting blood" }).click();
   await p.getByLabel("This much:").check();
   await p.getByLabel("Starting blood").fill("8");
-  await p.getByRole("button", { name: "Save" }).click();
+  await p.getByRole("button", { name: "Save", exact: true }).click();
   await expect(p.getByText("8 blood, or the generation's most if that is less")).toBeVisible();
 
   // Play, from the sheet.

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { SceneOut, SceneSummary } from "../../api/types";
+import { atGameCrumbs, Breadcrumb } from "../../components/Breadcrumb";
 import { DateInput } from "../../components/DateInput";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading, Notice } from "../../components/ui";
 import { useDates } from "../../dates";
@@ -77,10 +78,8 @@ export function ScenesPage() {
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2">
-          <Link to={`/troupes/${troupeId}/play`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
-            ← {troupe.data?.name ?? "Back"}
-          </Link>
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-1.5 px-4 py-1">
+          <Breadcrumb crumbs={atGameCrumbs(troupeId, troupe.data?.name)} />
           <h1 className="text-lg">Scenes</h1>
         </div>
         <ScenesStrip troupeId={troupeId} />
