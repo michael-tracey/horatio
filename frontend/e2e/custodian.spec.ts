@@ -748,6 +748,42 @@ test("the custodian chooses the loading animation, which shows as Horatio next o
   expect(reset.status(), await reset.text()).toBe(200);
 });
 
+test("the custodian sees whether mail and Discord are set up, never their secrets, and sets who emails come from (#833, #834)", async ({ browser }) => {
+  const custodian = await person(browser, "sitecards-cust");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  await c.goto("/custodian/site");
+
+  // The e2e server has no mail server and no Discord bot: both cards say so, and why.
+  const mail = c.locator("section").filter({ has: c.getByRole("heading", { name: "Mail", exact: true }) });
+  await expect(mail.getByText("Mail is off", { exact: true })).toBeVisible();
+  await expect(mail.getByText(/HORATIO_SMTP_HOST/).first()).toBeVisible();
+  await expect(mail.getByText("deploy/production.env")).toBeVisible();
+  await expect(mail.getByRole("button", { name: "Send a test email" })).toHaveCount(0);
+  await expect(mail.getByText("Nothing has failed lately.")).toBeVisible();
+
+  const discord = c.locator("section").filter({ has: c.getByRole("heading", { name: "Discord", exact: true }) });
+  await expect(discord.getByText("Discord is off", { exact: true })).toBeVisible();
+  await expect(discord.getByRole("textbox", { name: "OAuth2 redirect" })).toHaveValue(/\/api\/discord\/callback$/);
+  await expect(discord.getByRole("button", { name: "Copy the OAuth2 redirect" })).toBeVisible();
+  await expect(discord.getByText("No troupe has connected a Discord server yet.")).toBeVisible();
+
+  // Who emails come from is the whole site's: only one project's run changes it, and puts it back.
+  if (test.info().project.name === "phone") return;
+  await mail.getByRole("textbox", { name: "From name" }).fill("The Night Desk");
+  await mail.getByRole("textbox", { name: "From address" }).fill("desk@example.org");
+  await mail.getByRole("button", { name: "Save who emails come from" }).click();
+  await expect(c.getByText("Saved. Every email from now on uses it.")).toBeVisible();
+  await c.reload();
+  await expect(mail.getByRole("textbox", { name: "From name" })).toHaveValue("The Night Desk");
+  await expect(mail.getByRole("textbox", { name: "From address" })).toHaveValue("desk@example.org");
+  await mail.getByRole("textbox", { name: "From name" }).fill("");
+  await mail.getByRole("textbox", { name: "From address" }).fill("");
+  await mail.getByRole("button", { name: "Save who emails come from" }).click();
+  await expect(c.getByText("Saved. Every email from now on uses it.").first()).toBeVisible();
+  await expect(mail.getByRole("textbox", { name: "From address" })).toHaveValue("");
+});
+
 test("the custodian previews fitting a troupe's NPC creation picks, then fits them", async ({ browser }) => {
   const custodian = await person(browser, "fitpicks-cust");
   makeCustodian(custodian.email);

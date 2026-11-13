@@ -26,6 +26,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from horatio import mail_sender
 from horatio.audit import record
 from horatio.auth.sessions import hash_token
 from horatio.config import get_settings
@@ -187,8 +188,8 @@ def confirm(db: Session, change: EmailChange) -> tuple[User, str, User | None]:
     return user, old, made_by
 
 
-def deliver(mail_to: str, name: str, subject: str, text: str) -> None:
-    mail = email.new_message(formataddr((name, mail_to)), subject)
+def deliver(db: Session, mail_to: str, name: str, subject: str, text: str) -> None:
+    mail = email.new_message(formataddr((name, mail_to)), subject, mail_sender.sender(db))
     mail.set_content(f"Hello {name},\n\n{text}\n\n-- \nSent by Horatio, {site()}\n")
     email.deliver(mail)
 
@@ -208,7 +209,7 @@ def email_link(db: Session, by: User, user: User, change: EmailChange, url: str)
         "its old address. If you weren't expecting this, ignore this email."
     )
     try:
-        deliver(change.new_email, user.display_name, "Confirm your new Horatio email", text)
+        deliver(db, change.new_email, user.display_name, "Confirm your new Horatio email", text)
     except SendError as error:
         record(db, by, EMAIL_FAILED, **about(user, change), error=str(error))
         return str(error)
@@ -241,7 +242,7 @@ def email_notice(db: Session, user: User, old: str, made_by: User | None) -> Non
         f"{': ' + who if who else ''}."
     )
     try:
-        deliver(old, user.display_name, "Your Horatio email has changed", text)
+        deliver(db, old, user.display_name, "Your Horatio email has changed", text)
     except SendError as error:
         data = {"member": user.display_name, "user_id": user.id, "from_email": old}
         record(db, user, NOTICE_FAILED, **data, error=str(error))

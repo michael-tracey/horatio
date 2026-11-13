@@ -769,6 +769,11 @@ MESSAGES: dict[str, str] = {
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "appearance.loading_animation": "{actor} chose the {animation} loading animation.",
+    "mail.sender_set": "{actor} set who Horatio's emails come from: {sends_from}, replies to"
+    " {reply_to}.",
+    "mail.test_sent": "{actor} sent a test email to {to}.",
+    "mail.test_failed": "{actor}'s test email failed: {error}",
+    "mail.gave_up": "Horatio gave up emailing {count} notifications to {member}: {error}",
     "audit.exported": "{actor} exported {count} events from the audit log.",
     "dark_pack.fetched": "{actor} fetched the Dark Pack resources from {address}: {clans} clan"
     " symbols and {logo}.",

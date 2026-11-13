@@ -40,7 +40,7 @@ from email.utils import formataddr
 from sqlalchemy import ColumnElement, delete, func, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit, character_moves, email_changes, preferences, suspensions
+from horatio import audit, character_moves, email_changes, mail_sender, preferences, suspensions
 from horatio.auth import viewing
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
@@ -644,7 +644,9 @@ def _email(
     text = email_text(actor, keep, found, merged_email, reason)
     for address in dict.fromkeys([keep.email, merged_email], None):
         mail = email.new_message(
-            formataddr((keep.display_name, address)), "Your Horatio accounts are now one"
+            formataddr((keep.display_name, address)),
+            "Your Horatio accounts are now one",
+            mail_sender.sender(db),
         )
         mail.set_content(text)
         try:

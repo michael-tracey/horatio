@@ -26,7 +26,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import ColumnElement, and_, delete, exists, func, or_, select
 from sqlalchemy.orm import Session
 
-from horatio import preferences
+from horatio import mail_sender, preferences
 from horatio.audit import record
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
@@ -114,7 +114,9 @@ def notify(db: Session, user: User, by: User | None, subject: str, text: str) ->
     """Email `user` about their suspension. Logs a refusal, and returns it."""
     if not email.configured():
         return None
-    mail = email.new_message(formataddr((user.display_name, user.email)), subject)
+    mail = email.new_message(
+        formataddr((user.display_name, user.email)), subject, mail_sender.sender(db)
+    )
     mail.set_content(f"Hello {user.display_name},\n\n{text}\n\n-- \nSent by Horatio, {site()}\n")
     try:
         email.deliver(mail)

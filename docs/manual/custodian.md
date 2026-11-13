@@ -267,7 +267,7 @@ Everything since that backup is lost, so make a fresh backup with **Back up now*
 
 ## Site
 
-**Custodian › Site** holds what's the same for everyone on the server, and shows what's running. It used to be two tabs, Settings and System; their old links still land here.
+**Custodian › Site** holds what's the same for everyone on the server: the loading animation, mail and Discord. It also shows what's running. It used to be two tabs, Settings and System; their old links still land here.
 
 ![The loading animation on the Site tab](images/custodian/site-loading-animation.png)
 
@@ -284,9 +284,32 @@ Each is shown moving, with the small one that sits beside a line of text, such a
 
 The very first screen shows before the app has asked the server anything, so it shows the animation last seen on that device. Someone who hasn't opened Horatio since you changed it sees the old one once.
 
+### Mail
+
+The **Mail** card says whether Horatio can send email, and if not, which settings are missing (see [Email: an SMTP service](#email-an-smtp-service)).
+
+- **What it uses:** the mail server and port, the security (STARTTLS, SSL or none), and the username with most of it hidden. The password only shows as **Set** or **Not set**: Horatio never shows it, never keeps it in its database, and never sends it to anyone's browser. A security setting that looks wrong, such as none at all, gets a note in red.
+- **Who emails come from:** a **From name**, **From address** and **Reply-To** of your own, over the server's `HORATIO_MAIL_FROM`. Every email Horatio sends uses them from then on. Leave a box blank to use the server's. The From address must be one your mail provider lets Horatio send from, or it refuses the email. A troupe's own Reply-To, for its downtime results, still wins over yours. Saving goes in the audit log.
+- **Send a test email:** sends one to your own address straight away. If the mail server refuses, the card says why in plain words, naming the setting to check, with what the server said under it.
+- **Mail that failed lately:** downtime results and quests' news sent by email that failed or are being tried again, and notification emails Horatio gave up on. Each says when and why. Open one to see it where it lives, or choose **Retry** for one Horatio gave up on.
+
+The server, username and password stay in `deploy/production.env`: change them there, then redeploy with `deploy/deploy.sh --no-build`.
+
+### Discord
+
+The **Discord** card says whether the Horatio bot can work, and if not, which of the three settings are missing (see [Discord: the Horatio app and its bot](#discord-the-horatio-app-and-its-bot)).
+
+- **What it uses:** the client ID. The client secret and bot token only show as **Set** or **Not set**, never their values.
+- **For Discord's developer portal:** the **OAuth2 redirect** to register, made from `HORATIO_PUBLIC_URL`, and an **Invite link for the bot**, each with **Copy**. The invite adds the bot to a server by hand; troupes connect their own servers from **Customise › Connectors**, which tells Horatio which server is theirs.
+- **Check the bot:** asks Discord who the bot is, with the server's token, and shows its name and how many servers it's in. A refused token says so, naming the setting.
+- **Troupes connected:** each troupe that has connected a Discord server, its server's name, how many characters have a channel for their results, whether it has a test channel, and which posts have a channel.
+- **Discord posts that failed lately:** results, quests' news and posts to Discord that failed or are being tried again, each with when and why, and **Retry** for one Horatio gave up on.
+
+The credentials stay in `deploy/production.env`: change them there, then redeploy with `deploy/deploy.sh --no-build`.
+
 ### What is running
 
-Under the loading animation, **What is running** shows the app the server is running, so you can tell whether a fix has gone live:
+At the bottom, **What is running** shows the app the server is running, so you can tell whether a fix has gone live:
 
 ![What is running, on the Site tab](images/custodian/site-running.png)
 

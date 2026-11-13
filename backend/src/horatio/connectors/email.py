@@ -32,6 +32,7 @@ from email_validator import EmailNotValidError, validate_email
 
 from horatio.config import get_settings
 from horatio.connectors import Connector, Message, Recipient, SendError, register
+from horatio.mail_sender import Sender
 
 
 def connect() -> smtplib.SMTP:
@@ -120,14 +121,19 @@ def configured() -> bool:
     return bool(settings.smtp_host and settings.mail_from)
 
 
-def new_message(to: str, subject: str) -> EmailMessage:
-    """A message from Horatio's own address, ready for its content."""
-    sender = get_settings().mail_from or ""
+def new_message(to: str, subject: str, sender: Sender | None = None) -> EmailMessage:
+    """A message from Horatio's own address, ready for its content: from `sender`
+    (horatio.mail_sender, with what the custodian set), or else the server's
+    `HORATIO_MAIL_FROM`. The sender's default Reply-To goes on too; an email with a
+    Reply-To of its own replaces it."""
+    from_ = sender.from_ if sender is not None else get_settings().mail_from or ""
     mail = EmailMessage()
-    mail["From"] = sender
+    mail["From"] = from_
     mail["To"] = to
     mail["Subject"] = subject
-    domain = parseaddr(sender)[1].partition("@")[2] or None
+    if sender is not None and sender.reply_to:
+        mail["Reply-To"] = sender.reply_to
+    domain = parseaddr(from_)[1].partition("@")[2] or None
     mail["Message-ID"] = make_msgid(domain=domain)
     return mail
 
@@ -158,8 +164,10 @@ class EmailConnector(Connector):
         return formataddr((recipient.player_name, recipient.player_email))
 
     def send(self, settings: Mapping[str, Any], target: str, message: Message) -> dict[str, Any]:
-        mail = new_message(target, message.subject)
+        mail = new_message(target, message.subject, message.sender)
         if settings.get("reply_to"):
+            # The troupe's storytellers, over the server's default.
+            del mail["Reply-To"]
             mail["Reply-To"] = formataddr((f"{message.troupe} storytellers", settings["reply_to"]))
         mail.set_content(to_text(message))
         mail.add_alternative(to_html(message), subtype="html")
