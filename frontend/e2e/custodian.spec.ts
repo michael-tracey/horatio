@@ -936,7 +936,12 @@ test("the custodian imports a troupe's characters from Yorick, matching a line a
   await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "Tools", exact: true }).click();
   await c.getByRole("link", { name: "Open the import" }).click();
-  await c.getByLabel("Troupe").selectOption({ label: troupeName });
+  // The click returns before the import is drawn, and the Tools page has a Troupe select of
+  // its own (Fit NPC creation picks): on a busy runner a bare getByLabel("Troupe") chose the
+  // troupe there, and the import never asked for a page (#767). Choose in the import's card,
+  // which has no Troupe select on the Tools page, and see the choice held.
+  await card("Import from Yorick").getByLabel("Troupe").selectOption({ label: troupeName });
+  await expect(c).toHaveURL(new RegExp(`/custodian/tools/yorick-import\\?troupe=${troupeId}$`));
   await c.getByLabel("Print Characters page").setInputFiles({ name: "Print Troupe Characters.html", mimeType: "text/html", buffer: Buffer.from(page) });
 
   // The dry run runs in the background, and saves nothing.

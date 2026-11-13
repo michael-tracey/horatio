@@ -228,7 +228,10 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   // Importing from Yorick: the made-up page from the backend's tests, checked by a dry run.
   await main.getByRole("link", { name: "Tools", exact: true }).click();
   await main.getByRole("link", { name: "Open the import" }).click();
-  await main.getByLabel("Troupe").selectOption({ label: "Harbour Lights" });
+  // In the import's card: until the import is drawn, the Tools page's Fit NPC creation picks
+  // has a Troupe select too (#767).
+  await card("Import from Yorick").getByLabel("Troupe").selectOption({ label: "Harbour Lights" });
+  await expect(c).toHaveURL(/\/custodian\/tools\/yorick-import\?troupe=/);
   await main.getByLabel("Print Characters page").setInputFiles({
     name: "Print Troupe Characters.html",
     mimeType: "text/html",
