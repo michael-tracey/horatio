@@ -1155,7 +1155,7 @@ function CheckedPointsList({
     return [...earlier].map(([at, refs], i) => (
       <Fragment key={at.key}>
         {i > 0 && "; "}
-        Refused while you {refs.every((t) => t.category === "clan") ? "are" : "have"} {named(listed(refs.map((t) => t.name!)))} (
+        Refused while you {refs.every((t) => t.category === "clan" || t.category === "sect") ? "are" : "have"} {named(listed(refs.map((t) => t.name!)))} (
         <Link className="text-gold underline" to={`/characters/${characterId}/create/${at.key}`}>
           {at.title}
         </Link>

@@ -25,6 +25,42 @@ test("Merits & flaws lists every flaw the character can take, without searching 
   await expect(flaws.getByRole("checkbox")).toHaveCount(count);
 });
 
+test("Merits & flaws offers only the character's own sect's merits and flaws, and flags one held from a sect it left (#765)", async ({ browser }) => {
+  const { page: p } = await person(browser, "own-sect-only");
+  const id = await creatingVampire(p, "Velvet Court", "Brujah", []);
+  const send = async (url: string, data: object) => {
+    const response = await p.request.put(url, { headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+  };
+  const sect = (name: string) => send(`/api/characters/${id}/traits`, { category: "sect", name, rating: null });
+  await sect("Camarilla");
+  await p.goto(`/characters/${id}/create/merits`);
+  const merits = p.getByRole("region", { name: "Merits", exact: true });
+  const flaws = p.getByRole("region", { name: "Flaws", exact: true });
+  // What this character can take: the Camarilla's, not the Sabbat's.
+  await expect(p.getByLabel("Show Merits")).toHaveValue("can");
+  await expect(merits.getByRole("checkbox", { name: /^Antiquities/ })).toHaveCount(1);
+  await expect(merits.getByRole("checkbox", { name: /^Sanctified/ })).toHaveCount(0);
+  await expect(flaws.getByRole("checkbox", { name: /^Soul Shard/ })).toHaveCount(0);
+  // Everything shows it, refused because of the sect chosen on Concept.
+  await p.getByLabel("Show Merits").selectOption("Everything");
+  const sanctified = merits.getByRole("listitem").filter({ has: p.getByRole("checkbox", { name: /^Sanctified/ }) });
+  await expect(sanctified.getByRole("checkbox")).toBeDisabled();
+  await expect(sanctified).toContainText("Sanctified is a Sabbat merit: only members of the Sabbat can take it. (p. 452)");
+  await expect(sanctified).toContainText("Refused while you are Camarilla (Concept)");
+
+  // Taken as a Sabbat, then the sect changed: still ticked, flagged, and it can be unticked.
+  await sect("Sabbat");
+  await send(`/api/characters/${id}/creation/categories/merits`, { picks: [{ name: "Sanctified" }] });
+  await sect("Camarilla");
+  await p.reload();
+  await expect(p.getByLabel("Show Merits")).toHaveValue("can");
+  const held = merits.getByRole("checkbox", { name: /^Sanctified/ });
+  await expect(held).toBeChecked();
+  await expect(held).toBeEnabled();
+  await expect(p.getByText("Sanctified is a Sabbat merit: only members of the Sabbat can take it. (p. 452)").first()).toBeVisible();
+});
+
 test("flaws can go past 7 points, 7 of them paying XP, and the sheet flags them for staff while merits stay at 7 (#636, #657)", async ({ browser }) => {
   const { page: p } = await person(browser, "flaws-beyond-7");
   const id = await creatingVampire(p, "Ninefold Woe", "Brujah", [], {

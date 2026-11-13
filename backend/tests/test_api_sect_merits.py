@@ -378,3 +378,103 @@ def test_an_emissary_to_the_camarilla_with_no_sect(troupe: Troupe) -> None:
     refused = finish(troupe.player, camarilla)
     assert refused.status_code == 409
     assert EMISSARY_MESSAGE in refused.json()["detail"]
+
+
+# --- what the wizard offers (#765) -------------------------------------------------------
+
+
+def refusals(
+    person: Person, character_id: str, category: str = "merits", **params: Any
+) -> dict[str, Any]:
+    response = person.client.get(
+        f"/characters/{character_id}/refusals", params={"category": category, **params}
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+ON_THE_WIZARD = [{"as_if": "empty"}, {"as_if": "picks"}, {}]
+
+
+@pytest.mark.parametrize("params", ON_THE_WIZARD)
+def test_the_wizard_does_not_offer_another_sects_merits_and_flaws(
+    troupe: Troupe, params: dict[str, str]
+) -> None:
+    """Another sect's merit is left out, as another clan's is, though the check is
+    only needed to finish creation: it is refused because of the sect, on Concept."""
+    character_id = creating(troupe, "Camarilla")
+
+    merits = refusals(troupe.player, character_id, **params)
+    flaws = refusals(troupe.player, character_id, "flaws", **params)
+
+    assert merits["Sanctified"] == {
+        "message": SANCTIFIED,
+        "because": [{"category": "sect", "name": "Camarilla"}],
+    }
+    assert flaws["Soul Shard"]["message"] == SOUL_SHARD
+    assert "Moniker" in merits
+    # Emissary to the Camarilla is not for the Camarilla's members.
+    assert merits["Emissary to the Camarilla"]["message"] == EMISSARY_MESSAGE
+    # Their own sect's, and General ones, are offered.
+    assert "Antiquities" not in merits
+    assert "Sectarian" not in flaws
+    assert "Iron Will" not in merits
+
+
+def test_the_anarch_republic_is_offered_the_anarch_movements_merits(troupe: Troupe) -> None:
+    character_id = creating(troupe, "Anarch Republic")
+
+    merits = refusals(troupe.player, character_id, as_if="empty")
+
+    assert "Moniker" not in merits
+    assert "Sanctified" in merits
+    assert "Once Enslaved" not in refusals(troupe.player, character_id, "flaws", as_if="empty")
+
+
+@pytest.mark.parametrize("strength", ["review", "note", "off"])
+def test_a_troupe_that_softens_the_check_has_them_offered(troupe: Troupe, strength: str) -> None:
+    softened = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/checks/sect/merits/Sabbat", json={"strength": strength}
+    )
+    assert softened.status_code == 200, softened.text
+    character_id = creating(troupe, "Camarilla")
+
+    assert "Sanctified" not in refusals(troupe.player, character_id, as_if="empty")
+    # The Sabbat's flaws are a check of their own, still on.
+    assert "Soul Shard" in refusals(troupe.player, character_id, "flaws", as_if="empty")
+
+
+def test_one_held_stays_and_a_change_of_sect_is_not_refused_while_building(
+    troupe: Troupe,
+) -> None:
+    """The check stops finishing, not changes: one taken as a Sabbat stays on the
+    sheet when the character moves to the Camarilla, and the wizard flags it."""
+    character_id = creating(troupe, "Sabbat")
+    assert pick(troupe.player, character_id, "merits", "Sanctified", 1).status_code == 200
+
+    moved = take(troupe.player, character_id, "sect", "Camarilla", None)
+
+    assert moved.status_code == 200, moved.text
+    assert holds(troupe.player, character_id, "Sanctified")
+    assert SANCTIFIED in problems(troupe.player, character_id)
+    # Held, it is not listed as refused: the wizard keeps it, to be unticked.
+    ticked = refusals(troupe.player, character_id, as_if="picks", picks=["Sanctified"])
+    assert "Sanctified" not in ticked
+    assert SANCTIFIED in finish(troupe.player, character_id).json()["detail"]
+
+
+def test_once_finished_another_sects_merit_is_offered_for_review(troupe: Troupe) -> None:
+    character_id = of_sect(troupe, "Camarilla")
+
+    assert "Sanctified" not in refusals(troupe.player, character_id)
+
+
+def test_staff_building_an_npc_are_offered_every_sects_merits(troupe: Troupe) -> None:
+    made = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/npcs", json={"name": "Vasquez", "wizard": True}
+    )
+    assert made.status_code == 201, made.text
+    npc_id = made.json()["id"]
+    take(troupe.storyteller, npc_id, "sect", "Camarilla", None)
+
+    assert "Sanctified" not in refusals(troupe.storyteller, npc_id, as_if="empty")

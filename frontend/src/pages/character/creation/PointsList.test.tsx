@@ -29,4 +29,24 @@ describe("PointsList", () => {
     expect((screen.getByRole("checkbox", { name: /Additional Common Discipline/ }) as HTMLInputElement).disabled).toBe(true);
     expect(screen.queryByText(/Storyteller's OK/)).toBeNull();
   });
+
+  it("leaves another sect's merits out of what the character can take, keeping one held to untick (#765)", () => {
+    const merit = (name: string, kind: string) => ({ ...flaw(name, 1), category: "merits", kind });
+    const traits = [merit("Antiquities", "Camarilla"), merit("Sanctified", "Sabbat"), merit("Sabbat Survivor", "Sabbat")];
+    const why = {
+      Sanctified: "Sanctified is a Sabbat merit: only members of the Sabbat can take it. (p. 452)",
+      "Sabbat Survivor": "Sabbat Survivor is a Sabbat merit: only members of the Sabbat can take it. (p. 453)",
+    };
+    const onChange = vi.fn();
+    render(<PointsList title="Merits" traits={traits} budget={7} picks={{ "Sabbat Survivor": 1 }} onChange={onChange} unavailable={why} barred={why} />);
+
+    expect(screen.getByRole("checkbox", { name: /Antiquities/ })).toBeTruthy();
+    expect(screen.queryByRole("checkbox", { name: /Sanctified/ })).toBeNull();
+    // Ticked before the sect changed: still listed, and it can be unticked.
+    const held = screen.getByRole("checkbox", { name: /Sabbat Survivor/ }) as HTMLInputElement;
+    expect(held.checked).toBe(true);
+    expect(held.disabled).toBe(false);
+    fireEvent.click(held);
+    expect(onChange).toHaveBeenCalledWith({});
+  });
 });
