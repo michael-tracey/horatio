@@ -16,7 +16,7 @@ Only the custodian can:
 - see every account's email address;
 - make and download backups of the whole database;
 - choose the loading animation everyone sees;
-- see the System page, the clan logos and the whole audit log, and use the Tools tab.
+- see the Site tab, the clan logos and the whole audit log, and use the Tools tab.
 
 The custodian can also do anything a lead storyteller can, in any troupe, even one they have no role in: open its Staff tab, approve its characters, award XP, and so on. Use that sparingly. A troupe's own staff are the ones who run it, and its players expect their storytellers, not the custodian, to judge their characters.
 
@@ -265,11 +265,11 @@ There's no restore button: restoring replaces everything in the database, so it'
 
 Everything since that backup is lost, so make a fresh backup with **Back up now** first if the app still works.
 
-## Settings
+## Site
 
-**Custodian › Settings** holds what's the same for everyone on the server.
+**Custodian › Site** holds what's the same for everyone on the server, and shows what's running. It used to be two tabs, Settings and System; their old links still land here.
 
-![The Settings tab](images/custodian/settings.png)
+![The loading animation on the Site tab](images/custodian/site-loading-animation.png)
 
 ### The loading animation
 
@@ -284,11 +284,11 @@ Each is shown moving, with the small one that sits beside a line of text, such a
 
 The very first screen shows before the app has asked the server anything, so it shows the animation last seen on that device. Someone who hasn't opened Horatio since you changed it sees the old one once.
 
-## The System page
+### What is running
 
-**Custodian › System** shows what's running, so you can tell whether a fix has gone live:
+Under the loading animation, **What is running** shows the app the server is running, so you can tell whether a fix has gone live:
 
-![The System tab](images/custodian/system.png)
+![What is running, on the Site tab](images/custodian/site-running.png)
 
 - **Version**: the commit the running app was built from, linked to its code on GitHub, and marked "with uncommitted changes" if any went in. A build not made by `deploy/deploy.sh`, such as one on your own computer, says so instead.
 - **Built**: when that build was made.
@@ -516,4 +516,4 @@ In short:
 - `deploy/deploy.sh --no-build` only redeploys the image already built, for example after changing a setting. It brings no new code.
 - On your own computer, `./start-local.sh` migrates the database each time it starts.
 
-Afterwards, check [the System page](#the-system-page): **Version** should name the commit you deployed, and **Database** should say **Up to date**. Making a backup with **Back up now** before an update is a good habit.
+Afterwards, check [What is running](#what-is-running) on the Site tab: **Version** should name the commit you deployed, and **Database** should say **Up to date**. Making a backup with **Back up now** before an update is a good habit.

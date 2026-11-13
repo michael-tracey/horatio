@@ -1,18 +1,23 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
-import { Button, Card, ErrorText, Loaded } from "../../components/ui";
+import { Badge, Button, Card, ErrorText, Loaded, Loading } from "../../components/ui";
 import { useToast } from "../../components/Toast";
+import { useDates } from "../../dates";
 import { LoaderMark, loaders } from "../../loaders/art";
 import { MOTIFS, motifFor, rememberMotif, type Motif, type MotifsBySplat } from "../../loaders/motifs";
 import { SplashScreen } from "../../loaders/splash";
 import { useAppearance } from "../../loaders/useMotif";
 
-/** Settings for all of Horatio, which only the custodian chooses. */
-export function SettingsTab() {
+/** The site as a whole (#790): what everyone sees that only the custodian chooses,
+ * and what is running. Was the Settings and System tabs. */
+export function SiteTab() {
   const appearance = useAppearance();
   return (
-    <Loaded query={appearance}>{(found) => <LoadingAnimationCard bySplat={found.loading_animation} />}</Loaded>
+    <div className="flex flex-col gap-6">
+      <Loaded query={appearance}>{(found) => <LoadingAnimationCard bySplat={found.loading_animation} />}</Loaded>
+      <WhatIsRunningCard />
+    </div>
   );
 }
 
@@ -108,5 +113,51 @@ function FullScreenPreview({ motif, onClose }: { motif: Motif; onClose: () => vo
         Close
       </Button>
     </dialog>
+  );
+}
+
+/** What is running here: the build deployed, since when, and whether the database
+ * is on its latest migration. Enough to tell whether a fix has gone live. */
+function WhatIsRunningCard() {
+  const system = useQuery({ queryKey: ["system"], queryFn: () => unwrap(api.GET("/api/system")) });
+  const dates = useDates();
+  if (system.isPending) return <Loading />;
+  if (system.error) return <ErrorText error={system.error} />;
+  const s = system.data;
+  const current = s.database_revision != null && s.database_revision === s.code_revision;
+
+  return (
+    <Card title="What is running">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+        <Row label="Version">
+          {s.commit && s.commit_url ? (
+            <a href={s.commit_url} target="_blank" rel="noreferrer" className="font-mono text-gold hover:underline">
+              {s.commit.slice(0, 7)}
+              {s.commit.endsWith("-dirty") && " with uncommitted changes"}
+            </a>
+          ) : (
+            <span className="text-mist">A local build, not deployed by deploy/deploy.sh</span>
+          )}
+        </Row>
+        <Row label="Built">{s.built_at ? dates.dateTime(s.built_at) : <span className="text-mist">Unknown</span>}</Row>
+        <Row label="Running since">{dates.dateTime(s.started_at)}</Row>
+        <Row label="Database">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="font-mono">{s.database_revision ?? "not migrated"}</span>
+            <Badge tone={current ? "gold" : "blood"}>{current ? "Up to date" : `Behind: this build expects ${s.code_revision ?? "unknown"}`}</Badge>
+          </span>
+        </Row>
+        <Row label="PostgreSQL">{s.database_version}</Row>
+      </dl>
+    </Card>
+  );
+}
+
+function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <>
+      <dt className="text-mist">{label}</dt>
+      <dd>{children}</dd>
+    </>
   );
 }

@@ -38,7 +38,7 @@ describe("SiteMenu", () => {
     expect(button.getAttribute("aria-expanded")).toBe("true");
     expect(button.getAttribute("aria-controls")).toBe(nav()?.parentElement?.id);
     const names = screen.getAllByRole("link").map((a) => a.getAttribute("aria-label") ?? a.textContent);
-    expect(names).toEqual(["Characters", "Troupes", "Rules reference", "Help", "Your account: Ines Ferreira-Valadares"]);
+    expect(names).toEqual(["Characters", "Troupes", "Rulebook", "Help", "Your account: Ines Ferreira-Valadares"]);
     expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByRole("link", { name: "Characters" }));
   });

@@ -8509,6 +8509,128 @@
         "title": "BudgetChange",
         "type": "object"
       },
+      "BuildCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "BuildCount",
+        "type": "object"
+      },
+      "BuildEntry": {
+        "properties": {
+          "broken": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Broken",
+            "type": "array"
+          },
+          "changed_at": {
+            "format": "date-time",
+            "title": "Changed At",
+            "type": "string"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "creation_complete": {
+            "title": "Creation Complete",
+            "type": "boolean"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "player_handle": {
+            "title": "Player Handle",
+            "type": "string"
+          },
+          "player_id": {
+            "format": "uuid",
+            "title": "Player Id",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "to_place": {
+            "items": {
+              "type": "string"
+            },
+            "title": "To Place",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player_id",
+          "player_name",
+          "player_handle",
+          "splat",
+          "clan",
+          "sect",
+          "picture",
+          "creation_complete",
+          "to_place",
+          "broken",
+          "started_at",
+          "changed_at"
+        ],
+        "title": "BuildEntry",
+        "type": "object"
+      },
       "BuildingTroupe": {
         "properties": {
           "troupe_id": {
@@ -82407,6 +82529,152 @@
         "summary": "Void",
         "tags": [
           "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/builds": {
+      "get": {
+        "description": "Characters built to the troupe's rules, with no request yet to make it home:\nthe most recently changed first.",
+        "operationId": "being_built_api_troupes__troupe_id__builds_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BuildEntry"
+                  },
+                  "title": "Response Being Built Api Troupes  Troupe Id  Builds Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Being Built",
+        "tags": [
+          "builds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/builds/count": {
+      "get": {
+        "description": "How many are being built, for the tab.",
+        "operationId": "being_built_count_api_troupes__troupe_id__builds_count_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildCount"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Being Built Count",
+        "tags": [
+          "builds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/builds/{character_id}/print": {
+      "get": {
+        "description": "The sheet of a character being built here, to read: staff see it, but neither\nchange it nor open its Play View, as it isn't in the troupe.",
+        "operationId": "print_build_api_troupes__troupe_id__builds__character_id__print_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintedSheet"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Print Build",
+        "tags": [
+          "builds"
         ]
       }
     },

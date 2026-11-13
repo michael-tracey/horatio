@@ -19,6 +19,7 @@ import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./pri
 import { factsText, kindText, playText } from "./troupe/equipment";
 import { pageText } from "./troupe/bookPage";
 import { Markdown } from "../components/Markdown";
+import { useTitle } from "../title";
 
 type Trait = PrintedSheet["traits"][number];
 
@@ -46,11 +47,39 @@ export function PrintPage() {
   });
 
   const pips = usePrintedPips();
+  useTitle(sheet.data ? `Print · ${sheet.data.character_name}` : "Print");
   if (sheet.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
   if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
   return (
     <AsPips.Provider value={pips}>
       <PrintShell back={`/characters/${characterId}`}>
+        <Sheet sheet={sheet.data} />
+      </PrintShell>
+    </AsPips.Provider>
+  );
+}
+
+/** The sheet of a character being built to a troupe's rules, for its staff to read
+ * before the player asks to join (#774): not theirs to change or play. */
+export function BuildPrintPage() {
+  const { troupeId = "", characterId = "" } = useParams();
+  const sheet = useQuery({
+    queryKey: ["print-build", troupeId, characterId],
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/troupes/{troupe_id}/builds/{character_id}/print", {
+          params: { path: { troupe_id: troupeId, character_id: characterId } },
+        }),
+      ),
+  });
+
+  const pips = usePrintedPips();
+  useTitle(sheet.data ? `Print · ${sheet.data.character_name}` : "Print");
+  if (sheet.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
+  if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
+  return (
+    <AsPips.Provider value={pips}>
+      <PrintShell back={`/troupes/${troupeId}/being-built`}>
         <Sheet sheet={sheet.data} />
       </PrintShell>
     </AsPips.Provider>
@@ -71,6 +100,7 @@ export function TroupePrintPage() {
   });
 
   const pips = usePrintedPips();
+  useTitle("Print · Character sheets");
   if (sheets.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
   if (sheets.error) return <p className="p-8 text-black">{sheets.error.message}</p>;
   return (

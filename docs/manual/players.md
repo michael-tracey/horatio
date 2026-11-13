@@ -32,7 +32,7 @@ Beside the character's name, the **⋯** button (**More for** the character) hol
 Under **New character**, on the right of the Characters page:
 
 1. Give it a **Name**.
-2. Choose **Which troupe will you play in?** Choosing the troupe makes its house rules apply while you build: its prices, starting points, banned traits and specialisation lists. Choose **No troupe yet (book rules)** to build by the book and bring it to a troupe later. You can change this until a troupe accepts the character. The hint under it says what XP the character starts with: 30, or the troupe's XP floor.
+2. Choose **Which troupe will you play in?** Choosing the troupe makes its house rules apply while you build: its prices, starting points, banned traits and specialisation lists. Choose **No troupe yet (book rules)** to build by the book and bring it to a troupe later. You can change this until a troupe accepts the character. The hint under it says what XP the character starts with: 30, or the troupe's XP floor. While you build to a troupe's rules, its storytellers and assistant storytellers can see the character under **Being built** and read its sheet, though they can't change it.
 3. Choose the **Splat**. A troupe may take only some splats; the list shows only those.
 4. Press **Create**.
 

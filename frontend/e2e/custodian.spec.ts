@@ -695,7 +695,16 @@ test("the custodian chooses the loading animation, which shows as Horatio next o
   const c = custodian.page;
   await c.reload();
   await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
-  await c.getByRole("link", { name: "Settings", exact: true }).click();
+  await c.getByRole("link", { name: "Site", exact: true }).click();
+  await expect(c).toHaveURL(/\/custodian\/site$/);
+  // What is running sits under it.
+  await expect(c.getByRole("heading", { name: "What is running" })).toBeVisible();
+  // The Settings and System tabs were merged into Site (#790): their old addresses land here.
+  for (const old of ["settings", "system"]) {
+    await c.goto(`/custodian/${old}`);
+    await expect(c).toHaveURL(/\/custodian\/site$/);
+    await expect(c.getByRole("heading", { name: "What is running" })).toBeVisible();
+  }
 
   // Each of the four, moving as it would, with the blood drip until another is chosen.
   const choices = c.getByRole("radiogroup", { name: "Loading animation" });

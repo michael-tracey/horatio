@@ -7,6 +7,7 @@ import { useMotif } from "../loaders/useMotif";
 import { useOnline } from "../offline/connection";
 import { NeedsConnection } from "../offline/NeedsConnection";
 import { pipGroups } from "../ratings";
+import { openTab, textOf, useTitle } from "../title";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -220,11 +221,16 @@ export function Badge({ children, tone = "mist", className }: { children: ReactN
   return <span className={cx("rounded-full border px-2 py-0.5 text-xs whitespace-nowrap", tones[tone], className)}>{children}</span>;
 }
 
-export function PageTitle({ children, subtitle, actions }: { children: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
+/** A page's heading. Its words name the browser tab too (#775); `title` gives them where the heading's own won't do. */
+export function PageTitle({ children, subtitle, actions, title }: { children: ReactNode; subtitle?: ReactNode; actions?: ReactNode; title?: string }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useTitle(title ?? textOf(children), heading);
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl text-parchment sm:text-3xl">{children}</h1>
+        <h1 ref={heading} className="text-2xl text-parchment sm:text-3xl">
+          {children}
+        </h1>
         {subtitle && <p className="mt-1 text-sm text-mist">{subtitle}</p>}
       </div>
       {actions}
@@ -245,8 +251,10 @@ export function CountBubble({ count, label }: { count: number; label: string }) 
   );
 }
 
-/** A tab, with a count of what waits on it, such as "2 new" (`countLabel` says what they are). */
-type Tab = { to: string; label: string; end?: boolean; count?: number; countLabel?: string };
+/** A tab, with a count of what waits on it, such as "2 new" (`countLabel` says what they are).
+ * `countInGroup: false` keeps a count that isn't waiting on anyone (characters being
+ * built, #774) out of its group's "waiting" total. */
+type Tab = { to: string; label: string; end?: boolean; count?: number; countLabel?: string; countInGroup?: boolean };
 
 /** How wide the fade is at an edge of a tab bar with more beyond it. */
 const FADE_PX = 32;
@@ -303,6 +311,8 @@ const ROW = "-mx-4 flex overflow-x-auto px-4 sm:mx-0 sm:px-0";
 
 export function Tabs({ tabs }: { tabs: Tab[] }) {
   const row = useTabRow<HTMLElement>();
+  const { pathname } = useLocation();
+  useTitle(openTab(tabs, pathname)?.label, row.ref);
   return (
     <nav {...row} className={cx(ROW, "mb-6 gap-1 border-b border-ash")}>
       {tabs.map((t) => (
@@ -341,12 +351,13 @@ export function GroupedTabs({ label, groups }: { label: string; groups: { label:
   const shown = groups.filter((g) => g.tabs.length > 0);
   const open = shown.find((g) => g.tabs.some(opens));
   const row = useTabRow<HTMLElement>();
+  useTitle(open && openTab(open.tabs, pathname)?.label, row.ref);
   return (
     <div className="mb-6">
       <nav aria-label={label} {...row} className={cx(ROW, "gap-x-1 border-b border-ash")}>
         {shown.map((g) => {
           const active = g === open;
-          const counts = g.tabs.filter((t) => t.count !== undefined);
+          const counts = g.tabs.filter((t) => t.count !== undefined && t.countInGroup !== false);
           const total = counts.reduce((sum, t) => sum + (t.count ?? 0), 0);
           return (
             <Link
@@ -377,6 +388,8 @@ export function GroupedTabs({ label, groups }: { label: string; groups: { label:
  */
 export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]; className?: string }) {
   const row = useTabRow<HTMLElement>();
+  const { pathname } = useLocation();
+  useTitle(openTab(tabs, pathname)?.label, row.ref);
   return (
     // A className of its own replaces the margin below.
     <nav aria-label={label} {...row} className={cx(ROW, "gap-2", className ?? "mb-5")}>
@@ -409,9 +422,12 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
  * tabs and never inside a label, so every one is in sight, on a phone too.
  */
 export function PageTabs({ label, tabs, className }: { label: string; tabs: Tab[]; className?: string }) {
+  const nav = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  useTitle(openTab(tabs, pathname)?.label, nav);
   return (
     // A className of its own replaces the margin below (Tailwind does not let a later margin class win).
-    <nav aria-label={label} className={className ?? "mb-5"}>
+    <nav ref={nav} aria-label={label} className={className ?? "mb-5"}>
       <div className="inline-flex max-w-full flex-wrap gap-0.5 rounded-md border border-ash bg-night p-0.5">
         {tabs.map((t) => (
           <NavLink

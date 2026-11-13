@@ -547,7 +547,7 @@ test("a player looks up the rules: a power by name and by its summary, then as p
 
   // From the main nav, the book's rules: a power found by its name, and by a word of its summary.
   const p = player.page;
-  await (await topBar(p)).getByRole("link", { name: "Rules reference" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Rulebook", exact: true }).click();
   const search = p.getByRole("searchbox", { name: "Search the rules" });
   const entry = (name: string) => p.getByTestId("rules-entry").filter({ has: p.getByRole("heading", { name, exact: true }) });
   await search.fill("majesty");
@@ -1296,10 +1296,10 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await request.getByRole("button", { name: "Approve and make the troupe" }).click();
   await expect(requests.getByRole("link", { name: troupeName })).toBeVisible();
 
-  // What is running, and that the database is on its latest migration.
-  await c.getByRole("link", { name: "System", exact: true }).click();
+  // What is running, on the Site tab, and that the database is on its latest migration.
+  await c.getByRole("link", { name: "Site", exact: true }).click();
   await expect(c.getByText("Up to date", { exact: true })).toBeVisible();
-  await c.screenshot(shots("custodian-system"));
+  await c.screenshot(shots("custodian-site"));
 
   // The asker now leads it.
   await a.reload();
@@ -1556,6 +1556,61 @@ test("a player brings a character they have to a troupe from its page, and is to
   await p.goto(`/troupes/${troupeId}`);
   await expect(p.getByRole("heading", { name: "Waiting for the storytellers" })).toBeVisible();
   await expect(p.getByRole("link", { name: `Build a new character for ${troupeName}` })).toHaveCount(0);
+});
+
+test("staff see the characters being built to their rules, read a sheet, and one leaves the list for Approvals once its player asks to join (#774)", async ({ browser }) => {
+  const custodian = await person(browser, "beingbuilt-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "beingbuilt-lead");
+  const player = await person(browser, "beingbuilt-play");
+  const troupeName = `Court of Unfinished Business ${run}`;
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(custodian.page, troupeId);
+  const p = player.page;
+  // One finished and then brought to the troupe's rules, one only just begun.
+  const marisol = await builtVampire(p, "Marisol", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const brought = await p.request.put(`/api/characters/${marisol}/building-troupe`, { headers: { "X-Horatio": "1" }, data: { troupe_id: troupeId } });
+  expect(brought.status(), await brought.text()).toBe(200);
+  const begun = await p.request.post("/api/characters", { headers: { "X-Horatio": "1" }, data: { splat: "vampire", name: "Ysolde", building_troupe_id: troupeId } });
+  expect(begun.status(), await begun.text()).toBe(201);
+
+  const l = lead.page;
+  // Nothing waits on staff yet, so the Characters group counts nothing; its Being built tab counts them.
+  await l.goto(`/troupes/${troupeId}`);
+  await expect(l.getByRole("link", { name: /^Characters/ }).getByLabel(/waiting/)).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  await expect(l.getByRole("link", { name: /Being built/ }).getByLabel("2 being built")).toBeVisible();
+  await l.getByRole("link", { name: /Being built/ }).click();
+  const ysolde = l.locator("section").filter({ has: l.getByRole("link", { name: "Ysolde", exact: true }) });
+  await expect(ysolde.getByText("In creation")).toBeVisible();
+  await expect(ysolde.getByText(/Still to place: .*Attributes/)).toBeVisible();
+  const marisolCard = l.locator("section").filter({ has: l.getByRole("link", { name: "Marisol", exact: true }) });
+  await expect(marisolCard.getByText("Finished, not yet submitted")).toBeVisible();
+  await expect(marisolCard.getByText(`@${player.handle}`)).toBeVisible();
+  await expect(l.getByText(player.email)).toHaveCount(0);
+
+  // Its sheet opens to read, not to change.
+  await marisolCard.getByRole("link", { name: "Read the sheet" }).click();
+  await expect(l).toHaveURL(new RegExp(`/print/troupes/${troupeId}/builds/${marisol}`));
+  await expect(l.getByText("Marisol").first()).toBeVisible();
+
+  // Its player asks to join: it leaves the list for Approvals.
+  await p.goto(`/characters/${marisol}/troupes`);
+  await p.getByRole("combobox", { name: "Troupe", exact: true }).selectOption(troupeId);
+  await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
+  await expect(p.getByText(`Waiting for ${troupeName}'s storytellers to accept this character.`)).toBeVisible();
+  await l.goto(`/troupes/${troupeId}/being-built`);
+  await expect(l.getByRole("link", { name: "Ysolde", exact: true })).toBeVisible();
+  await expect(l.getByRole("link", { name: "Marisol", exact: true })).toHaveCount(0);
+  await expect(l.getByRole("link", { name: /Being built/ }).getByLabel("1 being built")).toBeVisible();
+  await l.getByRole("link", { name: /Approvals/ }).click();
+  await expect(l.getByText("Asking to make this home")).toBeVisible();
 });
 
 test("the characters list and each Troupes tab say where a character stands: in creation, waiting, at home, or with no home yet, and whose rules it is built to (#368, #569)", async ({ browser }) => {

@@ -6,6 +6,7 @@ import { Empty, ErrorText, Loading, Select } from "../../components/ui";
 import { BoonStandingsTab } from "../troupe/BoonStandingsTab";
 import { BoonsTab, type LedgerKeeper } from "../troupe/BoonsTab";
 import { TalonsCard } from "../troupe/BoonTalons";
+import { useTitle } from "../../title";
 
 // It brings d3, so it loads on its own, only when opened (as on the staff screen).
 const BoonStatisticsPage = lazy(() => import("../troupe/BoonStatisticsPage").then((m) => ({ default: m.BoonStatisticsPage })));
@@ -49,6 +50,9 @@ export function HarpyLedgerPage() {
       }
     : null;
 
+  const heading = shown?.access === "submissions" ? "Boons to review" : "The boon ledger";
+  useTitle(heading);
+
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
@@ -56,7 +60,7 @@ export function HarpyLedgerPage() {
           <Link to={`/play/characters/${characterId}?tab=boons`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
             ← Play View
           </Link>
-          <h1 className="text-lg">{shown?.access === "submissions" ? "Boons to review" : "The boon ledger"}</h1>
+          <h1 className="text-lg">{heading}</h1>
         </div>
       </header>
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 pt-3">

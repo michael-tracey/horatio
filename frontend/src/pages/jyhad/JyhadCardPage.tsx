@@ -7,6 +7,7 @@ import { usePreferences } from "../../hooks";
 import { pageRule } from "../../paper";
 import { downloadCard } from "./draw";
 import { JyhadCard } from "./JyhadCard";
+import { useTitle } from "../../title";
 
 const TEXT_LENGTH = 300;
 const FLAVOUR_LENGTH = 120;
@@ -52,6 +53,7 @@ export function JyhadCardPage() {
   const [making, setMaking] = useState(false);
   const back = troupeId ? `/troupes/${troupeId}/characters` : `/characters/${characterId}`;
 
+  useTitle(card.data ? `Print · ${card.data.name}` : "Print");
   if (card.isPending) return <p className="p-8">Loading…</p>;
   if (card.error) return <p className="p-8">{card.error.message}</p>;
   const c = card.data;

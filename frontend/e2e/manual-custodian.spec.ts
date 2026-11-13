@@ -202,10 +202,10 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
     await shoot(main, "backups");
   }
 
-  // The Settings tab: the loading animation, each caught mid-way rather than at its start.
-  await main.getByRole("link", { name: "Settings", exact: true }).click();
-  const settings = main.locator("section", { has: c.getByRole("heading", { name: "Loading animation" }) });
-  await expect(settings.locator(".loader-block")).toHaveCount(4);
+  // The Site tab: the loading animation, each caught mid-way rather than at its start, and what is running.
+  await main.getByRole("link", { name: "Site", exact: true }).click();
+  const loading = main.locator("section", { has: c.getByRole("heading", { name: "Loading animation" }) });
+  await expect(loading.locator(".loader-block")).toHaveCount(4);
   await c.waitForTimeout(400);
   await c.evaluate(() =>
     document.getAnimations().forEach((a) => {
@@ -213,12 +213,10 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
       a.currentTime = 1100;
     }),
   );
-  await settings.screenshot({ path: `${OUT}/settings.png` });
-
-  // The System tab.
-  await main.getByRole("link", { name: "System", exact: true }).click();
-  await expect(main.getByText("What is running")).toBeVisible();
-  await shoot(main, "system");
+  await loading.screenshot({ path: `${OUT}/site-loading-animation.png` });
+  const running = main.locator("section", { has: c.getByRole("heading", { name: "What is running" }) });
+  await expect(running.getByText("Running since")).toBeVisible();
+  await shoot(running, "site-running");
 
   // The audit log.
   await main.getByRole("link", { name: "Audit", exact: true }).click();
