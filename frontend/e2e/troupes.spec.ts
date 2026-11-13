@@ -2102,6 +2102,11 @@ test("players check in at the door and land in their Play View, and staff award 
   await expect(leadGame.getByText("Nobody checked in yet")).toBeVisible();
   await leadGame.getByRole("link", { name: "Check-in and attendance" }).click();
   await expect(l.getByRole("heading", { name: "Game night" })).toBeVisible();
+  await expect(l).toHaveTitle(/^Game night · /);
+  // A breadcrumb leads back to the troupe and its At game tab (#777).
+  const crumbs = l.getByRole("navigation", { name: "Breadcrumb" });
+  await expect(crumbs.getByRole("link")).toHaveText([troupeName, "At game"]);
+  await expect(crumbs.getByRole("link", { name: "At game" })).toHaveAttribute("href", `/troupes/${troupeId}/play`);
   await expect(l.getByText("Nobody has checked in yet.")).toBeVisible();
   await l.getByRole("button", { name: "Open check-in" }).click();
   await expect(l.getByText("Check-in is open.")).toBeVisible();

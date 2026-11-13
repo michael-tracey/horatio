@@ -311,7 +311,7 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   await s.goto(`/play/troupes/${troupeId}/scenes`);
   await expect(s.getByText("You have no scenes in this troupe yet.")).toBeVisible();
   await s.getByRole("button", { name: "All" }).click();
-  await expect(s.getByRole("listitem")).toHaveCount(3);
+  await expect(s.getByRole("main").getByRole("listitem")).toHaveCount(3);
   const ambush = s.getByRole("listitem", { name: "Warehouse ambush" });
   await expect(ambush).toContainText("By named-lead · 1 character");
   // Not theirs to change.
@@ -348,7 +348,14 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   await p.getByLabel("Name of the scene").fill("Elysium, gallery");
   await p.getByRole("button", { name: "Save", exact: true }).click();
   await expect(p.getByRole("heading", { name: "Elysium, gallery", exact: true })).toBeVisible();
-  await p.getByRole("link", { name: /^← Scenes/ }).click();
+  // A breadcrumb leads back up: the troupe, its At game tab, then its scenes (#777).
+  const crumbs = p.getByRole("navigation", { name: "Breadcrumb" });
+  await expect(crumbs.getByRole("link")).toHaveText([troupeName, "At game", "Scenes"]);
+  await expect(crumbs.getByRole("link", { name: "At game" })).toHaveAttribute("href", `/troupes/${troupeId}/play`);
+  await crumbs.getByRole("link", { name: "Scenes" }).click();
+  await expect(p.getByRole("heading", { name: "Scenes", exact: true })).toBeVisible();
+  await expect(crumbs.getByRole("link")).toHaveText([troupeName, "At game"]);
+  await expect(crumbs.getByRole("link", { name: troupeName })).toHaveAttribute("href", `/troupes/${troupeId}`);
   const doomed = p.getByRole("listitem", { name: "Warehouse ambush" });
   await doomed.getByRole("button", { name: "Remove Warehouse ambush" }).click();
   await doomed.getByRole("button", { name: "Remove the scene" }).click();

@@ -1108,7 +1108,7 @@ On the About tab, each game to come asks **Coming**, **Maybe** or **Not coming**
 
 ![A game's night: check-in at the door with its code and QR code, and who came.](images/running-a-troupe/game-night.png)
 
-On the About tab, storytellers and assistant storytellers choose **Check-in and attendance** under a game to open its night. Check-in can open from 12 hours before the game starts.
+On the About tab, storytellers and assistant storytellers choose **Check-in and attendance** under a game to open its night. A line at its top leads back to the troupe and its **At game** tab. Check-in can open from 12 hours before the game starts.
 
 1. Choose **Open check-in**. The door gets a code and a QR code.
 2. Choose **Show at the door** for a full-screen code to hold up. Players scan it with their phone's camera, or type the code on the check-in page, then pick who they're playing. They can also tap **Check in** on the troupe's About tab.
@@ -1145,6 +1145,7 @@ If an award takes a character past the monthly figure, Horatio warns you (or, wi
 
 **Games › Scenes** (or **Open the scenes** on the At game tab) puts several characters on one page, side by side, to run a scene: tap Blood, Willpower, health and Beast traits for each, with Undo and the log. Stock NPCs show their pool and resource to tap.
 
+- A line at the top of the Scenes page and of each scene leads back: the troupe, its **At game** tab, then **Scenes**.
 - Make a scene with **Name of a new scene**, then find characters and NPCs by name to put them in it.
 - Scenes are kept for the troupe: every storyteller and assistant storyteller sees them all and can put characters in any.
 - A scene's maker, or the lead storyteller, renames or removes it. Removing a scene leaves its characters as they are.
