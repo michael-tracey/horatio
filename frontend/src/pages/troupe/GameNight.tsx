@@ -1,15 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { Attendee, GameNight, XpLine } from "../../api/types";
 import { ActionMenu, MenuItem, MenuLink } from "../../components/ActionMenu";
+import { atGameCrumbs, Breadcrumb } from "../../components/Breadcrumb";
 import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { QrCode } from "../../components/QrCode";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
+import { useTitle } from "../../title";
 import { useAction } from "../../hooks";
 import { attendeeStatus, checkInUrl, names, spacedCode } from "./checkin";
 import { BOOK_MONTHLY, figureFor, NO_CHOICE, signed, usesLeft, type Choice } from "./gameXp";
@@ -25,20 +27,28 @@ import { Stepper } from "./XpAwardsTab";
 export function GameNightPage({ troupeId }: { troupeId: string }) {
   const { gameId = "" } = useParams();
   const dates = useDates();
+  // The troupe page's own query, for the breadcrumb's name: already loaded.
+  const troupe = useQuery({
+    queryKey: ["troupe", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
+  });
+  const named = useRef<HTMLHeadingElement>(null);
   const night = useQuery({
     queryKey: ["game-night", gameId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/games/{game_id}/night", { params: { path: { troupe_id: troupeId, game_id: gameId } } })),
   });
+  // Named from its heading once it's drawn, so the part sits after the troupe's.
+  useTitle(night.data ? "Game night" : null, named);
   if (night.isPending) return <Loading />;
   if (night.error) return <ErrorText error={night.error} />;
   const n = night.data;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <Link to={`/troupes/${troupeId}`} className="self-start text-sm text-mist underline hover:text-parchment">
-          Back to About
-        </Link>
-        <h2 className="font-display text-xl text-gold">Game night</h2>
+        <Breadcrumb crumbs={atGameCrumbs(troupeId, troupe.data?.name)} />
+        <h2 ref={named} className="font-display text-xl text-gold">
+          Game night
+        </h2>
         <time dateTime={n.starts_at} className="text-sm text-parchment">
           {dates.game(n.starts_at, n.ends_at)}
         </time>
