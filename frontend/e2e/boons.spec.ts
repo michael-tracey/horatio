@@ -25,14 +25,14 @@ test("staff keep the boon ledger: a game's boons at once, then a settling, an ed
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
   await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Anselm Roque" });
 
-  // The ledger is off by default. The lead switches it on in the troupe's settings.
+  // The ledger is off by default. The lead switches it on in the Features list of the troupe's settings.
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}/settings`);
-  const keep = l.getByRole("checkbox", { name: /^Keep a boon ledger/ });
-  await expect(keep).not.toBeChecked();
+  const keep = l.getByRole("list", { name: "Features" }).getByRole("switch", { name: "Boons" });
+  await expect(keep).toHaveAttribute("aria-checked", "false");
   await keep.click();
-  await expect(l.getByText(/^The boon ledger is on\./)).toBeVisible();
-  await expect(keep).toBeChecked();
+  await expect(l.getByText("Boons: switched on.")).toBeVisible();
+  await expect(keep).toHaveAttribute("aria-checked", "true");
 
   // Under Characters, the Boons screen: register a game's boons at once.
   await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
@@ -297,7 +297,7 @@ test("in the Play View's Boons tab a player reports a boon, sees what the troupe
 
   // The lead lets players see what they owe and are owed, and creditors settle.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/settings`);
+  await l.goto(`/troupes/${troupe.id}/boons#settings`);
   await l.getByRole("radio", { name: /^Also what they're owed/ }).check();
   await expect(l.getByText("Saved what players see of the boon ledger.")).toBeVisible();
   await l.getByRole("checkbox", { name: /^Players mark boons owed to them settled/ }).check();
@@ -429,7 +429,7 @@ test("held for review, a player's report waits, flagged for its unlinked name, u
 
   // The lead holds reports for review.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/settings`);
+  await l.goto(`/troupes/${troupe.id}/boons#settings`);
   const hold = l.getByRole("checkbox", { name: /^Boons players report wait for review/ });
   await hold.check();
   await expect(l.getByText("Boons players report now wait for review.")).toBeVisible();
@@ -507,7 +507,7 @@ test("the Harpy keeps the ledger from the Play View as their character, and neve
 
   // The lead gives the Harpy the full ledger.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/settings`);
+  await l.goto(`/troupes/${troupe.id}/boons#settings`);
   const full = l.getByRole("radio", { name: /^The full ledger/ });
   await full.check();
   await expect(l.getByText("Saved: The Harpy keeps the full ledger, and reviews the boons players report.")).toBeVisible();
@@ -590,7 +590,7 @@ test("the Harpy gives a Lesser Harpy add-only access: they register a boon as th
 
   // The lead lets the Harpy give others access.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/settings`);
+  await l.goto(`/troupes/${troupe.id}/boons#settings`);
   const lets = l.getByRole("checkbox", { name: /^The Harpy may give others access to the ledger/ });
   await lets.check();
   await expect(l.getByText("Saved: the Harpy may give others access to the ledger, as Lesser Harpies.")).toBeVisible();
@@ -780,7 +780,7 @@ test("where the troupe allows it, the Harpy reads the boon standings and statist
 
   // The lead gives the Harpy the full ledger, then the standings and statistics too.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/settings`);
+  await l.goto(`/troupes/${troupe.id}/boons#settings`);
   await l.getByRole("radio", { name: /^The full ledger/ }).check();
   await expect(l.getByText("Saved: The Harpy keeps the full ledger, and reviews the boons players report.")).toBeVisible();
   const reads = l.getByRole("checkbox", { name: /^The Harpy also reads the boon standings and statistics/ });

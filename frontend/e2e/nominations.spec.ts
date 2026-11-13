@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, switchFeature } from "./support";
 
 /** Player Nominations (#470): written in a downtime, reviewed and published by staff, read by the troupe. */
 
@@ -65,10 +65,8 @@ test("players write Player Nominations in their downtime, staff review, star and
   await expect(l.getByRole("link", { name: "Responses" })).toBeVisible();
   await expect(l.getByRole("link", { name: "Nominations" })).toHaveCount(0);
 
-  // The lead switches them on under Customise › Troupe settings.
-  await l.goto(`/troupes/${troupe.id}/settings`);
-  await l.getByRole("checkbox", { name: /^Player Nominations/ }).click();
-  await expect(l.getByRole("checkbox", { name: /^Player Nominations/ })).toBeChecked();
+  // The lead switches them on in the Features list, under Customise › Troupe settings.
+  await switchFeature(l, troupe.id, "Player Nominations", true);
 
   // The writer adds two to their downtime: one about Bel, one about no one.
   await w.reload();
@@ -136,10 +134,8 @@ test("a character retires with remembrances, the next downtime asks for a memory
 
   // The lead switches Remembrances on; Player Nominations stay off.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/settings`);
-  await l.getByRole("checkbox", { name: /^Remembrances/ }).click();
-  await expect(l.getByRole("checkbox", { name: /^Remembrances/ })).toBeChecked();
-  await expect(l.getByRole("checkbox", { name: /^Player Nominations/ })).not.toBeChecked();
+  await switchFeature(l, troupe.id, "Remembrances", true);
+  await expect(l.getByRole("list", { name: "Features" }).getByRole("switch", { name: "Player Nominations", exact: true })).toHaveAttribute("aria-checked", "false");
 
   // Vera's player retires her, Final Death, and asks for remembrances.
   const g = gone.page;

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { backstoryOptional, characterTab, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, topBar } from "./support";
+import { backstoryOptional, characterTab, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -1810,15 +1810,9 @@ test("a troupe that doesn't track feeding sees none of it, and switching it back
   const fed = await send(l, "GET", `/api/cycles/${cycle}/feeding`);
   await send(l, "PUT", `/api/cycles/${cycle}/participants/${fed.characters[0].participant_id}/feeding-answer`, { result: "half" });
 
-  // The lead switches feeding off in Troupe settings.
-  await l.goto(`/troupes/${troupe}/settings`);
-  const card = feedingCard(l);
-  await expect(card.getByRole("radio", { name: /Book feeding/ })).toBeChecked();
-  // Saved as it is chosen, so it shows checked once the troupe has the change.
-  await card.getByRole("radio", { name: /Don't track feeding/ }).click();
-  await expect(card.getByRole("radio", { name: /Don't track feeding/ })).toBeChecked();
-  await expect(l.getByText("Feeding isn't tracked now. What was recorded is kept, for if you switch it back on.")).toBeVisible();
-  await expect(card.getByRole("checkbox", { name: /^Blood Resonance/ })).toBeDisabled();
+  // The lead switches feeding off in the Features list of Troupe settings; its options wait for it.
+  await switchFeature(l, troupe, "Feeding", false);
+  await expect(feedingCard(l).getByRole("checkbox", { name: /^Blood Resonance/ })).toBeDisabled();
   await l.screenshot(shots("settings-feeding-off"));
   await l.goto(`/troupes/${troupe}/house-rules`);
   await expect(l.getByText("Not tracked: no feeding in downtimes, results or at the next game")).toBeVisible();
@@ -1843,9 +1837,7 @@ test("a troupe that doesn't track feeding sees none of it, and switching it back
   await expect(b.getByLabel("Blood: 10 of 10")).toBeVisible();
 
   // Switched back on, the Feeding tab has his answer as it was, and it goes out as an update.
-  await l.goto(`/troupes/${troupe}/settings`);
-  await feedingCard(l).getByRole("radio", { name: /Book feeding/ }).click();
-  await expect(l.getByText("Feeding is tracked again, with what was recorded before.")).toBeVisible();
+  await switchFeature(l, troupe, "Feeding", true);
   await l.goto(`/troupes/${troupe}/downtimes/${cycle}`);
   await l.getByRole("link", { name: "Feeding", exact: true }).click();
   const card2 = l.locator("section").filter({ has: l.getByRole("heading", { name: "Bram" }) });

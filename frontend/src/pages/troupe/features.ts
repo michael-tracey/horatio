@@ -29,8 +29,9 @@ export type Feature = {
   /** Its tab, under the troupe, when the troupe's staff have it. */
   tab?: { label: string; to: string };
   /**
-   * Where the rest of its settings are, under the troupe: a card on Troupe settings
-   * ("#feature-boons") or another tab ("rules/quests"). None when the switch is all there is.
+   * Where the rest of its settings are, under the troupe: folded at the top of its own tab
+   * ("boons#settings", #784), a card on Troupe settings ("#feature-feeding") or another tab
+   * ("rules/quests"). None when the switch is all there is.
    */
   settings?: string;
   /** It is switched on and off from the list. Who's Who and News are always on; the Play View goes tab by tab. */
@@ -39,6 +40,15 @@ export type Feature = {
 
 /** The id of a feature's settings card on Troupe settings, for the list to link to. */
 export const settingsAnchor = (key: FeatureKey) => `feature-${key.replace(/_/g, "-")}`;
+
+/** The id of the folded Settings at the top of a feature's own tab (#784). */
+export const SETTINGS_HASH = "settings";
+
+/** A feature's settings folded at the top of its tab: for storytellers only, as only they change them. */
+const onTab = (to: string) => `${to}#${SETTINGS_HASH}`;
+
+/** Whether a feature's settings link lands on its tab's folded Settings, which only those who may change them see. */
+export const settingsOnTab = (settings: string) => settings.endsWith(`#${SETTINGS_HASH}`);
 
 const onOff = (on: boolean) => (on ? "On" : "Off");
 const requests = (n: number) => (n === 1 ? "1 request" : `${n} requests`);
@@ -62,7 +72,7 @@ export function features(troupe: TroupeOut): Feature[] {
       on: true,
       state: "Always on",
       tab: { label: "Who's Who", to: "whos-who" },
-      settings: `#${settingsAnchor("whos_who")}`,
+      settings: onTab("whos-who"),
       switchable: false,
     },
     {
@@ -82,7 +92,7 @@ export function features(troupe: TroupeOut): Feature[] {
       on: playTabs.length > 0,
       state: playTabs.length === 0 ? "Off for players" : playTabs.length === everyPlayTab ? "Every tab on" : `${playTabs.length} of ${everyPlayTab} tabs on`,
       tab: { label: "At game", to: "play" },
-      settings: `#${settingsAnchor("play_view")}`,
+      settings: onTab("play"),
       switchable: false,
     },
     {
@@ -92,7 +102,7 @@ export function features(troupe: TroupeOut): Feature[] {
       on: troupe.boons,
       state: onOff(troupe.boons),
       tab: troupe.boons ? { label: "Boons", to: "boons" } : undefined,
-      settings: `#${settingsAnchor("boons")}`,
+      settings: troupe.boons ? onTab("boons") : undefined,
       switchable: true,
     },
     {
@@ -102,7 +112,7 @@ export function features(troupe: TroupeOut): Feature[] {
       on: bonds !== "off",
       state: BOND_SETTINGS.find((s) => s.value === bonds)?.label ?? onOff(false),
       tab: bonds !== "off" ? { label: "Bonds", to: "bonds" } : undefined,
-      settings: `#${settingsAnchor("blood_bonds")}`,
+      settings: bonds !== "off" ? onTab("bonds") : undefined,
       switchable: true,
     },
     {
@@ -127,7 +137,7 @@ export function features(troupe: TroupeOut): Feature[] {
     {
       key: "court_history",
       name: "The court over time, for players",
-      adds: "Who held each title, and when, on a Court tab for the troupe's players. Staff always have it.",
+      adds: "Who held each title, and when, on a Court tab for the troupe's players: titles are public at court, but not how each one ended, nor anyone's status. Staff always have it.",
       on: troupe.court_history_players,
       state: troupe.court_history_players ? "Players see it" : "Staff only",
       tab: { label: "Court", to: "court" },
@@ -136,7 +146,7 @@ export function features(troupe: TroupeOut): Feature[] {
     {
       key: "chronicle",
       name: "The chronicle, for players",
-      adds: "The chronicle's timeline of games, downtimes and the court, on a Chronicle tab for the troupe's players. Staff always have it.",
+      adds: "The chronicle's timeline of games, downtimes and the court, on a Chronicle tab for the troupe's players: only what the troupe already shows them, not Embraces, diablerie or status. Staff always have it.",
       on: troupe.chronicle_players,
       state: troupe.chronicle_players ? "Players see it" : "Staff only",
       tab: { label: "Chronicle", to: "chronicle" },

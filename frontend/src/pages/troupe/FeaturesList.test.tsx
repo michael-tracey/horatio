@@ -31,7 +31,7 @@ const TROUPE = {
   play_tabs_off: [],
 } as unknown as TroupeOut;
 
-// Every feature with a switch on its settings card today: one missing from the list fails here.
+// Every feature with a switch: the list is the one place each is switched (#784), so one missing fails here.
 const SWITCHED: FeatureKey[] = [
   "boons",
   "blood_bonds",
@@ -98,13 +98,18 @@ describe("the Features list (#783)", () => {
     expect(list.getByRole("switch", { name: "Boons" }).getAttribute("aria-checked")).toBe("true");
     expect(list.getByRole("link", { name: "Open Boons" }).getAttribute("href")).toBe("/troupes/t1/boons");
     expect(within(list.getByRole("listitem", { name: "Blood bonds" })).getByText("Players manage")).toBeTruthy();
-    expect(list.getByRole("link", { name: "Settings for Boons" }).getAttribute("href")).toBe("#feature-boons");
+    // A feature with a tab of its own keeps its settings folded at the top of that tab (#784).
+    expect(list.getByRole("link", { name: "Settings for Boons" }).getAttribute("href")).toBe("/troupes/t1/boons#settings");
+    expect(list.getByRole("link", { name: "Settings for Feeding" }).getAttribute("href")).toBe("#feature-feeding");
     expect(list.getAllByRole("link", { name: "Open Nominations" })).toHaveLength(1);
   });
 
-  it("has no switches for those who may only read the settings", () => {
-    const list = show(TROUPE, false);
+  it("has no switches for those who may only read the settings, nor links to settings only storytellers see", () => {
+    const list = show({ ...TROUPE, boons: true }, false);
     expect(list.queryAllByRole("switch")).toHaveLength(0);
     expect(list.getAllByRole("listitem")).toHaveLength(features(TROUPE).length);
+    expect(list.getByRole("link", { name: "Open Boons" })).toBeTruthy();
+    expect(list.queryByRole("link", { name: "Settings for Boons" })).toBeNull();
+    expect(list.getByRole("link", { name: "Settings for Feeding" })).toBeTruthy();
   });
 });

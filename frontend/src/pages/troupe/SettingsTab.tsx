@@ -5,38 +5,28 @@ import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { useAction, useRulesAction } from "../../hooks";
-import { BadgeSetting } from "./BadgeSetting";
-import { BloodBondsSetting } from "./BloodBondsSetting";
-import { BoonLedgerSetting } from "./BoonLedgerSetting";
 import { ClanNamesSetting } from "./ClanNamesSetting";
-import { ChronicleSetting } from "./ChronicleSetting";
-import { CourtHistorySetting } from "./CourtHistorySetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
 import { FeedingTerritories } from "./FeedingTerritories";
 import { GameXpCard } from "./GameXpSettings";
-import { GolcondaSetting } from "./GolcondaSetting";
-import { ItemExpirySetting } from "./ItemExpirySetting";
-import { PlayTabsSetting } from "./PlayTabsSetting";
-import { ThrowImagesSetting } from "./ThrowImagesSetting";
-import { NominationsSetting } from "../nominations/NominationsSetting";
-import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
 import { SettingStyle } from "./SettingStyle";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { FeaturesList } from "./FeaturesList";
 import { settingsAnchor, type FeatureKey } from "./features";
 import { StatusBanClans } from "./StatusBanClans";
-import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
-import { WhosWhoSetting } from "./WhosWhoSetting";
+import { StatusSetting, TitlesSetting } from "./StatusSetting";
 import { XpRangeCard } from "./XpRange";
 import { useCatalogue } from "../../catalogue";
 
 /**
  * The settings for the whole troupe, set once a season or so, by what they are
- * for: the setting players read (#770), who may join, XP, status and titles, what happens at game,
- * downtimes, feeding, and what a clan is called, under the Features list: every optional feature, on or
- * off (#783). Its storytellers change them; the troupe's other running staff read them (assistant
- * storytellers write the setting too). The troupe's rules for traits are on the Rules tab beside it.
+ * for: the setting players read (#770), who may join, XP, status and titles, Blood and
+ * diablerie, feeding, and what a clan is called, under the Features list: every optional
+ * feature, on or off (#783). A feature with a tab of its own keeps the rest of its settings
+ * folded at the top of that tab (#784). Its storytellers change them; the troupe's other
+ * running staff read them (assistant storytellers write the setting too). The troupe's rules
+ * for traits are on the Rules tab beside it.
  */
 export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const base = `/troupes/${troupe.id}`;
@@ -44,7 +34,8 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
     <div className="flex flex-col gap-8">
       <p className="text-sm text-mist">
         {canEdit ? "Settings for the whole troupe. Each change takes effect straight away." : `Settings for the whole troupe. Its storytellers change them${troupe.my_role === "assistant_storyteller" && !troupe.archived ? "; you write the setting with them." : "."}`}{" "}
-        What traits cost and what new characters start with are under Rules, beside this.
+        A feature with a tab of its own has the rest of its settings at the top of that tab. What traits cost and what new characters start with are under Rules,
+        beside this.
       </p>
       <FeaturesList troupe={troupe} canEdit={canEdit} />
       <Group title="The setting">
@@ -70,36 +61,11 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
       <Group title="Status and titles">
         <StatusSetting troupe={troupe} canEdit={canEdit} />
         <TitlesSetting troupe={troupe} canEdit={canEdit} />
-        <StatusAtCheckinSetting troupe={troupe} canEdit={canEdit} />
-        {troupe.whos_who && (
-          <Anchored feature="whos_who">
-            <WhosWhoSetting troupe={troupe} canEdit={canEdit} />
-          </Anchored>
-        )}
-        <CourtHistorySetting troupe={troupe} canEdit={canEdit} />
-        <ChronicleSetting troupe={troupe} canEdit={canEdit} />
-        <GolcondaSetting troupeId={troupe.id} canEdit={canEdit} />
         <StatusBanClans troupeId={troupe.id} canEdit={canEdit} />
       </Group>
-      <Group title="At game">
-        <Anchored feature="play_view">
-          <PlayTabsSetting troupe={troupe} canEdit={canEdit} />
-        </Anchored>
-        <ThrowImagesSetting troupe={troupe} canEdit={canEdit} />
-        <BadgeSetting troupe={troupe} canEdit={canEdit} />
+      <Group title="Blood and diablerie">
         <StartingBlood troupeId={troupe.id} canEdit={canEdit} />
         <DiablerieFlaws troupeId={troupe.id} canEdit={canEdit} />
-        <ItemExpirySetting troupe={troupe} canEdit={canEdit} />
-        <Anchored feature="blood_bonds">
-          <BloodBondsSetting troupe={troupe} canEdit={canEdit} />
-        </Anchored>
-        <Anchored feature="boons">
-          <BoonLedgerSetting troupe={troupe} canEdit={canEdit} />
-        </Anchored>
-      </Group>
-      <Group title="Downtimes">
-        <NominationsSetting troupe={troupe} canEdit={canEdit} />
-        <RemembrancesSetting troupe={troupe} canEdit={canEdit} />
       </Group>
       <Group title="Feeding">
         <Anchored feature="feeding">
