@@ -36,12 +36,47 @@ export function SettingStyle({ troupeId }: { troupeId: string }) {
   const s = setting.data;
   return (
     <>
+      <ShowCard troupeId={troupeId} setting={s} />
       <TitleCard troupeId={troupeId} setting={s} />
       <ScopeCard troupeId={troupeId} setting={s} />
       <Entries troupeId={troupeId} kind="theme" title="Themes" entries={s.themes} canEdit={s.can_edit} />
       <Entries troupeId={troupeId} kind="mood" title="Moods" entries={s.moods} canEdit={s.can_edit} />
       <Notes troupeId={troupeId} entries={s.notes} canEdit={s.can_edit} />
     </>
+  );
+}
+
+/**
+ * Where players read the whole document (#771): the Setting tab, printed, and on the
+ * profile when its storytellers choose, as written house rules can be.
+ */
+function ShowCard({ troupeId, setting }: { troupeId: string; setting: SettingOut }) {
+  const show = useAction((on: boolean) =>
+    unwrap(api.PUT("/api/troupes/{troupe_id}/setting/public", { params: { path: { troupe_id: troupeId } }, body: { public: on } })),
+  );
+  return (
+    <Card title="Where players read it">
+      <p className="text-sm text-mist">
+        Every member reads the whole document on the{" "}
+        <Link to={`/troupes/${troupeId}/setting`} className="underline hover:text-parchment">
+          Setting
+        </Link>{" "}
+        tab, with the parts built from the troupe's settings: its sects, clan rarities, costs and mechanics. A character built to the troupe's rules shows its themes,
+        moods and teaser as it is made.
+      </p>
+      {setting.can_publish ? (
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={setting.public} disabled={show.isPending} onChange={(e) => show.mutate(e.target.checked)} />
+          <span>
+            Show it on the troupe's profile
+            <span className="block text-xs text-mist">A public profile shows it to anyone at all.</span>
+          </span>
+        </label>
+      ) : (
+        <p className="mt-3 text-sm">{setting.public ? "The troupe's profile shows it." : "The troupe's profile doesn't show it."}</p>
+      )}
+      <ErrorText error={show.error} />
+    </Card>
   );
 }
 

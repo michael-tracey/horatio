@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { bookRarity } from "./ClanRarity";
 
 describe("bookRarity", () => {
-  const tremere = { clan: "Tremere", book: { Anarch: "rare", Camarilla: "common", Sabbat: "uncommon" }, house: null };
-  const lhiannan = { clan: "Lhiannan", book: { Anarch: "rare", Camarilla: "rare", Sabbat: "rare" }, house: null };
+  const tremere = { clan: "Tremere", book: { Anarch: "rare", Camarilla: "common", Sabbat: "uncommon" }, house: null, note: "" };
+  const lhiannan = { clan: "Lhiannan", book: { Anarch: "rare", Camarilla: "rare", Sabbat: "rare" }, house: null, note: "" };
 
   it("gives the setting's rarity when the troupe has one sect", () => {
     expect(bookRarity(tremere, "Sabbat")).toBe("uncommon");

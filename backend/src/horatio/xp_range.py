@@ -7,9 +7,11 @@ list of changes (`XpRangeEntry`) added when staff award a game's XP or close a
 downtime cycle, and staff can set either figure by hand for a chronicle that
 began before Horatio.
 
-A character built for a troupe starts at its floor. One built in its player's
-vault starts at the rule set's starting XP, and its player may add XP to it
-themselves (self-entered). When a character asks to make a troupe its home, its
+A character built for a troupe starts at its floor, or with the troupe's New
+Character Incentive on (MET: VTM p. 349), at its starting XP and a quarter of the XP a
+character could have earned there by now (the ceiling less the starting XP). One built
+in its player's vault starts at the rule set's starting XP, and its player may add XP
+to it themselves (self-entered). When a character asks to make a troupe its home, its
 XP is set against that troupe's figures: below the floor it is offered a top-up,
 above the ceiling staff are shown how far, and staff accept or remove any
 self-entered XP. Each thing done is its own XP entry, never an edit to an
@@ -89,6 +91,38 @@ def summed(troupe: Troupe, totals: dict[str, tuple[int, int, int]]) -> Figures:
         set_floor=set_floor,
         set_ceiling=set_ceiling,
     )
+
+
+# The New Character Incentive's share of the XP a character could have earned in the
+# chronicle (MET: VTM p. 349): a quarter.
+INCENTIVE_SHARE = 4
+
+
+@dataclass(frozen=True)
+class Incentive:
+    """The New Character Incentive in figures: the starting XP, the most XP a character
+    could have earned here (the ceiling less the starting XP), and a quarter of it,
+    rounded down."""
+
+    base: int
+    earned: int
+    bonus: int
+
+    @property
+    def total(self) -> int:
+        return self.base + self.bonus
+
+
+def incentive(found: Figures) -> Incentive:
+    earned = max(0, found.ceiling - found.starting)
+    return Incentive(base=found.starting, earned=earned, bonus=earned // INCENTIVE_SHARE)
+
+
+def new_character_xp(troupe: Troupe, found: Figures) -> int:
+    """What a new character built for the troupe starts with: its XP floor, or with the
+    New Character Incentive on, its starting XP and a quarter of the XP a character
+    could have earned here (p. 349)."""
+    return incentive(found).total if troupe.new_character_incentive else found.floor
 
 
 def entries(db: Session, troupe: Troupe) -> list[XpRangeEntry]:

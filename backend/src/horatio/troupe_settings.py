@@ -76,16 +76,30 @@ def set_golconda(db: Session, user: User, troupe: Troupe, on: bool) -> None:
         apply_grants(db, user, character)
 
 
-def set_clan_rarity(db: Session, user: User, troupe: Troupe, rarities: Mapping[str, str]) -> None:
-    """Name how rare clans are here. Characters being built here take the rarity merit
-    it names straight away; finished characters keep theirs."""
+def set_clan_rarity(
+    db: Session,
+    user: User,
+    troupe: Troupe,
+    rarities: Mapping[str, str],
+    notes: Mapping[str, str] | None = None,
+) -> None:
+    """Name how rare clans are here, each with its reason if staff give one (the
+    Setting Style Document shows it, #771); None keeps the reasons the clans still
+    rated have. Characters being built here take the rarity merit it names straight
+    away; finished characters keep theirs."""
     rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
     unknown = [c for c in rarities if ("clan", c) not in rule_set.traits or ":" in c]
     if unknown:
         raise unprocessable(
             f"Not a clan: {', '.join(unknown)}. Name the clan; its bloodlines follow it."
         )
+    kept = troupe.clan_rarity_notes if notes is None else notes
     troupe.clan_rarity = dict(sorted(rarities.items()))
+    troupe.clan_rarity_notes = {
+        clan: " ".join(note.split())
+        for clan, note in sorted(kept.items())
+        if clan in rarities and note.strip()
+    }
     db.flush()
     clan_merits.resync(db, building_here(db, troupe))
     audit.record(
@@ -93,7 +107,11 @@ def set_clan_rarity(db: Session, user: User, troupe: Troupe, rarities: Mapping[s
         user,
         "house.clan_rarity",
         troupe_id=troupe.id,
-        rarities=", ".join(f"{c} {r}" for c, r in troupe.clan_rarity.items()) or "the book's",
+        rarities=", ".join(
+            f"{c} {r}" + (f" ({why})" if (why := troupe.clan_rarity_notes.get(c)) else "")
+            for c, r in troupe.clan_rarity.items()
+        )
+        or "the book's",
     )
 
 

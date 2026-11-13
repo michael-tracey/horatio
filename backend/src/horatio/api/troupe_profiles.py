@@ -140,6 +140,8 @@ class TroupeProfileOut(BaseModel):
     content_notes: str
     # Its written house rules, when it chooses to show them here; else none.
     written_rules: list[WrittenRuleOut]
+    # It shows its Setting Style Document too (GET /troupes/{id}/setting, #771).
+    setting_document: bool = False
     # Whether the viewer may edit it, and whether pictures can be uploaded here.
     can_edit: bool
     pictures_available: bool
@@ -217,6 +219,7 @@ def profile_out(db: Session, viewer: User | None, troupe: Troupe) -> TroupeProfi
         min_age=kept.min_age,
         content_notes=kept.content_notes,
         written_rules=rules_out(db, troupe.id) if troupe.written_rules_public else [],
+        setting_document=troupe.setting_public,
         can_edit=can_edit,
         pictures_available=pictures.upload_dir() is not None,
     )

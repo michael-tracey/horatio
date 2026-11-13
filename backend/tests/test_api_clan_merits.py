@@ -166,6 +166,7 @@ def test_a_troupe_of_one_sect_is_the_setting_and_names_its_own_rarities(troupe: 
         "clan": "Tremere",
         "book": {"Anarch": "rare", "Camarilla": "common", "Sabbat": "uncommon"},
         "house": None,
+        "note": "",
     }
     assert next(c for c in rarity["clans"] if c["clan"] == "Lhiannan")["book"] == {
         "Anarch": "rare",

@@ -8,11 +8,13 @@ import { useDates } from "../../dates";
 import { withNext } from "../../next";
 import { filled, linksOf, newPlayersText, type LinkKind } from "./profile";
 import { Games, Pictures, ProfilePartEditor, type ProfilePart } from "./ProfileEditor";
+import { SettingDocumentFor } from "./SettingDocument";
 import { WrittenRulesList } from "./WrittenRulesList";
 
 /**
  * A troupe's profile: its portrait, links, schedule, venue, setting, new players
- * and age and content notes, each part shown only when it has something in it.
+ * and age and content notes, each part shown only when it has something in it; and
+ * its Setting Style Document and written house rules when its storytellers show them.
  * The troupe's Overview shows it to anyone signed in; the public page (/t/…) to
  * anyone at all when the troupe has made it public. `signedIn` decides whether staff
  * link to their own pages, which only people signed in can open.
@@ -162,6 +164,11 @@ export function TroupeProfileView({ profile: p, signedIn, edit = false }: { prof
               <p className="text-sm whitespace-pre-line">{p.content_notes}</p>
             </Card>
           )
+        )}
+        {p.setting_document && (
+          <Card title="Setting Style Document" className="md:col-span-2">
+            <SettingDocumentFor troupeId={p.id} />
+          </Card>
         )}
         {p.written_rules.length > 0 && (
           <Card title="House rules" className="md:col-span-2">

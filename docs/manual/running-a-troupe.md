@@ -15,6 +15,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Add, change and remove staff | Yes | Yes | No | No |
 | Change the house rules and troupe settings (Customise) | Yes | Yes | No (can read them) | No |
 | Write the setting: its teaser, scope, themes, moods and storyteller notes (Troupe settings) | Yes | Yes | Yes | No |
+| Show the setting on the troupe's profile | Yes | Yes | No | No |
 | Set up connectors (Discord, email) and choose the Discord channels for news and announcements | Yes | Yes | No (can read them) | No |
 | Edit the troupe's profile, add games to the schedule | Yes | Yes | No | No |
 | See character sheets, the Characters list and the Players list | Yes | Yes | Yes | No |
@@ -94,7 +95,7 @@ A troupe's page has its tabs in groups, one for each job. Which tabs you see dep
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | Overview, Who's Who, News, Announcements, Nominations, House rules, Status, Staff, Log |
+| Troupe | Overview, Setting, Who's Who, News, Announcements, Nominations, House rules, Status, Staff, Log |
 | Characters | Approvals, Being built, Characters, Players, Lines and veils |
 | Games | At game, Scenes, Award XP |
 | Court | Titles, Court, Chronicle, Boons, Bonds, Web of obligation |
@@ -508,6 +509,15 @@ The parts of the chronicle's Setting Style Document (MET: VTM pp. 331–336) tha
 - **Themes** and **Moods**: each one an entry of its own, shown as a chip that opens to its description. **Add a theme** or **Add a mood** starts from one of the book's samples (themes p. 325, moods pp. 325–326), which fills in a description for you to change, or from your own. Drag a chip onto another to put it in that place, or open it and use **Earlier** and **Later**.
 - **Storyteller notes**: short rules for the chronicle, such as how long ago characters may have been Embraced, each its own entry in the order you put them.
 
+The rest of the document is built from the troupe's own settings, so it's never typed twice and changes when they do:
+
+- **Setting**: from **Sects** under [Who may join](#who-may-join). One sect is the chronicle's setting for every character. With several, each is a faction: its characters are built by their own sect's costs and clan rarities, and play by this chronicle's mechanics (MET: VTM p. 334).
+- **Clan rarity adjustments**: the clans you rate yourselves under **Rules › Starting points › Clan rarity**, each beside the book's rarity for the setting, with the reason you give it there ("due to story"). Common, uncommon and rare clans with none say **Settings default**.
+- **Cost modifications**: your prices, your own merits and flaws that characters can take, and the book traits you ban or class differently.
+- **Setting-specific mechanics**: what a new character starts with, your changes to starting points, the checks that limit creation (your own and the book's you play differently), the game XP chart and monthly cap, and your other house rules. **Graduated XP cap** says **Yes** when the game XP chart gives less as a character earns more (p. 349).
+
+Every member reads the whole document on the troupe's **Setting** tab, beside **Overview**; running staff see an edit link beside each built part. **Print it** opens it black on white for the Storyteller table. Under **Where players read it**, storytellers can tick **Show it on the troupe's profile**, as written rules can be; a public profile then shows it to anyone. A character built to the troupe's rules shows its themes, moods and teaser on the wizard's Concept step, with a link to the whole document.
+
 ### A feature's own settings
 
 Who's Who, At game, Boons and Bonds each have **Settings** at the top of their tab, folded away until opened, for storytellers. A feature's **Settings** link in the Features list opens them.
@@ -533,6 +543,7 @@ NPCs are never limited by either.
 - **Experience**: what the troupe usually gives, **To start**, **For a game session** and **For completing a downtime**. Awarding XP starts at the session amount, and each new cycle at the completion amount.
 - **XP floor and ceiling**: see [The XP floor and ceiling](#the-xp-floor-and-ceiling).
 - **Game XP chart**: see [The game XP chart](#the-game-xp-chart).
+- **New Character Incentive**: the book's optional rule (MET: VTM p. 349). Ticked, a new character built for the troupe starts with the starting XP and a quarter of the XP a character could have earned here (the XP ceiling less the starting XP), rather than at the XP floor. The card gives the figure now. Characters already made keep their XP.
 
 ### Status and titles settings
 
@@ -1194,7 +1205,7 @@ Completing a downtime gives the cycle's completion XP by itself, as the characte
 The **XP floor and ceiling** card (on the Overview and in Troupe settings) shows:
 
 - **Ceiling**: the most XP a character here could have by now: the starting XP, every game's XP and every downtime's XP.
-- **Floor**: the same without the downtimes. New characters built for the troupe start at the floor.
+- **Floor**: the same without the downtimes. New characters built for the troupe start at the floor, unless the troupe uses the [New Character Incentive](#xp-settings).
 
 Awarding a game's XP and closing a cycle can add to them (the tick boxes above). **What changed them** lists each change. For a chronicle that began before Horatio, storytellers can **Set by hand** either figure, with **Why**; games and downtimes still add to them afterwards.
 

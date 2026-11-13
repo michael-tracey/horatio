@@ -29,6 +29,7 @@ const BARE: TroupeProfileOut = {
   written_rules: [],
   can_edit: true,
   pictures_available: true,
+  setting_document: false,
 };
 
 function draw(edit: boolean, profile: TroupeProfileOut = BARE) {

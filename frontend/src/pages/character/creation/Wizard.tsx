@@ -31,6 +31,7 @@ import { DISCIPLINES_FROM_MERITS, INEPT, disciplinesIntro, ineptChoices, without
 import { brokenChecks, listed, overBudget, stepFor, stepNotices, strayPicks, type NoticeSource, type StepNotice, type StepRef } from "./notices";
 import { useHasDomitor } from "../splats";
 import { pageText } from "../../troupe/bookPage";
+import { SettingSummary } from "../../troupe/SettingDocument";
 import { DomitorPanel, DomitorSummary, useDomitor } from "../Domitor";
 import { generationText } from "../../../generation";
 import { domitorNeeded, dotBudget, ghoulDisciplinesIntro, savedDots } from "./ghoul";
@@ -704,6 +705,8 @@ function ConceptStep({
 }) {
   // "Other…" waits for its name and description before it is saved.
   const [makingOwn, setMakingOwn] = useState(false);
+  // Whose rules it is built by: their setting is what it is built for (#771).
+  const rulesTroupe = character.home_troupe_id ?? character.building_troupe_id;
   const identity = identityChoices(catalogue, sheet);
   // Clan first, the biggest choice, with what it means under it. A ghoul's clan is its
   // domitor's, set with the domitor.
@@ -737,6 +740,7 @@ function ConceptStep({
       ) : (
         <p className="text-sm text-mist">Who is {character.name}? Clan matters most: it decides which disciplines are in-clan.</p>
       )}
+      {rulesTroupe && <SettingSummary troupeId={rulesTroupe} />}
       {clanChoice && field(clanChoice)}
       {clan && !ghoul && <ClanCard clan={clan} creation={creation} catalogue={catalogue} />}
       {clan && !ghoul && <ClanChoice character={character} creation={creation} catalogue={catalogue} />}

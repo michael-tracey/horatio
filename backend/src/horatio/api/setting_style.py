@@ -1,6 +1,9 @@
 """A troupe's Setting Style Document (horatio.setting_style): its running staff write
 the subtitle, teaser, scope, themes, moods and storyteller notes under Troupe
-settings; anyone signed in reads them, as the book makes the document a handout."""
+settings, and the rest is built from the troupe's own settings
+(horatio.api.setting_document). Anyone signed in reads it, as the book makes the
+document a handout, and anyone at all when its storytellers show it on a public
+profile."""
 
 import uuid
 from typing import Annotated
@@ -9,11 +12,12 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy.orm import Session
 
-from horatio import setting_style
+from horatio import audit, setting_style
 from horatio.api.downtimes import staff_troupe
-from horatio.api.troupe_profiles import Profile
+from horatio.api.setting_document import GeneratedOut, generated_out
+from horatio.api.troupe_profiles import Profile, viewable
 from horatio.api.written_rules import readable
-from horatio.auth.deps import CurrentUser, DbSession
+from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
 from horatio.models import ChronicleMotif, Troupe, User
 from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.setting_style import Kind, SettingError
@@ -63,7 +67,13 @@ class SettingEntryOut(BaseModel):
     page: int | None
 
 
+class SettingPublicIn(BaseModel):
+    public: bool
+
+
 class SettingOut(BaseModel):
+    # The troupe's name, for a reader with no troupe page around it (the profile, print).
+    troupe: str
     # The chronicle's name and city, as the profile has them: the document's title,
     # and the locale of its scope.
     chronicle: str
@@ -76,8 +86,13 @@ class SettingOut(BaseModel):
     themes: list[SettingEntryOut]
     moods: list[SettingEntryOut]
     notes: list[SettingEntryOut]
-    # Whether the viewer may write it.
+    # The parts built from the troupe's own settings (#771).
+    generated: GeneratedOut
+    # Whether the troupe's profile shows it too.
+    public: bool
+    # Whether the viewer may write it, and may show it on the profile or not.
     can_edit: bool
+    can_publish: bool = False
 
 
 class SettingPresetOut(BaseModel):
@@ -101,16 +116,23 @@ def entry_out(motif: ChronicleMotif) -> SettingEntryOut:
     )
 
 
-def can_write(db: Session, user: User, troupe: Troupe) -> bool:
-    return (troupe.archived_at is None or user.is_custodian) and allows(
-        troupe_role(db, user, troupe), TroupeAction.WRITE_SETTING, is_custodian=user.is_custodian
+def can_do(db: Session, user: User | None, troupe: Troupe, action: TroupeAction) -> bool:
+    return (
+        user is not None
+        and (troupe.archived_at is None or user.is_custodian)
+        and allows(troupe_role(db, user, troupe), action, is_custodian=user.is_custodian)
     )
 
 
-def setting_out(db: Session, user: User, troupe: Troupe) -> SettingOut:
+def can_write(db: Session, user: User | None, troupe: Troupe) -> bool:
+    return can_do(db, user, troupe, TroupeAction.WRITE_SETTING)
+
+
+def setting_out(db: Session, user: User | None, troupe: Troupe) -> SettingOut:
     profile = Profile.model_validate(troupe.profile)
     entries = [entry_out(m) for m in setting_style.listed(db, troupe.id)]
     return SettingOut(
+        troupe=troupe.name,
         chronicle=profile.setting.chronicle,
         locale=profile.setting.city,
         subtitle=troupe.setting_subtitle,
@@ -120,7 +142,10 @@ def setting_out(db: Session, user: User, troupe: Troupe) -> SettingOut:
         themes=[e for e in entries if e.kind == "theme"],
         moods=[e for e in entries if e.kind == "mood"],
         notes=[e for e in entries if e.kind == "note"],
+        generated=generated_out(db, troupe),
+        public=troupe.setting_public,
         can_edit=can_write(db, user, troupe),
+        can_publish=can_do(db, user, troupe, TroupeAction.EDIT_PROFILE),
     )
 
 
@@ -156,10 +181,36 @@ def read_setting_presets(user: CurrentUser) -> list[SettingPresetOut]:
 
 
 @router.get("/setting")
-def read_setting(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> SettingOut:
-    """The troupe's Setting Style Document as its staff write it. Anyone signed in
-    may read it: it is the chronicle's handout for players."""
-    return setting_out(db, user, readable(db, user, troupe_id))
+def read_setting(troupe_id: uuid.UUID, db: DbSession, user: MaybeUser) -> SettingOut:
+    """The troupe's Setting Style Document: what its staff write, and what its own
+    settings give. Anyone signed in may read it, as it is the chronicle's handout for
+    players; anyone at all when its profile is public and shows it."""
+    if user is not None:
+        return setting_out(db, user, readable(db, user, troupe_id))
+    troupe = viewable(db, None, troupe_id)
+    if not troupe.setting_public:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
+    return setting_out(db, None, troupe)
+
+
+@router.put("/setting/public")
+def show_setting_on_profile(
+    troupe_id: uuid.UUID, body: SettingPublicIn, db: DbSession, user: CurrentUser
+) -> SettingOut:
+    """Show the document on the troupe's profile too, or not: off unless its
+    storytellers switch it on. A public profile shows it to anyone at all."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.EDIT_PROFILE)
+    if body.public != troupe.setting_public:
+        troupe.setting_public = body.public
+        audit.record(
+            db,
+            user,
+            "troupe.setting_public",
+            troupe_id=troupe.id,
+            state="shows its setting" if body.public else "no longer shows its setting",
+        )
+    db.commit()
+    return setting_out(db, user, troupe)
 
 
 @router.put("/setting")

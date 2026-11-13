@@ -10983,7 +10983,7 @@ export interface paths {
         /**
          * Set Public
          * @description Show the profile to anyone, or only to people signed in, without touching
-         *     the rest of it: the Profile tab's switch, which saves at once.
+         *     the rest of it: the Public switch on the troupe's Overview, which saves at once.
          */
         put: operations["set_public_api_troupes__troupe_id__profile_public_put"];
         post?: never;
@@ -11327,8 +11327,9 @@ export interface paths {
         };
         /**
          * Read Setting
-         * @description The troupe's Setting Style Document as its staff write it. Anyone signed in
-         *     may read it: it is the chronicle's handout for players.
+         * @description The troupe's Setting Style Document: what its staff write, and what its own
+         *     settings give. Anyone signed in may read it, as it is the chronicle's handout for
+         *     players; anyone at all when its profile is public and shows it.
          */
         get: operations["read_setting_api_troupes__troupe_id__setting_get"];
         /**
@@ -11397,6 +11398,27 @@ export interface paths {
          * @description Put the themes, the moods or the notes in a new order.
          */
         put: operations["order_setting_entries_api_troupes__troupe_id__setting_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/setting/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Show Setting On Profile
+         * @description Show the document on the troupe's profile too, or not: off unless its
+         *     storytellers switch it on. A public profile shows it to anyone at all.
+         */
+        put: operations["show_setting_on_profile_api_troupes__troupe_id__setting_public_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -17528,6 +17550,10 @@ export interface components {
         };
         /** ClanRarityIn */
         ClanRarityIn: {
+            /** Notes */
+            notes?: {
+                [key: string]: string;
+            } | null;
             /** Rarities */
             rarities: {
                 [key: string]: "common" | "uncommon" | "rare" | "restricted";
@@ -17552,6 +17578,11 @@ export interface components {
             clan: string;
             /** House */
             house: string | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
         };
         /** ClanSection */
         ClanSection: {
@@ -20933,6 +20964,24 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** GeneratedOut */
+        GeneratedOut: {
+            /** Clan Rarity */
+            clan_rarity: components["schemas"]["RarityChangeOut"][];
+            /** Costs */
+            costs: string[];
+            /** Graduated */
+            graduated: boolean;
+            incentive: components["schemas"]["IncentiveOut"] | null;
+            /** Initial Xp */
+            initial_xp: number;
+            /** Mechanics */
+            mechanics: string[];
+            /** Sects */
+            sects: string[];
+            /** Setting */
+            setting: string | null;
+        };
         /** GiftIn */
         GiftIn: {
             /** Amount */
@@ -21971,6 +22020,21 @@ export interface components {
             troupe_id: string;
             /** Troupe Name */
             troupe_name: string;
+        };
+        /**
+         * IncentiveOut
+         * @description The New Character Incentive in figures (p. 349): the starting XP, the most XP a
+         *     character could have earned here, a quarter of it, and the two together.
+         */
+        IncentiveOut: {
+            /** Base */
+            base: number;
+            /** Bonus */
+            bonus: number;
+            /** Earned */
+            earned: number;
+            /** Total */
+            total: number;
         };
         /** InfluenceActionOut */
         InfluenceActionOut: {
@@ -28336,6 +28400,21 @@ export interface components {
             on: boolean;
         };
         /**
+         * RarityChangeOut
+         * @description A clan the troupe rates itself: its rarity here, the book's in the troupe's
+         *     setting (None when each character goes by its own sect's), and why.
+         */
+        RarityChangeOut: {
+            /** Book */
+            book: string | null;
+            /** Clan */
+            clan: string;
+            /** Note */
+            note: string;
+            /** Rarity */
+            rarity: string;
+        };
+        /**
          * RarityOut
          * @description How rare a clan is: in the troupe's setting, or in each sect's as the book has it.
          *     Its bloodlines are as rare as it.
@@ -30086,8 +30165,14 @@ export interface components {
             agency: string;
             /** Can Edit */
             can_edit: boolean;
+            /**
+             * Can Publish
+             * @default false
+             */
+            can_publish: boolean;
             /** Chronicle */
             chronicle: string;
+            generated: components["schemas"]["GeneratedOut"];
             /** Locale */
             locale: string;
             /** Moods */
@@ -30096,12 +30181,16 @@ export interface components {
             notes: components["schemas"]["SettingEntryOut"][];
             /** Power */
             power: string;
+            /** Public */
+            public: boolean;
             /** Subtitle */
             subtitle: string;
             /** Teaser */
             teaser: string;
             /** Themes */
             themes: components["schemas"]["SettingEntryOut"][];
+            /** Troupe */
+            troupe: string;
         };
         /** SettingPresetOut */
         SettingPresetOut: {
@@ -30118,6 +30207,11 @@ export interface components {
             name: string;
             /** Page */
             page: number;
+        };
+        /** SettingPublicIn */
+        SettingPublicIn: {
+            /** Public */
+            public: boolean;
         };
         /** SettingTextIn */
         SettingTextIn: {
@@ -32843,6 +32937,8 @@ export interface components {
             downtime_xp?: number | null;
             /** Name */
             name?: string | null;
+            /** New Character Incentive */
+            new_character_incentive?: boolean | null;
             /** Play Tabs Off */
             play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws" | "boons")[] | null;
             /** Session Xp */
@@ -33141,6 +33237,16 @@ export interface components {
             my_role: components["schemas"]["Role"] | null;
             /** Name */
             name: string;
+            /**
+             * New Character Incentive
+             * @default false
+             */
+            new_character_incentive: boolean;
+            /**
+             * New Character Xp
+             * @default 0
+             */
+            new_character_xp: number;
             /** New Players */
             new_players: ("welcoming" | "closed") | null;
             /**
@@ -33316,6 +33422,11 @@ export interface components {
             /** Schedule */
             schedule: string;
             setting: components["schemas"]["Setting"];
+            /**
+             * Setting Document
+             * @default false
+             */
+            setting_document: boolean;
             venue: components["schemas"]["VenueOut"];
             /** Written Rules */
             written_rules: components["schemas"]["WrittenRuleOut"][];
@@ -57139,6 +57250,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SettingOrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_setting_on_profile_api_troupes__troupe_id__setting_public_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingPublicIn"];
             };
         };
         responses: {

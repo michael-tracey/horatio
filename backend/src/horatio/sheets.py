@@ -1874,12 +1874,18 @@ def replace_choice(
 
 def start_character(db: Session, player: User, character: Character) -> None:
     """Give a new character its starting XP: the XP floor of the troupe it is built
-    for, or the rule set's starting XP when it is built in its player's vault."""
+    for (or its New Character Incentive, horatio.xp_range.new_character_xp), or the
+    rule set's starting XP when it is built in its player's vault."""
     reason = "Starting experience"
     if character.building_troupe_id is not None:
         troupe = db.get_one(Troupe, character.building_troupe_id)
-        starting_xp = xp_range.figures(db, troupe).floor
-        reason = f"Starting experience: {troupe.name}'s XP floor"
+        found = xp_range.figures(db, troupe)
+        starting_xp = xp_range.new_character_xp(troupe, found)
+        reason = (
+            f"Starting experience: {troupe.name}'s New Character Incentive"
+            if troupe.new_character_incentive
+            else f"Starting experience: {troupe.name}'s XP floor"
+        )
     else:
         starting_xp = db.scalar(select(RuleSet.starting_xp).where(RuleSet.splat == character.splat))
     if starting_xp:

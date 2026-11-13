@@ -6,7 +6,7 @@ for its players to read."""
 import uuid
 from collections.abc import Mapping
 from dataclasses import replace
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
@@ -1091,6 +1091,9 @@ class ClanRarityRow(BaseModel):
     book: dict[str, str]
     # The troupe's own, or None to go by the book.
     house: str | None
+    # Why the troupe rates it so, if staff say ("due to story"): for the Setting Style
+    # Document (horatio.setting_document).
+    note: str = ""
 
 
 class ClanRarityOut(BaseModel):
@@ -1105,6 +1108,8 @@ class ClanRarityOut(BaseModel):
 class ClanRarityIn(BaseModel):
     # Each clan the troupe rates itself; every other goes by the book.
     rarities: dict[str, Rarity]
+    # Why, for any of those clans: a few words each. Left out, the reasons kept stay.
+    notes: dict[str, Annotated[str, Field(max_length=200)]] | None = None
 
 
 def clan_rarity_out(db: DbSession, troupe: Troupe) -> ClanRarityOut:
@@ -1126,6 +1131,7 @@ def clan_rarity_out(db: DbSession, troupe: Troupe) -> ClanRarityOut:
                     if EVERYWHERE in book[c] or sect in book[c]
                 },
                 house=troupe.clan_rarity.get(c),
+                note=troupe.clan_rarity_notes.get(c, ""),
             )
             for c in clans
         ],
@@ -1147,7 +1153,7 @@ def set_clan_rarity(
     """Name how rare clans are here. Characters being built here take the rarity merit
     it names straight away; finished characters keep theirs."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    troupe_settings.set_clan_rarity(db, user, troupe, body.rarities)
+    troupe_settings.set_clan_rarity(db, user, troupe, body.rarities, body.notes)
     db.commit()
     return clan_rarity_out(db, troupe)
 
@@ -1482,8 +1488,9 @@ def free_changes_setting(troupe: Troupe) -> HouseSettingOut:
     )
 
 
-def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
-    """The troupe's other house rules that differ from the book."""
+def other_settings(db: DbSession, troupe: Troupe, *, rarity: bool = True) -> list[HouseSettingOut]:
+    """The troupe's other house rules that differ from the book; without how rare it
+    rates clans, for a reader that shows that apart (`rarity` False)."""
     found: list[HouseSettingOut] = []
     if troupe.starting_blood is not None:
         found.append(
@@ -1580,13 +1587,13 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                 book_text="The last 3 months",
             )
         )
-    if troupe.clan_rarity:
-        rarity = clan_rarity_out(db, troupe)
-        for row in rarity.clans:
+    if rarity and troupe.clan_rarity:
+        rarities = clan_rarity_out(db, troupe)
+        for row in rarities.clans:
             if row.house is None:
                 continue
-            if rarity.setting and rarity.setting in row.book:
-                book = row.book[rarity.setting].capitalize()
+            if rarities.setting and rarities.setting in row.book:
+                book = row.book[rarities.setting].capitalize()
             else:
                 book = ", ".join(f"{r} for the {sect}" for sect, r in row.book.items()).capitalize()
             found.append(
