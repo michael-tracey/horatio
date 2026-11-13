@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from horatio.auth.resets import issue_reset
 from horatio.models import AuditEvent, User
-from tests.api_helpers import PASSWORD, sign_up
+from tests.api_helpers import PASSWORD, Person, sign_up
 
 
 def test_signing_up_signs_you_in(client_for: Callable[[], TestClient]) -> None:
@@ -20,6 +20,28 @@ def test_signing_up_signs_you_in(client_for: Callable[[], TestClient]) -> None:
     assert me.status_code == 200
     assert me.json()["email"] == "agnes@example.com"
     assert me.json()["is_custodian"] is False
+
+
+def test_signing_up_tells_each_custodian_but_no_one_else(
+    client_for: Callable[[], TestClient], session: Session
+) -> None:
+    first = sign_up(client_for, "keeper", custodian=True, session=session)
+    second = sign_up(client_for, "warden", custodian=True, session=session)
+    bystander = sign_up(client_for, "bystander")
+
+    agnes = sign_up(client_for, "agnes")
+
+    def signed_up(person: Person) -> list[dict[str, str]]:
+        items = person.client.get("/notifications").json()["items"]
+        return [i for i in items if i["kind"] == "account.signed_up" and "agnes" in i["summary"]]
+
+    for custodian in (first, second):
+        [notice] = signed_up(custodian)
+        assert notice["summary"] == f"agnes (@{agnes.handle}) signed up."
+        assert notice["link"] == f"/custodian/people?q={agnes.handle}"
+        assert "@example.com" not in notice["summary"]
+    assert signed_up(bystander) == []
+    assert signed_up(agnes) == []
 
 
 def test_the_session_cookie_is_http_only(client_for: Callable[[], TestClient]) -> None:

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { LiveReset, PlayerSummary } from "../../api/types";
 import { ActionMenu, MenuGroup, MenuItem } from "../../components/ActionMenu";
@@ -22,7 +22,9 @@ import { ViewAs } from "./ViewAs";
  * their row. Below, who is suspended, the reset links out now and who has reset
  * their password, and the email changes. */
 export function PeopleTab() {
-  const [q, setQ] = useState("");
+  // A link can open it searched already: a new sign-up's notice names their handle (#757).
+  const [params] = useSearchParams();
+  const [q, setQ] = useState(() => params.get("q") ?? "");
   const [troupeId, setTroupeId] = useState("");
   const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
   const people = useQuery({
