@@ -21,6 +21,7 @@ from horatio import (
     pronouns,
     remembrances,
     renames,
+    retiring,
     social_age,
 )
 from horatio.auth.deps import CurrentUser, DbSession
@@ -178,6 +179,33 @@ class Retiring(Leaving):
     # Open remembrances in the home troupe's next downtime (horatio.remembrances): its
     # running staff open them; its player asks them to.
     remembrances: bool = False
+
+
+class LeavingThrallOut(BaseModel):
+    # The thrall, and the troupe that keeps the bond.
+    name: str
+    troupe: str
+
+
+class LeavingSharersOut(BaseModel):
+    # The shared background, its kind (such as "Haven"), its troupe, and the other
+    # characters (or names) still with dots in it.
+    name: str
+    background: str
+    troupe: str
+    others: list[str]
+
+
+class LeavingWarningsOut(BaseModel):
+    """What retiring the character, or saying it met Final Death, could tell others
+    (horatio.retiring), as the reader may know of it."""
+
+    # Bonds it is the regnant of, still felt: at Final Death they fade unfelt.
+    thralls: list[LeavingThrallOut]
+    # Shared backgrounds it still has dots in, with others.
+    shared: list[LeavingSharersOut]
+    # The reader is its troupe's running staff, who keep listings and logs.
+    staff: bool
 
 
 class PronounsIn(BaseModel):
@@ -498,6 +526,32 @@ def retire_character(
                 remembrances.ask_for(db, user, character)
     db.commit()
     return character_out(db, character)
+
+
+@router.get("/{character_id}/leaving/warnings")
+def leaving_warnings(
+    character_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> LeavingWarningsOut:
+    """What the retire dialog, and changing why a character left, warn of before it
+    tells other players something they haven't been told (#748): its player's, and its
+    home troupe's running staff's, each as they may know of it."""
+    character = visible_character(db, user, character_id)
+    if not can_change_leaving(db, user, character):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only the character's player or its home troupe's staff retire it.",
+        )
+    found = retiring.what_it_would_tell(db, user, character)
+    return LeavingWarningsOut(
+        thralls=[LeavingThrallOut(name=t.name, troupe=t.troupe) for t in found.thralls],
+        shared=[
+            LeavingSharersOut(
+                name=s.name, background=s.background, troupe=s.troupe, others=s.others
+            )
+            for s in found.shared
+        ],
+        staff=found.staff,
+    )
 
 
 @router.put("/{character_id}/leaving")

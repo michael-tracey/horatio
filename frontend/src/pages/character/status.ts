@@ -14,6 +14,7 @@ function games(n: number): string {
  * after 2 more games". `day` writes an API day ("2026-11-26").
  */
 export function endingText(ending: EndingOut, day: (d: string) => string): string {
+  if (ending.boonbreaker) return ending.text;
   if (ending.this_game) return ending.games_left ? "Ends with the game it was given at" : "Ends now";
   const after = [
     ending.games_left ? `after ${games(ending.games_left)}` : "",

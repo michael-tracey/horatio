@@ -241,7 +241,7 @@ def troupe_request_tasks(db: Session, user: User) -> list[Item]:
             troupe_id=None,
             troupe_name=None,
             summary=f"{requester} asks for a new troupe, {request.name}",
-            link="/custodian/troupe-requests",
+            link="/custodian/troupe-management#requests",
             at=request.created_at,
             read=False,
         )
@@ -336,7 +336,7 @@ def troupe_request_waiting(db: Session, request: TroupeRequest, requester: User)
         custodians,
         "troupe_request",
         f"{requester.display_name} asks for a new troupe, {request.name}",
-        "/custodian/troupe-requests",
+        "/custodian/troupe-management#requests",
     )
 
 

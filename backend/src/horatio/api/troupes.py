@@ -133,6 +133,16 @@ class TroupeOut(BaseModel):
     # creditor's player may mark it settled there.
     boon_players_see: Literal["intake", "owes", "owed"] = "intake"
     boon_players_settle: bool = False
+    # Boons its players report wait for review before they stand (#687).
+    boon_review: bool = False
+    # The Harpy's access to the ledger (#688): none, the review queue, or all of it.
+    boon_harpy: Literal["none", "submissions", "full"] = "none"
+    # The Harpy with the full ledger also reads its boon standings and statistics (#749).
+    boon_harpy_standings: bool = False
+    # The Harpy may give others access to the ledger (#689), and what the troupe calls
+    # them.
+    boon_talons: bool = False
+    boon_talon_word: Literal["Lesser Harpies", "Talons"] = "Lesser Harpies"
     # The court over time (horatio.title_history): whether its players see it.
     court_history_players: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
@@ -381,6 +391,11 @@ def one_out(
         boons=troupe.boons,
         boon_players_see=troupe.boon_players_see,  # type: ignore[arg-type]  # checked by the database
         boon_players_settle=troupe.boon_players_settle,
+        boon_review=troupe.boon_review,
+        boon_harpy=troupe.boon_harpy,  # type: ignore[arg-type]  # checked by the database
+        boon_harpy_standings=troupe.boon_harpy_standings,
+        boon_talons=troupe.boon_talons,
+        boon_talon_word=troupe.boon_talon_word,  # type: ignore[arg-type]  # checked by the database
         court_history_players=troupe.court_history_players,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),

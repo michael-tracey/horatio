@@ -1102,16 +1102,17 @@ function EntryRow({
  */
 const KNOWN_WHY: Record<KnownBondOut["why"], string> = {
   embrace: "from the Embrace",
+  sire: "the sire on their sheet",
   domitor: "their domitor",
   retainer: "a ghoul Retainer",
 };
 
 /**
  * Bonds Horatio can work out but doesn't keep yet (#663): childer to the sires who
- * Embraced them, ghouls to their domitors, and ghoul Retainers to their vampires, from
- * before the troupe tracked bonds. Staff look the list over and add them all at once;
- * once added there's nothing more to show. Bonds made from now on are added as they
- * happen.
+ * Embraced them or their sheets name (#739), ghouls to their domitors, and ghoul
+ * Retainers to their vampires, from before the troupe tracked bonds. Staff look the
+ * list over and add them all at once; once added there's nothing more to show. Bonds
+ * made from now on are added as they happen.
  */
 function KnownBonds({ troupeId }: { troupeId: string }) {
   const dates = useDates();

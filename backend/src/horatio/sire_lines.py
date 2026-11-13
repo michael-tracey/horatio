@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, social_age, whos_who
+from horatio import audit, notifications, social_age, whos_who
 from horatio.embrace import generation_number
 from horatio.models import (
     Character,
@@ -38,6 +38,7 @@ from horatio.models import (
     TroupeMembership,
     User,
 )
+from horatio.permissions import TroupeAction
 from horatio.sheets import conflict, unprocessable
 
 VAMPIRE = "vampire"
@@ -280,9 +281,12 @@ def set_sire(
     name: str,
     clan: str,
     secret: bool,
+    by_player: bool = False,
 ) -> None:
     """Give the character its sire: a character, or a name with its clan, or none
-    (both empty); and whether players see it. Logged on the character."""
+    (both empty); and whether players see it. Logged on the character; when its
+    player made the change (`by_player`), its home troupe's storytellers and
+    assistant storytellers are told what it was and what it is now (#747)."""
     name, clan = name.strip(), clan.strip()
     if not is_vampire(childe):
         raise conflict("Only a vampire has a sire.")
@@ -314,6 +318,29 @@ def set_sire(
             character_id=childe.id,
             sire=after or "no sire",
         )
+        if by_player:
+            tell_staff(db, user, childe, before, after)
+
+
+def tell_staff(db: Session, user: User, childe: Character, before: str, after: str) -> None:
+    """Tell the home troupe's storytellers and assistant storytellers that the
+    player changed the character's sire. They can see a sire kept from players."""
+    home = db.get(Troupe, childe.home_troupe_id) if childe.home_troupe_id else None
+    if home is None:
+        return
+    staff = [
+        s for s in notifications.staff_for(db, home, TroupeAction.APPROVE_CHANGES) if s != user.id
+    ]
+    notifications.notify(
+        db,
+        staff,
+        "character.sire",
+        f"{childe.name}'s player changed the sire: now {after or 'no sire'}, "
+        f"was {before or 'no sire'}.",
+        f"/characters/{childe.id}",
+        troupe_id=home.id,
+        character_id=childe.id,
+    )
 
 
 def sire_text(db: Session, character: Character) -> str:

@@ -153,9 +153,33 @@ _Avoid_: Favour, debt (in names), IOU, prestation (for one boon)
 A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept. Its players report boons for their characters in the Play View's Boons tab, and see there what the troupe lets them: nothing more, what their characters owe, or also what they're owed; where it lets them, a boon's creditor's player marks it settled.
 _Avoid_: Boon registry, boon sheet
 
+**Harpy (ledger access)**:
+Whoever holds the Harpy title in a troupe (a Master Harpy too; with several, each), working its boon ledger as their character from the Play View, as far as the troupe's setting reaches: **none**; **receives submissions**, the review queue and word of each boon players report; or the **full ledger**, to register, edit, trade, pass on, settle, void and reopen boons as staff do. What they do is logged as done by their character. They never see what an edit changed, a boon's staff note, who entered a boon, or why a character retired; who has left they see only **as the court knows it**. With the full ledger, the troupe can let them read the boon standings and statistics too. Access ends when the title does.
+_Avoid_: Boon keeper, ledger admin
+
+**As the court knows it**:
+Who has left, as a player who keeps the boon ledger in play (the Harpy) may learn it: what the troupe's Who's Who shows under **No longer with us**. A character listed there is gone, with why only if that says something in game (Final Death or Off-field); Inactive, which says only that a player stopped, is never shown; a character not listed there is still at court. Staff see why anyone left.
+_Avoid_: Public status, visible retirement
+
+**Lesser Harpy**:
+A character the troupe's Harpy gives access to its boon ledger, where the troupe lets the Harpy do so and the Harpy has the full ledger; a troupe may call them **Talons** instead. Each sees the ledger as the Harpy does, and may add boons, edit them (with settling and reviewing), and perform audits, as the Harpy chooses. The access belongs to the office, not to the Harpy who gave it: a new Harpy finds the list and keeps or removes each one. Staff see who has what, and may take it away. Holders of the Lesser Harpy title are offered first.
+_Avoid_: Deputy, assistant Harpy
+
+**Boon Audit**:
+One character's boons as a troupe's boon ledger held them on the night it was made, kept as they were: later changes never alter it. It gives their standing, clan and age, how many boons they owe and are owed (and what those weigh), and each boon they owe and each owed to them, standing, settled or departed; never staff notes or logs. Departures show only as the court knows them: as the Who's Who lists them under "No longer with us", with why only for Final Death or Off-field, never that a player stopped. Made by the troupe's running staff, its Harpy with the full ledger, or a Lesser Harpy allowed to; its maker may give it once to a player character in play, whose player reads it in the Play View.
+_Avoid_: Boon report, statement
+
+**Boon Review**:
+A troupe's check of boons before or after they stand. It may hold the boons its players report: they wait, pending, until its running staff accept them (after an edit, if need be) or don't, with a reason the player sees. Off, they stand at once. Horatio **flags** a new boon whose side is a name that links to no character, or that looks like a duplicate of another; staff flag any boon by hand for a ruling. Every pending boon and every flagged one waits under **To review**. A name can be **linked** to a character on one boon or on every boon naming it.
+_Avoid_: Approval (that is a sheet's), moderation, queue (in names)
+
 **Boon Standings**:
 Where everyone stands in a troupe's boon ledger, worked out live from its open and settled boons. Each kind of boon has a weight, set per troupe (Trivial 0.5, Minor 1, Major 3, Blood 5, Life 10 unless it sets its own), and a character's **net** is the weight owed to them less the weight they owe. Active by default: boons involving someone dead or off-field are left out. Its running staff see it.
 _Avoid_: Boon score, prestige, ranking
+
+**Boonbreaker**:
+A character who refused to pay a boon and was declared one in a troupe's boon ledger by its running staff, or the Harpy with the full ledger (MET: VTM p. 397). Every boon still open that they owe or are owed there is made void, and they hold Disgraced for as long as the mark stands. The mark is public at court. They may appeal for mercy to the Harpy, then to a court of seven to thirteen Harpies (p. 398); each appeal is recorded. Mercy lifts the mark and ends that Disgraced, and whoever lifts it chooses which of the voided boons stand again. Separately, a debtor who formally ignores a major, blood or life boon loses status (p. 395): Horatio marks it for staff or the Harpy to take with the status tools, never by itself.
+_Avoid_: Boon breaker (two words, in names), defaulter, blacklist
 
 **Vitae**:
 The vampiric blood in a ghoul's Blood pool: at most 5 of its 10, the only part it can spend, and refilled only by drinking from a vampire. The rest of the pool is **human Blood**, which cannot be spent.

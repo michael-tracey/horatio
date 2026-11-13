@@ -434,7 +434,7 @@ def requirements(db: Session, quest: Quest) -> list[QuestRequirement]:
         db.scalars(
             select(QuestRequirement)
             .where(QuestRequirement.quest_id == quest.id)
-            .order_by(QuestRequirement.position, QuestRequirement.created_at)
+            .order_by(QuestRequirement.position, QuestRequirement.created_at, QuestRequirement.id)
         )
     )
 
@@ -446,7 +446,7 @@ def members(db: Session, quest: Quest) -> list[tuple[QuestMember, Character]]:
             select(QuestMember, Character)
             .join(Character, QuestMember.character_id == Character.id)
             .where(QuestMember.quest_id == quest.id)
-            .order_by(QuestMember.created_at)
+            .order_by(QuestMember.created_at, QuestMember.id)
         )
     ]
 
@@ -860,7 +860,7 @@ def kept_quests(db: Session, troupe: Troupe, character: Character) -> list[tuple
             Quest.troupe_id == troupe.id,
             or_(Quest.leader_id == character.id, Quest.id.in_(joined)),
         )
-        .order_by(Quest.created_at.desc())
+        .order_by(Quest.created_at.desc(), Quest.id.desc())
     )
     return [(q, "leader" if q.leader_id == character.id else "joined") for q in found]
 
@@ -1243,7 +1243,7 @@ def queue(db: Session, user: User, troupe: Troupe, show: Show) -> list[QuestRequ
         query = query.where(open_, QuestRequest.quest_id.in_(drafts))
     else:
         query = query.where(QuestRequest.status.in_(("answered", "withdrawn")))
-    found = list(db.scalars(query.order_by(QuestRequest.created_at)))
+    found = list(db.scalars(query.order_by(QuestRequest.created_at, QuestRequest.id)))
     if not is_running(db, user, troupe):
         found = [r for r in found if narrator_may_see(user, r)]
     return found

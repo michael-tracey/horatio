@@ -16,12 +16,12 @@ import {
   readableMinimum,
   timeline,
   trend,
+  weightsOf,
   type Flow,
   type GameActivity,
   type Measure,
   type Statistics,
   type StatNode,
-  type Weights,
 } from "../../boonStatistics";
 import { net, SCOPES, weight, type Scope } from "../../boonStandings";
 import {
@@ -65,11 +65,6 @@ function columnPath(x: number, y: number, w: number, h: number, rounded: boolean
   if (h <= 0) return "";
   const r = rounded ? Math.min(4, h, w / 2) : 0;
   return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
-}
-
-function weightsOf(s: Statistics): Weights {
-  const { trivial, minor, major, blood, life } = s.weights;
-  return { trivial, minor, major, blood, life };
 }
 
 function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
@@ -331,7 +326,7 @@ function layout(nodes: StatNode[], links: ReturnType<typeof network>["links"], w
   return { placed, joined };
 }
 
-function Network({ s, troupeId }: { s: Statistics; troupeId: string }) {
+function Network({ s, troupeId, harpy }: { s: Statistics; troupeId: string; harpy: boolean }) {
   const mark = useMarks();
   const zoom = useZoom();
   const navigate = useNavigate();
@@ -443,7 +438,7 @@ function Network({ s, troupeId }: { s: Statistics; troupeId: string }) {
       </div>
       <ChartFrame
         title="Who owes whom"
-        description={`Open boons between characters: ${shown.nodes.length} people and ${shown.links.length} of ${s.links.length} debts shown. Hover or tap someone to see their debts; click again to open their boons.`}
+        description={`Open boons between characters: ${shown.nodes.length} people and ${shown.links.length} of ${s.links.length} debts shown. Hover or tap someone to see their debts${harpy ? "" : "; click again to open their boons"}.`}
         height={480}
         table={table}
         state={shown.links.length === 0 ? "empty" : "ready"}
@@ -452,7 +447,7 @@ function Network({ s, troupeId }: { s: Statistics; troupeId: string }) {
         controls={<ZoomControls zoom={zoom} />}
         legend={legend}
       >
-        {({ width, height }) => <NetworkPlot shown={shown} width={width} height={height} zoom={zoom} mark={mark} fill={fill} near={near} setNear={setNear} onOpen={(n) => n.who.character_id && navigate(`/troupes/${troupeId}/boons?character=${n.who.character_id}`)} />}
+        {({ width, height }) => <NetworkPlot shown={shown} width={width} height={height} zoom={zoom} mark={mark} fill={fill} near={near} setNear={setNear} onOpen={(n) => !harpy && n.who.character_id && navigate(`/troupes/${troupeId}/boons?character=${n.who.character_id}`)} />}
       </ChartFrame>
     </div>
   );
@@ -771,8 +766,12 @@ function Games({ s }: { s: Statistics }) {
 
 // --- the page ------------------------------------------------------------------------------
 
-/** The statistics page, loaded on its own (it brings d3), for the troupe's running staff. */
-export function BoonStatisticsPage({ troupeId }: { troupeId: string }) {
+/**
+ * The statistics page, loaded on its own (it brings d3), for the troupe's running staff;
+ * with `harpy`, as the Harpy reads it from their ledger page where the troupe allows it
+ * (#749), who has left as the court knows it and nothing that opens the staff screens.
+ */
+export function BoonStatisticsPage({ troupeId, harpy = false }: { troupeId: string; harpy?: boolean }) {
   const [scope, setScope] = useState<Scope>("active");
   const found = useQuery({
     queryKey: ["boon-statistics", troupeId, scope],
@@ -789,7 +788,8 @@ export function BoonStatisticsPage({ troupeId }: { troupeId: string }) {
       <Card title="Boon statistics">
         <p className="mb-3 text-sm text-mist">
           How the boon ledger has moved over time, who owes whom, and how debt runs between clans and sects ({BOON_PAGE}). Weights are the troupe&apos;s, as on{" "}
-          <Link to="../boon-standings">Boon standings</Link>; every chart can be read as a table.
+          {harpy ? "the standings" : <Link to="../boon-standings">Boon standings</Link>}; every chart can be read as a table.
+          {harpy && " Who has left is shown as the court knows it."}
         </p>
         <fieldset className="flex flex-wrap items-center gap-2 text-sm">
           <legend className="sr-only">Who is counted</legend>
@@ -808,7 +808,7 @@ export function BoonStatisticsPage({ troupeId }: { troupeId: string }) {
       </section>
       <section aria-label="Who owes whom" className="flex flex-col gap-2">
         <h2 className="text-lg text-gold">Who owes whom</h2>
-        <Network s={s} troupeId={troupeId} />
+        <Network s={s} troupeId={troupeId} harpy={harpy} />
       </section>
       <section aria-label="Between clans and sects" className="flex flex-col gap-2">
         <h2 className="text-lg text-gold">Between clans and sects</h2>

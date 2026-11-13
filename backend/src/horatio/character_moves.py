@@ -72,7 +72,7 @@ def preview(db: Session, character: Character, to_player: User) -> Preview:
         db.scalars(
             select(Approval)
             .where(Approval.character_id == character.id, Approval.status == "pending")
-            .order_by(Approval.created_at)
+            .order_by(Approval.created_at, Approval.id)
         )
     )
     asked = {

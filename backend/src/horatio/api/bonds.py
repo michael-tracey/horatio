@@ -279,8 +279,9 @@ class CharacterBondsOut(BaseModel):
 
 
 class KnownBondOut(BaseModel):
-    # embrace | domitor | retainer: why Horatio knows of it (#663).
-    why: Literal["embrace", "domitor", "retainer"]
+    # embrace | sire | domitor | retainer: why Horatio knows of it (#663); `sire` is
+    # the sire the childe's sheet names, with no Embrace in play (#739).
+    why: Literal["embrace", "sire", "domitor", "retainer"]
     thrall: PartyOut
     regnant: PartyOut
     # The level it stands at from the start: 1, or 3 for a full bond.
@@ -450,7 +451,7 @@ def troupe_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Trou
 
 def known_out(item: auto_bonds.Known) -> KnownBondOut:
     return KnownBondOut(
-        why=item.why,  # type: ignore[arg-type]  # one of auto_bonds' three
+        why=item.why,  # type: ignore[arg-type]  # one of auto_bonds' four
         thrall=party_out(item.thrall.character, item.thrall.name),
         regnant=party_out(item.regnant.character, item.regnant.name),
         level=item.level,
@@ -462,7 +463,8 @@ def known_out(item: auto_bonds.Known) -> KnownBondOut:
 @router.get("/troupes/{troupe_id}/bonds/known")
 def known_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[KnownBondOut]:
     """The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
-    characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663)."""
+    characters' Embraces and the sires their sheets name, ghouls' domitors and vampires'
+    ghoul Retainers (#663, #739)."""
     troupe = bonds_troupe(db, user, troupe_id)
     found = auto_bonds.known(db, troupe)
     db.commit()
