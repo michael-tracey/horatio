@@ -838,7 +838,9 @@ def post_channels(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Cha
     channels: list[ChannelOut] = []
     if unavailable is None and guild_id:
         try:
-            channels = [ChannelOut(**c.__dict__) for c in discord.text_channels(guild_id)]
+            channels = [
+                ChannelOut(**c.__dict__) for c in discord.text_channels(guild_id, permissions=True)
+            ]
         except SendError as failure:
             unavailable = failure.reason
     chosen = settings.get("post_channels") or {}

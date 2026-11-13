@@ -474,11 +474,20 @@ The server has one Discord bot, which every troupe adds to its own Discord serve
 1. Sign in to Discord's developer portal at [discord.com/developers/applications](https://discord.com/developers/applications) and create a new application. Its name is the bot's name in every troupe's server, so "Horatio" or your site's name works well. You can give it an icon under **General Information**.
 2. Open **Bot**. Choose **Reset Token** and copy the token it shows: Discord shows it only once. If you lose it, reset it again and change the setting.
    - Leave **Public Bot** on (the default). Switched off, only you could add the bot to a server, and troupes couldn't add it to theirs.
-   - Leave the privileged intents off. Horatio needs none of them: the bot only sees channels and sends messages.
+   - Leave the privileged intents off. Horatio needs none of them: it never reads messages, members or presence.
 3. Open **OAuth2**. Copy the client ID, and the client secret (you may have to reset it to see it; copy it straight away).
 4. Still under **OAuth2**, add a redirect: `https://<your site>/api/discord/callback`, for example `https://horatio.example.org/api/discord/callback`. It must start with `HORATIO_PUBLIC_URL` exactly, `https` and all. Save the change.
 
-You don't need to make an invite link in the portal: Horatio makes its own, asking only for the two permissions the bot uses.
+You don't need to make an invite link in the portal: Horatio makes its own, asking for the four permissions the bot uses, and nothing more:
+
+| Permission | Why |
+|---|---|
+| View Channels | To see the channels it posts in |
+| Send Messages | To post results, news and announcements |
+| Embed Links | News and announcements are embeds: a headline, the agency's masthead or the byline, and the story |
+| Attach Files | A story's picture and an agency's masthead go with the post as files |
+
+If you set **Installation** in the portal too, choose **Guild Install** only, with the `bot` scope and these four permissions.
 
 Then fill in the three settings. All three are needed:
 
