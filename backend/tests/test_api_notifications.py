@@ -27,7 +27,8 @@ def bell(person: Person) -> dict[str, Any]:
 
 
 def summaries(person: Person) -> list[str]:
-    return [i["summary"] for i in bell(person)["items"]]
+    # Sign-up notices (#757) reach the custodian as everyone signs up; left out here.
+    return [i["summary"] for i in bell(person)["items"] if i["kind"] != "account.signed_up"]
 
 
 def at_home(troupe: Troupe, name: str = "Agnes") -> str:
