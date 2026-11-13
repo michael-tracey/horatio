@@ -80,9 +80,9 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   await expect(l.getByRole("radio", { name: /^Players manage/ })).toBeEnabled();
   await expect(l.getByRole("radio", { name: /^Off/ })).toHaveCount(0);
 
-  // The first drink, on the Bonds screen under Characters, where its Settings are.
+  // The first drink, on the Bonds screen under Court, where its Settings are.
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/bonds#settings$`));
-  await expect(l.getByRole("navigation", { name: "Characters" }).getByRole("link", { name: "Bonds", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(l.getByRole("navigation", { name: "Court", exact: true }).getByRole("link", { name: "Bonds", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(l.getByText("No blood bonds yet.")).toBeVisible();
   await l.getByRole("button", { name: "Record a drink" }).click();
   const record = l.getByRole("form", { name: "Record a drink" });
@@ -305,7 +305,7 @@ test("staff see one web of obligation: boons, blood bonds and sire lines on the 
   await send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall: { name: "old hesper" }, regnant: { character_id: seraphine.id }, night: "2026-10-03", source: "game" });
 
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Court", exact: true }).click();
   await l.getByRole("link", { name: "Web of obligation", exact: true }).click();
   const chart = l.getByRole("figure", { name: "The web of obligation" });
   await expect(chart).toBeVisible();

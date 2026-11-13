@@ -211,7 +211,7 @@ def my_responses(asked: Asked) -> list[WaitingLine]:
             count=sum(
                 i.response.status != "written" for i in responses.mine(asked.db, asked.user, cycle)
             ),
-            link=f"/troupes/{asked.troupe.id}/work/{cycle.id}",
+            link=f"/troupes/{asked.troupe.id}/downtimes/{cycle.id}/work",
         )
         for cycle in asked.under_way("open", "closed")
     ]
