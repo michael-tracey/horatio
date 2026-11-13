@@ -245,6 +245,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
   await expect(p.getByText("Awaiting approval").first()).toBeVisible();
+  await lead.page.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: /^Characters/ }).click();
   await lead.page.getByRole("link", { name: /Approvals/ }).click();
   await expect(lead.page.getByText(/Celerity 2 → 3, for 9 XP/)).toBeVisible();
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
