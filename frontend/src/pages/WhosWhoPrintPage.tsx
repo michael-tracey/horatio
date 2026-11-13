@@ -5,6 +5,7 @@ import { useClanName } from "../components/ClanNames";
 import { usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { clanText, sections, type Section } from "./troupe/whosWho";
+import { useTitle } from "../title";
 
 /**
  * A troupe's Who's Who on paper, for a game-night binder: every section, black on
@@ -17,6 +18,7 @@ export function WhosWhoPrintPage() {
     queryKey: ["whos-who", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/whos-who", { params: { path: { troupe_id: troupeId } } })),
   });
+  useTitle(whosWho.data ? `Print · Who’s Who · ${whosWho.data.troupe_name}` : "Print");
   if (whosWho.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (whosWho.error) return <p className="p-8 text-black">{whosWho.error.message}</p>;
   const data = whosWho.data;

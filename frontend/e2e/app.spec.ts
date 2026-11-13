@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, PASSWORD, shots, person, makeCustodian, topBar } from "./support";
+import { closeContextsAfterEach, PASSWORD, run, shots, person, makeCustodian, topBar } from "./support";
 
 /** The app itself: About, the Help pages, signing in on the way to a link, and reloading after a deploy. */
 
@@ -85,7 +85,7 @@ test("the top bar is one line, on a phone too: the bell and a menu that holds th
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
     await menu.click();
     const nav = page.getByRole("navigation", { name: "Main" });
-    for (const name of ["Characters", "Troupes", "Rules reference", "Help", "Custodian"]) await expect(nav.getByRole("link", { name, exact: true })).toBeVisible();
+    for (const name of ["Characters", "Troupes", "Rulebook", "Help", "Custodian"]) await expect(nav.getByRole("link", { name, exact: true })).toBeVisible();
     await expect(nav.getByRole("link", { name: /^Your account: phonebar-custodian-with-a-long-name/ })).toContainText("(custodian)");
     await expect(nav.getByRole("button", { name: "Sign out" })).toBeVisible();
     await page.screenshot(shots("top-bar-menu"));
@@ -105,6 +105,40 @@ test("the top bar is one line, on a phone too: the bell and a menu that holds th
   await bell.click();
   await expect(page.getByRole("dialog", { name: "Notifications" })).toBeVisible();
   await page.screenshot(shots("top-bar"));
+});
+
+test("the browser tab names the page: the tab open, then the troupe or character, then Horatio; signed out, nothing it couldn't show (#775)", async ({ browser }) => {
+  const custodian = await person(browser, "tabtitle-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tabtitle-lead");
+  const troupe = `Tab Titles ${run}`;
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupe, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const p = lead.page;
+
+  await p.goto(`/troupes/${troupeId}/approvals`);
+  await expect(p).toHaveTitle(`Approvals · ${troupe} · Horatio`);
+  // A tab's own tabs come first.
+  await p.goto(`/troupes/${troupeId}/rules/teachers`);
+  await expect(p.getByRole("link", { name: "Teachers", exact: true })).toHaveAttribute("aria-current", "page");
+  expect(await p.title()).toMatch(new RegExp(`^Teachers · .+ · ${troupe} · Horatio$`));
+
+  const character = await p.request.post("/api/characters", { headers: { "X-Horatio": "1" }, data: { splat: "vampire", name: "Tabitha Tallis" } });
+  expect(character.status(), await character.text()).toBe(201);
+  const characterId: string = (await character.json()).id;
+  await p.goto(`/characters/${characterId}/status`);
+  await expect(p).toHaveTitle("Status & Titles · Tabitha Tallis · Horatio");
+  await p.goto(`/print/characters/${characterId}`);
+  await expect(p).toHaveTitle("Print · Tabitha Tallis · Horatio");
+  await p.goto("/rules");
+  await expect(p).toHaveTitle(/^\S+ · Horatio$/);
+
+  // Signed out, the troupe's page asks for a sign-in, and its tab says only that.
+  const stranger = await browser.newPage();
+  await stranger.goto(`/troupes/${troupeId}/approvals`);
+  await expect(stranger).toHaveTitle("Sign in · Horatio");
+  await stranger.close();
 });
 
 test("the chart kit draws its sample charts in Dark, Ultra goth and print, with tooltips and tables, d3 loading only then (#706)", async ({ browser }) => {

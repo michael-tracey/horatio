@@ -6,8 +6,10 @@ import { Button, Card, ErrorText, Field, Input, Loading, Notice } from "../compo
 import { useAction, useMe } from "../hooks";
 import { manualLink } from "../manualLink";
 import { useNext, withNext } from "../next";
+import { useTitle } from "../title";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+  useTitle(title);
   return (
     <div className="mx-auto mt-2 max-w-sm sm:mt-8">
       <img src="/logo.webp" alt="Horatio: MET legacy LARP tools" width={224} height={224} className="mx-auto mb-2 h-auto w-28 sm:w-56" />

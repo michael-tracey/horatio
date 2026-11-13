@@ -470,7 +470,7 @@ test("a player looks up the rules: a power by name and by its summary, then as p
 
   // From the main nav, the book's rules: a power found by its name, and by a word of its summary.
   const p = player.page;
-  await (await topBar(p)).getByRole("link", { name: "Rules reference" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Rulebook", exact: true }).click();
   const search = p.getByRole("searchbox", { name: "Search the rules" });
   const entry = (name: string) => p.getByTestId("rules-entry").filter({ has: p.getByRole("heading", { name, exact: true }) });
   await search.fill("majesty");

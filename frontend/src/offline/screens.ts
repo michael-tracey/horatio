@@ -39,7 +39,7 @@ export function screenName(pathname: string): string {
   if (path.startsWith("/custodian")) return "The Custodian page";
   if (path.startsWith("/account")) return "Your account";
   if (path.startsWith("/players/")) return "A player's profile";
-  if (path.startsWith("/rules")) return "The rules reference";
+  if (path.startsWith("/rules")) return "The Rulebook";
   if (path.startsWith("/print/")) return "Printing";
   return "This screen";
 }

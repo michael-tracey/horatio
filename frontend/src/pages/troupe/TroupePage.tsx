@@ -8,8 +8,7 @@ import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
 import { BeingBuiltTab } from "./BeingBuiltTab";
 import { BondsPages } from "./BondsPages";
-import { BoonStandingsTab } from "./BoonStandingsTab";
-import { BoonsTab } from "./BoonsTab";
+import { BoonsPages } from "./BoonsPages";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { EquipmentTab } from "./EquipmentTab";
@@ -50,8 +49,6 @@ import { tabCounts } from "./waiting";
 import { WhosWhoTab } from "./WhosWhoTab";
 import { XpAwardsTab } from "./XpAwardsTab";
 
-// The boon statistics bring d3 with them (#702), so they load only when opened (#706).
-const BoonStatisticsPage = lazy(() => import("./BoonStatisticsPage").then((m) => ({ default: m.BoonStatisticsPage })));
 // The court over time (#712) draws with the chart kit, so d3 loads only when it is opened.
 const CourtTab = lazy(() => import("./CourtTab").then((m) => ({ default: m.CourtTab })));
 // The chronicle (#711) too.
@@ -143,8 +140,6 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/chronicle`, label: "Chronicle" }] : []),
               ...(can.running && (t.blood_bonds ?? "off") !== "off" ? [{ to: `${base}/bonds`, label: "Bonds" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boons`, label: "Boons" }] : []),
-              ...(can.running && t.boons ? [{ to: `${base}/boon-standings`, label: "Boon standings" }] : []),
-              ...(can.running && t.boons ? [{ to: `${base}/boon-statistics`, label: "Boon statistics" }] : []),
               ...(can.running ? [{ to: `${base}/obligations`, label: "Web of obligation" }] : []),
             ],
           },
@@ -235,18 +230,10 @@ export function TroupePage() {
           />
         )}
         {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds/*" element={<BondsPages troupeId={t.id} />} />}
-        {can.running && t.boons && <Route path="boons" element={<BoonsTab troupeId={t.id} />} />}
-        {can.running && t.boons && <Route path="boon-standings" element={<BoonStandingsTab troupeId={t.id} />} />}
-        {can.running && t.boons && (
-          <Route
-            path="boon-statistics"
-            element={
-              <Suspense fallback={<Loading />}>
-                <BoonStatisticsPage troupeId={t.id} />
-              </Suspense>
-            }
-          />
-        )}
+        {can.running && t.boons && <Route path="boons/*" element={<BoonsPages troupeId={t.id} />} />}
+        {/* The standings and statistics were tabs of their own until they joined Boons (#780). */}
+        <Route path="boon-standings" element={<Navigate to={`${base}/boons/standings`} replace />} />
+        <Route path="boon-statistics" element={<Navigate to={`${base}/boons/statistics`} replace />} />
         {can.running && (
           <Route
             path="obligations"

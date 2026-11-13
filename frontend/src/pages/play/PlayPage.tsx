@@ -44,6 +44,7 @@ import { useKeepAwake } from "./wakeLock";
 import { generationText } from "../../generation";
 import { NotUsed } from "./NotUsed";
 import { openingTab, shownTabs, TABS, type Tab } from "./tabs";
+import { useTitle } from "../../title";
 
 type Change = { tracker: string; amount: number; damage?: Damage; label: string };
 type RecordTap = (change: Change) => void;
@@ -73,6 +74,7 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
 export function PlayPage() {
   const { characterId = "" } = useParams();
   const play = usePlay(characterId);
+  useTitle(play.view.data ? `Play · ${play.view.data.character_name}` : "Play");
   if (play.view.data?.tabs.length === 0) return <NoPlayView characterId={characterId} name={play.view.data.character_name} />;
   // Chosen once, by form: a Stock NPC has its own, simpler Play View (issue #215).
   if (play.view.data?.npc_form === "stock") return <StockPlay characterId={characterId} play={play} />;
@@ -472,9 +474,11 @@ const COLUMNS = ["grid-cols-1", "grid-cols-1", "grid-cols-2", "grid-cols-3", "gr
 /** Sheet, Tracker, Pools, (for a character with sect status) Status, Equipment and
  * Throws, as its troupe has them on: big tabs across the top, for a thumb. */
 function TabBar({ tab, tabs, onChange }: { tab: Tab | undefined; tabs: Tab[]; onChange: (tab: Tab) => void }) {
+  const bar = useRef<HTMLElement>(null);
+  useTitle(TABS.find((t) => t.key === tab)?.label, bar);
   if (tabs.length === 0) return null;
   return (
-    <nav className={cx("mx-auto grid max-w-3xl px-1 sm:px-2", COLUMNS[tabs.length] ?? "grid-cols-8")} role="tablist" aria-label="Play View">
+    <nav ref={bar} className={cx("mx-auto grid max-w-3xl px-1 sm:px-2", COLUMNS[tabs.length] ?? "grid-cols-8")} role="tablist" aria-label="Play View">
       {TABS.filter((t) => tabs.includes(t.key)).map((t) => (
         <button
           key={t.key}

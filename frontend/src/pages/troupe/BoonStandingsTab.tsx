@@ -54,7 +54,7 @@ export function BoonStandingsTab({ troupeId, harpy = false }: { troupeId: string
             <>Who has left is shown as the court knows it.</>
           ) : (
             <>
-              The boons themselves are on the <Link to="../boons">Boons</Link> screen.
+              The boons themselves are on the <Link to={`/troupes/${troupeId}/boons`}>Ledger</Link>.
             </>
           )}
         </p>

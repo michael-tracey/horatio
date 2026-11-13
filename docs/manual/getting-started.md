@@ -20,6 +20,8 @@ You're signed in straight away, and land on **Characters**. While you have no ch
 
 On the sign-in page, give your **Email or handle** and your **Password**, then choose **Sign in**. If you opened a link to a page in Horatio while signed out, you go on to that page once you're in.
 
+Each page names itself in the browser's tab, its bookmarks and its history, the tab you have open first: "Approvals · ‹troupe› · Horatio", "Sheet · ‹character› · Horatio". With several Horatio tabs open, you can tell them apart.
+
 Horatio keeps you signed in on that browser for about a month. To sign out, choose **Sign out** at the right of the menu. Signing out also clears whatever Horatio kept on that device for you; if taps from the Play View haven't been sent yet, it asks first.
 
 ![The sign-in page](images/getting-started/sign-in.png)
@@ -145,5 +147,7 @@ Keep the link to yourself: anyone with it can see those dates. If it gets out, c
 - **Search the manual**, at the top of the Help page, finds words in every part at once. Each result names the part and section, and opens at that section.
 - On a part's page, the list of its sections is at the side on a computer, and under **On this page** at the top on a phone.
 - A page of the manual prints cleanly, without the menu.
+
+**Rulebook**, in the same menu, lists every trait, power, ritual, merit and flaw, each with its book page and a short summary. Choose a troupe under **As played in** to see it with that troupe's house rules. It isn't the troupe's own **House rules** tab, which lists only what the troupe changes.
 
 For a word you don't know, see the [Glossary](glossary.md). For a question the manual doesn't answer, ask your troupe's storytellers, or the custodian.
