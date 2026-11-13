@@ -16,8 +16,10 @@ from horatio.models.backstories import (
 )
 from horatio.models.base import Base
 from horatio.models.bonds import BloodBond, BondEntry, BondReport
+from horatio.models.boon_audits import BoonAudit
 from horatio.models.boon_reviews import BoonFlag
 from horatio.models.boon_talons import BoonTalon
+from horatio.models.boonbreakers import Boonbreaker
 from horatio.models.boons import Boon, BoonEvent
 from horatio.models.characters import (
     AppliedHouseTrait,
@@ -132,9 +134,11 @@ __all__ = [
     "BondEntry",
     "BondReport",
     "Boon",
+    "BoonAudit",
     "BoonEvent",
     "BoonFlag",
     "BoonTalon",
+    "Boonbreaker",
     "BackstoryAnswer",
     "BackstoryFeedback",
     "BackstoryQuestion",

@@ -125,7 +125,7 @@ def test_a_chosen_kind_comes_by_email_at_once(
     assert message["To"] == "custodian <custodian@example.com>"
     assert message["Subject"] == "asker asks for a new troupe, Nights of Boston"
     text = message.get_content()
-    assert "http://localhost:5173/custodian/troupe-requests" in text
+    assert "http://localhost:5173/custodian/troupe-management#requests" in text
     assert "You asked Horatio to email you about troupe requests." in text
     assert (
         message["List-Unsubscribe"]

@@ -71,6 +71,8 @@ class EndingOut(BaseModel):
     while_held: str | None
     # It ends with the game it was given at.
     this_game: bool
+    # Held as a Boonbreaker (#717): it lasts while the mark stands, as `text` says.
+    boonbreaker: bool = False
 
 
 class HeldOut(BaseModel):
@@ -239,6 +241,7 @@ def ending_out(ending: sect_status.Ending) -> EndingOut:
         games_left=ending.games_left,
         while_held=ending.while_held,
         this_game=ending.this_game,
+        boonbreaker=ending.boonbreaker,
     )
 
 
@@ -260,6 +263,8 @@ def can_remove(
     held: sect_status.Held,
     patrons: dict[uuid.UUID, Character],
 ) -> bool:
+    if held.ending is not None and held.ending.boonbreaker:
+        return False
     if held.type != "Negative":
         return acting is not None
     patron = patrons.get(held.patron.id) if held.patron.id else None

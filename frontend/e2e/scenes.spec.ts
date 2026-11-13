@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, backstoryOptional, builtVampire, ATTRIBUTES_AND_FOCUSES, topBar } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, closeContextsAfterEach, makeCustodian, openNewTroupe, openScene, person, run, shots, topBar } from "./support";
 
 /** Scenes: storytellers pinning NPCs and tapping for them. */
 
@@ -11,8 +11,7 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   const lead = await person(browser, "scene-lead");
   const troupeName = `Court of Masks ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
@@ -168,8 +167,7 @@ test("a Scene card shows an NPC's best attacks and defences, and its Pools and P
   const lead = await person(browser, "pools-lead");
   const troupeName = `Court of Hounds ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
@@ -244,8 +242,7 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   const second = await person(browser, "named-storyteller");
   const troupeName = `Court of Tapers ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();

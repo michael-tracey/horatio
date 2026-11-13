@@ -556,6 +556,118 @@ test("the Harpy gives a Lesser Harpy add-only access: they register a boon as th
   await t.screenshot(shots("talon-ledger"));
 });
 
+test("staff declare a Boonbreaker: their open boons are made void, both ways, and they hold Disgraced while the mark stands (#717)", async ({ browser }) => {
+  const custodian = await person(browser, "bbreak-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bbreak-lead");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Broken Promises ${run}`, lead_handle: lead.handle });
+  const l = lead.page;
+  // Ottavia, a Camarilla NPC, owes Lucan a boon and is owed one by him.
+  const ottavia = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Ottavia Sterne", wizard: false });
+  await send(l, "PUT", `/api/characters/${ottavia.id}/npc/ratings`, { category: "sect", name: "Camarilla", rating: null, detail: "" });
+  const lucan = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Lucan Mireaux", wizard: false });
+  await send(l, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  const owes = (debtor: string, creditor: string, kind: string, reason: string) => ({
+    debtor: { character_id: debtor },
+    creditor: { character_id: creditor },
+    kind,
+    made_on: "2026-10-03",
+    reason,
+  });
+  await send(l, "POST", `/api/troupes/${troupe.id}/boons`, {
+    boons: [owes(ottavia.id, lucan.id, "major", "Passage through the docks"), owes(lucan.id, ottavia.id, "minor", "A quiet word")],
+  });
+
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Boons", exact: true }).click();
+  await expect(l.getByText("No Boonbreakers.")).toBeVisible();
+
+  // Before declaring it, staff see what it makes void.
+  await l.getByRole("button", { name: "Declare a Boonbreaker" }).click();
+  const declare = l.getByRole("form", { name: "Declare a Boonbreaker" });
+  await declare.getByLabel("Who").selectOption({ label: "Ottavia Sterne" });
+  await expect(declare.getByRole("status")).toHaveText("This makes 2 boons void: 1 owed by them, 1 owed to them.");
+  await declare.getByLabel("The boon they refused (optional)").selectOption({ label: "Ottavia Sterne owes Lucan Mireaux, major: Passage through the docks" });
+  await declare.getByLabel("What they refused, and when").fill("Refused the Harpy at Elysium, 7 November");
+  await declare.getByRole("button", { name: "Declare them a Boonbreaker" }).click();
+
+  const mark = l.getByRole("list", { name: "Boonbreakers" }).getByRole("listitem", { name: "Ottavia Sterne, Boonbreaker" });
+  await expect(mark).toContainText("2 boons made void · holds Disgraced for it");
+  await expect(mark).toContainText("Refused: Ottavia Sterne owes Lucan Mireaux, major");
+  await expect(l.getByRole("tab", { name: /^Open/ })).toContainText("(0)");
+  await l.getByRole("tab", { name: /^Void/ }).click();
+  const voided = l.getByRole("list", { name: "Boons" }).getByRole("listitem", { name: "Ottavia Sterne owes Lucan Mireaux, major" });
+  await expect(voided).toContainText("Boonbreaker");
+  await expect(voided).toContainText("Void");
+  await l.screenshot(shots("boonbreaker-declared"));
+
+  // Disgraced, on her status, for as long as the mark stands.
+  await l.goto(`/characters/${ottavia.id}/status`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
+  await expect(card.getByRole("listitem", { name: "Disgraced" })).toContainText("While a Boonbreaker (p. 397).");
+});
+
+test("the Harpy audits a character's boons and gives it to another, whose player reads it as it stood (#690)", async ({ browser }) => {
+  const custodian = await person(browser, "baudit-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "baudit-lead");
+  const harpy = await person(browser, "baudit-harpy");
+  const reader = await person(browser, "baudit-reader");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Audits Kept ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const home = async (page: Page, name: string) => {
+    const id = await builtVampire(page, name, "Brujah", build);
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id;
+  };
+  const isolde = await home(harpy.page, "Isolde Fenwick");
+  const corin = await home(reader.page, "Corin Halloway");
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-harpy`, { access: "full" });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/characters/${isolde}/titles`, { titles: ["Harpy"] });
+  const debt = { debtor: { character_id: isolde }, creditor: { name: "Lady Morrow" }, kind: "major", made_on: "2026-10-03", reason: "A secret kept" };
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/boons`, { boons: [debt], note: "" });
+
+  // Isolde's player, as the Harpy, audits Isolde's boons for Corin from the ledger.
+  const h = harpy.page;
+  await h.goto(`/play/characters/${isolde}/ledger`);
+  await h.getByLabel("Audit", { exact: true }).selectOption({ label: "Isolde Fenwick" });
+  await h.getByLabel("Give it to", { exact: true }).selectOption({ label: "Corin Halloway" });
+  await h.getByRole("button", { name: "Make the audit" }).click();
+  await expect(h.getByText("Audited Isolde Fenwick's boons, and gave it to Corin Halloway.")).toBeVisible();
+  await expect(h.getByRole("list", { name: "Audits" })).toContainText("given to Corin Halloway");
+
+  // Corin's player finds it in the Play View's Boons tab and reads it.
+  const r = reader.page;
+  await r.goto(`/play/characters/${corin}?tab=boons`);
+  await r.getByRole("list", { name: "Audits" }).getByRole("link", { name: "Isolde Fenwick's boons" }).click();
+  await expect(r.getByRole("heading", { name: "Boon audit · Isolde Fenwick" })).toBeVisible();
+  await expect(r.getByText("owes 1 (weighing 3) · is owed 0")).toBeVisible();
+  const owes = r.getByRole("region", { name: "Boons Isolde Fenwick owes" });
+  await expect(owes).toContainText("Lady Morrow");
+  await expect(owes).toContainText("A secret kept");
+  await expect(owes).toContainText("Standing");
+  await r.screenshot(shots("boon-audit"));
+});
+
 test("where the troupe allows it, the Harpy reads the boon standings and statistics, with who has left as the court knows it (#749)", async ({ browser }) => {
   const custodian = await person(browser, "hstand-custodian");
   makeCustodian(custodian.email);
