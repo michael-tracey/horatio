@@ -68,8 +68,8 @@ def merits_and_flaws() -> list[dict[str, Any]]:
 
 
 def test_every_merit_and_flaw_says_what_it_does_in_its_own_words() -> None:
-    """No empty or placeholder description, and none shared by more than two: the
-    pairs are the same merit under two names on purpose (Blood of Tzimisce)."""
+    """No empty or placeholder description, and none shared by more than two: a pair
+    is two merits that do the same (Kupala's Bounty and Thaumaturgically Gifted)."""
     traits = merits_and_flaws()
     wording = Counter((t.get("description") or "").strip().lower() for t in traits)
 
@@ -80,6 +80,23 @@ def test_every_merit_and_flaw_says_what_it_does_in_its_own_words() -> None:
         or wording[said] > 2
     )
     assert unsaid == []
+
+
+def test_no_trait_is_listed_twice_under_names_that_differ_only_by_the() -> None:
+    """ "Blood of Tzimisce" and "Blood of the Tzimisce" were one merit listed twice, so
+    creation offered it twice (#811). Two traits of a category whose names are the
+    same but for "the" are one trait, spelt one way: the book's."""
+    with TRAITS_FILE.open("rb") as f:
+        traits = tomllib.load(f)["traits"]
+
+    def bare(name: str) -> str:
+        return " ".join(w for w in name.lower().split() if w != "the")
+
+    names: dict[tuple[str, str], set[str]] = {}
+    for t in traits:
+        names.setdefault((t["category"], bare(t["name"])), set()).add(t["name"])
+
+    assert sorted(sorted(n) for n in names.values() if len(n) > 1) == []
 
 
 def test_every_merit_and_flaw_gives_its_page_or_says_why_not() -> None:

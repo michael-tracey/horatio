@@ -515,14 +515,6 @@ target = { category = "skills", name = "Lore" }
 amount = 2
 page = "244"
 
-# The same merit under the name Yorick gave it.
-[[grants]]
-source = { category = "merits", name = "Blood of Tzimisce" }
-kind = "free_up_to"
-target = { category = "skills", name = "Lore" }
-amount = 2
-page = "244"
-
 [[grants]]
 source = { category = "merits", name = "Seasoned Traveler" }
 kind = "free_up_to"
@@ -721,13 +713,6 @@ page = "243"
 
 [[grants]]
 source = { category = "merits", name = "Blood of the Tzimisce" }
-kind = "raise_max"
-target = { category = "skills", names = ["Lore"] }
-amount = 2
-page = "244"
-
-[[grants]]
-source = { category = "merits", name = "Blood of Tzimisce" }
 kind = "raise_max"
 target = { category = "skills", names = ["Lore"] }
 amount = 2

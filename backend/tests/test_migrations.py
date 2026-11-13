@@ -264,6 +264,140 @@ def test_the_power_spelling_migration_renames_held_traits_and_moves_collective_c
         load_rules(engine)
 
 
+def test_the_tzimisce_migration_folds_the_misspelt_merit_into_the_books(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0222 (#811): "Blood of Tzimisce" was the same merit as "Blood of the
+    Tzimisce" listed twice. A character who held the misspelt one holds the book's,
+    one who held both holds it once, and a troupe's ban, an approved sheet and the
+    grant a free Lore dot was placed by follow it."""
+    merits = "merits"
+    with engine.connect() as connection:
+        book = trait_definition(connection, merits, "Blood of the Tzimisce")
+    assert book is not None
+
+    command.downgrade(alembic_config, "0221")
+    user, troupe = uuid.uuid4(), uuid.uuid4()
+    alone, both = uuid.uuid4(), uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'fleshcrafter@example.com', 'Fleshcrafter', 'fleshcrafter')"
+                ),
+                {"id": user},
+            )
+            connection.execute(
+                text(
+                    "insert into troupes (id, name, lead_user_id)"
+                    " values (:id, 'Old Country', :lead)"
+                ),
+                {"id": troupe, "lead": user},
+            )
+            for character, name in ((alone, "Misspelt Only"), (both, "Spelt Both Ways")):
+                connection.execute(
+                    text(
+                        "insert into characters (id, player_id, splat, name, home_troupe_id)"
+                        " values (:id, :player, 'vampire', :name, :troupe)"
+                    ),
+                    {"id": character, "player": user, "name": name, "troupe": troupe},
+                )
+            twin = connection.scalar(
+                text(
+                    "insert into trait_definitions (category_id, name)"
+                    " select category_id, 'Blood of Tzimisce' from trait_definitions"
+                    " where id = :book returning id"
+                ),
+                {"book": book},
+            )
+            for character, definition in ((alone, twin), (both, twin), (both, book)):
+                connection.execute(
+                    text(
+                        "insert into character_traits (character_id, trait_definition_id)"
+                        " values (:character, :definition)"
+                    ),
+                    {"character": character, "definition": definition},
+                )
+            # The merit's two free dots of Lore, placed by staff on an NPC-style sheet.
+            connection.execute(
+                text(
+                    "insert into character_traits (character_id, trait_definition_id, rating,"
+                    " free_rating, grant_place, place_grant, place_by) values (:character,"
+                    " :lore, 2, 2, 2, 'merits/Blood of Tzimisce/1', 'staff')"
+                ),
+                {"character": alone, "lore": trait_definition(connection, "skills", "Lore")},
+            )
+            for definition, reason in ((twin, "Misspelt"), (book, "Spelt right")):
+                connection.execute(
+                    text(
+                        "insert into trait_overrides (troupe_id, trait_definition_id, banned,"
+                        " ban_reason) values (:troupe, :definition, true, :reason)"
+                    ),
+                    {"troupe": troupe, "definition": definition, "reason": reason},
+                )
+            connection.execute(
+                text(
+                    "insert into sheet_versions (character_id, troupe_id, number, snapshot,"
+                    " approved_by) values (:character, :troupe, 1, cast(:snapshot as jsonb),"
+                    " :user)"
+                ),
+                {
+                    "character": alone,
+                    "troupe": troupe,
+                    "snapshot": json.dumps(
+                        [{"category": merits, "name": "Blood of Tzimisce", "detail": ""}]
+                    ),
+                    "user": user,
+                },
+            )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            assert trait_definition(connection, merits, "Blood of the Tzimisce") == book
+            assert trait_definition(connection, merits, "Blood of Tzimisce") is None
+            assert held(connection, alone) == [
+                (merits, "Blood of the Tzimisce"),
+                ("skills", "Lore"),
+            ]
+            assert held(connection, both) == [(merits, "Blood of the Tzimisce")]
+            assert connection.scalars(
+                text(
+                    "select place_grant from character_traits where character_id = :id"
+                    " and place_grant is not null"
+                ),
+                {"id": alone},
+            ).all() == ["merits/Blood of the Tzimisce/1"]
+            assert connection.execute(
+                text(
+                    "select trait_definition_id, ban_reason from trait_overrides"
+                    " where troupe_id = :id"
+                ),
+                {"id": troupe},
+            ).all() == [(book, "Spelt right")]
+            approved = connection.scalar(
+                text("select snapshot from sheet_versions where character_id = :id"),
+                {"id": alone},
+            )
+        assert approved == [{"category": merits, "name": "Blood of the Tzimisce", "detail": ""}]
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            for table, column, value in (
+                ("trait_overrides", "troupe_id", troupe),
+                ("sheet_versions", "troupe_id", troupe),
+                ("character_traits", "character_id", alone),
+                ("character_traits", "character_id", both),
+                ("characters", "id", alone),
+                ("characters", "id", both),
+                ("troupes", "id", troupe),
+                ("users", "id", user),
+            ):
+                connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})
+        load_rules(engine)
+
+
 def test_the_angelic_visage_migration_keeps_charisma(
     engine: Engine, alembic_config: Config
 ) -> None:
