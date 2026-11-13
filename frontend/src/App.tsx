@@ -44,6 +44,7 @@ const StaffBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ de
 const CharacterBadgePage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.CharacterBadgePage })));
 const JyhadCardPage = lazy(() => import("./pages/jyhad/JyhadCardPage").then((m) => ({ default: m.JyhadCardPage })));
 const TroupePrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.TroupePrintPage })));
+const BuildPrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.BuildPrintPage })));
 // The chart kit's demonstration (#706): d3 loads with it, never with the app's first chunk.
 const ChartKitPage = lazy(() => import("./pages/charts/ChartKitPage").then((m) => ({ default: m.ChartKitPage })));
 const WhosWhoPrintPage = lazy(() => import("./pages/WhosWhoPrintPage").then((m) => ({ default: m.WhosWhoPrintPage })));
@@ -88,6 +89,7 @@ export const routes = createRoutesFromElements(
     <Route element={<RequireSignIn />}>
       <Route path="/print/characters/:characterId" element={<ForCharacter><PrintPage /></ForCharacter>} />
       <Route path="/print/troupes/:troupeId" element={<ForTroupe><TroupePrintPage /></ForTroupe>} />
+      <Route path="/print/troupes/:troupeId/builds/:characterId" element={<ForTroupe><BuildPrintPage /></ForTroupe>} />
       <Route path="/print/troupes/:troupeId/badges" element={<ForTroupe><TroupeBadgesPage /></ForTroupe>} />
       <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
       <Route path="/print/troupes/:troupeId/whos-who" element={<ForTroupe><WhosWhoPrintPage /></ForTroupe>} />
