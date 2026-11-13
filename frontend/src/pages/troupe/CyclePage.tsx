@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { ClanName } from "../../clanNames";
@@ -8,6 +8,7 @@ import type { CycleOut, QuestionIn } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTabs, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { useTitle } from "../../title";
 import { cyclePath, cycleStatus, kindLabels, pastDue, timeLeft } from "./cycles";
 import { AimedTab } from "./AimedTab";
 import { CycleProjectsTab } from "./CycleProjectsTab";
@@ -24,6 +25,10 @@ export function CyclePage({ troupeId, clanName }: { troupeId: string; clanName?:
   const { search, hash } = useLocation();
   const cycle = useCycle(cycleId);
   const heading = useId();
+  // The cycle's name in the tab's title, between its tab and the troupe's (#775):
+  // "Responses · Harvest Moon · Cycles · ‹troupe› · Horatio".
+  const named = useRef<HTMLHeadingElement>(null);
+  useTitle(cycle.data?.troupe_id === troupeId ? cycle.data.name : null, named);
   if (cycle.isPending) return <Loading />;
   if (cycle.error) return <ErrorText error={cycle.error} />;
   const c = cycle.data;
@@ -35,7 +40,7 @@ export function CyclePage({ troupeId, clanName }: { troupeId: string; clanName?:
       {/* A region rather than a <section>, so the cards inside stay the nearest sections to their headings. */}
       <div role="region" aria-labelledby={heading}>
         <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h2 id={heading} className="font-display text-xl text-parchment">
+          <h2 id={heading} ref={named} className="font-display text-xl text-parchment">
             {c.name}
           </h2>
           <Badge tone={c.status === "open" ? "gold" : "mist"}>{cycleStatus(c.status)}</Badge>
