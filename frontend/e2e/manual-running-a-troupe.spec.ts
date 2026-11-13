@@ -269,8 +269,11 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await l.getByRole("button", { name: "Less XP for Wren Halloway" }).click();
   await shot(l, "award-xp", undefined, 900);
 
-  // Troupe settings › Game XP chart, being changed to a taper.
+  // Troupe settings › Features (#783), as a new troupe has them.
   await l.goto(`${base}/settings`);
+  await shot(l, "troupe-features", card(l, "Features"), 1600);
+
+  // Troupe settings › Game XP chart, being changed to a taper.
   await l.getByRole("button", { name: "Change the game XP chart" }).click();
   const chart = card(l, "Game XP chart");
   await chart.getByRole("group", { name: "Start from a preset" }).getByRole("button").nth(1).click();
