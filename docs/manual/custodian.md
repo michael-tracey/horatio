@@ -127,9 +127,13 @@ A troupe archived before Horatio settled characters on archiving may still hold 
 
 ![The People table, with a suspended account, a reset link out and a new email waiting](images/custodian/people.png)
 
+The chevron at the start of a row opens it, to list every character that person has, whatever its standing: active, still in creation, waiting for a troupe to accept it, or retired (with why: Final Death, off-field or inactive), and the NPCs they made, each marked as one. Each shows its picture, or its initials without one, and its home troupe, or **no home troupe**. Its name opens it. Choose the chevron again to close the row; you can have several open at once.
+
+![A person's row open on the People table, listing their characters](images/custodian/people-characters.png)
+
 Everything you can do with an account is behind the **⋯** at the end of its row:
 
-- to help with the account: **View as…**, **Characters**, **Change email…** and **Reset password…**;
+- to help with the account: **View as…**, **Change email…** and **Reset password…**;
 - below a line, to suspend or merge it: **Suspend…** (or **Lift suspension…**) and **Merge…**.
 
 Each opens in a dialog over the list, so you don't lose your place.
@@ -143,7 +147,7 @@ Each opens in a dialog over the list, so you don't lose your place.
 
 Accounts closed by a [merge](#merging-two-accounts) aren't listed.
 
-On a phone, each row folds into a card, with the handle, email and badges under the name.
+On a phone, each row folds into a card, with the handle, email and badges under the name, and the chevron at its start. Its characters open below it, across the card.
 
 ### Viewing as someone
 
@@ -161,7 +165,7 @@ They can see each time you viewed as them, and why, on their account's Settings 
 
 Sometimes a character belongs with a different player: it was built on the wrong account, or one player hands it on to another. Only its player changes; the character keeps its sheet, XP, history and troupes.
 
-1. Choose **⋯ › Characters** on the current player's row. The dialog lists their characters, with each one's home troupe.
+1. Open the current player's row with the chevron at its start, to list their characters.
 2. Choose **Move…** beside the character.
 3. Under **New player**, pick the person, and give a **Reason**. It's kept in the character's log, and told to both players and its home troupe's lead storyteller.
 4. Choose **Continue**. Horatio shows what will happen: the troupes it stays in, that its sheet, XP, history, titles and status go with it, any staff role the new player has in those troupes, and any requests still waiting, which stay open for the new player.

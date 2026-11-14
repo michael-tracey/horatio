@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import aliased
 
-from horatio import account_merges, handles, pronouns, suspensions
+from horatio import account_merges, handles, pictures, pronouns, social_age, suspensions
 from horatio.api.auth import Me, me
 from horatio.api.email_changes import PendingEmail, pending
 from horatio.api.lines_veils import LinesVeils, lines_veils_of
@@ -24,7 +24,7 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.resets import cancel_reset, email_reset, issue_reset, live_reset, reset_url
 from horatio.connectors import email
 from horatio.links import web_address
-from horatio.models import AuditEvent, Character, EmailChange, PasswordReset, Troupe, User
+from horatio.models import Approval, AuditEvent, Character, EmailChange, PasswordReset, Troupe, User
 from horatio.permissions import (
     Role,
     TroupeAction,
@@ -33,6 +33,7 @@ from horatio.permissions import (
     require_custodian,
     require_troupe_action,
 )
+from horatio.rules.npc_kinds import kind_name
 
 router = APIRouter(tags=["players"])
 
@@ -52,6 +53,26 @@ class PlayerCharacter(BaseModel):
     name: str
     home_troupe: str | None
     retired: bool
+    # active | retired, and why a retired one left (horatio.leaving): final_death,
+    # off_field or inactive; None while active, or if retired without one.
+    status: str
+    left_reason: str | None = None
+    # False while its player is still placing its creation picks.
+    creation_complete: bool = True
+    # The troupe it has asked to make its home, while that troupe's staff decide.
+    asking_troupe: str | None = None
+    kind: str = "pc"  # pc | npc
+    splat: str = "vampire"
+    # An NPC's kind's name, its form (sheeted or stock), and the troupe it belongs
+    # to. All None for a PC.
+    npc_kind_name: str | None = None
+    npc_form: str | None = None
+    owner_troupe_id: uuid.UUID | None = None
+    owner_troupe: str | None = None
+    # Where its picture is (add "/128.webp" and so on; see horatio.pictures), or None.
+    picture: str | None = None
+    # For the placeholder shown without a picture: initials on the clan's colour.
+    clan: str | None = None
 
 
 class PlayerOut(BaseModel):
@@ -178,13 +199,60 @@ def player(db: DbSession, user_id: uuid.UUID) -> User:
     return found
 
 
-def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
-    characters = db.execute(
-        select(Character, Troupe.name)
-        .outerjoin(Troupe, Character.home_troupe_id == Troupe.id)
-        .where(Character.player_id == user.id, Character.kind == "pc")
-        .order_by(Character.status, func.lower(Character.name))
+def player_characters(db: DbSession, viewer: User, user: User) -> list[PlayerCharacter]:
+    """Every character of theirs the viewer may see, whatever its standing: its PCs,
+    in creation and retired too, and the NPCs they made. Active ones first, then
+    retired, newest first within each."""
+    home = aliased(Troupe)
+    owner = aliased(Troupe)
+    found = [
+        (c, home_name, owner_name)
+        for c, home_name, owner_name in db.execute(
+            select(Character, home.name, owner.name)
+            .outerjoin(home, Character.home_troupe_id == home.id)
+            .outerjoin(owner, Character.owner_troupe_id == owner.id)
+            .where(Character.player_id == user.id)
+            .order_by(Character.status, Character.created_at.desc(), Character.id.desc())
+        )
+        if can_view_character(db, viewer, c)
+    ]
+    ids = [c.id for c, _, _ in found]
+    asking = dict(
+        db.execute(
+            select(Approval.character_id, Troupe.name)
+            .join(Troupe, Approval.troupe_id == Troupe.id)
+            .where(
+                Approval.character_id.in_(ids),
+                Approval.kind == "home_troupe_change",
+                Approval.status == "pending",
+            )
+        ).all()
     )
+    standing = social_age.standings(db, ids) if ids else {}
+    return [
+        PlayerCharacter(
+            id=c.id,
+            name=c.name,
+            home_troupe=home_name,
+            retired=c.status == "retired",
+            status=c.status,
+            left_reason=c.left_reason,
+            creation_complete=c.creation_completed_at is not None,
+            asking_troupe=asking.get(c.id),
+            kind=c.kind,
+            splat=c.splat,
+            npc_kind_name=kind_name(c.npc_kind, c.npc_custom_kind),
+            npc_form=c.npc_form,
+            owner_troupe_id=c.owner_troupe_id,
+            owner_troupe=owner_name,
+            picture=pictures.picture_url(c.id, c.picture_id),
+            clan=standing[c.id].clan,
+        )
+        for c, home_name, owner_name in found
+    ]
+
+
+def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
     return PlayerOut(
         id=user.id,
         display_name=user.display_name,
@@ -197,11 +265,7 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
         discord_linked=user.discord_user_id is not None,
         is_custodian=user.is_custodian,
         email=user.email if viewer.is_custodian or viewer.id == user.id else None,
-        characters=[
-            PlayerCharacter(id=c.id, name=c.name, home_troupe=home, retired=c.status == "retired")
-            for c, home in characters
-            if can_view_character(db, viewer, c)
-        ],
+        characters=player_characters(db, viewer, user),
         reset_expires_at=reset_expiry(db, user) if viewer.is_custodian else None,
         lines_veils=lines_veils_of(user) if can_see_lines_veils(db, viewer, user) else None,
         email_change=pending(db, user) if viewer.is_custodian or viewer.id == user.id else None,
