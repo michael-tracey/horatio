@@ -29,8 +29,6 @@ from horatio.models import Character, InCharacterMessage, Troupe, TroupeConnecto
 SETTING = "in_character_channel"
 # Discord's limit for a message's text.
 LIMIT = discord.LIMIT
-# Discord's limit for the name a webhook message shows.
-NAME_LIMIT = 80
 
 POSTED = "npc.ic_posted"
 EDITED = "npc.ic_edited"
@@ -93,7 +91,7 @@ def post(db: Session, staff: User, troupe: Troupe, npc: Character, text: str) ->
         db,
         troupe.id,
         channel,
-        name=npc.name[:NAME_LIMIT],
+        name=npc.name,
         avatar_url=avatar(npc),
         payload=payload(text),
     )
@@ -111,7 +109,8 @@ def post(db: Session, staff: User, troupe: Troupe, npc: Character, text: str) ->
 
 
 def edit(db: Session, staff: User, message: InCharacterMessage, text: str) -> None:
-    """Change the message here and on Discord, where it stays in the channel it went to."""
+    """Change the message here and on Discord, where it stays in the channel it went to.
+    Raises discord.SendError, with status 404 when it is no longer on Discord."""
     discord_webhooks.edit_as(
         db, message.troupe_id, message.channel, message.message_id, payload=payload(text)
     )
@@ -129,7 +128,8 @@ def edit(db: Session, staff: User, message: InCharacterMessage, text: str) -> No
 
 
 def delete(db: Session, staff: User, message: InCharacterMessage) -> None:
-    """Delete the message on Discord, then here; the log keeps that it was."""
+    """Delete the message on Discord, then here; the log keeps that it was. One already
+    gone from Discord is simply deleted here."""
     discord_webhooks.delete_as(db, message.troupe_id, message.channel, message.message_id)
     audit.record(
         db,

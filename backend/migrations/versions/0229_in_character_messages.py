@@ -2,7 +2,7 @@
 (issue #884): who sent each, as which NPC, what it says and where it is on Discord.
 
 Revision ID: 0229
-Revises: 0225
+Revises: 0228
 Create Date: 2026-11-14 12:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0229"
-down_revision: str | None = "0225"
+down_revision: str | None = "0228"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

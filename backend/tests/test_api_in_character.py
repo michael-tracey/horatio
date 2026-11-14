@@ -72,6 +72,7 @@ class FakeWebhooks:
         message_id: str,
         *,
         payload: dict[str, Any],
+        files: Any = (),
     ) -> None:
         self.check()
         self.edits.append((channel, message_id, dict(payload)))
@@ -380,3 +381,74 @@ def test_players_never_see_who_spoke_as_an_npc(
     assert not [line for line in character_log(heir, npc) if "IC chat" in line]
     # Its troupe's staff still see them in the log.
     assert any("IC chat" in line for line in character_log(troupe.storyteller, npc))
+
+
+# --- through the channel's webhook, on the fake Discord -----------------------------------
+
+
+def test_on_discord_it_is_the_npc_talking_through_the_channels_webhook(
+    troupe: Troupe, session: Session, fake_discord: FakeDiscord
+) -> None:
+    ready(troupe)
+    npc = built(troupe, "Lucien")
+    picture = uuid.uuid4()
+    session.get_one(Character, uuid.UUID(npc)).picture_id = picture
+    session.flush()
+
+    assert post(troupe.assistant, npc, "Welcome to Elysium.").status_code == 201
+
+    [(message_id, sent)] = fake_discord.messages.items()
+    assert (sent.channel, sent.webhook) == (OPEN_CHANNEL, "9001")
+    assert sent.payload["content"] == "Welcome to Elysium."
+    assert sent.payload["username"] == "Lucien"
+    assert f"/api/public-pictures/character/{npc}/{picture}/" in sent.payload["avatar_url"]
+    assert "assistant" not in repr(sent.payload)
+
+    [message] = listed(troupe.storyteller, npc).json()["messages"]
+    edited = troupe.storyteller.client.put(
+        f"/in-character-messages/{message['id']}", json={"text": "Welcome, all."}
+    )
+    assert edited.status_code == 200, edited.text
+    assert fake_discord.messages[message_id].payload["content"] == "Welcome, all."
+
+    deleted = troupe.storyteller.client.delete(f"/in-character-messages/{message['id']}")
+    assert deleted.status_code == 204
+    assert fake_discord.messages == {}
+
+
+def test_without_manage_webhooks_the_npc_posts_nothing_and_says_why(
+    troupe: Troupe, fake_discord: FakeDiscord
+) -> None:
+    from horatio.connectors import discord
+
+    ready(troupe)
+    npc = built(troupe, "Lucien")
+    fake_discord.bot_role = discord.PERMISSIONS
+
+    refused = post(troupe.storyteller, npc)
+
+    assert refused.status_code == 502
+    assert "Manage Webhooks" in refused.json()["detail"]
+    # Never as the bot instead.
+    assert fake_discord.messages == {}
+    assert listed(troupe.storyteller, npc).json()["messages"] == []
+
+
+def test_a_message_gone_from_discord_cannot_be_edited_but_can_be_deleted(
+    troupe: Troupe, fake_discord: FakeDiscord
+) -> None:
+    ready(troupe)
+    npc = built(troupe, "Lucien")
+    assert post(troupe.storyteller, npc).status_code == 201
+    fake_discord.messages.clear()  # someone deleted it on Discord
+    [message] = listed(troupe.storyteller, npc).json()["messages"]
+
+    edit = troupe.storyteller.client.put(
+        f"/in-character-messages/{message['id']}", json={"text": "Hm."}
+    )
+    assert edit.status_code == 409
+    assert edit.json()["detail"].startswith("That message is no longer on Discord")
+
+    deleted = troupe.storyteller.client.delete(f"/in-character-messages/{message['id']}")
+    assert deleted.status_code == 204
+    assert listed(troupe.storyteller, npc).json()["messages"] == []

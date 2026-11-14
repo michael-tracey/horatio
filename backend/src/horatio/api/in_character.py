@@ -309,6 +309,11 @@ def edit_in_character(
         in_character.edit(db, user, message, text)
     except SendError as error:
         db.rollback()
+        if error.status == 404:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "That message is no longer on Discord, so it can't be edited. Delete it here.",
+            ) from None
         raise failed(error) from None
     db.commit()
     return message_out(db, troupe, message)
