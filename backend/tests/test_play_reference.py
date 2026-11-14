@@ -1483,8 +1483,10 @@ USE_KEYS = {
     "page",
     "book",
     "target",
+    "summon",
+    "summon_all",
 }
-CHANGES = ("heal", "convert", "mend", "gain", "beast", "retainer")
+CHANGES = ("heal", "convert", "mend", "gain", "beast", "retainer", "summon")
 
 
 def test_every_use_says_what_it_changes_and_where() -> None:

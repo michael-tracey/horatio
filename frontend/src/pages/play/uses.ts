@@ -5,7 +5,7 @@ import type { makeTap } from "./tracker";
 type TapWhat = Parameters<typeof makeTap>[0];
 
 /** What a use reads of the Play View: its trackers, its switches and its Retainers. */
-export type UseView = Pick<PlayView, "powers" | "blood" | "willpower" | "blood_name" | "health" | "beast" | "panels"> & Partial<Pick<PlayView, "retainers" | "character_id">>;
+export type UseView = Pick<PlayView, "powers" | "blood" | "willpower" | "blood_name" | "health" | "beast" | "panels"> & Partial<Pick<PlayView, "retainers" | "character_id" | "summons">>;
 
 /** Damage marked now, by kind. */
 export function marked(view: Pick<PlayView, "health">): { normal: number; aggravated: number } {
@@ -74,6 +74,13 @@ export function ghouls(view: UseView, use?: Pick<PowerUse, "animal">): NonNullab
   return (view.retainers ?? []).filter((r) => r.blood && r.health.value > 0 && (!use?.animal || r.animal));
 }
 
+/** The allies a use calls up now (issue #827): the next not out, or every one not out for `summon_all`. */
+export function toCallUp(view: UseView, use: Pick<PowerUse, "summon" | "summon_all">): NonNullable<PlayView["summons"]>[number]["allies"] {
+  if (!use.summon) return [];
+  const free = (view.summons ?? []).find((s) => s.key === use.summon)?.allies.filter((a) => !a.out) ?? [];
+  return use.summon_all ? free : free.slice(0, 1);
+}
+
 /**
  * The taps for one press of a use (issue #825): its cost spent, naming the power,
  * then what it heals, converts, gains and takes, as ordinary taps under one Undo.
@@ -89,9 +96,11 @@ export function effectTaps(view: UseView, use: PowerUse, power: string, opts: { 
     const n = r ? Math.min(use.retainer, r.health.value, normal + aggravated) : 0;
     if (n > 0) made.push(...healWorst(view, n), { kind: "change", tracker: `${r!.key}/health`, amount: -n });
   }
+  // Allies called up (issue #827), each a tap of its own.
+  for (const ally of toCallUp(view, use)) made.push({ kind: "change", tracker: ally.key, amount: 1 });
   // Nothing healed, gained or moved: a Beast trait alone is a use only where it is the whole of it.
   const moved = made.length > 0;
-  if (use.beast && (moved || (!use.heal && !use.convert && !use.convert_all && !use.mend && use.gains.length === 0 && !use.retainer))) {
+  if (use.beast && (moved || (!use.heal && !use.convert && !use.convert_all && !use.mend && use.gains.length === 0 && !use.retainer && !use.summon))) {
     if (view.panels.beast) made.push({ kind: "change", tracker: "beast", amount: use.beast });
   }
   if (made.length === 0) return [];

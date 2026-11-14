@@ -152,6 +152,18 @@ export function retainerTracker(view: PlayView, tracker: string) {
   return { retainer, what, track: what === "blood" ? retainer.blood : what === "health" ? retainer.health : null };
 }
 
+/** An ally a power calls up (issue #827): "ally:Arms of the Abyss#2", and ".../health". */
+export const ALLY = "ally:";
+
+/** The ally a tap names, and which of its trackers (undefined for calling it up or dismissing it). */
+export function allyTracker(view: PlayView, tracker: string) {
+  if (!tracker.startsWith(ALLY)) return undefined;
+  const [slot, what] = tracker.split("/");
+  const ally = (view.summons ?? []).flatMap((s) => s.allies).find((a) => a.key === slot);
+  if (!ally) return undefined;
+  return { ally, what, track: what === "blood" ? ally.blood : what === "health" ? ally.health : undefined };
+}
+
 /** What a tracker is called, as the log names it. */
 export function trackerName(view: PlayView, tracker: string): string {
   const names: Record<string, string> = {
@@ -170,6 +182,8 @@ export function trackerName(view: PlayView, tracker: string): string {
   if (temporary) return temporaryLabel(temporary);
   const kept = retainerTracker(view, tracker);
   if (kept) return `${kept.retainer.name || "Retainer"}: ${kept.what === "blood" ? "Blood" : "health"}`;
+  const ally = allyTracker(view, tracker);
+  if (ally) return ally.what ? `${ally.ally.name}: ${ally.what === "blood" ? "Blood" : "health"}` : ally.ally.name;
   const status = statusEntry(view, tracker);
   if (status) return status.name;
   if (tracker.startsWith(STATUS)) return tracker.slice(STATUS.length);
@@ -198,11 +212,39 @@ function most(view: PlayView, tracker: string): number | undefined {
   }
   if (tracker.startsWith(TEMPORARY)) return view.derangements.temporary.some((t) => t.key === tracker) ? 1 : undefined;
   if (tracker.startsWith(RETAINER)) return retainerTracker(view, tracker)?.track?.most;
+  if (tracker.startsWith(ALLY)) {
+    const found = allyTracker(view, tracker);
+    return found && (found.what ? (found.track ?? undefined)?.most : 1);
+  }
   if (isStatus(tracker)) return statusEntry(view, tracker) ? 1 : undefined;
   return view.expendables.find((e) => e.key === tracker)?.uses;
 }
 
 const clamp = (value: number, top: number, least = 0) => Math.max(least, Math.min(value, top));
+
+/** Call up an ally (fresh, every level clear) or dismiss it, or tap its health or Blood while it is out, as the server does (issue #827). */
+function applyAlly(view: PlayView, tracker: string, amount: number): [number, number] | null {
+  const found = allyTracker(view, tracker);
+  if (!found) return null;
+  const { ally, what, track } = found;
+  if (!what) {
+    const before = ally.out ? 1 : 0;
+    if (amount > 0 && !ally.out) {
+      ally.out = true;
+      ally.order = Math.max(0, ...(view.summons ?? []).flatMap((s) => s.allies).map((a) => a.order)) + 1;
+      if (ally.health) ally.health.value = ally.health.most;
+      if (ally.blood) ally.blood.value = ally.blood.most;
+    } else if (amount < 0 && ally.out) {
+      ally.out = false;
+      ally.order = 0;
+    }
+    return [before, ally.out ? 1 : 0];
+  }
+  if (!track) return null;
+  const before = track.value;
+  if (ally.out) track.value = clamp(before + amount, track.most);
+  return [before, track.value];
+}
 
 /**
  * Apply one change to `view` (changed in place), as the server does, and say
@@ -273,6 +315,7 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
     kept.value = clamp(before + amount, top);
     return [before, kept.value];
   }
+  if (tracker.startsWith(ALLY)) return applyAlly(view, tracker, amount);
   const found = view.expendables.find((e) => e.key === tracker)!;
   const before = found.left;
   found.left = clamp(before + amount, top);
@@ -307,6 +350,7 @@ export function describe(
     return tap.tracker.startsWith(HELD) ? `Spent ${name} for good` : `Spent ${name}`;
   }
   if (tap.tracker.startsWith(TEMPORARY)) return `Temporary derangement ${tap.amount > 0 ? "added" : "removed"}: ${name}`;
+  if (tap.tracker.startsWith(ALLY) && !tap.tracker.includes("/")) return `${tap.amount > 0 ? "Called up" : "Dismissed"} ${name}`;
   return change ? `${name} ${change[0]} → ${change[1]}` : `${name} ${tap.amount > 0 ? "+" : "−"}${Math.abs(tap.amount)}`;
 }
 
@@ -322,6 +366,7 @@ function copy(view: PlayView): Shown {
     health: { ...view.health, marks: [...view.health.marks] },
     expendables: view.expendables.map((e) => ({ ...e })),
     retainers: (view.retainers ?? []).map((r) => ({ ...r, health: { ...r.health }, blood: r.blood ? { ...r.blood } : null })),
+    summons: (view.summons ?? []).map((s) => ({ ...s, allies: s.allies.map((a) => ({ ...a, health: a.health ? { ...a.health } : null, blood: a.blood ? { ...a.blood } : null })) })),
     powers: view.powers.map((p) => ({ ...p })),
     equipment: [...view.equipment],
     equipped: [...view.equipped],
@@ -410,6 +455,8 @@ function level(view: PlayView, tracker: string): string | null {
   }
   const kept = retainerTracker(view, tracker)?.track;
   if (kept) return `${kept.value}/${kept.most}`;
+  const ally = allyTracker(view, tracker)?.track;
+  if (ally) return `${ally.value}/${ally.most}`;
   const found = view.expendables.find((e) => e.key === tracker);
   return found ? `${found.left} of ${found.uses} left` : null;
 }
@@ -437,7 +484,8 @@ export function tapToast(view: Shown, tap: Tap): string {
   // A power's Use button names the power the spend was for, as its note.
   if (tracker === "blood" || tracker === "willpower") return `${amount < 0 ? "Spent" : "Restored"} ${n} ${name}${amount < 0 && tap.note ? ` on ${tap.note}` : ""}${tail}`;
   if (view.expendables.some((e) => e.key === tracker)) return `${amount < 0 ? "Used" : "Restored"} ${n} ${name}${tail}`;
-  if (isFixed(tracker) || tracker.startsWith(RETAINER)) return `${name} ${amount < 0 ? "−" : "+"}${n}${tail}`;
+  if (tracker.startsWith(ALLY) && !tracker.includes("/")) return `${name} ${amount > 0 ? "called up" : "dismissed"}`;
+  if (isFixed(tracker) || tracker.startsWith(RETAINER) || tracker.startsWith(ALLY)) return `${name} ${amount < 0 ? "−" : "+"}${n}${tail}`;
   if (isStatus(tracker)) return amount < 0 ? `${name} spent${tracker.startsWith(HELD) ? " for good" : ""}` : `${name} restored`;
   if (tracker.startsWith(TEMPORARY)) return amount > 0 ? "Derangement added" : "Derangement removed";
   if (tracker.startsWith(ITEM)) {

@@ -5,7 +5,7 @@ import { Button } from "../../components/ui";
 import { OnOtherPicker, type Picked } from "./OnOthers";
 import { switchKey } from "./powers";
 import type { makeTap } from "./tracker";
-import { canPay, costText, ghouls, marked, offered, effectTaps, type UseView } from "./uses";
+import { canPay, costText, ghouls, marked, offered, effectTaps, toCallUp, type UseView } from "./uses";
 
 type TapWhat = Parameters<typeof makeTap>[0];
 
@@ -267,7 +267,11 @@ function UseEffect({ power, u, view, use }: { power: string; u: PowerUse; view: 
   const [asking, setAsking] = useState(false);
   const suffix = u.cost ? ` · ${costText(view, u)}` : "";
   const said = [u.once ? `${u.once}.` : null, u.note].filter(Boolean).join(" ");
-  const short = !canPay(view, u) ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}` : "Nothing to change now";
+  const short = !canPay(view, u)
+    ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}`
+    : u.summon && toCallUp(view, u).length === 0
+      ? "All of them are out already"
+      : "Nothing to change now";
   const button = (label: string, taps: ReturnType<typeof effectTaps>, key?: string) => (
     <Button
       key={key ?? label}

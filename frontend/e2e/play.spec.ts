@@ -629,6 +629,48 @@ test("Mantle of Sutekh's tithes are kept past the Blood pool while it lasts, and
   await expect.poll(async () => (await play()).blood.value).toBe(blood.most);
 });
 
+test("allies a power calls up: Arms of the Abyss rise together for 1 Blood, each with its own health, dismissed one by one, gone next game (#827)", async ({ browser }) => {
+  const { page: p } = await person(browser, "arms-raiser");
+  // A Lasombra with Obtenebration 3: three Arms of the Abyss at once (core pp. 148-149).
+  const id = await builtVampire(
+    p,
+    "Ines Tenebra",
+    "Lasombra",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Fame", 2], ["Resources", 1]], disciplines: [["Obtenebration", 2], ["Dominate", 1], ["Potence", 1]] },
+    [["disciplines", "Obtenebration", 3]],
+  );
+  type Ally = { key: string; name: string; out: boolean; health: { value: number } | null };
+  const play = async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { blood: { value: number }; summons: { key: string; allies: Ally[] }[] };
+  const allies = async () => (await play()).summons.find((s) => s.key === "Arms of the Abyss")!.allies;
+  const { blood } = await play();
+  await p.goto(`/play/characters/${id}?tab=pools`);
+
+  await p.getByRole("button", { name: "Arms of the Abyss: Raise the Arms · 1 Blood" }).click();
+  await expect.poll(async () => (await allies()).filter((a) => a.out).length).toBe(3);
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.value - 1);
+  // All three out: the use is off until one is dismissed.
+  await expect(p.getByRole("button", { name: "Arms of the Abyss: Raise the Arms · 1 Blood" })).toBeDisabled();
+
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  const card = p.getByRole("article", { name: "Allies: Arm of the Abyss" });
+  await expect(card).toContainText("3 of 3 out");
+  await card.getByRole("button", { name: "Spend Arm of the Abyss 1: health" }).click();
+  await expect(card.getByLabel("Arm of the Abyss 1: health: 3 of 4")).toBeVisible();
+  await card.getByRole("button", { name: "Dismiss Arm of the Abyss 2" }).click();
+  await expect(card).toContainText("2 of 3 out");
+  await expect.poll(async () => (await allies()).map((a) => [a.out, a.health?.value])).toEqual([
+    [true, 3],
+    [false, 4],
+    [true, 4],
+  ]);
+
+  // The next game starts with none out.
+  const reset = await p.request.post(`/api/characters/${id}/play/reset`, { headers: { "X-Horatio": "1" }, data: {} });
+  expect(reset.status(), await reset.text()).toBeLessThan(300);
+  await p.reload();
+  await expect(card).toContainText("0 of 3 out");
+});
+
 test("a power kept until undone: Heart of Darkness's heart stays out through Reset until it is turned off, and Use again asks first (#822)", async ({ browser }) => {
   const { page: p } = await person(browser, "heart-keeper");
   // A Follower of Set with Serpentis 5: Heart of Darkness (core p. 161).

@@ -29,6 +29,13 @@ over the usual most goes when Blood of Potency ends (core p. 188). Each game
 starts with everything off, but for a power whose effect lasts until it is undone
 (issue #822): its switch is kept through Reset (horatio.play_effects).
 
+Allies a power calls up (issue #827), such as Arms of the Abyss, are taps too:
+"ally:<summon>#<n>" +1 calls up the nth of them (fresh, every level clear) and -1
+dismisses it; "ally:<summon>#<n>/health" (and "/blood") count down from full, as a
+Retainer's do. They are the game's, not the character's: each game starts with none.
+An item a power makes for the game (Summon the Simple Form, Shadowcrafting) is its
+switch, held while it is on, with any qualities it gives (horatio.reference.Switch).
+
 A power whose qualities are picked each use (issue #599), such as Flesh of Marble's
 two Protective Gear qualities (Vol. 2 p. 232), has a tap for each:
 "pick:<key>/<quality>" +1 picks one while it is on and -1 drops it. Picking past
@@ -131,6 +138,9 @@ SWITCH = "power:"
 PICK = "pick:"
 # A Retainer's health and Blood: "retainer:Bocephus/health" (horatio.retainers).
 RETAINER = "retainer:"
+# An ally a power calls up (issue #827): "ally:Arms of the Abyss#2", and its trackers
+# "ally:Arms of the Abyss#2/health" and ".../blood".
+ALLY = "ally:"
 # Equipping an item: +1 equips it, -1 takes it off.
 EQUIP = "equip:"
 # Weapons in hand take at most two hands (MET: VTM p. 516).
@@ -200,6 +210,32 @@ class RetainerTrack:
         if self.blood:
             found[f"{self.key}/blood"] = self.blood
         return found
+
+
+@dataclass(frozen=True)
+class AllySlot:
+    """One of the allies a summon can have out at once (issue #827): the second Arm of
+    the Abyss, "ally:Arms of the Abyss#2"."""
+
+    key: str
+    summon: reference.Summon
+    number: int
+
+    @property
+    def name(self) -> str:
+        return f"{self.summon.name} {self.number}" if self.summon.most > 1 else self.summon.name
+
+    def trackers(self) -> dict[str, int]:
+        found: dict[str, int] = {}
+        if self.summon.health:
+            found[f"{self.key}/health"] = self.summon.health
+        if self.summon.blood:
+            found[f"{self.key}/blood"] = self.summon.blood
+        return found
+
+
+def ally_key(summon: str, number: int) -> str:
+    return f"{ALLY}{summon}#{number}"
 
 
 @dataclass(frozen=True)
@@ -283,6 +319,8 @@ class Limits:
     foreign: frozenset[str] = frozenset()
     # Each Retainer's health and Blood.
     retainers: tuple[RetainerTrack, ...] = ()
+    # The allies its powers can call up at a game (issue #827).
+    summons: tuple[reference.Summon, ...] = ()
     # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
     blood_name: str = "Blood"
     # The fixed trackers the character has; a Stock NPC has no Willpower and so on.
@@ -334,6 +372,28 @@ class Limits:
 
     def retainer_trackers(self) -> dict[str, int]:
         return {k: most for r in self.retainers for k, most in r.trackers().items()}
+
+    def ally_slots(self) -> list[AllySlot]:
+        """Every ally the character could have out at once, summon by summon."""
+        return [
+            AllySlot(key=ally_key(s.key, n), summon=s, number=n)
+            for s in self.summons
+            for n in range(1, s.most + 1)
+        ]
+
+    def ally(self, tracker: str) -> tuple[AllySlot, str | None] | None:
+        """The ally a tap names, and which of its trackers ("health", "blood"), or None
+        for the tap that calls it up or dismisses it. None for a tracker it lacks."""
+        slot, _, what = tracker.partition("/")
+        found = next((a for a in self.ally_slots() if a.key == slot), None)
+        if found is None:
+            return None
+        if not what:
+            return found, None
+        return (found, what) if f"{slot}/{what}" in found.trackers() else None
+
+    def ally_trackers(self) -> dict[str, int]:
+        return {k: most for a in self.ally_slots() for k, most in a.trackers().items()}
 
     @property
     def health_boxes(self) -> int:
@@ -448,6 +508,11 @@ class Limits:
             return 1 if any(t.key == tracker for t in self.temporary) else None
         if tracker.startswith(RETAINER):
             return self.retainer_trackers().get(tracker)
+        if tracker.startswith(ALLY):
+            found = self.ally(tracker)
+            if found is None:
+                return None
+            return 1 if found[1] is None else found[0].trackers()[tracker]
         return next((e.uses for e in self.expendables if e.key == tracker), None)
 
     def least(self, tracker: str) -> int:
@@ -475,7 +540,12 @@ class Limits:
             "beast": self.beast_start,
             "derangements": self.derangements,
             "held": {t.key: self.held.get(t.key, 0) for t in self.temporary},
-            "uses": {e.key: e.uses for e in self.expendables} | self.retainer_trackers(),
+            "uses": {e.key: e.uses for e in self.expendables}
+            | self.retainer_trackers()
+            | self.ally_trackers(),
+            # The allies called up (issue #827), in the order they were: none, as a
+            # game starts.
+            "allies": [],
             # Forms and powers switched on: none, as a game starts, but for the
             # effects kept until undone (issue #822).
             "on": list(
@@ -532,6 +602,11 @@ class Limits:
             found = next((r.name for r in self.retainers if r.key == key), None)
             name = found if found is not None else key.removeprefix(RETAINER)
             return f"{name or 'Retainer'}: {'Blood' if what == 'blood' else 'health'}"
+        if tracker.startswith(ALLY):
+            ally = self.ally(tracker)
+            slot, _, what = tracker.partition("/")
+            name = ally[0].name if ally else slot.removeprefix(ALLY).replace("#", " ")
+            return f"{name}: {'Blood' if what == 'blood' else 'health'}" if what else name
         # A trait no longer on the sheet: "trait:backgrounds/Herd/" reads "Herd".
         parts = tracker.removeprefix("trait:").split("/")
         return ": ".join(p for p in parts[1:] if p) if len(parts) == 3 else tracker
@@ -591,6 +666,7 @@ def known_tracker(tracker: str) -> bool:
         tracker in TRACKERS
         or tracker == DRANK
         or tracker.startswith(("trait:", "counter:", RETAINER))
+        or (tracker.startswith(ALLY) and "#" in tracker)
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or (tracker.startswith(PICK) and "/" in tracker)
         or equipped_id(tracker) is not None
@@ -991,6 +1067,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
             )
             for r in retainers.read(db, character)
         ),
+        summons=tuple(reference.summons(rows, rule_set)),
         vitae=vitae,
         items=held_items(db, character),
     )
@@ -1216,6 +1293,8 @@ def apply(
         return pick(state, limits, event.tracker, event.amount, said)
     if event.tracker.startswith(EQUIP):
         return equip(state, limits, event, said)
+    if event.tracker.startswith(ALLY):
+        return ally(state, limits, event.tracker, event.amount)
     if event.tracker == "health":
         marks: list[str] = state["health"]
         before = len(marks)
@@ -1245,6 +1324,33 @@ def apply(
     before = state["uses"].get(event.tracker, most)
     state["uses"][event.tracker] = max(0, min(before + event.amount, most))
     return before, state["uses"][event.tracker]
+
+
+def ally(
+    state: dict[str, Any], limits: Limits, tracker: str, amount: int
+) -> tuple[int, int] | None:
+    """Call up an ally (amount > 0), fresh, or dismiss it; or change an ally's health
+    or Blood while it is out. A tap on one not out changes nothing."""
+    found = limits.ally(tracker)
+    if found is None:
+        return None
+    slot, what = found
+    out: list[str] = state.setdefault("allies", [])
+    uses: dict[str, int] = state["uses"]
+    if what is None:
+        before = int(slot.key in out)
+        if amount > 0 and not before:
+            out.append(slot.key)
+            # Called up again, it is a new one: every level clear.
+            uses.update(slot.trackers())
+        elif amount < 0 and before:
+            out.remove(slot.key)
+        return before, int(slot.key in out)
+    most = slot.trackers()[tracker]
+    before = uses.get(tracker, most)
+    if slot.key in out:
+        uses[tracker] = max(0, min(before + amount, most))
+    return before, uses[tracker] if slot.key in out else before
 
 
 def change_vitae(state: dict[str, Any], vitae: Vitae, amount: int) -> tuple[int, int]:
@@ -1375,6 +1481,8 @@ def describe(
     if event.tracker.startswith(EQUIP):
         text = f"Equipped {name}" if event.amount > 0 else f"Unequipped {name}"
         return f"{text}: {', '.join(said)}" if said else text
+    if event.tracker.startswith(ALLY) and "/" not in event.tracker:
+        return f"Called up {name}" if event.amount > 0 else f"Dismissed {name}"
     if event.tracker.startswith(TEMPORARY):
         return f"Temporary derangement {'added' if event.amount > 0 else 'removed'}: {name}"
     if event.tracker == DRANK:

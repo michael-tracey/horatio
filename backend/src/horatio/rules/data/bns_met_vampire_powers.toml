@@ -117,8 +117,8 @@
 # `use` (on a power or [[others]] entry): uses that change the trackers besides
 #   spending (issue #825), each a button of its own on the Pools tab, made of
 #   ordinary taps with one Undo: [{ label, cost?, heal?, convert?, mend?, gain?,
-#   beast?, retainer?, animal?, when?, once?, focus?, unless_focus?, target?, note?,
-#   page, book? }]. `target = "other"` makes it a use on another character of the home
+#   beast?, retainer?, animal?, summon?, summon_all?, when?, once?, focus?,
+#   unless_focus?, target?, note?, page, book? }]. `target = "other"` makes it a use on another character of the home
 #   troupe (issue #823), whose own trackers it changes (healing only, for now).
 #   `cost` is as above, spent on each press. `heal = { damage, amount? }` heals
 #   `amount` of "normal" or "aggravated" damage, of the "worst" first
@@ -130,12 +130,25 @@
 #   (issue #854). `beast`
 #   takes Beast traits. `retainer` moves up to that much damage onto one of the
 #   character's ghoul Retainers, an animal one with `animal = true` (issue #854:
-#   Beast's Vigor). `when` names a switch that must be on; `once`
+#   Beast's Vigor). `summon` calls up one more of the entry's allies (see `summon`
+#   below), by its key, and with `summon_all = true` every one it can have at once
+#   (issue #827). `when` names a switch that must be on; `once`
 #   says how often the book allows it ("Once a turn"), for the player to keep to,
 #   since the Play View counts no turns. `focus` and `unless_focus` limit it as
 #   for `pools`. Where an entry's uses spend, they take the place of its plain
 #   Use button; where none does (Theft of Vitae's Blood drawn on a win), the
 #   button stays for the spend.
+# `summon` (on a power or [[others]] entry): the allies it calls up at a game (issue
+#   #827), one table or a list of them: { key, name, health?, blood?, most?, top?,
+#   health_add?, note?, focus?, unless_focus?, needs?, has?, page, book? } (or
+#   `reference` for a page range). Each ally has `health` levels (and `blood`), tapped
+#   as a Retainer's are; none for one immune to harm. `most` is how many can be out at
+#   once, a number, "powers:<Discipline>" or "rating:<category>/<Name>", at most `top`;
+#   `health` can be counted the same way, plus `health_add`. Entries sharing a key are
+#   variants: the last that holds for the sheet (its focus, a discipline level it
+#   `needs`, a trait it `has`) is the one the character has. Allies are the game's:
+#   each is gone when dismissed or when the game ends. An item a power makes for the
+#   game is its switch, held while on, with the `qualities` or `picks` it gives.
 # [[others]]: techniques, elder and luminary powers and merits with `pools`,
 #   `damage`, `active`, `cost` or `forms`, by `category` and `name`; `needs = {
 #   discipline, level }` when it works only with a power of a discipline. `forms`
@@ -718,6 +731,15 @@ level = 3
 name = "Arms of the Abyss"
 note = "1 Blood, simple action: shadow tentacles rise, one per Obtenebration power you have, to grapple and strike."
 focus = { Manipulation = "The Arms attack with a pool of 10, and hit harder with Potence." }
+# Core pp. 148-149 (#827): one Arm per Obtenebration power, techniques too, five at
+# most, rising together; 4 health levels, or 6 with the Manipulation focus and a dot
+# of Fortitude.
+summon = [
+  { key = "Arms of the Abyss", name = "Arm of the Abyss", health = 4, most = "powers:Obtenebration", top = 5, reference = "pp. 148-149", note = "Acts on its own, one standard action a turn: an attack within two steps, pool 8, for 1 normal damage, or a Grapple with no Willpower spent. Can't move; no mind to target; gone in sunlight." },
+  { key = "Arms of the Abyss", name = "Arm of the Abyss", focus = "Manipulation", health = 4, most = "powers:Obtenebration", top = 5, reference = "pp. 148-149", note = "Acts on its own, one standard action a turn: an attack within two steps, pool 10, for 1 normal damage (2 with Potence), or a Grapple with no Willpower spent. Can't move; no mind to target; gone in sunlight." },
+  { key = "Arms of the Abyss", name = "Arm of the Abyss", focus = "Manipulation", needs = { discipline = "Fortitude", level = 1 }, health = 6, most = "powers:Obtenebration", top = 5, reference = "pp. 148-149", note = "Acts on its own, one standard action a turn: an attack within two steps, pool 10, for 1 normal damage (2 with Potence), or a Grapple with no Willpower spent. Can't move; no mind to target; gone in sunlight." },
+]
+use = [{ label = "Raise the Arms", cost = { blood = 1 }, summon = "Arms of the Abyss", summon_all = true, page = 149 }]
 
 [[powers]]
 discipline = "Obtenebration"
@@ -1345,6 +1367,13 @@ level = 4
 name = "Bind Soul"
 note = "1 Blood, three turns' concentration: bind a wraith to a place as a 3-point Retainer, within 10 steps of it."
 focus = { Manipulation = "Bind as many wraiths as your Occult dots." }
+# Core p. 173 (#827): a 3-point Retainer; one at a time, or as many as your Occult
+# dots with the Manipulation focus, each bound separately.
+summon = [
+  { key = "Bind Soul", name = "Bound wraith", health = 3, page = 173, note = "A 3-point Retainer, bound to this spot: it can't go more than 10 steps from it. Binding another releases the last; a simple action releases it." },
+  { key = "Bind Soul", name = "Bound wraith", focus = "Manipulation", health = 3, most = "rating:skills/Occult", page = 173, note = "A 3-point Retainer, bound to this spot: it can't go more than 10 steps from it. Each is bound separately; a simple action releases one." },
+]
+use = [{ label = "Bind a wraith", cost = { blood = 1 }, summon = "Bind Soul", page = 173 }]
 
 [[powers]]
 discipline = "Necromancy: Sepulchre Path"
@@ -1377,8 +1406,15 @@ focus = { Charisma = "A simple action instead." }
 discipline = "Necromancy: Bone Path"
 level = 3
 name = "Shambling Hordes"
-note = "1 Blood, standard action: raise a corpse you have as an obedient zombie; control as many as your dots in the path."
+note = "1 Blood, standard action: raise a corpse you have as an obedient zombie; control as many as your dots of Occult."
 focus = { Charisma = "Your zombies are 3-point NPCs with Potence and Fortitude." }
+# Core p. 175 (#827): a 2-point Stock NPC (3-point with the Charisma focus), as many
+# at once as your Occult dots, each raised separately.
+summon = [
+  { key = "Shambling Hordes", name = "Zombie", health = 2, most = "rating:skills/Occult", page = 175, note = "A 2-point Stock NPC with Potence or Fortitude and Brawl or Melee. Obeys your spoken commands; no downtime actions." },
+  { key = "Shambling Hordes", name = "Zombie", focus = "Charisma", health = 3, most = "rating:skills/Occult", page = 175, note = "A 3-point Stock NPC with Potence and Fortitude, and Brawl or Melee. Obeys your spoken commands; no downtime actions." },
+]
+use = [{ label = "Raise a zombie", cost = { blood = 1 }, summon = "Shambling Hordes", page = 175 }]
 
 [[powers]]
 discipline = "Necromancy: Bone Path"
@@ -1553,6 +1589,8 @@ level = 1
 name = "Summon the Simple Form"
 note = "1 Blood, standard action: conjure a simple one-handed object with no moving parts."
 focus = { Intelligence = "A simple action instead." }
+# Core pp. 189-190 (#827): the object is held while this is on.
+active = { key = "Summon the Simple Form", name = "Summon the Simple Form: object", page = 189, notes = ["A simple object you can hold in one hand appears in your hand: one material, no moving parts, nothing living.", "1 Blood a minute after the first keeps it; unpaid, it vanishes. Permanency makes it last."] }
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Conjuring"
@@ -1560,6 +1598,8 @@ level = 2
 name = "Magic of the Smith"
 note = "1 Blood, five turns' concentration: conjure a complex object you know well."
 focus = { Intelligence = "Objects up to 10 cubic feet." }
+# Core p. 190 (#827): the object is held while this is on; it can be ordinary equipment.
+active = { key = "Magic of the Smith", name = "Magic of the Smith: object", page = 190, notes = ["A complex object you know how to make appears in your hand, ready to work: a gun comes loaded. It can be ordinary equipment (p. 515).", "1 Blood a minute after the first keeps it; unpaid, it vanishes. Permanency makes it last: ask your Storyteller to add it to your equipment."] }
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Conjuring"
@@ -1581,6 +1621,10 @@ level = 5
 name = "Power Over Life"
 note = "Five turns, 1 Blood a turn: conjure a living simulacrum that obeys your thoughts."
 focus = { Intelligence = "Duplicates of specific creatures." }
+# Core p. 191 (#827): one simulacrum at a time, until dawn; the book gives it no
+# health levels, and it vanishes if killed.
+summon = { key = "Power Over Life", name = "Simulacrum", page = 191, note = "A soulless copy of an animal or a person that obeys your thoughts and nothing else. Lasts until dawn; vanishes if killed. A new one ends the last." }
+use = [{ label = "Conjure a simulacrum", cost = { blood = 5 }, summon = "Power Over Life", note = "Five full turns, 1 Blood each.", page = 191 }]
 
 [[disciplines]]
 name = "Thaumaturgy: Path of Corruption"
@@ -1670,6 +1714,13 @@ level = 5
 name = "Summon Elemental"
 note = "1 Blood, standard action: summon an elemental that obeys you for three turns."
 focus = { Intelligence = "It stays five minutes." }
+# Core pp. 194-195 (#827): a 6-point Stock NPC; the book sets no limit, but each
+# takes a standard action and lasts three turns, so no more than three are out at once.
+summon = [
+  { key = "Summon Elemental", name = "Elemental", health = 6, most = 3, reference = "pp. 194-195", note = "A 6-point Stock NPC with one special ability you choose (p. 195). Obeys your thoughts on your initiative for three turns, then goes home, or turns on you if you abused it." },
+  { key = "Summon Elemental", name = "Elemental", focus = "Intelligence", health = 6, most = 3, reference = "pp. 194-195", note = "A 6-point Stock NPC with one special ability you choose (p. 195). Obeys your thoughts on your initiative for five minutes, then goes home, or turns on you if you abused it." },
+]
+use = [{ label = "Summon an elemental", cost = { blood = 1 }, summon = "Summon Elemental", page = 194 }]
 
 [[disciplines]]
 name = "Thaumaturgy: Lure of Flames"
@@ -1912,6 +1963,14 @@ level = 2
 name = "Tame Spirit"
 note = "A downtime action: bond a Beast Spirit as your companion."
 focus = { Charisma = "A destroyed Beast Spirit reforms in an hour, not a month." }
+# Vol. 2 p. 80 (#827): your one Beast Spirit companion, an Animal Retainer at a level
+# of your Spiritus powers, techniques and elder powers too; Primal Strength (p. 84)
+# gives it 3 more Healthy levels.
+summon = [
+  { key = "Tame Spirit", name = "Beast Spirit", health = "powers:Spiritus", page = 80, book = "Vol. 2", note = "Your bonded companion, built as an Animal Retainer at a level of your Spiritus powers; it understands you and does what you ask. One at a time." },
+  { key = "Tame Spirit", name = "Beast Spirit", has = "Spiritus: Primal Strength", health = "powers:Spiritus", health_add = 3, page = 80, book = "Vol. 2", note = "Your bonded companion, built as an Animal Retainer at a level of your Spiritus powers, with Primal Strength's 3 more Healthy levels and 5 more Gnosis (p. 84). One at a time." },
+]
+use = [{ label = "Call your Beast Spirit", summon = "Tame Spirit", page = 80, book = "Vol. 2" }]
 
 [[powers]]
 discipline = "Spiritus"
@@ -2028,6 +2087,11 @@ level = 1
 name = "Dark Vessel"
 note = "1 Blood, standard action, opposed test: bind a wraith (rating 4 or lower) into a fist-sized trinket."
 focus = { Manipulation = "Keep up to twice your dots in vessels." }
+# Vol. 2 p. 128 (#827): breaking a vessel you hold, a simple action, for one of its effects.
+use = [
+  { label = "Soul Food: break a vessel", gain = { blood = 2 }, note = "Break a Dark Vessel you hold: its wraith goes to a Harrowing.", page = 128, book = "Vol. 2" },
+  { label = "Dark Offering: break a vessel", beast = -1, note = "Break a Dark Vessel you hold: one Beast trait settles.", page = 128, book = "Vol. 2" },
+]
 
 [[powers]]
 discipline = "Necromancy: Path of Soul Bonding"
@@ -2042,6 +2106,9 @@ level = 3
 name = "Twisted Metal"
 note = "1 more Blood, simple action: give a Deathly Device an extra item quality."
 focus = { Charisma = "Any quality, even one the item couldn't normally have." }
+# Vol. 2 p. 130 (#827): one extra quality on a Deathly Device, one application at a
+# time, lasting until replaced.
+active = { key = "Twisted Metal", kept = true, page = 130, book = "Vol. 2", picks = { kind = "melee", kinds = ["ranged", "protective", "miscellaneous"], count = 1 }, notes = ["The Deathly Device gains the quality picked, past its usual most; never one it has already. It looks twisted.", "Without the Charisma focus, the quality must suit the item."] }
 
 [[powers]]
 discipline = "Necromancy: Path of Soul Bonding"
@@ -2714,6 +2781,8 @@ category = "luminary_disciplines"
 name = "Melpominee: Choir of the Damned"
 cost = { blood = 2 }
 active = { key = "Choir of the Damned", page = 216, book = "Vol. 2", notes = ["Two intangible singers follow you and use your Melpominee 1-5 and Sound Wave for free, on your initiative.", "2 Blood and three uninterrupted turns of song together break something up to car size within 100 feet; six turns bring down a floor or ceiling."] }
+summon = { key = "Choir of the Damned", name = "Singer", most = 2, page = 216, book = "Vol. 2", note = "Intangible: can't be harmed or targeted by hostile powers. Follows at your walking pace and uses your Melpominee 1-5 and Sound Wave free, on your initiative." }
+use = [{ label = "The singers appear", summon = "Choir of the Damned", summon_all = true, when = "Choir of the Damned", page = 216, book = "Vol. 2" }]
 
 # Vol. 2 p. 220: 3 Blood, standard action: an aura that turns aggravated damage to normal.
 [[others]]
@@ -2874,6 +2943,8 @@ category = "techniques"
 name = "Animal Swarm"
 needs = { discipline = "Protean", level = 4 }
 active = { key = "Animal Swarm", form = true, page = 19, book = "Vol. 2 Issue 1", notes = ["One animal per dot of Celerity, each acting on its own, with 5 health levels.", "No Blood and no other powers; flight: Physical counts as 1 to attack, +1 Dodge; fight: Physical half yours.", "Coming back: 2 aggravated per animal destroyed, 1 per one hurt."] }
+summon = { key = "Animal Swarm", name = "Animal", health = 5, most = "rating:disciplines/Celerity", page = 19, book = "Vol. 2 Issue 1", note = "Acts on its own, a simple and a standard action a turn; 1 Healthy, 2 Injured, 2 Incapacitated. Within a mile of the rest; back in one shape, those out of sight crumble." }
+use = [{ label = "Split into the swarm", summon = "Animal Swarm", summon_all = true, when = "Animal Swarm", page = 19, book = "Vol. 2 Issue 1" }]
 
 # Core pp. 225-226 (#820): no action, on your initiative; one turn, and 1 Blood a
 # turn to keep it.
@@ -3063,3 +3134,44 @@ active = { key = "Beast's Vigor", page = 58, book = "Vol. 2 Issue 1", notes = ["
 use = [
   { label = "Move damage", retainer = 3, animal = true, beast = 1, when = "Beast's Vigor", note = "Onto an animal ghoul Retainer of yours.", page = 58, book = "Vol. 2 Issue 1" },
 ]
+
+# Core pp. 228-229 (#827): 1 Blood and three standard actions animate a statue, a
+# level 3 Retainer with three armour qualities, until the next sunset; one at a time.
+[[others]]
+category = "techniques"
+name = "Guardian Lion"
+summon = { key = "Guardian Lion", name = "Guardian Lion", health = 3, reference = "pp. 228-229", note = "A level 3 Retainer of stone with Full Body, Hardened and Ballistic. Follows complex commands but never improvises; without them it stands still. Lasts until the next sunset; one at a time." }
+use = [{ label = "Animate the statue", cost = { blood = 1 }, summon = "Guardian Lion", note = "Three standard actions of concentration.", page = 228 }]
+
+# Core p. 219 (#827): your shadow wakes as a servant; immune to Physical harm, so no
+# health levels to tap. Dispelled by bright light, fire or sunlight.
+[[others]]
+category = "elder_disciplines"
+name = "Obtenebration: Shadow Twin"
+summon = { key = "Shadow Twin", name = "Shadow Twin", page = 219, note = "Half your attributes (rounded up) and all your skills; immune to Physical harm. Bright light dispels it for a minute after the light goes; fire or sunlight for ten minutes." }
+use = [{ label = "Wake your shadow", summon = "Shadow Twin", note = "1 Blood and a simple action call it back to your side if you're apart.", page = 219 }]
+
+# Vol. 2 Issue 1 pp. 79-80 (#827): Form of the Cobra as a nest of snakes, one per
+# Obfuscate dot, each with 5 health levels; a major transformation.
+[[others]]
+category = "techniques"
+name = "Snake Den"
+needs = { discipline = "Serpentis", level = 3 }
+active = { key = "Snake Den", form = true, page = 79, book = "Vol. 2 Issue 1", notes = ["No Blood and no other powers while a nest: the snakes have your Mental and Social, focuses and skills, half your Physical (rounded up), and 1 aggravated bites (2, armour-piercing, with Potence).", "Back in one shape: 2 aggravated per snake destroyed, 1 per one hurt, and 2 Blood per snake out of sight. If every snake is destroyed, you die."] }
+summon = { key = "Snake Den", name = "Snake", health = 5, most = "rating:disciplines/Obfuscate", reference = "Vol. 2 Issue 1, pp. 79-80", note = "Acts on its own, a simple and a standard action a turn; 1 Healthy, 2 Injured, 2 Incapacitated (with Fortitude, each negates 1 damage a hit). Within a mile of the rest." }
+use = [{ label = "Split into the nest", summon = "Snake Den", summon_all = true, when = "Snake Den", page = 79, book = "Vol. 2 Issue 1" }]
+
+# Vol. 2 Issue 1 p. 80 (#827): an object of solid shadow, held while this is on; it
+# lasts the rest of the night. 1 to 3 Blood by its size.
+[[others]]
+category = "techniques"
+name = "Shadowcrafting"
+cost = { blood = 1, most = 3 }
+active = { key = "Shadowcrafting", name = "Shadowcrafting: object", page = 80, book = "Vol. 2 Issue 1", notes = ["An object of solid shadow, cool, durable and sharp enough to fight with: 1 Blood and a standard action for one hand's size, 2 and two actions for two hands, 3 and three for a person's.", "Plainly supernatural to mortal eyes; it lasts the rest of the night."] }
+
+# Vol. 2 Issue 1 p. 83 (#827): melee qualities on your Arms of the Abyss, up to three.
+[[others]]
+category = "techniques"
+name = "Terror of Tentacles"
+cost = { blood = 1 }
+active = { key = "Terror of Tentacles", page = 83, book = "Vol. 2 Issue 1", notes = ["1 Blood and a simple action each: give Arms of the Abyss one melee quality, Accurate, Armor Piercing, Brutal, Deadly, Disabling, Fast, Trip, Impaling, Reach or Quick Draw, never the same twice; three at most.", "Shaped tentacles can move three steps with their standard action, within your sight."] }

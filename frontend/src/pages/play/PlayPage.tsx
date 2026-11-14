@@ -25,6 +25,7 @@ import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { PlayBondReports } from "../character/BondReports";
 import { RetainerPools } from "./RetainerPools";
+import { Allies } from "./Allies";
 import { StatusTab } from "./Status";
 import { TeachingAsks } from "./Teaching";
 import { BoonsTab } from "./Boons";
@@ -273,6 +274,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
             </div>
           </div>
           {reference && <RetainerPools retainers={reference.retainers} tracks={shown.retainers} tap={record} />}
+          <Allies summons={shown.summons ?? []} tap={record} />
           <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={setQuickNotes} online={sync.online} onChange={accept} />
           {/* Its Undo is the header's, on every tab. */}
           <GameLog view={shown} onDetails={sync.online ? setDetailing : undefined} />

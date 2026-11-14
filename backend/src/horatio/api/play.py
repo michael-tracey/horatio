@@ -3,6 +3,7 @@ limited uses are spent tap by tap (horatio.play). The character's player and
 the staff who can see the sheet use it alike; each tap says who made it."""
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, Self
@@ -197,6 +198,32 @@ class RetainerTrackOut(BaseModel):
     blood: Tracker | None
     # An animal (issue #854): Beast's Vigor moves damage onto animal ghouls only.
     animal: bool = False
+
+
+class AllyOut(BaseModel):
+    """One ally a power can call up at this game (issue #827), out or not: tapped as
+    "<key>" to call it up or dismiss it, "<key>/health" and "<key>/blood" while out."""
+
+    key: str
+    name: str
+    out: bool
+    # Its place among the allies called up, from 1; 0 while not out.
+    order: int = 0
+    # None for one with no health levels (Shadow Twin, immune to Physical harm).
+    health: Tracker | None
+    blood: Tracker | None
+
+
+class SummonOut(BaseModel):
+    """What a power can call up (issue #827), and the allies it can have out at once."""
+
+    key: str
+    name: str
+    origin: str
+    page: str
+    note: str
+    most: int
+    allies: list[AllyOut]
 
 
 class InfluenceSpendOut(BaseModel):
@@ -436,6 +463,8 @@ class PlayView(BaseModel):
     expendables: list[ExpendableOut]
     # Each Retainer's health and Blood (its pool and the rest are in the reference).
     retainers: list[RetainerTrackOut] = []
+    # The allies its powers can call up, and those out at this game (issue #827).
+    summons: list[SummonOut] = []
     # Forms and powers in use (issue #200): those the sheet has, on or off. The
     # health tracker gains the wound levels of those on, after the sheet's own in
     # each category; `blood_per_turn` and `blood_usual` are without them.
@@ -828,6 +857,40 @@ def effects_made_out(db: Session, character: Character) -> list[EffectMadeOut]:
     return out
 
 
+def summons_out(limits: play.Limits, state: Mapping[str, Any]) -> list[SummonOut]:
+    """Each summon the character has, with its allies, out or not, as the game stands."""
+    out: list[str] = state.get("allies", [])
+    uses: Mapping[str, int] = state["uses"]
+
+    def track(key: str, most: int) -> Tracker | None:
+        return Tracker(value=uses.get(key, most), most=most, start=most) if most else None
+
+    slots = limits.ally_slots()
+    return [
+        SummonOut(
+            key=s.key,
+            name=s.name,
+            origin=s.origin,
+            page=s.page,
+            note=s.note,
+            most=s.most,
+            allies=[
+                AllyOut(
+                    key=a.key,
+                    name=a.name,
+                    out=a.key in out,
+                    order=out.index(a.key) + 1 if a.key in out else 0,
+                    health=track(f"{a.key}/health", s.health),
+                    blood=track(f"{a.key}/blood", s.blood),
+                )
+                for a in slots
+                if a.summon.key == s.key
+            ],
+        )
+        for s in limits.summons
+    ]
+
+
 def play_view(db: Session, character: Character) -> PlayView:
     game = play.current_game(db, character)
     limits = play.limits(db, character, game)
@@ -935,6 +998,7 @@ def play_view(db: Session, character: Character) -> PlayView:
             )
             for r in limits.retainers
         ],
+        summons=summons_out(limits, state),
         powers=[
             PowerOut(
                 **s.model_dump(),

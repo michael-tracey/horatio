@@ -28,7 +28,7 @@ function view(marks: Mark[] = [], overrides: Partial<UseView> = {}): UseView {
 }
 
 function use(overrides: Partial<PowerUse>): PowerUse {
-  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], over: false, beast: 0, retainer: 0, animal: false, when: null, once: null, note: null, page: null, target: "self", ...overrides };
+  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], over: false, beast: 0, retainer: 0, animal: false, when: null, once: null, note: null, page: null, target: "self", summon: null, summon_all: false, ...overrides };
 }
 
 const blood = (amount: number) => ({ tracker: "blood" as const, amount });
@@ -143,5 +143,39 @@ describe("a use's taps (issue #825)", () => {
     const switched = (on: boolean) => view([], { powers: [{ key: "Mantle of Sutekh", on } as UseView["powers"][number]] });
     expect(offered(switched(false), tithe)).toBe(false);
     expect(offered(switched(true), tithe)).toBe(true);
+  });
+});
+
+describe("a use that calls up allies (issue #827)", () => {
+  const ally = (n: number, out = false) => ({ key: `ally:Arms#${n}`, name: `Arm ${n}`, out, order: out ? n : 0, health: { value: 4, most: 4, start: 4 }, blood: null });
+  const summons = (outs: boolean[]): UseView["summons"] => [
+    { key: "Arms", name: "Arm of the Abyss", origin: "Obtenebration 3", page: "pp. 148-149", note: "", most: outs.length, allies: outs.map((o, i) => ally(i + 1, o)) },
+  ];
+
+  it("calls up every one not out with summon_all, after its cost", () => {
+    const raise = use({ cost: blood(1), summon: "Arms", summon_all: true });
+    const v = view([], { summons: summons([false, true, false]) });
+    expect(effectTaps(v, raise, "Arms of the Abyss")).toEqual([
+      { kind: "change", tracker: "blood", amount: -1, note: "Arms of the Abyss" },
+      { kind: "change", tracker: "ally:Arms#1", amount: 1 },
+      { kind: "change", tracker: "ally:Arms#3", amount: 1 },
+    ]);
+  });
+
+  it("calls up one at a time otherwise, and is off when all are out", () => {
+    const one = use({ cost: blood(1), summon: "Arms" });
+    expect(effectTaps(view([], { summons: summons([true, false]) }), one, "Shambling Hordes")).toContainEqual({ kind: "change", tracker: "ally:Arms#2", amount: 1 });
+    expect(effectTaps(view([], { summons: summons([true, true]) }), one, "Shambling Hordes")).toEqual([]);
+  });
+
+  it("calls an ally up fresh, takes its damage only while out, and dismisses it", () => {
+    const v = { ...view(), summons: summons([false, false]) } as unknown as PlayView;
+    v.summons![0]!.allies[0]!.health!.value = 1;
+    expect(applyChange(v, "ally:Arms#1/health", -1)).toEqual([1, 1]);
+    expect(applyChange(v, "ally:Arms#1", 1)).toEqual([0, 1]);
+    expect(v.summons![0]!.allies[0]!.health!.value).toBe(4);
+    expect(applyChange(v, "ally:Arms#1/health", -3)).toEqual([4, 1]);
+    expect(applyChange(v, "ally:Arms#1", -1)).toEqual([1, 0]);
+    expect(v.summons![0]!.allies[0]!.out).toBe(false);
   });
 });
