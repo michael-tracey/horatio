@@ -9776,6 +9776,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/discord/emoji": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Emoji Setup
+         * @description The symbols Horatio can add to the troupe's server as emoji, which it added,
+         *     the server's room for them, and what the bot lacks. Five calls to Discord.
+         */
+        get: operations["emoji_setup_api_troupes__troupe_id__discord_emoji_get"];
+        /**
+         * Change Emoji
+         * @description Switch Horatio adding the symbols as emoji on or off, and choose their style
+         *     and whether Horatio uses its own emoji for what doesn't fit.
+         */
+        put: operations["change_emoji_api_troupes__troupe_id__discord_emoji_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/discord/emoji/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Push Emoji
+         * @description Queue adding the chosen symbols as emoji, in the order given, and removing what
+         *     Horatio added that no longer fits the choice; the worker does it, a few at a time,
+         *     as Discord allows.
+         */
+        post: operations["push_emoji_api_troupes__troupe_id__discord_emoji_push_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/discord/invite": {
         parameters: {
             query?: never;
@@ -20262,6 +20310,100 @@ export interface components {
         EmbracedOut: {
             plan: components["schemas"]["EmbracePlanOut"];
             sheet: components["schemas"]["SheetOut"];
+        };
+        /** EmojiChange */
+        EmojiChange: {
+            /** On */
+            on: boolean;
+            /**
+             * Own
+             * @default false
+             */
+            own: boolean;
+            /**
+             * Style
+             * @default png_wb
+             * @enum {string}
+             */
+            style: "png_wb" | "png";
+        };
+        /** EmojiOut */
+        EmojiOut: {
+            /** Clans */
+            clans: string[];
+            /** Disciplines */
+            disciplines: string[];
+            /** Fetched */
+            fetched: boolean;
+            /** Lacks */
+            lacks: string[] | null;
+            /** On */
+            on: boolean;
+            /** Own */
+            own: boolean;
+            /** Queued */
+            queued: number;
+            room: components["schemas"]["EmojiRoomOut"] | null;
+            /**
+             * Style
+             * @enum {string}
+             */
+            style: "png_wb" | "png";
+            /** Symbols */
+            symbols: components["schemas"]["EmojiSymbolOut"][];
+        };
+        /** EmojiPush */
+        EmojiPush: {
+            /**
+             * Remove Others
+             * @default false
+             */
+            remove_others: boolean;
+            /** Symbols */
+            symbols: string[];
+        };
+        /** EmojiPushed */
+        EmojiPushed: {
+            /** Adding */
+            adding: number;
+            /** Fits */
+            fits: number | null;
+            /** Removing */
+            removing: number;
+        };
+        /** EmojiRoomOut */
+        EmojiRoomOut: {
+            /** Boost */
+            boost: number;
+            /** Room */
+            room: number;
+            /** Used */
+            used: number;
+        };
+        /**
+         * EmojiSymbolOut
+         * @description A symbol Horatio can add as an emoji: `clan/brujah`, `disc/sup/aus`.
+         */
+        EmojiSymbolOut: {
+            /** Added */
+            added: ("server" | "own") | null;
+            /**
+             * Group
+             * @enum {string}
+             */
+            group: "clan" | "disc/sup" | "disc/inf" | "path";
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string | null;
+            /** Other Style */
+            other_style: boolean;
+            /** Status */
+            status: string | null;
         };
         /** EndingOut */
         EndingOut: {
@@ -55083,6 +55225,105 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    emoji_setup_api_troupes__troupe_id__discord_emoji_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmojiOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_emoji_api_troupes__troupe_id__discord_emoji_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmojiChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    push_emoji_api_troupes__troupe_id__discord_emoji_push_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmojiPush"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmojiPushed"];
+                };
             };
             /** @description Validation Error */
             422: {

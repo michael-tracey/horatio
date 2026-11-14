@@ -342,10 +342,12 @@ def send_due_now() -> int:
     end date has passed (horatio.suspensions), the free changes by date that have
     run out (horatio.free_changes), the items that have expired or are about to
     (horatio.item_expiry), the Yorick pages kept long enough
-    (horatio.yorick_imports), and the Discord character channels troupes asked
-    Horatio to make, keep in step and check (horatio.discord_channels)."""
+    (horatio.yorick_imports), the Discord character channels troupes asked
+    Horatio to make, keep in step and check (horatio.discord_channels), and the
+    emoji they asked it to add or remove (horatio.discord_emoji)."""
     from horatio import (
         discord_channels,
+        discord_emoji,
         free_changes,
         item_expiry,
         notification_emails,
@@ -364,6 +366,7 @@ def send_due_now() -> int:
     yorick_imports.expire_due_now()
     sent += discord_channels.make_due_now()
     sent += discord_channels.keep_in_step_now()
+    sent += discord_emoji.push_due_now()
     return sent
 
 

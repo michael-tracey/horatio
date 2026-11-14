@@ -470,6 +470,14 @@ MESSAGES: dict[str, str] = {
     " character channels.",
     "connector.discord_channel_fixed": "{actor} asked Horatio to fix {character}'s Discord"
     " channel, and it {what}.",
+    "connector.discord_emoji": "{actor} turned Horatio adding the clan and discipline symbols to"
+    " the troupe's Discord server as emoji {state} ({style}).",
+    "connector.discord_emoji_queued": "{actor} asked Horatio to add {adding} emoji to the troupe's"
+    " Discord server and remove {removing}.",
+    "connector.discord_emoji_added": "{actor} had Horatio add {names} to the troupe's Discord"
+    " server.",
+    "connector.discord_emoji_removed": "{actor} had Horatio remove {names} from the troupe's"
+    " Discord server.",
     "delivery.retried": "{actor} retried {character}'s {channel} delivery.",
     "delivery.marked_sent": "{actor} marked {character}'s {channel} delivery as sent by hand.",
     "post.published": "{actor} published {what} “{title}”.",

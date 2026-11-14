@@ -18611,6 +18611,274 @@
         "title": "EmbracedOut",
         "type": "object"
       },
+      "EmojiChange": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "own": {
+            "default": false,
+            "title": "Own",
+            "type": "boolean"
+          },
+          "style": {
+            "default": "png_wb",
+            "enum": [
+              "png_wb",
+              "png"
+            ],
+            "title": "Style",
+            "type": "string"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "EmojiChange",
+        "type": "object"
+      },
+      "EmojiOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "disciplines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Disciplines",
+            "type": "array"
+          },
+          "fetched": {
+            "title": "Fetched",
+            "type": "boolean"
+          },
+          "lacks": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lacks"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "own": {
+            "title": "Own",
+            "type": "boolean"
+          },
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmojiRoomOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "style": {
+            "enum": [
+              "png_wb",
+              "png"
+            ],
+            "title": "Style",
+            "type": "string"
+          },
+          "symbols": {
+            "items": {
+              "$ref": "#/components/schemas/EmojiSymbolOut"
+            },
+            "title": "Symbols",
+            "type": "array"
+          }
+        },
+        "required": [
+          "on",
+          "style",
+          "own",
+          "fetched",
+          "lacks",
+          "room",
+          "symbols",
+          "clans",
+          "disciplines",
+          "queued"
+        ],
+        "title": "EmojiOut",
+        "type": "object"
+      },
+      "EmojiPush": {
+        "properties": {
+          "remove_others": {
+            "default": false,
+            "title": "Remove Others",
+            "type": "boolean"
+          },
+          "symbols": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Symbols",
+            "type": "array"
+          }
+        },
+        "required": [
+          "symbols"
+        ],
+        "title": "EmojiPush",
+        "type": "object"
+      },
+      "EmojiPushed": {
+        "properties": {
+          "adding": {
+            "title": "Adding",
+            "type": "integer"
+          },
+          "fits": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fits"
+          },
+          "removing": {
+            "title": "Removing",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "adding",
+          "removing",
+          "fits"
+        ],
+        "title": "EmojiPushed",
+        "type": "object"
+      },
+      "EmojiRoomOut": {
+        "properties": {
+          "boost": {
+            "title": "Boost",
+            "type": "integer"
+          },
+          "room": {
+            "title": "Room",
+            "type": "integer"
+          },
+          "used": {
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "boost",
+          "room",
+          "used"
+        ],
+        "title": "EmojiRoomOut",
+        "type": "object"
+      },
+      "EmojiSymbolOut": {
+        "description": "A symbol Horatio can add as an emoji: `clan/brujah`, `disc/sup/aus`.",
+        "properties": {
+          "added": {
+            "anyOf": [
+              {
+                "enum": [
+                  "server",
+                  "own"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Added"
+          },
+          "group": {
+            "enum": [
+              "clan",
+              "disc/sup",
+              "disc/inf",
+              "path"
+            ],
+            "title": "Group",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "other_style": {
+            "title": "Other Style",
+            "type": "boolean"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "key",
+          "group",
+          "label",
+          "name",
+          "added",
+          "other_style",
+          "status",
+          "note"
+        ],
+        "title": "EmojiSymbolOut",
+        "type": "object"
+      },
       "EndingOut": {
         "properties": {
           "boonbreaker": {
@@ -88280,6 +88548,149 @@
           }
         },
         "summary": "Check Channels",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/discord/emoji": {
+      "get": {
+        "description": "The symbols Horatio can add to the troupe's server as emoji, which it added,\nthe server's room for them, and what the bot lacks. Five calls to Discord.",
+        "operationId": "emoji_setup_api_troupes__troupe_id__discord_emoji_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmojiOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Emoji Setup",
+        "tags": [
+          "connectors"
+        ]
+      },
+      "put": {
+        "description": "Switch Horatio adding the symbols as emoji on or off, and choose their style\nand whether Horatio uses its own emoji for what doesn't fit.",
+        "operationId": "change_emoji_api_troupes__troupe_id__discord_emoji_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmojiChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Emoji",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/discord/emoji/push": {
+      "post": {
+        "description": "Queue adding the chosen symbols as emoji, in the order given, and removing what\nHoratio added that no longer fits the choice; the worker does it, a few at a time,\nas Discord allows.",
+        "operationId": "push_emoji_api_troupes__troupe_id__discord_emoji_push_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmojiPush"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmojiPushed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Push Emoji",
         "tags": [
           "connectors"
         ]

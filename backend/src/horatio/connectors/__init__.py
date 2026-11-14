@@ -54,6 +54,7 @@ class SendError(Exception):
         retry: bool,
         retry_after: float | None = None,
         status: int | None = None,
+        code: int | None = None,
     ) -> None:
         super().__init__(reason)
         self.reason = reason
@@ -62,6 +63,8 @@ class SendError(Exception):
         self.retry_after = retry_after
         # The service's HTTP status, where it answered with one.
         self.status = status
+        # The service's own error code, where it gave one (Discord's JSON `code`).
+        self.code = code
 
 
 class Connector(ABC):

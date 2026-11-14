@@ -1048,6 +1048,71 @@ test("staff check the channels Horatio made, and fix what a check found (#856)",
   await expect(l.getByRole("list", { name: "Problems with Horatio's channels" })).toHaveCount(0);
 });
 
+/**
+ * The clan and discipline symbols as the server's emoji (#870). As above, the browser
+ * is shown Horatio's answers: staff switch it on, see the server's room, choose the
+ * troupe's clans and more than fits, and push them.
+ */
+test("staff add the clan and discipline symbols to the troupe's Discord server as emoji (#870)", async ({ browser }) => {
+  const custodian = await person(browser, "memoji-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "memoji-lead");
+  await custodian.page.reload();
+  const created = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Emoji Server ${run}`, lead_handle: lead.handle } });
+  expect(created.status(), await created.text()).toBeLessThan(300);
+  const troupe = await created.json();
+  const l = lead.page;
+  const settings = { guild_id: "111", guild_name: "Court of Ash", channels: {}, test_channel: null };
+  await l.route(`**/api/troupes/${troupe.id}/connectors`, (route) =>
+    route.fulfill({ json: [{ kind: "discord", name: "Discord", unavailable: null, needs: [], enabled: true, mode: "alert", test_mode: false, settings }] }),
+  );
+  await l.route(`**/api/troupes/${troupe.id}/discord`, (route) =>
+    route.fulfill({ json: { guild_id: "111", guild_name: "Court of Ash", channels: [], characters: [], suggestions: {}, managed: null } }),
+  );
+  const symbol = (key: string, group: string, label: string, name: string) => ({ key, group, label, name, added: null, other_style: false, status: null, note: null });
+  const emoji = {
+    on: false,
+    style: "png_wb",
+    own: false,
+    fetched: true,
+    lacks: [],
+    room: { boost: 0, room: 50, used: 49 },
+    symbols: [
+      symbol("clan/brujah", "clan", "Brujah", "brujah"),
+      symbol("clan/tremere", "clan", "Tremere", "tremere"),
+      symbol("disc/sup/aus", "disc/sup", "Auspex (superior)", "aus_sup"),
+    ],
+    clans: ["clan/tremere"],
+    disciplines: ["disc/sup/aus"],
+    queued: 0,
+  };
+  await l.route(`**/api/troupes/${troupe.id}/discord/emoji`, async (route) => {
+    if (route.request().method() === "PUT") {
+      Object.assign(emoji, route.request().postDataJSON());
+      return route.fulfill({ status: 204 });
+    }
+    return route.fulfill({ json: emoji });
+  });
+  const pushed: unknown[] = [];
+  await l.route(`**/api/troupes/${troupe.id}/discord/emoji/push`, async (route) => {
+    pushed.push(route.request().postDataJSON());
+    await route.fulfill({ json: { adding: 2, removing: 0, fits: 1 } });
+  });
+
+  await l.goto(`/troupes/${troupe.id}/connectors`);
+  const offer = l.getByRole("checkbox", { name: "Let Horatio add the clan and discipline symbols to the server as emoji" });
+  await expect(offer).not.toBeChecked();
+  await offer.check();
+  await expect(l.getByText("The server has 1 of 50 emoji slots free (Server Boost level 0).")).toBeVisible();
+  await expect(l.getByRole("radio", { name: "White-bordered, as on the cards" })).toBeChecked();
+
+  await l.getByRole("button", { name: "This troupe's clans" }).click();
+  await l.getByRole("button", { name: "Disciplines in use" }).click();
+  await expect(l.getByText(/1 of the 2 to add won't fit/)).toBeVisible();
+  await l.getByRole("button", { name: "Add the chosen emoji" }).click();
+  await expect.poll(() => pushed).toEqual([{ symbols: ["clan/tremere", "disc/sup/aus"], remove_others: false }]);
+});
+
 test("staff share out a cycle's responses by character, and assign several in one go", async ({ browser }) => {
   const custodian = await person(browser, "bulkassign-cust");
   makeCustodian(custodian.email);
