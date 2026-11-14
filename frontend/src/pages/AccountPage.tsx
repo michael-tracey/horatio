@@ -9,6 +9,7 @@ import { Button, Card, ErrorText, Field, Input, Loading, PageTitle, Tabs, Textar
 import { useAction, useLeaveWarning, useMe } from "../hooks";
 import { DevicePanel } from "../offline/DevicePanel";
 import { LinesVeilsForm } from "./LinesVeilsForm";
+import { DiscordLinkCard } from "./settings/DiscordLinkCard";
 import { HandleCard } from "./settings/HandleCard";
 import { SettingsPage } from "./settings/SettingsPage";
 
@@ -67,6 +68,7 @@ export function AccountPage() {
           element={
             <div className="flex flex-col gap-6">
               <ProfileForm key={player.data.id} player={player.data} />
+              <DiscordLinkCard />
               <HandleCard />
             </div>
           }
@@ -133,8 +135,21 @@ function ProfileForm({ player }: { player: PlayerOut }) {
             <Field label="Bio" hint="A little about you: how long you've played, what you like to play. Up to 2000 characters.">
               <Textarea rows={6} maxLength={2000} value={form.bio} onChange={(e) => set({ bio: e.target.value })} />
             </Field>
-            <Field label="Discord username" hint="Your username, such as mrcarbuncle, so staff and the troupe's Discord can find you.">
-              <Input autoComplete="off" placeholder="mrcarbuncle" value={form.discord_handle} onChange={(e) => set({ discord_handle: e.target.value })} />
+            <Field
+              label="Discord username"
+              hint={
+                player.discord_linked
+                  ? "From your linked Discord account. Unlink it below to type one instead."
+                  : "Your username, such as mrcarbuncle, so staff and the troupe's Discord can find you. Or link your Discord account below."
+              }
+            >
+              <Input
+                autoComplete="off"
+                placeholder="mrcarbuncle"
+                readOnly={player.discord_linked}
+                value={form.discord_handle}
+                onChange={(e) => set({ discord_handle: e.target.value })}
+              />
             </Field>
           </div>
           <div className="flex flex-col gap-3">

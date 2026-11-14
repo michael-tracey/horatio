@@ -4,12 +4,13 @@ import secrets
 import uuid
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select, update
 
 from horatio import audit
+from horatio.api import discord_account
 from horatio.api.connectors import connector_row
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
@@ -79,13 +80,17 @@ def discord_invite(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> In
 
 @router.get("/discord/callback", include_in_schema=False)
 def discord_callback(
+    request: Request,
     db: DbSession,
     user: CurrentUser,
     state: str = "",
     code: str | None = None,
     error: str | None = None,
 ) -> RedirectResponse:
-    """Where Discord sends a storyteller after they add the bot (or decline)."""
+    """Where Discord sends a storyteller after they add the bot (or decline), and
+    a player after they link their own Discord account (`state` begins `link.`)."""
+    if state.startswith(discord.LINK_STATE):
+        return discord_account.finish_link(request, db, user, state, code, error)
     troupe_part, _, token = state.partition(".")
     try:
         troupe_id = uuid.UUID(troupe_part)

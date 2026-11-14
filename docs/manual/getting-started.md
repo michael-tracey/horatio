@@ -52,6 +52,12 @@ Choose **Save profile** when you're done. If you try to leave with changes not s
 
 ![The Profile tab, with display name, pronouns, bio, Discord username and social media links](images/getting-started/profile.png)
 
+### Your Discord account
+
+If the server has Discord set up, the **Discord account** card, under your profile, offers **Link my Discord**. Discord asks you to confirm, then tells Horatio your Discord username and nothing else. Your profile then shows that username, marked as confirmed by Discord, where a typed one is marked "typed, not checked". Staff can rely on it when they give you your character's Discord channel. Linking doesn't change how you sign in.
+
+While it's linked, your Discord username comes from Discord and can't be typed over. **Unlink Discord** forgets the link and keeps the username, unless Discord is your only way to sign in. A Discord account can be linked to only one Horatio account.
+
 ### Your handle
 
 The **Handle** card, under your profile, changes your [handle](glossary.md#handle). Others see and find you by it, never by your email, and you can sign in with either. You can change it once in 30 days, and nobody else can take your old one for 90 days.

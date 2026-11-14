@@ -68,7 +68,10 @@ function Contact({ player }: { player: PlayerOut }) {
         {player.discord_handle && (
           <div>
             <dt className="text-xs text-mist">Discord</dt>
-            <dd>@{player.discord_handle}</dd>
+            <dd>
+              @{player.discord_handle}{" "}
+              <span className="text-xs text-mist">{player.discord_linked ? "· linked, confirmed by Discord" : "· typed, not checked"}</span>
+            </dd>
           </div>
         )}
         {player.email && (
