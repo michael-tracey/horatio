@@ -10,6 +10,9 @@ export const toggle = (tap: Tap, power: PowerSwitch) => tap({ kind: "change", tr
 
 const COUNTS = ["none", "one", "two", "three", "four"];
 
+/** The character's own switches: not one used only on others, nor another's effect on it (#823), which have their own place. */
+const own = (powers: PowerSwitch[]) => powers.filter((p) => !p.foreign && p.target !== "other");
+
 /**
  * A power whose qualities are picked each use (issue #599), such as Flesh of
  * Marble's two Protective Gear qualities: while it is on, a button for each, and
@@ -108,7 +111,8 @@ function Row({ power, tap, paused }: { power: PowerSwitch; tap: Tap; paused: boo
  * p. 249) two, and a third turns off the one on longest. The rest go with a form
  * and with each other.
  */
-export function PowersList({ powers, forms: atOnce = 1, tap }: { powers: PowerSwitch[]; forms?: number; tap: Tap }) {
+export function PowersList({ powers: all, forms: atOnce = 1, tap }: { powers: PowerSwitch[]; forms?: number; tap: Tap }) {
+  const powers = own(all);
   if (powers.length === 0) return null;
   const forms = powers.filter((p) => p.form);
   const others = powers.filter((p) => !p.form);
@@ -147,7 +151,9 @@ const BRIEF_AFTER = 3;
  * A short banner while a form or power is on: which, with its notes and what other
  * powers add to it, and a way back: Turn back for a form, Off for a power (#697).
  */
-export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap }) {
+export function PowersBanner({ powers: all, tap }: { powers: PowerSwitch[]; tap: Tap }) {
+  // Another's effect on this one shows with the powers used on others, not here (#823).
+  const powers = own(all);
   const forms = formsOn({ powers });
   const others = powers.filter((p) => p.on && !p.form);
   if (forms.length === 0 && others.length === 0) return null;

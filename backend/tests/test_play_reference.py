@@ -28,6 +28,7 @@ from horatio.reference import (
     other_powers,
     own_tests,
     pools,
+    switch_for,
     uses,
     work_out,
 )
@@ -1403,6 +1404,7 @@ USE_KEYS = {
     "note",
     "page",
     "book",
+    "target",
 }
 CHANGES = ("heal", "convert", "mend", "gain", "beast", "retainer")
 
@@ -1424,6 +1426,39 @@ def test_every_use_says_what_it_changes_and_where() -> None:
         assert set(u.get("cost", {})) <= {"blood", "willpower"}, name
         if "when" in u:
             assert u["when"] in book.switch_keys, name
+        # A use on another character (issue #823) heals them, and only that for now.
+        assert u.get("target", "self") in {"self", "other"}, name
+        if u.get("target") == "other":
+            assert set(u) & set(CHANGES) == {"heal"}, name
+            assert u["heal"]["damage"] != "asked", name
+
+
+def test_a_switch_used_on_others_is_kept() -> None:
+    """Issue #823: a switch that can be used on another character is an effect on
+    them, kept until undone, and is never a form."""
+    book = catalogue()
+    entries = [
+        *book.disciplines.values(),
+        *(p for ps in book.powers.values() for p in ps),
+        *book.others.values(),
+    ]
+    found = [a for e in entries for a in actives(e) if a.get("target", "self") != "self"]
+    assert found
+    for a in found:
+        assert a["target"] in {"other", "any"}, a["key"]
+        assert a.get("kept") and not a.get("form"), a["key"]
+
+
+def test_another_characters_switch_is_built_from_the_powers_file() -> None:
+    """What an effect from another's power does on a character who hasn't the power."""
+    found = switch_for("Reshaped by Fleshcraft")
+    assert [s.key for s in found] == [
+        "Reshaped by Fleshcraft",
+        "Reshaped by Fleshcraft/Ordinary change",
+        "Reshaped by Fleshcraft/Alien beauty",
+    ]
+    assert found[2].attributes[0].amount == -2 and found[2].focuses == ["Appearance"]
+    assert switch_for("No such switch") == []
 
 
 def test_healing_powers_heal_as_the_book_says() -> None:
@@ -1443,10 +1478,18 @@ def test_healing_powers_heal_as_the_book_says() -> None:
             for u in found
         ]
 
+    def own(found: list[Any]) -> list[Any]:
+        return [u for u in found if u.target == "self"]
+
     corpore = book.power("Obeah", "Corpore Sano")
     assert corpore is not None
-    assert summary(uses(corpore, plain)) == [("Heal 1 normal", 1, ("normal", 1), "Once a turn")]
-    assert [u.label for u in uses(corpore, wits)] == ["Heal 1 normal", "Heal 1 aggravated"]
+    assert summary(own(uses(corpore, plain))) == [
+        ("Heal 1 normal", 1, ("normal", 1), "Once a turn")
+    ]
+    assert [u.label for u in own(uses(corpore, wits))] == ["Heal 1 normal", "Heal 1 aggravated"]
+    # On a willing character too (issue #823), the same heals.
+    others = [u for u in uses(corpore, wits) if u.target == "other"]
+    assert summary(others) == summary(own(uses(corpore, wits)))
     mens = book.power("Valeren", "Mens Sana")
     assert mens is not None
     assert [u.once for u in uses(mens, plain)] == ["Once a turn"]
@@ -1459,7 +1502,7 @@ def test_healing_powers_heal_as_the_book_says() -> None:
     endurance = uses(book.others[("techniques", "Reflection of Endurance")], wits)
     assert summary(endurance) == summary(uses(mens, wits))
     mercy = uses(book.others[("techniques", "Reflection of Mercy")], wits)
-    assert [s[:3] for s in summary(mercy)] == [s[:3] for s in summary(uses(corpore, wits))]
+    assert [s[:3] for s in summary(mercy)] == [s[:3] for s in summary(own(uses(corpore, wits)))]
     # The third Moment of Reflection gives back 2 Willpower with Intelligence (Vol. 2 p. 160).
     moment = book.power("Thaumaturgy: Path of Neptune's Might", "Moment of Reflection")
     assert moment is not None
@@ -1506,8 +1549,20 @@ def test_the_reference_sends_a_powers_uses(troupe: Troupe) -> None:
     found = reference(troupe, character_id)
     obeah = next(d for d in found["disciplines"] if d["name"] == "Obeah")
     corpore = next(p for p in obeah["powers"] if p["name"] == "Corpore Sano")
-    assert [(u["label"], u["cost"], u["heal"]) for u in corpore["uses"]] == [
-        ("Heal 1 normal", {"tracker": "blood", "amount": 1}, {"damage": "normal", "amount": 1})
+    # On yourself, and on a willing character within a step (issue #823).
+    assert [(u["label"], u["cost"], u["heal"], u["target"]) for u in corpore["uses"]] == [
+        (
+            "Heal 1 normal",
+            {"tracker": "blood", "amount": 1},
+            {"damage": "normal", "amount": 1},
+            "self",
+        ),
+        (
+            "Heal 1 normal",
+            {"tracker": "blood", "amount": 1},
+            {"damage": "normal", "amount": 1},
+            "other",
+        ),
     ]
     wind = next(o for o in found["other_powers"] if o["name"] == "Second Wind")
     said = [(u["label"], u["convert_all"]) for u in wind["uses"]]

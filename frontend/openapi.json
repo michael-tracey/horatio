@@ -16722,6 +16722,21 @@
         "title": "DiscoveryBlockOut",
         "type": "object"
       },
+      "DisputeIn": {
+        "properties": {
+          "note": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "DisputeIn",
+        "type": "object"
+      },
       "DomitorChoiceOut": {
         "description": "A vampire a ghoul could be bound to.",
         "properties": {
@@ -17195,6 +17210,80 @@
           "kind"
         ],
         "title": "EffectIn",
+        "type": "object"
+      },
+      "EffectMadeOut": {
+        "description": "An effect this character's power left on another, still on (issue #823), which\nits player can end.",
+        "properties": {
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledged At"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "dispute_note": {
+            "default": "",
+            "title": "Dispute Note",
+            "type": "string"
+          },
+          "disputed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disputed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "options": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "character_id",
+          "character_name",
+          "name",
+          "since"
+        ],
+        "title": "EffectMadeOut",
         "type": "object"
       },
       "EffectRef": {
@@ -33262,6 +33351,68 @@
         "title": "OfferOut",
         "type": "object"
       },
+      "OnOtherIn": {
+        "description": "A power used on another character in the home troupe (a note tap, issue #823;\nhoratio.play_on_others).",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Character Name",
+            "type": "string"
+          },
+          "options": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Options",
+            "type": "array"
+          },
+          "power": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Power",
+            "type": "string"
+          },
+          "switch": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Switch"
+          },
+          "use": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use"
+          }
+        },
+        "required": [
+          "character_id",
+          "power"
+        ],
+        "title": "OnOtherIn",
+        "type": "object"
+      },
       "OneHolder": {
         "properties": {
           "on": {
@@ -35883,6 +36034,35 @@
       "PlayEffectOut": {
         "description": "An effect on the character that lasts until undone (issue #822): kept through\nReset until it is turned off.",
         "properties": {
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledged At"
+          },
+          "dispute_note": {
+            "default": "",
+            "title": "Dispute Note",
+            "type": "string"
+          },
+          "disputed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disputed At"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -35895,6 +36075,14 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "options": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
           },
           "paused": {
             "default": false,
@@ -36334,6 +36522,31 @@
         "title": "PlayStatusOut",
         "type": "object"
       },
+      "PlayTargetOut": {
+        "description": "A character a power can be used on: of the user's home troupe (issue #823).",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "title": "PlayTargetOut",
+        "type": "object"
+      },
       "PlayTrait": {
         "properties": {
           "category": {
@@ -36523,6 +36736,14 @@
               "$ref": "#/components/schemas/PlayEffectOut"
             },
             "title": "Effects",
+            "type": "array"
+          },
+          "effects_made": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EffectMadeOut"
+            },
+            "title": "Effects Made",
             "type": "array"
           },
           "equipment": {
@@ -38178,6 +38399,11 @@
             "title": "Focuses",
             "type": "array"
           },
+          "foreign": {
+            "default": false,
+            "title": "Foreign",
+            "type": "boolean"
+          },
           "form": {
             "default": false,
             "title": "Form",
@@ -38290,6 +38516,16 @@
               }
             ],
             "title": "Since"
+          },
+          "target": {
+            "default": "self",
+            "enum": [
+              "self",
+              "other",
+              "any"
+            ],
+            "title": "Target",
+            "type": "string"
           },
           "turned_on": {
             "default": 0,
@@ -38404,6 +38640,15 @@
             "default": 0,
             "title": "Retainer",
             "type": "integer"
+          },
+          "target": {
+            "default": "self",
+            "enum": [
+              "self",
+              "other"
+            ],
+            "title": "Target",
+            "type": "string"
           },
           "when": {
             "anyOf": [
@@ -51262,6 +51507,16 @@
             "maxLength": 300,
             "title": "Note",
             "type": "string"
+          },
+          "on_other": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OnOtherIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "tracker": {
             "default": "",
@@ -67417,6 +67672,178 @@
         ]
       }
     },
+    "/api/characters/{character_id}/play/effects-made/{effect_id}/end": {
+      "post": {
+        "description": "End an effect this character's power left on another (issue #823).",
+        "operationId": "end_effect_made_api_characters__character_id__play_effects_made__effect_id__end_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "effect_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Effect Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "End Effect Made",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/effects/{effect_id}/acknowledge": {
+      "post": {
+        "description": "Its target acknowledges an effect another character's power left on it.",
+        "operationId": "acknowledge_effect_api_characters__character_id__play_effects__effect_id__acknowledge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "effect_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Effect Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Acknowledge Effect",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/effects/{effect_id}/dispute": {
+      "post": {
+        "description": "Its target disputes an effect another character's power left on it, to the\ntroupe's staff with a note. It stays on until whoever used it, or staff, end it.",
+        "operationId": "dispute_effect_api_characters__character_id__play_effects__effect_id__dispute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "effect_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Effect Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisputeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dispute Effect",
+        "tags": [
+          "play"
+        ]
+      }
+    },
     "/api/characters/{character_id}/play/effects/{effect_id}/end": {
       "post": {
         "description": "End an effect that lasts until undone (issue #822), for those who can't make\nthe Play View tap: staff, or the character who used the power on another. A\nplayer turns their own off with the switch, which works offline.",
@@ -68348,6 +68775,54 @@
           }
         },
         "summary": "Give Influence Details",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/targets": {
+      "get": {
+        "description": "The characters this one can use a power on (issue #823): its home troupe's\nplayer characters at home there and its titled NPCs.",
+        "operationId": "read_targets_api_characters__character_id__play_targets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlayTargetOut"
+                  },
+                  "title": "Response Read Targets Api Characters  Character Id  Play Targets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Targets",
         "tags": [
           "play"
         ]

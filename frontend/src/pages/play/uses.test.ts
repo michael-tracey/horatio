@@ -28,7 +28,7 @@ function view(marks: Mark[] = [], overrides: Partial<UseView> = {}): UseView {
 }
 
 function use(overrides: Partial<PowerUse>): PowerUse {
-  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], beast: 0, retainer: 0, when: null, once: null, note: null, page: null, ...overrides };
+  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], beast: 0, retainer: 0, when: null, once: null, note: null, page: null, target: "self", ...overrides };
 }
 
 const blood = (amount: number) => ({ tracker: "blood" as const, amount });

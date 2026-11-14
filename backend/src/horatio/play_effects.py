@@ -41,6 +41,7 @@ ENDED = {
     "replaced": "used again",
     "undone": "undone",
     "staff": "ended by staff",
+    "source": "ended by whoever used it",
 }
 
 
@@ -159,7 +160,9 @@ def on_tap(
         start(db, character, actor, event, key, name)
         return
     found = active(db, character.id, key)
-    if found is not None:
+    # One another character's power left here isn't this one's to turn off: whoever
+    # used it, or staff, end it (issue #823).
+    if found is not None and found.source_character_id == character.id:
         end(db, found, actor, "off", name, event=event)
 
 

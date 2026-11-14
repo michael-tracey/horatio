@@ -20,6 +20,7 @@ import { frenzyNumbers } from "./frenzy";
 import { trackersOf } from "./pools";
 import { KindBadge } from "../character/NpcKindBadge";
 import { bloodPerTurn, boxes, countedOptions, healthMost, onKeys } from "./powers";
+import { OnOthers } from "./OnOthers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { PlayBondReports } from "../character/BondReports";
@@ -35,7 +36,7 @@ import { DRANK, incapacitated, influenceStanding, latestUndoable, tapsToast, typ
 import { TrackerStrip } from "./TrackerStrip";
 import { usePlay, type Play, type Sync } from "./usePlay";
 import { useEquipment } from "./useEquipment";
-import { useReference } from "./useReference";
+import { useForeignReference, useReference } from "./useReference";
 import { StockPlay } from "./StockPlay";
 import { VitaeTracker } from "./Vitae";
 import { ShownWarning } from "./TrackerWarning";
@@ -93,6 +94,14 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   // A power's Use: its cost and its switch, with one Undo.
   const taps = useToldTaps(play);
   const { reference, error: referenceError } = useReference(characterId);
+  // Another's power on this one changes its pools (#823): the reference comes again.
+  useForeignReference(
+    characterId,
+    view.data?.powers
+      .filter((p) => p.foreign)
+      .map((p) => p.key)
+      .join("|"),
+  );
   // Asked now, so the Equipment tab opens at once and is kept on the phone for a game with no signal.
   useEquipment(characterId);
   // Quick notes start as the settings say; the switch changes them for this visit.
@@ -155,6 +164,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
     <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
       <PowersBanner powers={shown.powers} tap={tap} />
+      <OnOthers view={shown} online={sync.online} onChange={accept} />
       {!tab && <p className="py-8 text-center text-mist">{shown.character_name}'s troupe has switched off every tab it has here.</p>}
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
       {tab === "pools" &&
@@ -168,7 +178,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
             items={shown.equipment}
             equipped={shown.equipped}
             tap={tap}
-            using={{ view: shown, use: taps }}
+            using={{ view: shown, use: taps, online: sync.online }}
             trackers={trackersOf(shown)}
             onThrow={
               showing.includes("throws")

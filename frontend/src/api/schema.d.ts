@@ -2968,6 +2968,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play/effects-made/{effect_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End Effect Made
+         * @description End an effect this character's power left on another (issue #823).
+         */
+        post: operations["end_effect_made_api_characters__character_id__play_effects_made__effect_id__end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/effects/{effect_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge Effect
+         * @description Its target acknowledges an effect another character's power left on it.
+         */
+        post: operations["acknowledge_effect_api_characters__character_id__play_effects__effect_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/effects/{effect_id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dispute Effect
+         * @description Its target disputes an effect another character's power left on it, to the
+         *     troupe's staff with a note. It stays on until whoever used it, or staff, end it.
+         */
+        post: operations["dispute_effect_api_characters__character_id__play_effects__effect_id__dispute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/play/effects/{effect_id}/end": {
         parameters: {
             query?: never;
@@ -3273,6 +3334,27 @@ export interface paths {
          *     keep the troupe's influence log.
          */
         put: operations["give_influence_details_api_characters__character_id__play_taps__tap_id__influence_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Targets
+         * @description The characters this one can use a power on (issue #823): its home troupe's
+         *     player characters at home there and its titled NPCs.
+         */
+        get: operations["read_targets_api_characters__character_id__play_targets_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -19403,6 +19485,11 @@ export interface components {
             whose: ("own" | "other") | null;
             window: components["schemas"]["WindowOut"];
         };
+        /** DisputeIn */
+        DisputeIn: {
+            /** Note */
+            note: string;
+        };
         /**
          * DomitorChoiceOut
          * @description A vampire a ghoul could be bound to.
@@ -19624,6 +19711,46 @@ export interface components {
              * @enum {string}
              */
             kind: "hungry_dead" | "indirect_attack" | "crafts" | "performance" | "overtaxed" | "recovery";
+        };
+        /**
+         * EffectMadeOut
+         * @description An effect this character's power left on another, still on (issue #823), which
+         *     its player can end.
+         */
+        EffectMadeOut: {
+            /** Acknowledged At */
+            acknowledged_at?: string | null;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Dispute Note
+             * @default
+             */
+            dispute_note: string;
+            /** Disputed At */
+            disputed_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Options
+             * @default []
+             */
+            options: string[];
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
         };
         /** EffectRef */
         EffectRef: {
@@ -25977,6 +26104,34 @@ export interface components {
             /** Summary */
             summary: string;
         };
+        /**
+         * OnOtherIn
+         * @description A power used on another character in the home troupe (a note tap, issue #823;
+         *     horatio.play_on_others).
+         */
+        OnOtherIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name: string;
+            /**
+             * Options
+             * @default []
+             */
+            options: string[];
+            /** Power */
+            power: string;
+            /** Switch */
+            switch?: string | null;
+            /** Use */
+            use?: string | null;
+        };
         /** OneHolder */
         OneHolder: {
             /** On */
@@ -27085,6 +27240,15 @@ export interface components {
          *     Reset until it is turned off.
          */
         PlayEffectOut: {
+            /** Acknowledged At */
+            acknowledged_at?: string | null;
+            /**
+             * Dispute Note
+             * @default
+             */
+            dispute_note: string;
+            /** Disputed At */
+            disputed_at?: string | null;
             /**
              * Id
              * Format: uuid
@@ -27094,6 +27258,11 @@ export interface components {
             key: string;
             /** Name */
             name: string;
+            /**
+             * Options
+             * @default []
+             */
+            options: string[];
             /**
              * Paused
              * @default false
@@ -27259,6 +27428,21 @@ export interface components {
             /** Troupe Name */
             troupe_name: string | null;
         };
+        /**
+         * PlayTargetOut
+         * @description A character a power can be used on: of the user's home troupe (issue #823).
+         */
+        PlayTargetOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
         /** PlayTrait */
         PlayTrait: {
             /** Category */
@@ -27338,6 +27522,11 @@ export interface components {
              * @default []
              */
             effects: components["schemas"]["PlayEffectOut"][];
+            /**
+             * Effects Made
+             * @default []
+             */
+            effects_made: components["schemas"]["EffectMadeOut"][];
             /**
              * Equipment
              * @default []
@@ -28000,6 +28189,11 @@ export interface components {
              */
             focuses: string[];
             /**
+             * Foreign
+             * @default false
+             */
+            foreign: boolean;
+            /**
              * Form
              * @default false
              */
@@ -28060,6 +28254,12 @@ export interface components {
             /** Since */
             since?: string | null;
             /**
+             * Target
+             * @default self
+             * @enum {string}
+             */
+            target: "self" | "other" | "any";
+            /**
              * Turned On
              * @default 0
              */
@@ -28116,6 +28316,12 @@ export interface components {
              * @default 0
              */
             retainer: number;
+            /**
+             * Target
+             * @default self
+             * @enum {string}
+             */
+            target: "self" | "other";
             /** When */
             when?: string | null;
         };
@@ -33057,6 +33263,7 @@ export interface components {
              * @default
              */
             note: string;
+            on_other?: components["schemas"]["OnOtherIn"] | null;
             /**
              * Tracker
              * @default
@@ -41646,6 +41853,106 @@ export interface operations {
             };
         };
     };
+    end_effect_made_api_characters__character_id__play_effects_made__effect_id__end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                effect_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_effect_api_characters__character_id__play_effects__effect_id__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                effect_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dispute_effect_api_characters__character_id__play_effects__effect_id__dispute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                effect_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     end_effect_api_characters__character_id__play_effects__effect_id__end_post: {
         parameters: {
             query?: never;
@@ -42201,6 +42508,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_targets_api_characters__character_id__play_targets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayTargetOut"][];
                 };
             };
             /** @description Validation Error */

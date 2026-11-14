@@ -242,6 +242,9 @@ class PowerUse(BaseModel):
     once: str | None = None
     note: str | None = None
     page: str | None = None
+    # Who it is used on (issue #823): the character itself, or another character in
+    # its home troupe, whose game it changes (horatio.play_on_others).
+    target: Literal["self", "other"] = "self"
 
 
 class PowerNote(BaseModel):
@@ -414,6 +417,11 @@ class Switch(BaseModel):
     # For one of a power's own options (issue #821): the key of the switch it is
     # picked for. It is never shown as a switch of its own: it is on while picked.
     option_of: str | None = None
+    # Who it can be used on (issue #823): the character itself ("self"), only another
+    # character in its home troupe ("other": Fleshcraft reshaping a willing person),
+    # or either ("any"). One used on another is an effect on them, kept until undone
+    # (horatio.play_on_others).
+    target: Literal["self", "other", "any"] = "self"
 
 
 class Frenzy(BaseModel):
@@ -1301,6 +1309,7 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
             for q in active.get("qualities", [])
             if holds(q)
         ],
+        target=active.get("target") or active.get("picks", {}).get("target", "self"),
     )
 
 
@@ -1486,6 +1495,42 @@ def switches(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Switch]:
     return work_out(Sheet.read(rows, rule_set), technique_bases(rule_set)).switches
 
 
+def switch_for(key: str) -> list[Switch]:
+    """A switch by its key, with its own options, as the powers file has it for any
+    character (issue #823): what an effect another character's power left on this
+    one does, though this one hasn't the power. No sheet's focus or purchase choice
+    narrows it, so what a choice or focus gives is left out."""
+    for entry in [
+        *catalogue().disciplines.values(),
+        *(p for powers in catalogue().powers.values() for p in powers),
+        *catalogue().others.values(),
+    ]:
+        for active in actives(entry):
+            if active["key"] == key:
+                found = _switch(Owner(entry, entry["name"], entry["name"]), active, Sheet())
+                return [found, *option_switches(found)]
+    return []
+
+
+@dataclass(frozen=True)
+class UseOnOther:
+    """A use of a power the character has that changes another character's trackers
+    (issue #823): Corpore Sano healing someone else."""
+
+    power: str
+    use: PowerUse
+
+
+def uses_on_others(sheet: Sheet) -> list[UseOnOther]:
+    """The uses this sheet's powers have for another character, by power name."""
+    return [
+        UseOnOther(power=o.source, use=u)
+        for o in owners(sheet)
+        for u in uses(o.entry, sheet)
+        if u.target == "other"
+    ]
+
+
 def forms_at_once(sheet: Sheet) -> int:
     """How many forms the character can be in at once: one (core p. 114), or more
     with a power whose entry has `forms` (Ravenous Conglomeration's two, Vol. 2
@@ -1547,6 +1592,7 @@ def uses(entry: Mapping[str, Any], sheet: Sheet) -> list[PowerUse]:
                 once=u.get("once"),
                 note=u.get("note"),
                 page=_page(u) if "page" in u else None,
+                target=u.get("target", "self"),
             )
         )
     return found
@@ -1653,11 +1699,19 @@ def other_powers(sheet: Sheet, rule_set: RuleSetData) -> list[OtherPower]:
     return found
 
 
-def reference(rows: Sequence[SheetRow], rule_set: RuleSetData, blood_per_turn: int) -> Reference:
+def reference(
+    rows: Sequence[SheetRow],
+    rule_set: RuleSetData,
+    blood_per_turn: int,
+    foreign: Sequence[Switch] = (),
+) -> Reference:
+    """The Pools tab's reference. `foreign` are the switches of effects another
+    character's power left on this one (issue #823): what they do to its attributes
+    counts in its pools while on, though it hasn't the power."""
     sheet = Sheet.read(rows, rule_set)
     worked = work_out(sheet, technique_bases(rule_set))
     found = worked.effects
-    made = pools(sheet, found, worked.hurts, worked.switches)
+    made = pools(sheet, found, worked.hurts, [*worked.switches, *foreign])
     return Reference(
         pools=made,
         frenzy=frenzy(sheet, found),

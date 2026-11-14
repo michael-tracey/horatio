@@ -21,6 +21,7 @@ const CHECKED: Record<string, number> = {
   "pages/custodian/AuditTab.tsx": 1, // isPending first
   "pages/news/PostsSection.tsx": 1, // isPending first
   "pages/nominations/NominationsAbout.tsx": 1, // nothing shown for none
+  "pages/play/OnOthers.tsx": 1, // "No one else" only once answered
   "pages/play/Others.tsx": 1, // "No one" only once answered
   "pages/rules/RulesPage.tsx": 1, // a menu's options
   "pages/settings/SettingsPage.tsx": 1, // every tab offered until the troupes are in

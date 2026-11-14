@@ -77,7 +77,7 @@ import uuid
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
@@ -98,6 +98,9 @@ from horatio import (
     suspensions,
 )
 from horatio.feeding import tracked as feeding_tracked
+
+if TYPE_CHECKING:
+    from horatio import play_on_others
 from horatio.models import (
     Character,
     PlayCounter,
@@ -273,6 +276,9 @@ class Limits:
     # The effects that last until undone, on the character as the game stands
     # (issue #822, horatio.play_effects): their switches are on from its start.
     kept: tuple[play_effects.Kept, ...] = ()
+    # The keys of switches here only for an effect another character's power left on
+    # this one (issue #823): this one hasn't the power, so can't switch them itself.
+    foreign: frozenset[str] = frozenset()
     # Each Retainer's health and Blood.
     retainers: tuple[RetainerTrack, ...] = ()
     # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
@@ -914,6 +920,16 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     least = 1 if splat.weakness and malkavian(rows) else 0
     traits, held = carried(db, character, game, least)
     switches = tuple(reference.switches(rows, rule_set))
+    kept = play_effects.held(db, character, game)
+    # An effect another character's power left on this one counts as its switch does,
+    # though this sheet hasn't the power (issue #823).
+    own = {s.key for s in switches}
+    foreign = tuple(
+        f
+        for key in dict.fromkeys(k.key for k in kept if k.key not in own)
+        for f in reference.switch_for(key)
+    )
+    switches += foreign
     found = Limits(
         generation=generation,
         blood=blood,
@@ -936,7 +952,8 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         held=held,
         switches=switches,
         options=pick_options(rule_set.equipment, switches),
-        kept=play_effects.held(db, character, game),
+        kept=kept,
+        foreign=frozenset(f.key for f in foreign),
         fixed=fixed_qualities(rule_set.equipment, switches),
         forms=reference.forms_at_once(reference.Sheet.read(rows, rule_set)),
         blood_name=blood_name,
@@ -1259,11 +1276,16 @@ def describe(
     if event.kind == "note":
         if event.tracker == play_status.SOURCE_NOTE:
             return "Source of abiding status changed"
+        if event.on_other is not None:
+            from horatio import play_on_others  # imports this module
+
+            return play_on_others.text(event.on_other)
         return "Note"
     if event.kind == "undo":
         text = f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"
-        # An item that had moved on stays where it is.
-        stayed = (event.equipment or {}).get("refused")
+        # An item that had moved on stays where it is; so does what a power did to
+        # another character, once it has moved on.
+        stayed = (event.equipment or {}).get("refused") or (event.on_other or {}).get("refused")
         return f"{text}. {stayed}" if stayed else text
     if event.tracker.startswith(equipment.ITEM):
         return equipment.tap_text(event.equipment or {})
@@ -1413,6 +1435,8 @@ class Tap:
     learned: dict[str, Any] | None = None
     # Giving an item ("item:<id>"): the character it goes to; None discards it.
     given_to: uuid.UUID | None = None
+    # A power used on another character (a note, issue #823): whom, and what.
+    on_other: "play_on_others.Use | None" = None
 
 
 def name_temporary(db: Session, character: Character, actor: User, tap: Tap) -> None:
@@ -1454,7 +1478,7 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
     character's lock. Influence spent, and undone, is logged and owed as it
     arrives (horatio.play_influence). A character whose player is suspended takes
     none (horatio.suspensions)."""
-    from horatio import retainer_upkeep  # imports this module
+    from horatio import play_on_others, retainer_upkeep  # import this module
 
     suspensions.refuse_character(db, character)
     ids = [t.id for t in taps] + [t.undoes for t in taps if t.undoes is not None]
@@ -1491,7 +1515,11 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         if own is None:
             own = limits(db, character)
         found = own.switch(key)
-        return found if found is not None and found.kept else None
+        # A power used only on others, or another's effect on this one, isn't the
+        # character's own to switch (issue #823).
+        if found is None or not found.kept or found.target == "other" or key in own.foreign:
+            return None
+        return found
 
     for tap in taps:
         if tap.id in existing:
@@ -1539,6 +1567,10 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
                 event.equipment = equipment.undo_tap(db, actor, target.equipment)
             if (kept := kept_switch(target.tracker)) is not None:
                 play_effects.on_undo(db, actor, target, kept.name)
+            if target.on_other is not None:
+                event.on_other = play_on_others.undo(db, character, actor, target)
+        elif event.kind == "note" and tap.on_other is not None:
+            event.on_other = play_on_others.apply(db, character, actor, event, tap.on_other)
         elif event.kind == "change":
             play_influence.spend(db, character, actor, event, tap.influence)
             if event.amount < 0 and event.tracker.startswith(play_status.HELD):
