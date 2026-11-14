@@ -382,6 +382,33 @@ def test_the_import_makes_sheeted_npcs_after_a_backup_and_deletes_the_page(
     assert event.data["made"] == 3 and event.data["backup"].endswith("-manual.sql.gz")
 
 
+def test_the_job_ends_and_the_page_goes_in_one_commit(
+    troupe: Troupe, session: Session, kept: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The import page asks for news only while a job runs, so the commit that ends the
+    job must also say the page is gone: a look between two commits saw "Imported" with
+    the page still uploaded, and never looked again (#841)."""
+    uploaded(troupe)
+    seen: list[tuple[str | None, str | None, str | None]] = []
+    rmtree = yorick_imports.shutil.rmtree
+
+    def looking(path: Any, **kw: Any) -> None:
+        # What anyone reading the record sees when the page's folder is removed.
+        session.expire_all()
+        record = session.scalars(
+            select(YorickImport).where(YorickImport.troupe_id == uuid.UUID(troupe.id))
+        ).one()
+        seen.append((record.job, record.report_kind, record.page_name))
+        rmtree(path, **kw)
+
+    monkeypatch.setattr(yorick_imports.shutil, "rmtree", looking)
+
+    state = import_now(troupe)
+
+    assert state["page"] is None and state["report_kind"] == "import"
+    assert seen == [(None, "import", None)]
+
+
 @pytest.mark.usefixtures("kept")
 def test_it_imports_only_after_a_dry_run_with_nothing_changed(troupe: Troupe) -> None:
     client = troupe.custodian.client
