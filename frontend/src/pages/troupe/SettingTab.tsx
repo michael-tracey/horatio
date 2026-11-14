@@ -21,7 +21,11 @@ export function SettingTab({ troupeId, staff }: { troupeId: string; staff: boole
             <Link to={`${base}/settings`} className="underline hover:text-parchment">
               Troupe settings
             </Link>
-            ; the rest follows the troupe's settings.{" "}
+            ; the rest follows the troupe's settings. Keep what players mustn't read in the{" "}
+            <Link to={`${base}/story-bible`} className="underline hover:text-parchment">
+              story bible
+            </Link>
+            .{" "}
           </>
         )}
         <Link to={`/print/setting/${troupeId}`} target="_blank" className="underline hover:text-parchment">

@@ -580,15 +580,13 @@ class Limits:
                     key
                     for k in self.kept
                     if self.switch(k.key)
-                    for key in (k.key, *(f"{k.key}/{o}" for o in k.options))
+                    for key in (k.key, *(f"{k.key}/{o}" for o in play_effects.top(k.options)))
                     if self.switch(key)
                 )
             ),
             # The qualities picked for each power on, by its key: none, but for an
             # effect kept until undone, which keeps what was picked (issue #821).
-            "picked": {
-                k.key: list(k.options) for k in self.kept if k.options and self.switch(k.key)
-            },
+            "picked": kept_picks(self),
             # Items equipped: as the last game left them.
             "equipped": [list(e) for e in self.equipped],
         }
@@ -811,6 +809,23 @@ def sheet_of(db: Session, character: Character) -> reference.Sheet:
     return reference.Sheet.read(sheets.sheet_rows(db, character), rule_set)
 
 
+def kept_picks(limits: "Limits") -> dict[str, list[str]]:
+    """What was picked for the effects kept until undone, as a game starts (issue
+    #821): each effect's options, and what was picked for an option of its own
+    (issue #876: Body Weaponry's weapon qualities, kept as "Body Weaponry/Sharp")."""
+    found: dict[str, list[str]] = {}
+    for k in limits.kept:
+        if not k.options or limits.switch(k.key) is None:
+            continue
+        top = play_effects.top(k.options)
+        if top:
+            found[k.key] = top
+        for name, quality in play_effects.nested(k.options):
+            if name in top and limits.switch(f"{k.key}/{name}") is not None:
+                found.setdefault(f"{k.key}/{name}", []).append(quality)
+    return found
+
+
 def pick_options(
     rules: EquipmentRules,
     switches: Iterable[reference.Switch],
@@ -829,6 +844,8 @@ def pick_options(
         picks = s.picks
         if picks is None:
             continue
+        # An option's own picks are named for it (issue #876): "Body Weaponry: Accurate".
+        by = s.key.rpartition("/")[2] if s.option_of is not None else s.key
         options: list[PickOption] = []
         kinds: list[str] = [*([picks.kind] if picks.kind else []), *picks.kinds]
         for kind in dict.fromkeys(kinds):
@@ -842,7 +859,7 @@ def pick_options(
                         page=q.page,
                         modifiers=()
                         if picks.immune
-                        else tuple(equipment.picked_modifiers(rules, q.kind, q.name, s.key)),
+                        else tuple(equipment.picked_modifiers(rules, q.kind, q.name, by)),
                     )
                 )
         for o in picks.options:
@@ -1175,8 +1192,10 @@ def switch_off(
     lost = lose_levels(state, limits, going)
     for k in going:
         on.remove(k)
-    # Using it again means picking its qualities again (Vol. 2 p. 232).
-    state.get("picked", {}).pop(key, None)
+    # Using it again means picking its qualities again (Vol. 2 p. 232), and those of
+    # its options picked (issue #876).
+    for k in going:
+        state.get("picked", {}).pop(k, None)
     trim_blood(state, limits, on)
     if said is not None and lost:
         said.append(f"{lost} damage in its levels gone")
@@ -1238,7 +1257,8 @@ def switch(
             lose_levels(state, limits, options)
             for k in options:
                 on.remove(k)
-            state.get("picked", {}).pop(key, None)
+            for k in (key, *options):
+                state.get("picked", {}).pop(k, None)
         return (0, 1) if amount > 0 else (1, 0)
     if amount > 0 and not before and found is not None:
         if found.form:
@@ -1294,6 +1314,8 @@ def pick(
         lost = lose_levels(state, limits, gone)
         for k in gone:
             on.remove(k)
+            # What was picked for it goes with it (issue #876: Body Weaponry's weapon).
+            picked.pop(k, None)
         trim_blood(state, limits, on)
         if said is not None and lost:
             said.append(f"{lost} damage in its levels gone")

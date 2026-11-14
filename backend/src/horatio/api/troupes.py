@@ -15,6 +15,7 @@ from horatio import (
     play_status,
     play_tabs,
     sect_status,
+    setting_notices,
     titles,
     troupe_settings,
     xp_range,
@@ -670,6 +671,15 @@ def change_troupe(
                 "troupe.new_character_incentive",
                 troupe_id=troupe.id,
                 state="switched on" if body.new_character_incentive else "switched off",
+            )
+            setting_notices.changed(
+                db,
+                user,
+                troupe,
+                [
+                    "the New Character Incentive "
+                    + ("switched on" if body.new_character_incentive else "switched off")
+                ],
             )
     db.commit()
     return troupe_out(db, user, troupe)

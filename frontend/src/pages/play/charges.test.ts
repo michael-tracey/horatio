@@ -52,7 +52,7 @@ function view(charges: Charge[], overrides: Partial<UseView> = {}): UseView {
 }
 
 function use(overrides: Partial<PowerUse>): PowerUse {
-  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], beast: 0, retainer: 0, when: null, once: null, note: null, page: null, target: "self", charges: null, on: null, summon: null, summon_all: false, animal: false, over: false, ...overrides };
+  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], beast: 0, retainer: 0, when: null, once: null, note: null, page: null, target: "self", charges: null, on: null, summon: null, summon_all: false, animal: false, over: false, spends: false, ...overrides };
 }
 
 const change = (counter: string, over: Record<string, unknown>) => ({ counter, gain: 0, spend: 0, more: false, fill: false, reset: false, ...over });

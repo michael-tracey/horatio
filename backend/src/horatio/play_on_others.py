@@ -392,7 +392,9 @@ def from_other(db: Session, character: Character, effect_id: uuid.UUID) -> PlayE
 
 def switch_name(db: Session, character: Character, effect: PlayEffect) -> str:
     found = play.limits(db, character).switch(effect.key)
-    return (found.name if found is not None else effect.key) + option_text(effect.options)
+    return (found.name if found is not None else effect.key) + option_text(
+        play_effects.top(effect.options)
+    )
 
 
 def source_of(db: Session, effect: PlayEffect) -> Character | None:

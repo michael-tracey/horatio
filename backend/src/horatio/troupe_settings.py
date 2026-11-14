@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, clan_merits
+from horatio import audit, clan_merits, setting_notices
 from horatio.models import Character, RuleSet, TraitCategory, TraitDefinition, Troupe, User
 from horatio.rules.splats import SPLATS, splat_order
 from horatio.rules.status import StatusBanData, clan_bans
@@ -29,7 +29,10 @@ def set_sects(db: Session, user: User, troupe: Troupe, sects: Sequence[str]) -> 
     unknown = sorted(set(sects) - known)
     if unknown:
         raise unprocessable(f"No such sect: {', '.join(unknown)}.")
+    was = list(troupe.allowed_sects)
     troupe.allowed_sects = sorted(set(sects))
+    if troupe.allowed_sects != was:
+        setting_notices.changed(db, user, troupe, ["the sects that may join changed"])
     audit.record(
         db,
         user,
@@ -94,6 +97,7 @@ def set_clan_rarity(
             f"Not a clan: {', '.join(unknown)}. Name the clan; its bloodlines follow it."
         )
     kept = troupe.clan_rarity_notes if notes is None else notes
+    was, was_why = dict(troupe.clan_rarity), dict(troupe.clan_rarity_notes)
     troupe.clan_rarity = dict(sorted(rarities.items()))
     troupe.clan_rarity_notes = {
         clan: " ".join(note.split())
@@ -102,6 +106,13 @@ def set_clan_rarity(
     }
     db.flush()
     clan_merits.resync(db, building_here(db, troupe))
+    rated = [
+        f"{clan}'s rarity changed"
+        for clan in sorted({*was, *troupe.clan_rarity})
+        if was.get(clan) != troupe.clan_rarity.get(clan)
+        or was_why.get(clan) != troupe.clan_rarity_notes.get(clan)
+    ]
+    setting_notices.changed(db, user, troupe, rated)
     audit.record(
         db,
         user,

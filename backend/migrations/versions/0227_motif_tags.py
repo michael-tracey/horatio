@@ -3,7 +3,7 @@ with the troupe's themes and moods from its Setting Style Document, to see which
 chronicle touches. A tag goes with its theme or mood, scene or quest.
 
 Revision ID: 0227
-Revises: 0225
+Revises: 0226
 Create Date: 2026-11-14 12:00:00.000000
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0227"
-down_revision: str | None = "0225"
+down_revision: str | None = "0226"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

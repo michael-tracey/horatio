@@ -103,7 +103,13 @@ export async function person(browser: Browser, name: string, options: BrowserCon
   await page.getByLabel("Handle").fill(handle);
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Create account" }).click();
+  // Wait on the sign-up itself, as the page moves on only once it answers: while the
+  // other worker loads a heavy page, the one API server has taken over 5 s (#878).
+  const [signedUp] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith("/api/auth/signup") && r.request().method() === "POST"),
+    page.getByRole("button", { name: "Create account" }).click(),
+  ]);
+  expect(signedUp.status(), await signedUp.text()).toBe(201);
   await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
   return { page, email, handle };
 }

@@ -22,7 +22,7 @@ from typing import Literal, cast, get_args
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, setting_notices
 from horatio.models import ChronicleMotif, Troupe, User
 from horatio.rules.files import DATA_DIR
 from horatio.titles import and_list
@@ -91,6 +91,14 @@ def label(motif: ChronicleMotif) -> str:
     return words if len(words) <= 60 else f"{words[:57]}…"
 
 
+def told(motif: ChronicleMotif) -> str:
+    """An entry as the players' notice names it: "the theme Betrayal", "a storyteller
+    note"."""
+    if motif.kind == "note":
+        return "a storyteller note"
+    return f"the {motif.kind} {motif.name}"
+
+
 class SettingError(ValueError):
     """Something staff asked for that the document can't hold."""
 
@@ -145,12 +153,14 @@ def add(
         kind=NOUNS[kind],
         name=label(motif),
     )
+    setting_notices.changed(db, user, troupe, [f"{told(motif)} added"])
     return motif
 
 
 def change(db: Session, user: User, troupe: Troupe, motif: ChronicleMotif, words: Words) -> None:
     kind = kind_of(motif)
     check_words(kind, words)
+    was = (motif.name, motif.description)
     if kind != "note":
         motif.name = words.name
     motif.description = words.description
@@ -163,6 +173,8 @@ def change(db: Session, user: User, troupe: Troupe, motif: ChronicleMotif, words
         kind=NOUNS[kind],
         name=label(motif),
     )
+    if (motif.name, motif.description) != was:
+        setting_notices.changed(db, user, troupe, [f"{told(motif)} changed"])
 
 
 def reorder(db: Session, user: User, troupe: Troupe, kind: Kind, ids: Sequence[uuid.UUID]) -> None:
@@ -184,6 +196,7 @@ def reorder(db: Session, user: User, troupe: Troupe, kind: Kind, ids: Sequence[u
         kind=f"{NOUNS[kind]}s",
         names=", ".join(label(by_id[i]) for i in ids),
     )
+    setting_notices.changed(db, user, troupe, [f"the {NOUNS[kind]}s put in a new order"])
 
 
 def remove(db: Session, user: User, troupe: Troupe, motif: ChronicleMotif) -> None:
@@ -198,6 +211,7 @@ def remove(db: Session, user: User, troupe: Troupe, motif: ChronicleMotif) -> No
         kind=NOUNS[kind],
         name=label(motif),
     )
+    setting_notices.changed(db, user, troupe, [f"{told(motif)} removed"])
 
 
 @dataclass(frozen=True)
@@ -211,6 +225,13 @@ class Text:
 
 
 TEXT_PARTS = ("subtitle", "teaser", "power", "agency")
+# How a change to each reads in the players' notice (horatio.setting_notices).
+TEXT_CHANGES = {
+    "subtitle": "the subtitle changed",
+    "teaser": "the teaser rewritten",
+    "power": "the scope's power changed",
+    "agency": "the scope's agency changed",
+}
 
 
 def text_of(troupe: Troupe) -> Text:
@@ -240,3 +261,4 @@ def write_text(db: Session, user: User, troupe: Troupe, text: Text) -> None:
         troupe_id=troupe.id,
         parts=and_list(changed),
     )
+    setting_notices.changed(db, user, troupe, [TEXT_CHANGES[name] for name in changed])

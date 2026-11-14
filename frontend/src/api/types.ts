@@ -331,6 +331,9 @@ export type LocationQualityOut = Schemas["LocationQualityOut"];
 export type LocationSuggestion = Schemas["LocationSuggestion"];
 export type OwnLocationQualityOut = Schemas["OwnLocationQualityOut"];
 export type LocationControlOut = Schemas["LocationControlOut"];
+// The staff-only story bible (#879).
+export type StoryBibleOut = Schemas["StoryBibleOut"];
+export type StoryBibleNoteOut = Schemas["StoryBibleNoteOut"];
 export type HavenOut = Schemas["HavenOut"];
 export type OwnHavenOut = Schemas["OwnHavenOut"];
 export type OwnHavenIn = Schemas["OwnHavenIn"];

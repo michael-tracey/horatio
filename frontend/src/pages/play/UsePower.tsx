@@ -12,9 +12,13 @@ type TapWhat = Parameters<typeof makeTap>[0];
 /** A discipline, power, technique or elder power with a plain cost, from the Pools tab's reference (issues #370 and #588). */
 export type Costed = { name: string; cost?: Cost | null; switches?: string[]; uses?: PowerUse[] };
 
-/** Whether the plain Use button shows: not where uses that spend take its place (issue #825). */
+/**
+ * Whether the plain Use button shows: not where uses that spend take its place (issue
+ * #825). One that waits on a switch is used beside it (#876: reforming Bonecraft's
+ * body weapon, while Bonecraft is the power's Use).
+ */
 export function plainUse(costed: Costed): boolean {
-  return !!costed.cost && !(costed.uses ?? []).some((u) => u.cost);
+  return !!costed.cost && !(costed.uses ?? []).some((u) => u.cost && !u.when);
 }
 
 /** Spends taps made together, told in one toast whose Undo takes them all back. */
