@@ -434,6 +434,9 @@ def test_a_merit_that_gives_a_retainer_lists_it_at_once_at_its_dots(troupe: Trou
     assert saved.status_code == 200, saved.text
     [named] = saved.json()["retainers"]
     assert (named["name"], named["dots"], named["ghoul"], named["given"]) == ("Rex", 7, True, True)
+    # An animal, as the merit says (#854), whatever is sent.
+    assert named["animal"] is True
+    assert companion["animal"] is True
     # The merit gives one.
     refused = put(troupe.player, character_id, [rex, {**rex, "name": "Fido"}])
     assert refused.status_code == 409
@@ -618,6 +621,22 @@ def test_a_retainers_health_and_blood_are_tapped_at_a_game(troupe: Troupe) -> No
     assert (tracked["health"]["value"], tracked["health"]["most"]) == (3, 4)
     assert (tracked["blood"]["value"], tracked["blood"]["most"]) == (3, 5)
     assert "Bocephus: Blood 4 → 3" in [e["text"] for e in state["log"]]
+
+
+def test_a_retainer_can_be_an_animal_and_the_play_view_says_so(troupe: Troupe) -> None:
+    """Issue #854: whether a Retainer is an animal is kept beside whether it is a ghoul,
+    and the Play View's Retainers carry it, for Beast's Vigor's animal ghouls."""
+    character_id = nosferatu_with_bocephus(troupe)
+    saved = put(troupe.player, character_id, [{**BOCEPHUS, "animal": True}])
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["retainers"][0]["animal"] is True
+
+    state = troupe.player.client.get(f"/characters/{character_id}/play").json()
+    assert [(r["name"], r["animal"]) for r in state["retainers"]] == [("Bocephus", True)]
+
+    # Not an animal any more: a change on the character's log.
+    body = put(troupe.player, character_id, [{**BOCEPHUS, "animal": False}]).json()
+    assert body["retainers"][0]["animal"] is False
 
 
 def test_each_identity_is_listed_with_its_rating_and_who_accepts_it(troupe: Troupe) -> None:

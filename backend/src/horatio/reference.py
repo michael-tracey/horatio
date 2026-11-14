@@ -241,6 +241,8 @@ class PowerUse(BaseModel):
     beast: int = 0
     # Damage moved onto one of the character's ghoul Retainers, up to this much a use.
     retainer: int = 0
+    # Only onto an animal ghoul Retainer (issue #854: Beast's Vigor, Vol. 2 Issue 1 p. 58).
+    animal: bool = False
     # The switch that must be on for it, by key.
     when: str | None = None
     # How often the book allows it ("Once a turn"), shown with it; the Play View
@@ -1613,6 +1615,7 @@ def uses(entry: Mapping[str, Any], sheet: Sheet) -> list[PowerUse]:
                 over=gain.get("over", False),
                 beast=u.get("beast", 0),
                 retainer=u.get("retainer", 0),
+                animal=u.get("animal", False),
                 when=u.get("when"),
                 once=u.get("once"),
                 note=u.get("note"),

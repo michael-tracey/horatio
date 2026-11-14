@@ -559,7 +559,7 @@ page = "Vol. 2 Issue 1, p. 47"
 [[grants]]
 source = { category = "merits", name = "Ardent Companion" }
 kind = "retainer"
-target = { category = "backgrounds", name = "Retainers", kind = "Ghouled animal", ghoul = true }
+target = { category = "backgrounds", name = "Retainers", kind = "Ghouled animal", ghoul = true, animal = true }
 amount = 7
 page = "Vol. 2 Issue 1, p. 39"
 

@@ -107,7 +107,8 @@
 # `use` (on a power or [[others]] entry): uses that change the trackers besides
 #   spending (issue #825), each a button of its own on the Pools tab, made of
 #   ordinary taps with one Undo: [{ label, cost?, heal?, convert?, mend?, gain?,
-#   beast?, retainer?, when?, once?, focus?, unless_focus?, note?, page, book? }].
+#   beast?, retainer?, animal?, when?, once?, focus?, unless_focus?, note?, page,
+#   book? }].
 #   `cost` is as above, spent on each press. `heal = { damage, amount? }` heals
 #   `amount` of "normal" or "aggravated" damage, of the "worst" first
 #   (aggravated, then normal), "all" of it, or as much as the player says
@@ -117,7 +118,8 @@
 #   with `over = true` Blood may go past it while a switch with `blood.over` is on
 #   (issue #854). `beast`
 #   takes Beast traits. `retainer` moves up to that much damage onto one of the
-#   character's ghoul Retainers. `when` names a switch that must be on; `once`
+#   character's ghoul Retainers, an animal one with `animal = true` (issue #854:
+#   Beast's Vigor). `when` names a switch that must be on; `once`
 #   says how often the book allows it ("Once a turn"), for the player to keep to,
 #   since the Play View counts no turns. `focus` and `unless_focus` limit it as
 #   for `pools`. Where an entry's uses spend, they take the place of its plain
@@ -3033,5 +3035,5 @@ name = "Beast's Vigor"
 cost = { blood = 1 }
 active = { key = "Beast's Vigor", page = 58, book = "Vol. 2 Issue 1", notes = ["Five minutes: a simple action moves up to 3 damage onto an animal ghoul Retainer within 15 steps, for a Beast trait each time.", "Its own Fortitude and the like can't lessen it."] }
 use = [
-  { label = "Move damage", retainer = 3, beast = 1, when = "Beast's Vigor", note = "Animal ghoul Retainers only.", page = 58, book = "Vol. 2 Issue 1" },
+  { label = "Move damage", retainer = 3, animal = true, beast = 1, when = "Beast's Vigor", note = "Onto an animal ghoul Retainer of yours.", page = 58, book = "Vol. 2 Issue 1" },
 ]

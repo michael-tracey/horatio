@@ -189,6 +189,8 @@ class RetainerTrack:
     name: str
     health: int
     blood: int
+    # An animal (issue #854): only an animal ghoul takes Beast's Vigor's damage.
+    animal: bool = False
 
     def trackers(self) -> dict[str, int]:
         found = {f"{self.key}/health": self.health}
@@ -968,6 +970,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
                 name=r.name or (r.given.kind if r.given else ""),
                 health=r.dots,
                 blood=retainers.GHOUL_BLOOD if r.ghoul else 0,
+                animal=r.animal,
             )
             for r in retainers.read(db, character)
         ),

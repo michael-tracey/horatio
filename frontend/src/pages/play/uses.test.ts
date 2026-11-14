@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView, PowerUse } from "../../api/types";
 import { applyChange } from "./tracker";
-import { canPay, costText, effectTaps, offered, type UseView } from "./uses";
+import { canPay, costText, effectTaps, ghouls, offered, type UseView } from "./uses";
 
 type Mark = "normal" | "aggravated";
 
@@ -28,7 +28,7 @@ function view(marks: Mark[] = [], overrides: Partial<UseView> = {}): UseView {
 }
 
 function use(overrides: Partial<PowerUse>): PowerUse {
-  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], over: false, beast: 0, retainer: 0, when: null, once: null, note: null, page: null, ...overrides };
+  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], over: false, beast: 0, retainer: 0, animal: false, when: null, once: null, note: null, page: null, ...overrides };
 }
 
 const blood = (amount: number) => ({ tracker: "blood" as const, amount });
@@ -124,11 +124,15 @@ describe("a use's taps (issue #825)", () => {
     expect(canPay(view([], { blood: { value: 1, most: 10, start: 10 } }), indestructible)).toBe(false);
   });
 
-  it("moves damage onto a ghoul Retainer for a Beast trait (Beast's Vigor)", () => {
-    const vigor = use({ retainer: 3, beast: 1, when: "Beast's Vigor" });
-    const hound = { key: "retainer:Hound", name: "Hound", health: { value: 2, most: 3, start: 3 }, blood: { value: 1, most: 1, start: 1 } };
-    const v = view(["aggravated", "normal", "normal"], { retainers: [hound], powers: [] });
+  it("moves damage onto an animal ghoul Retainer for a Beast trait (Beast's Vigor, #854)", () => {
+    const vigor = use({ retainer: 3, animal: true, beast: 1, when: "Beast's Vigor" });
+    const hound = { key: "retainer:Hound", name: "Hound", animal: true, health: { value: 2, most: 3, start: 3 }, blood: { value: 1, most: 1, start: 1 } };
+    const butler = { ...hound, key: "retainer:Butler", name: "Butler", animal: false };
+    const v = view(["aggravated", "normal", "normal"], { retainers: [hound, butler], powers: [] });
     expect(offered(v, vigor)).toBe(false);
+    // Only the animal ghoul takes the damage; a human ghoul isn't offered.
+    expect(ghouls(v, vigor).map((r) => r.name)).toEqual(["Hound"]);
+    expect(effectTaps(v, vigor, "Beast's Vigor", { retainer: "retainer:Butler" })).toEqual([]);
     const taps = effectTaps(v, vigor, "Beast's Vigor", { retainer: "retainer:Hound" });
     expect(taps).toContainEqual({ kind: "change", tracker: "retainer:Hound/health", amount: -2 });
     expect(after(v, taps)).toMatchObject({ marks: ["normal"], beast: 1 });

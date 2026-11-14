@@ -167,6 +167,8 @@ class RetainerTrackOut(BaseModel):
     name: str
     health: Tracker
     blood: Tracker | None
+    # An animal (issue #854): Beast's Vigor moves damage onto animal ghouls only.
+    animal: bool = False
 
 
 class InfluenceSpendOut(BaseModel):
@@ -833,6 +835,7 @@ def play_view(db: Session, character: Character) -> PlayView:
                 )
                 if r.blood
                 else None,
+                animal=r.animal,
             )
             for r in limits.retainers
         ],

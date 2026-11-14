@@ -737,6 +737,71 @@ def test_the_merits_and_flaws_migration_recalculates_only_drafts(
             connection.execute(text("delete from users where id = :id"), {"id": user})
 
 
+def test_the_retainer_animal_migration_marks_ardent_companions_ghouled_animal(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0225 (#854): Retainers gain `animal`, false for all but those a merit
+    gives as an animal (Ardent Companion's ghouled animal, Vol. 2 Issue 1 p. 39)."""
+    command.downgrade(alembic_config, "0224")
+    user, troupe, character = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    companion, servant = uuid.uuid4(), uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'kennel@example.com', 'Kennel', 'kennel')"
+                ),
+                {"id": user},
+            )
+            connection.execute(
+                text(
+                    "insert into troupes (id, name, lead_user_id)"
+                    " values (:id, 'Kennel Court', :lead)"
+                ),
+                {"id": troupe, "lead": user},
+            )
+            connection.execute(
+                text(
+                    "insert into characters (id, player_id, splat, name, home_troupe_id)"
+                    " values (:id, :player, 'vampire', 'Houndkeeper', :troupe)"
+                ),
+                {"id": character, "player": user, "troupe": troupe},
+            )
+            for retainer, name, merit in (
+                (companion, "Brutus", "Ardent Companion"),
+                (servant, "Mrs Holloway", ""),
+            ):
+                connection.execute(
+                    text(
+                        "insert into retainers (id, character_id, name, dots, from_merit, ghoul)"
+                        " values (:id, :character, :name, 3, :merit, true)"
+                    ),
+                    {"id": retainer, "character": character, "name": name, "merit": merit},
+                )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            animals = dict(
+                connection.execute(
+                    text("select id, animal from retainers where character_id = :id"),
+                    {"id": character},
+                ).all()
+            )
+        assert animals == {companion: True, servant: False}
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            for table, column, value in (
+                ("retainers", "character_id", character),
+                ("characters", "id", character),
+                ("troupes", "id", troupe),
+                ("users", "id", user),
+            ):
+                connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})
+
+
 def test_the_setting_migration_makes_each_tone_a_mood_and_back(
     engine: Engine, alembic_config: Config
 ) -> None:

@@ -28084,6 +28084,11 @@ export interface components {
          */
         PowerUse: {
             /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
+            /**
              * Beast
              * @default 0
              */
@@ -30112,6 +30117,11 @@ export interface components {
         /** RetainerIn */
         RetainerIn: {
             /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
+            /**
              * Description
              * @default
              */
@@ -30151,6 +30161,11 @@ export interface components {
         };
         /** RetainerOut */
         RetainerOut: {
+            /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
             /**
              * Away
              * @default false
@@ -30290,6 +30305,11 @@ export interface components {
          *     "<key>/health" and "<key>/blood" (horatio.play).
          */
         RetainerTrackOut: {
+            /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
             blood: components["schemas"]["Tracker"] | null;
             health: components["schemas"]["Tracker"];
             /** Key */

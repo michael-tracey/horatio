@@ -1407,6 +1407,7 @@ USE_KEYS = {
     "gain",
     "beast",
     "retainer",
+    "animal",
     "when",
     "once",
     "focus",
@@ -1499,8 +1500,8 @@ def test_uses_that_gain_spend_half_or_move_damage() -> None:
     assert said == [(True, "blood", "asked")]
     vigor = book.others[("techniques", "Beast's Vigor")]
     assert [a["key"] for a in actives(vigor)] == ["Beast's Vigor"]
-    assert [(u.retainer, u.beast, u.when) for u in uses(vigor, Sheet())] == [
-        (3, 1, "Beast's Vigor")
+    assert [(u.retainer, u.animal, u.beast, u.when) for u in uses(vigor, Sheet())] == [
+        (3, True, 1, "Beast's Vigor")
     ]
     wolf = uses(book.others[("techniques", "Feed the Blighted Wolf")], Sheet())
     assert [(u.beast, u.cost) for u in wolf] == [(1, None)]
