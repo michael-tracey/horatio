@@ -1,12 +1,19 @@
-import type { Cost, PlayView } from "../../api/types";
+import { useState } from "react";
+import type { Cost, PlayView, PowerUse } from "../../api/types";
 import { Button } from "../../components/ui";
 import { switchKey } from "./powers";
 import type { makeTap } from "./tracker";
+import { canPay, costText, ghouls, marked, offered, effectTaps, type UseView } from "./uses";
 
 type TapWhat = Parameters<typeof makeTap>[0];
 
 /** A discipline, power, technique or elder power with a plain cost, from the Pools tab's reference (issues #370 and #588). */
-export type Costed = { name: string; cost?: Cost | null; switches?: string[] };
+export type Costed = { name: string; cost?: Cost | null; switches?: string[]; uses?: PowerUse[] };
+
+/** Whether the plain Use button shows: not where uses that spend take its place (issue #825). */
+export function plainUse(costed: Costed): boolean {
+  return !!costed.cost && !(costed.uses ?? []).some((u) => u.cost);
+}
 
 /** Spends taps made together, told in one toast whose Undo takes them all back. */
 export type UseTaps = (whats: TapWhat[]) => unknown;
@@ -70,5 +77,130 @@ export function UseButtons({ costed, view, use }: { costed: Costed; view: Pick<P
         );
       })}
     </span>
+  );
+}
+
+/**
+ * The uses of a power that change the trackers besides spending (issue #825):
+ * "Heal 1 normal · 1 Blood", "Won: +3 Blood", each its own button, made of
+ * ordinary taps under one Undo. A use that would change nothing now is off, and
+ * one whose switch is off isn't shown. "Once a turn" and the like are said, for
+ * the player to keep to: the Play View counts no turns.
+ */
+export function UseEffects({ costed, view, use }: { costed: Costed; view: UseView; use: UseTaps }) {
+  const shown = (costed.uses ?? []).filter((u) => offered(view, u));
+  if (shown.length === 0) return null;
+  return (
+    <ul className="mt-1 flex flex-col gap-1.5" aria-label={`Uses of ${costed.name}`}>
+      {shown.map((u, i) => (
+        <li key={`${u.label}-${i}`}>
+          <UseEffect power={costed.name} u={u} view={view} use={use} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function UseEffect({ power, u, view, use }: { power: string; u: PowerUse; view: UseView; use: UseTaps }) {
+  const [asking, setAsking] = useState(false);
+  const suffix = u.cost ? ` · ${costText(view, u)}` : "";
+  const said = [u.once ? `${u.once}.` : null, u.note].filter(Boolean).join(" ");
+  const short = !canPay(view, u) ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}` : "Nothing to change now";
+  const button = (label: string, taps: ReturnType<typeof effectTaps>, key?: string) => (
+    <Button
+      key={key ?? label}
+      type="button"
+      variant="secondary"
+      className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
+      disabled={taps.length === 0}
+      title={taps.length === 0 ? short : undefined}
+      aria-label={`${power}: ${label}${suffix}`}
+      onClick={() => use(taps)}
+    >
+      {label}
+      {suffix}
+    </Button>
+  );
+  let body;
+  if (u.retainer) {
+    const kept = ghouls(view);
+    body =
+      kept.length === 0 ? (
+        <span className="text-xs text-mist">No ghoul Retainer with health left to take it.</span>
+      ) : (
+        kept.map((r) => button(`${u.label} to ${r.name || "Retainer"}`, effectTaps(view, u, power, { retainer: r.key }), r.key))
+      );
+  } else if (u.heal?.damage === "asked") {
+    body = asking ? (
+      <Asked power={power} u={u} view={view} suffix={suffix} done={() => setAsking(false)} use={use} />
+    ) : (
+      <Button
+        type="button"
+        variant="secondary"
+        className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
+        disabled={!canPay(view, u) || view.health.marks.length === 0}
+        title={!canPay(view, u) ? short : view.health.marks.length === 0 ? "No damage to undo" : undefined}
+        aria-label={`${power}: ${u.label}${suffix}`}
+        onClick={() => setAsking(true)}
+      >
+        {u.label}
+        {suffix}
+      </Button>
+    );
+  } else {
+    body = button(u.label, effectTaps(view, u, power));
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {body}
+      {(said || u.page) && (
+        <span className="text-xs text-mist">
+          {said}
+          {u.page && <span className="whitespace-nowrap">{said ? " " : ""}({u.page})</span>}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** How much damage to undo (Indestructible's "this turn"), which only the player knows. */
+function Asked({ power, u, view, suffix, done, use }: { power: string; u: PowerUse; view: UseView; suffix: string; done: () => void; use: UseTaps }) {
+  const most = marked(view);
+  const [normal, setNormal] = useState(0);
+  const [aggravated, setAggravated] = useState(0);
+  const taps = effectTaps(view, u, power, { asked: { normal, aggravated } });
+  const step = (label: string, value: number, top: number, set: (n: number) => void) => (
+    <span className="flex items-center gap-1 text-sm">
+      <Button type="button" variant="ghost" className="min-h-9 px-2" aria-label={`Less ${label}`} disabled={value <= 0} onClick={() => set(value - 1)}>
+        −
+      </Button>
+      <span aria-live="polite">
+        {value} {label}
+      </span>
+      <Button type="button" variant="ghost" className="min-h-9 px-2" aria-label={`More ${label}`} disabled={value >= top} onClick={() => set(value + 1)}>
+        +
+      </Button>
+    </span>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-ash p-2" role="group" aria-label={`${power}: how much damage`}>
+      {step("normal", normal, most.normal, setNormal)}
+      {step("aggravated", aggravated, most.aggravated, setAggravated)}
+      <Button
+        type="button"
+        variant="secondary"
+        className="min-h-10 px-3"
+        disabled={normal + aggravated === 0 || taps.length === 0}
+        onClick={() => {
+          use(taps);
+          done();
+        }}
+      >
+        Heal {normal + aggravated}{suffix}
+      </Button>
+      <Button type="button" variant="ghost" className="min-h-10 px-3" onClick={done}>
+        Cancel
+      </Button>
+    </div>
   );
 }

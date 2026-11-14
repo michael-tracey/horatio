@@ -522,6 +522,47 @@ test("Use on an elder power: Projectile spends 1 Blood on each attack, and switc
   await expect.poll(async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()).blood.value).toBe(blood.value - 2);
 });
 
+test("uses that heal: Mens Sana heals 1 normal for 1 Blood, and Second Wind turns aggravated to normal, each with one Undo (#825)", async ({ browser }) => {
+  const { page: p } = await person(browser, "use-mender");
+  // A Salubri with Valeren 3 (Mens Sana, core p. 166) and, with Fortitude 3 and Potence 1, the technique Second Wind (core p. 231).
+  const id = await builtVampire(
+    p,
+    "Tobiah Lark",
+    "Salubri",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Fame", 2], ["Resources", 1]], disciplines: [["Valeren", 2], ["Auspex", 1], ["Fortitude", 1]] },
+    [
+      ["disciplines", "Valeren", 3],
+      ["disciplines", "Fortitude", 3],
+      ["disciplines", "Potence", 1],
+      ["techniques", "Second Wind", 1],
+    ],
+  );
+  const play = async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { blood: { value: number; most: number }; health: { marks: string[] } };
+  const took = (damage: "normal" | "aggravated", amount: number) => ({ id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: "health", amount, damage });
+  await play();
+  const sent = await p.request.post(`/api/characters/${id}/play/taps`, { headers: { "X-Horatio": "1" }, data: { taps: [took("normal", 2), took("aggravated", 2)] } });
+  expect(sent.status(), await sent.text()).toBeLessThan(300);
+  const { blood } = await play();
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+
+  // Mens Sana's use says what it does, what it costs and how often: twice a turn with Wits.
+  const mens = p.getByRole("list", { name: "Uses of Mens Sana" });
+  await expect(mens).toContainText("Twice a turn. (p. 166)");
+  await mens.getByRole("button", { name: "Mens Sana: Heal 1 normal · 1 Blood" }).click();
+  await expect(p.getByText(`Spent 1 Blood on Mens Sana · ${blood.value - 1}/${blood.most} · Healed 1 normal · 3/9 marked`)).toBeVisible();
+  await expect.poll(async () => (await play()).health.marks).toEqual(["normal", "aggravated", "aggravated"]);
+
+  // Second Wind: every aggravated box becomes normal, for 1 Blood; one Undo takes it all back.
+  await p.getByRole("button", { name: "Second Wind: Aggravated to normal · 1 Blood" }).click();
+  const wind = p.getByText(/^Spent 1 Blood on Second Wind/);
+  await expect(wind).toBeVisible();
+  await expect.poll(async () => (await play()).health.marks).toEqual(["normal", "normal", "normal"]);
+  await wind.locator("..").getByRole("button", { name: "Undo", exact: true }).click();
+  await expect.poll(async () => (await play()).health.marks.filter((m) => m === "aggravated").length).toBe(2);
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.value - 1);
+});
+
 test("defences that aren't a flat bonus: Rampart of Faith follows Morality and Beast traits, Rockheart resists with Physical + Survival (#602)", async ({ browser }) => {
   const { page: p } = await person(browser, "rampart-keeper");
   const pool = (name: string) => p.getByRole("listitem").filter({ hasText: new RegExp(`^${name}`) });

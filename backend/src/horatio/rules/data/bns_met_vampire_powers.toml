@@ -68,6 +68,25 @@
 #   which is read instead; a power whose cost comes later in its note gets no Use
 #   button. Use spends it on every press, and turns the switch on if it is off, so
 #   a cost paid each time (Projectile's 1 Blood an attack) is spent again.
+#   `{ blood = "half" }` spends half the Blood the character has, rounded down,
+#   and needs at least 2 (Indestructible, Vol. 2 p. 214).
+# `use` (on a power or [[others]] entry): uses that change the trackers besides
+#   spending (issue #825), each a button of its own on the Pools tab, made of
+#   ordinary taps with one Undo: [{ label, cost?, heal?, convert?, mend?, gain?,
+#   beast?, retainer?, when?, once?, focus?, unless_focus?, note?, page, book? }].
+#   `cost` is as above, spent on each press. `heal = { damage, amount? }` heals
+#   `amount` of "normal" or "aggravated" damage, of the "worst" first
+#   (aggravated, then normal), "all" of it, or as much as the player says
+#   ("asked"). `convert` turns that much aggravated damage to normal ("all" for
+#   every box), and `mend` does so or, with no aggravated damage, heals normal.
+#   `gain = { blood?, willpower? }` restores them, never past the pool. `beast`
+#   takes Beast traits. `retainer` moves up to that much damage onto one of the
+#   character's ghoul Retainers. `when` names a switch that must be on; `once`
+#   says how often the book allows it ("Once a turn"), for the player to keep to,
+#   since the Play View counts no turns. `focus` and `unless_focus` limit it as
+#   for `pools`. Where an entry's uses spend, they take the place of its plain
+#   Use button; where none does (Theft of Vitae's Blood drawn on a win), the
+#   button stays for the spend.
 # [[others]]: techniques, elder and luminary powers and merits with `pools`,
 #   `damage`, `active`, `cost` or `forms`, by `category` and `name`; `needs = {
 #   discipline, level }` when it works only with a power of a discipline. `forms`
@@ -556,6 +575,11 @@ level = 3
 name = "Corpore Sano"
 note = "1 Blood, standard action, a willing target within a step (you too): heal 1 normal damage, once a turn."
 focus = { Wits = "Spend 1 more Blood to heal aggravated damage instead." }
+# Core p. 143 (#825): on yourself here; on someone else with #823.
+use = [
+  { label = "Heal 1 normal", cost = { blood = 1 }, heal = { damage = "normal", amount = 1 }, once = "Once a turn", note = "On yourself.", page = 143 },
+  { label = "Heal 1 aggravated", cost = { blood = 1 }, heal = { damage = "aggravated", amount = 1 }, once = "Once a turn", focus = "Wits", note = "On yourself.", page = 143 },
+]
 
 [[powers]]
 discipline = "Obeah"
@@ -570,6 +594,10 @@ level = 5
 name = "King's Blessing"
 note = "3 Blood, a minute's touch: cure any physical malady, regrow limbs, heal wounds."
 focus = { Perception = "Can also heal the mind, even curing derangements." }
+# Core p. 144 (#825): a willing target; here, yourself.
+use = [
+  { label = "Heal all damage", cost = { blood = 3 }, heal = { damage = "all" }, note = "A minute's touch; on yourself.", page = 144 },
+]
 
 [[disciplines]]
 name = "Obfuscate"
@@ -1028,6 +1056,11 @@ level = 3
 name = "Mens Sana"
 note = "Once a turn, 1 Blood heals you 1 normal damage, beyond your usual Blood a turn."
 focus = { Wits = "Twice a turn." }
+# Core p. 166 (#825): yourself only; the Blood is beyond your usual Blood a turn.
+use = [
+  { label = "Heal 1 normal", cost = { blood = 1 }, heal = { damage = "normal", amount = 1 }, once = "Once a turn", unless_focus = "Wits", page = 166 },
+  { label = "Heal 1 normal", cost = { blood = 1 }, heal = { damage = "normal", amount = 1 }, once = "Twice a turn", focus = "Wits", page = 166 },
+]
 
 [[powers]]
 discipline = "Valeren"
@@ -1423,6 +1456,11 @@ level = 4
 name = "Theft of Vitae"
 note = "1 Blood, standard action, Thaumaturgy test within 25 steps: draw the target's Blood out to you."
 focus = { Intelligence = "Stolen vampire blood can't bind you." }
+# Core p. 189 (#825): the Blood drawn on a win, 4 on an exceptional success.
+use = [
+  { label = "Won: +3 Blood", gain = { blood = 3 }, page = 189 },
+  { label = "Exceptional: +4 Blood", gain = { blood = 4 }, page = 189 },
+]
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Blood"
@@ -1815,6 +1853,10 @@ damage = [
   { attacks = ["Brawl"], type = "aggravated", when = "Umbral Huntress", note = "Aggravated with your moonlight claws", page = 81, book = "Vol. 2" },
   { attacks = ["Athletics", "Firearms", "Melee"], type = "aggravated", when = "Umbral Huntress", focus = "Manipulation", note = "Aggravated while Umbral Huntress is active", page = 81, book = "Vol. 2" },
 ]
+# Vol. 2 p. 81 (#825): feeding on a spirit, 1 Blood for each Gnosis drained.
+use = [
+  { label = "Drank 1 Gnosis: +1 Blood", gain = { blood = 1 }, page = 81, book = "Vol. 2" },
+]
 
 [[powers]]
 discipline = "Spiritus"
@@ -1868,6 +1910,11 @@ level = 4
 name = "Harvest Despair"
 note = "1 Blood, simple action: for 10 minutes, take a penalty in a challenge to drain Blood from a visible opponent."
 focus = { Manipulation = "-3 instead of -5." }
+# Vol. 2 p. 124 (#825): a win despite the penalty drains the target, and you may
+# take what it loses to restore your own.
+use = [
+  { label = "Won: +1 Willpower, +2 Blood", gain = { willpower = 1, blood = 2 }, once = "Once a turn", page = 124, book = "Vol. 2" },
+]
 
 [[powers]]
 discipline = "Necromancy: Path of Grief"
@@ -2029,6 +2076,13 @@ level = 3
 name = "Moment of Reflection"
 note = "1 Blood, simple action: a moment's calm that heals you quickly."
 focus = { Intelligence = "The third use also recovers 2 Willpower." }
+# Vol. 2 p. 160 (#825): yourself only. The third use of a night may heal aggravated
+# damage; with Intelligence it also gives back up to 2 Willpower.
+use = [
+  { label = "Heal 2 normal", cost = { blood = 1 }, heal = { damage = "normal", amount = 2 }, page = 160, book = "Vol. 2" },
+  { label = "Third use: heal 2", cost = { blood = 1 }, heal = { damage = "worst", amount = 2 }, once = "Once a night", unless_focus = "Intelligence", note = "Aggravated or normal.", page = 160, book = "Vol. 2" },
+  { label = "Third use: heal 2, +2 Willpower", cost = { blood = 1 }, heal = { damage = "worst", amount = 2 }, gain = { willpower = 2 }, once = "Once a night", focus = "Intelligence", note = "Aggravated or normal.", page = 160, book = "Vol. 2" },
+]
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Neptune's Might"
@@ -2243,6 +2297,11 @@ damage = [{ attacks = ["Athletics"], amount = 3, type = "aggravated", when = "Br
 category = "elder_disciplines"
 name = "Vicissitude: Cocoon"
 cost = { blood = 3 }
+# Vol. 2 p. 246 (#825): what each minute and each half hour inside gives.
+use = [
+  { label = "A minute inside", mend = 1, when = "Cocoon", note = "1 aggravated turns normal, or with none, 1 normal heals.", page = 246, book = "Vol. 2" },
+  { label = "Half an hour inside: +1 Willpower", gain = { willpower = 1 }, when = "Cocoon", page = 246, book = "Vol. 2" },
+]
 active = { key = "Cocoon", page = 246, book = "Vol. 2", notes = ["Each minute inside turns 1 aggravated damage to normal (or heals 1 normal); each 30 minutes gives back 1 Willpower. Clairvoyance and the like can't see you.", "It has one health level for each Vicissitude power you have; you sense anyone within 3 steps. Coming out resets others' familiarity with you."] }
 
 # Core p. 224: 1 Blood, simple action, holding someone in a Grapple: shelter them.
@@ -2357,6 +2416,10 @@ cost = { blood = 1 }
 category = "elder_disciplines"
 name = "Fortitude: Repair the Undead Flesh"
 cost = { blood = 2 }
+# Core p. 216 (#825): no action needed.
+use = [
+  { label = "Heal 1 aggravated", cost = { blood = 2 }, heal = { damage = "aggravated", amount = 1 }, page = 216 },
+]
 
 [[others]]
 category = "elder_disciplines"
@@ -2605,6 +2668,11 @@ active = { key = "Awaken the Heartsblood", page = 236, book = "Vol. 2", blood = 
 category = "luminary_disciplines"
 name = "Serpentis: Mantle of Sutekh"
 cost = { blood = 1 }
+# Vol. 2 p. 240 (#825): each tithe comes to you as 1 Blood. The book lets it go past
+# your pool until the power ends; here it stops at the pool (see the note).
+use = [
+  { label = "Tithe: +1 Blood", gain = { blood = 1 }, when = "Mantle of Sutekh", note = "Over your pool, keep count yourself until it ends.", page = 240, book = "Vol. 2" },
+]
 active = { key = "Mantle of Sutekh", page = 239, book = "Vol. 2", notes = ["Anyone in sight who spends fuel can be made to spend 1 more, which comes to you as Blood, even past your pool until it ends.", "Simple action, even in Celerity rounds: give up to 5 Blood to a willing supernatural ally in sight within 30 steps."] }
 
 # Vol. 2 p. 243: 3 Blood, simple action: no healing near you, and Thanatosis without a Grapple.
@@ -2778,3 +2846,77 @@ name = "Shape of the Beast's Wrath"
 needs = { discipline = "Protean", level = 4 }
 active = { key = "Shape of the Beast's Wrath", form = true, page = 240, notes = ["Shape of the Beast's own bonuses don't apply in it."] }
 damage = [{ attacks = ["Brawl"], type = "aggravated", when = "Shape of the Beast's Wrath", note = "Aggravated brawling in your Wrath form", page = 240 }]
+
+# Vol. 2 p. 214 (#825): at any time, even out of turn, half your Blood (rounded down,
+# with at least 2) undoes all the damage taken this turn; the player says how much.
+[[others]]
+category = "luminary_disciplines"
+name = "Fortitude: Indestructible"
+use = [
+  { label = "Undo this turn's damage", cost = { blood = "half" }, heal = { damage = "asked" }, note = "Its Blood doesn't count toward your Blood a turn.", page = 214, book = "Vol. 2" },
+]
+
+# Core pp. 230-231 (#825): Reflection of Endurance is Valeren's Mens Sana for one
+# who has Obeah and Fortitude, and Reflection of Mercy Obeah's Corpore Sano for one
+# who has Valeren and Auspex, with their costs and focuses.
+[[others]]
+category = "techniques"
+name = "Reflection of Endurance"
+use = [
+  { label = "Heal 1 normal", cost = { blood = 1 }, heal = { damage = "normal", amount = 1 }, once = "Once a turn", unless_focus = "Wits", note = "As Mens Sana: yourself only, beyond your usual Blood a turn.", page = 230 },
+  { label = "Heal 1 normal", cost = { blood = 1 }, heal = { damage = "normal", amount = 1 }, once = "Twice a turn", focus = "Wits", note = "As Mens Sana: yourself only, beyond your usual Blood a turn.", page = 230 },
+]
+
+[[others]]
+category = "techniques"
+name = "Reflection of Mercy"
+use = [
+  { label = "Heal 1 normal", cost = { blood = 1 }, heal = { damage = "normal", amount = 1 }, once = "Once a turn", note = "As Corpore Sano; on yourself.", page = 231 },
+  { label = "Heal 1 aggravated", cost = { blood = 1 }, heal = { damage = "aggravated", amount = 1 }, once = "Once a turn", focus = "Wits", note = "As Corpore Sano; on yourself.", page = 231 },
+]
+
+# Core p. 231 (#825): two full turns of concentration, moving at most.
+[[others]]
+category = "techniques"
+name = "Second Wind"
+use = [
+  { label = "Aggravated to normal", cost = { blood = 1 }, convert = "all", note = "Two full turns of concentration, moving at most.", page = 231 },
+]
+
+# Core p. 232 (#825): free healing while there is damage in the Injured levels and
+# Blood in the pool, in the everyman round, not in Celerity rounds. Offered, not applied.
+[[others]]
+category = "techniques"
+name = "Will to Survive"
+use = [
+  { label = "Heal 1 normal", heal = { damage = "normal", amount = 1 }, once = "Once a turn", note = "With damage in your Injured levels and Blood left; no Blood spent.", page = 232 },
+  { label = "Heal 1 aggravated", heal = { damage = "aggravated", amount = 1 }, once = "Every three turns", note = "Only with no normal damage left.", page = 232 },
+]
+
+# Core p. 231 (#825): once a turn, Blood spent to activate a Quietus power gives 1 back.
+[[others]]
+category = "techniques"
+name = "Retain the Quick Blood"
+use = [
+  { label = "Quietus: 1 Blood back", gain = { blood = 1 }, once = "Once a turn", note = "It doesn't count toward your Blood a turn.", page = 231 },
+]
+
+# Vol. 2 Issue 1 p. 67 (#825): a Beast trait instead of Willpower for a Physical retest.
+[[others]]
+category = "techniques"
+name = "Feed the Blighted Wolf"
+use = [
+  { label = "Retest: take a Beast trait", beast = 1, note = "A Physical retest, in place of Willpower; nothing lessens the trait.", page = 67, book = "Vol. 2 Issue 1" },
+]
+
+# Vol. 2 Issue 1 pp. 58-59 (#825): 1 Blood, simple action: for five minutes, a simple
+# action moves up to 3 damage onto an animal ghoul Retainer within 15 steps, for a
+# Beast trait each time.
+[[others]]
+category = "techniques"
+name = "Beast's Vigor"
+cost = { blood = 1 }
+active = { key = "Beast's Vigor", page = 58, book = "Vol. 2 Issue 1", notes = ["Five minutes: a simple action moves up to 3 damage onto an animal ghoul Retainer within 15 steps, for a Beast trait each time.", "Its own Fortitude and the like can't lessen it."] }
+use = [
+  { label = "Move damage", retainer = 3, beast = 1, when = "Beast's Vigor", note = "Animal ghoul Retainers only.", page = 58, book = "Vol. 2 Issue 1" },
+]
