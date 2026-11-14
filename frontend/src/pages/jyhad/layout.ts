@@ -22,9 +22,14 @@ export const NAME_TEXT = { x: 13.2, w: 45.2 };
 export const CLAN: Box = { x: 3.4, y: 2.6, w: 8.8, h: 8.8 };
 /** The portrait's window, under the plate. */
 export const ART: Box = { x: 3.6, y: 11.4, w: 55.8, h: 47.6 };
-/** The disciplines, highest first, on a ribbon down the left of the portrait. */
-export const DISCIPLINES = { x: 4.8, y: 12.6, size: 6, step: 6.9 };
+/** The ribbon down the left of the portrait, from under the name plate to the
+ * portrait's foot, its tail cut in a V; the disciplines stack up it from the foot. */
 export const RIBBON = { x: 4.3, w: 7, top: 10, tail: 2.2 };
+/** Where the ribbon ends, at its tail's tips: the portrait's foot. */
+export const RIBBON_END = ART.y + ART.h;
+/** The disciplines on the ribbon, KRCG's plain symbols on Horatio's plates: each in
+ * a `size` box, `step` apart, the lowest ending at `bottom`. */
+export const DISCIPLINES = { x: 4.8, size: 6, step: 6.9, bottom: RIBBON_END - RIBBON.tail - 1.2 };
 /** The text box, under the portrait. */
 export const TEXT: Box = { x: 3.6, y: 60, w: 55.8, h: 21.2 };
 export const TEXT_PAD = 1.6;
@@ -103,18 +108,46 @@ export const DROP_VIEW = { w: 10, h: 14.2 };
 /** The drawn drop, in the capacity's circle. */
 export const DROP: Box = { x: CAPACITY.x + 1.65, y: CAPACITY.y + 0.3, w: 6.3, h: 8.95 };
 
-/** Where the nth discipline sits. */
-export function disciplineBox(n: number): Box {
-  return { x: DISCIPLINES.x, y: DISCIPLINES.y + n * DISCIPLINES.step, w: DISCIPLINES.size, h: DISCIPLINES.size };
+/**
+ * KRCG's white-bordered discipline symbols (#869), as a printed crypt card has them:
+ * an inferior one a square, a superior one a diamond, each drawn whole on no plate.
+ * Their sizes and spacing in mm, as on KRCG's sample card (static.krcg.org/card/
+ * valeriyazinovieva.webp): squares about 4.1 mm, diamonds 4.7 mm, 5.5 mm apart.
+ */
+export const BORDERED = { inferior: 4.4, superior: 5, step: 5.6 };
+
+/** A stack of discipline symbols up a sidebar: its middle, where its foot is, and the
+ * plain symbols' box and spacing (the white-bordered ones have their own, above). */
+export type Stack = { centre: number; bottom: number; size: number; step: number };
+
+/**
+ * Where the ith of the disciplines (`superior`, top to bottom, as the card prints them:
+ * the inferior first, the superior at the foot) sits: stacked up the sidebar from its
+ * foot, as on a VTES card, each centred across it. White-bordered symbols are a square
+ * or a diamond of their own size; plain ones sit on Horatio's plates, all one size.
+ */
+export function stackBox(i: number, superior: boolean[], bordered: boolean, stack: Stack): Box {
+  const step = bordered ? BORDERED.step : stack.step;
+  const largest = bordered ? (superior.some(Boolean) ? BORDERED.superior : BORDERED.inferior) : stack.size;
+  const size = bordered ? (superior[i] ? BORDERED.superior : BORDERED.inferior) : stack.size;
+  const middle = stack.bottom - largest / 2 - (superior.length - 1 - i) * step;
+  return { x: stack.centre - size / 2, y: middle - size / 2, w: size, h: size };
 }
 
-/** How much of its box a symbol fills: KRCG's superior diamond sits inside a parchment one. */
-export const SYMBOL_SHARE = { clan: 0.66, inferior: 0.74, superior: 0.8 };
-
-/** Where the ribbon ends, below the last of `n` disciplines, at its tail's tips. */
-export function ribbonEnd(n: number): number {
-  return DISCIPLINES.y + (n - 1) * DISCIPLINES.step + DISCIPLINES.size + 1.2 + RIBBON.tail;
+/** Whether a card's disciplines are KRCG's white-bordered symbols: all or none, as the
+ * backend sends them. */
+export function isBordered(card: { disciplines: { bordered: boolean }[] }): boolean {
+  return card.disciplines.length > 0 && card.disciplines.every((d) => d.bordered);
 }
+
+/** Where the ith discipline sits on Horatio's frame. */
+export function disciplineBox(i: number, superior: boolean[], bordered = false): Box {
+  return stackBox(i, superior, bordered, { centre: DISCIPLINES.x + DISCIPLINES.size / 2, bottom: DISCIPLINES.bottom, size: DISCIPLINES.size, step: DISCIPLINES.step });
+}
+
+/** How much of its box a symbol fills: KRCG's plain superior diamond sits inside a
+ * parchment one; a white-bordered symbol fills its box, border and all. */
+export const SYMBOL_SHARE = { clan: 0.66, inferior: 0.74, superior: 0.8, bordered: 1 };
 
 /** How wide a piece of text is, in mm, at a size in mm. */
 export type Measure = (text: string, size: number, style: TextStyle) => number;
@@ -275,13 +308,17 @@ export const T_DROP = fromTemplate(TEMPLATE_PX.drop);
 export const T_SIDEBAR = fromTemplate(TEMPLATE_PX.sidebar);
 export const T_NAME = fromTemplate(TEMPLATE_PX.name);
 export const T_TEXT_PAD = 1;
+/** The disciplines' stack on the sidebar: its foot beside the text box, a little over
+ * halfway down it, as KRCG's sample card has its lowest symbol (#869). */
+export const T_STACK_BOTTOM = T_TEXT.y + T_TEXT.h * 0.6;
 /** Smaller than on Horatio's frame: the template's box is smaller. */
 export const T_TEXT_SIZES = [2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4];
-/** The disciplines, highest first, down the sidebar. */
-export const T_DISCIPLINES = { size: 6.4, step: 7.4, top: T_SIDEBAR.y + 0.6 };
+/** The plain symbols' box and spacing on the sidebar, without the white-bordered ones. */
+export const T_DISCIPLINES = { size: 6.4, step: 7.4 };
 export const T_CAPACITY_SIZE = 3.6;
-/** The name's largest size on the template, left on its band. */
-export const T_NAME_LARGEST = 4.2;
+/** The name's largest size on the template, left on its band: in bold serif, white
+ * with a dark edge, as KRCG's sample card has it (#869). */
+export const T_NAME_LARGEST = 3.9;
 /** The one line on the black edge below the template's frame, which already says
  * it isn't for play and gives Paradox's notice: Horatio's, and KRCG's credit. */
 export const T_FOOTER = { y: 87.05, size: 1.15 };
@@ -289,14 +326,9 @@ export const T_UNOFFICIAL = "Unofficial · made with Horatio · symbols by KRCG"
 /** The name's and the symbols' colours on the template's dark sidebar and frame. */
 export const T_COLOURS = { name: "#f6efe0", outline: "#120a0c", symbol: "#f1e4c4", rule: "#5b4a3a" };
 
-/** Where the nth discipline sits on the template's sidebar. */
-export function templateDisciplineBox(n: number): Box {
-  return {
-    x: T_SIDEBAR.x + (T_SIDEBAR.w - T_DISCIPLINES.size) / 2,
-    y: T_DISCIPLINES.top + n * T_DISCIPLINES.step,
-    w: T_DISCIPLINES.size,
-    h: T_DISCIPLINES.size,
-  };
+/** Where the ith discipline sits on the template's sidebar: stacked up from its foot. */
+export function templateDisciplineBox(i: number, superior: boolean[], bordered = false): Box {
+  return stackBox(i, superior, bordered, { centre: T_SIDEBAR.x + T_SIDEBAR.w / 2, bottom: T_STACK_BOTTOM, size: T_DISCIPLINES.size, step: T_DISCIPLINES.step });
 }
 
 /** The text on a template: in its box, keeping clear of the drop. */
@@ -304,7 +336,7 @@ export function layoutTemplateText(sectLine: string | null, text: string, flavou
   return layoutText(sectLine, text, flavour, measure, { box: T_TEXT, capacity: T_DROP, pad: T_TEXT_PAD, sizes: T_TEXT_SIZES });
 }
 
-/** The name's size on the template's band. */
+/** The name's size on the template's band; `measure` is the text's (bold serif). */
 export function templateNameFit(name: string, measure: Measure) {
   return nameFit(name, measure, T_NAME.w, T_NAME_LARGEST);
 }

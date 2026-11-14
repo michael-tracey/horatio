@@ -24,6 +24,8 @@ class CardDisciplineOut(BaseModel):
     symbol: str | None
     # KRCG's three letters, as "aus".
     abbreviation: str
+    # Whether `symbol` is KRCG's white-bordered one (#869), drawn as it is, on no plate.
+    bordered: bool
 
 
 class JyhadCardOut(BaseModel):

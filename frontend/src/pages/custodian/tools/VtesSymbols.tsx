@@ -12,7 +12,7 @@ import { FetchFailed, FetchForm, FetchProgress, NotSetUp, POLL, RemoveDialog, si
 type VtesSymbolsTool = components["schemas"]["VtesSymbolsTool"];
 type Matched = components["schemas"]["Matched"];
 
-const KINDS: Record<string, string> = { svg: "SVG", webp: "WebP", png: "PNG" };
+const KINDS: Record<string, string> = { svg: "SVG", webp: "WebP", png: "PNG", webp_wb: "WebP, white-bordered", png_wb: "PNG, white-bordered" };
 
 /**
  * The symbols of Vampire: The Eternal Struggle from KRCG (#534), which characters'
@@ -43,7 +43,8 @@ export function VtesSymbols() {
       }
     >
       <p className="mb-3 text-sm text-mist">
-        The clan and discipline symbols and game icons of <em>Vampire: The Eternal Struggle</em>, with its two fonts, from{" "}
+        The clan, discipline and path symbols and game icons of <em>Vampire: The Eternal Struggle</em>, plain and white-bordered as printed cards
+        have them, with its fonts and logos, from{" "}
         <a href="https://static.krcg.org/" target="_blank" rel="noreferrer" className="text-gold hover:underline">
           KRCG
         </a>
@@ -75,7 +76,7 @@ export function VtesSymbols() {
                 onFetch={(address) => fetch.mutate(address)}
               />
               <p className="mt-2 text-xs text-mist">
-                A few hundred small files, fetched one at a time to be polite: a few minutes. What's here now stays until the new fetch is whole.
+                A thousand or so small files, fetched one at a time to be polite: several minutes. What's here now stays until the new fetch is whole.
               </p>
               <ErrorText error={fetch.error} />
             </>
@@ -106,6 +107,11 @@ function Status({ state }: { state: VtesSymbolsTool }) {
       <p>
         Fetched {state.fetched_at ? dates.dateTime(state.fetched_at) : ""} from <span className="break-all text-mist">{state.address}</span>.
       </p>
+      {state.outdated && (
+        <p role="note" className="text-gold">
+          These came before Horatio fetched the white-bordered symbols, which Jyhad cards draw their disciplines with. Fetch again to have them.
+        </p>
+      )}
       <table aria-label="Symbols" className="w-full max-w-xl">
         <thead className="text-left text-xs text-mist">
           <tr>
@@ -114,6 +120,7 @@ function Status({ state }: { state: VtesSymbolsTool }) {
             <th className="py-1 pr-3 font-normal">Disciplines</th>
             <th className="py-1 pr-3 font-normal">Superior</th>
             <th className="py-1 pr-3 font-normal">Icons</th>
+            <th className="py-1 pr-3 font-normal">Paths</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-ash/50">
@@ -124,11 +131,13 @@ function Status({ state }: { state: VtesSymbolsTool }) {
               <td className="py-1.5 pr-3">{c.inferior}</td>
               <td className="py-1.5 pr-3">{c.superior}</td>
               <td className="py-1.5 pr-3">{c.icons}</td>
+              <td className="py-1.5 pr-3">{c.paths}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <p>Fonts: {state.fonts.join(", ") || "none"}.</p>
+      <p>Logos: {state.logos.join(", ") || "none"}.</p>
       <Matches label="Horatio's clans and bloodlines" found={state.clans} />
       <Matches label="Horatio's disciplines" found={state.disciplines} />
       {state.large_png.length > 0 && (

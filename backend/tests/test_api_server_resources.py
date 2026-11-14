@@ -484,32 +484,45 @@ KRCG_FILES = {
     "disc/inf": ["aus", "cel", "nec", "tha"],
     "disc/sup": ["aus", "cel"],
     "icon": ["blood1", "action"],
+    "path": ["caine", "death"],
 }
 # Some of KRCG's icons have no SVG: the capacity drop is WebP and PNG only.
 KRCG_RASTER_ICONS = ["capacity"]
 
 
-def krcg(fake: Fake, *, large: str | None = None) -> None:
+def krcg(
+    fake: Fake,
+    *,
+    large: str | None = None,
+    kinds: tuple[str, ...] = vtes_symbols.KINDS,
+    paths: bool = True,
+) -> None:
     """KRCG's folders, each with a few symbols, the clans with an old one in
-    deprecated/; and the fonts."""
-    for kind in vtes_symbols.KINDS:
+    deprecated/; the fonts and the logos. `kinds` and `paths` leave folders out, as an
+    older KRCG had none of the white-bordered or path ones."""
+    for kind in kinds:
+        ext = vtes_symbols.EXTENSION[kind]
         for group, names in KRCG_FILES.items():
-            if group == "icon" and kind != "svg":
+            if group == "path" and not paths:
+                continue
+            if group == "icon" and ext != "svg":
                 names = [*names, *KRCG_RASTER_ICONS]
-            folder_names = [f"{n}.{kind}" for n in names]
+            folder_names = [f"{n}.{ext}" for n in names]
             if group == "clan":
                 folder_names = ["deprecated/", *folder_names]
             fake.answers[f"{KRCG}{kind}/{group}/"] = httpx.Response(
                 200, content=listing(f"{kind}/{group}/", folder_names)
             )
             for name in names:
-                data = svg() if kind == "svg" else image(kind, large=name == large)
-                fake.answers[f"{KRCG}{kind}/{group}/{name}.{kind}"] = httpx.Response(
+                data = svg() if ext == "svg" else image(ext, large=name == large)
+                fake.answers[f"{KRCG}{kind}/{group}/{name}.{ext}"] = httpx.Response(
                     200, content=data
                 )
-        fake.answers[f"{KRCG}{kind}/clan/deprecated/brujah.{kind}"] = httpx.Response(200)
+        fake.answers[f"{KRCG}{kind}/clan/deprecated/brujah.{ext}"] = httpx.Response(200)
     for font in vtes_symbols.FONTS:
         fake.answers[f"{KRCG}web/{font}"] = httpx.Response(200, content=b"OTTO" + b"\0" * 64)
+    fake.answers[f"{KRCG}vtes.svg"] = httpx.Response(200, content=svg())
+    fake.answers[f"{KRCG}dark-pack.png"] = httpx.Response(200, content=image("png"))
 
 
 def test_the_server_fetches_the_vtes_symbols_from_krcg(
@@ -528,10 +541,18 @@ def test_the_server_fetches_the_vtes_symbols_from_krcg(
     assert found["fetched"] is True and found["error"] is None
     assert found["address"] == KRCG
     assert found["counts"] == [
-        {"kind": kind, "clans": 4, "inferior": 4, "superior": 2, "icons": icons}
-        for kind, icons in (("svg", 2), ("webp", 3), ("png", 3))
+        {"kind": kind, "clans": 4, "inferior": 4, "superior": 2, "icons": icons, "paths": 2}
+        for kind, icons in (
+            ("svg", 2),
+            ("webp", 3),
+            ("png", 3),
+            ("webp_wb", 3),
+            ("png_wb", 3),
+        )
     ]
     assert found["fonts"] == list(vtes_symbols.FONTS)
+    assert found["logos"] == list(vtes_symbols.LOGOS)
+    assert found["outdated"] is False
     clans = {c["name"]: c["symbol"] for c in found["clans"]}
     assert clans["Brujah"] == "brujah"
     assert clans["Assamite"] == "banuhaqim"
@@ -544,8 +565,9 @@ def test_the_server_fetches_the_vtes_symbols_from_krcg(
     assert disciplines["Thaumaturgy"] == "tha"
     assert disciplines["Kineticism"] is None
     assert "Necromancy: Ash Path" not in disciplines
-    [large] = found["large_png"]
-    assert large["path"] == "clan/brujah.png" and large["size"] > vtes_symbols.DISCORD_EMOJI
+    large = {p["path"]: p["size"] for p in found["large_png"]}
+    assert set(large) == {"clan/brujah.png", "png_wb/clan/brujah.png"}
+    assert min(large.values()) > vtes_symbols.DISCORD_EMOJI
 
     # Old symbols in deprecated/ are left out; politely, one at a time.
     asked = [str(r.url) for r in fake.asked]
@@ -555,11 +577,18 @@ def test_the_server_fetches_the_vtes_symbols_from_krcg(
     kept = folder / "vtes"
     assert (kept / "svg" / "disc" / "inf" / "aus.svg").read_bytes() == svg()
     assert (kept / "fonts" / "ankha2.otf").is_file()
+    assert (kept / "fonts" / "ankha.ttf").is_file()
+    # The white-bordered symbols, the paths and the logos (#869).
+    assert (kept / "webp_wb" / "disc" / "sup" / "aus.webp").is_file()
+    assert (kept / "png_wb" / "disc" / "inf" / "cel.png").is_file()
+    assert (kept / "svg" / "path" / "caine.svg").is_file()
+    assert (kept / "logos" / "vtes.svg").is_file()
+    assert (kept / "logos" / "dark-pack.png").is_file()
     # The capacity drop the Jyhad card shows, which KRCG has in WebP and PNG only.
     assert (kept / "webp" / "icon" / "capacity.webp").is_file()
     assert "capacity" in json.loads((kept / "manifest.json").read_text())["files"]["webp/icon"]
     assert not [p for p in folder.iterdir() if p.name.startswith(".")]
-    assert f"custodian fetched the VTES symbols from {KRCG}: 38 symbols and 2 fonts." in messages(
+    assert f"custodian fetched the VTES symbols from {KRCG}: 74 symbols and 3 fonts." in messages(
         troupe.custodian
     )
 
@@ -580,6 +609,16 @@ def test_the_symbols_are_served_to_anyone_signed_in(
     assert player.get("/vtes-symbols/webp/icon/blood1.webp").status_code == 200
     assert player.get("/vtes-symbols/webp/icon/capacity.webp").status_code == 200
     assert player.get("/vtes-symbols/fonts/vtes-clans.otf").status_code == 200
+    ttf = player.get("/vtes-symbols/fonts/ankha.ttf")
+    assert ttf.status_code == 200 and ttf.headers["content-type"] == "font/ttf"
+    # White-bordered (#869): WebP and PNG, as their own kinds.
+    edged = player.get("/vtes-symbols/webp_wb/disc/sup/aus.webp")
+    assert edged.status_code == 200 and edged.headers["content-type"] == "image/webp"
+    assert player.get("/vtes-symbols/png_wb/clan/brujah.png").status_code == 200
+    assert player.get("/vtes-symbols/svg/path/caine.svg").status_code == 200
+    logo = player.get("/vtes-symbols/logos/vtes.svg")
+    assert logo.status_code == 200 and "sandbox" in logo.headers["content-security-policy"]
+    assert player.get("/vtes-symbols/logos/dark-pack.png").headers["content-type"] == "image/png"
     assert client_for().get("/vtes-symbols/svg/clan/brujah.svg").status_code == 401
     for path in (
         "svg/clan/brujah.png",
@@ -587,7 +626,11 @@ def test_the_symbols_are_served_to_anyone_signed_in(
         "svg/manifest.json",
         "svg/clan/deprecated/brujah.svg",
         "gif/clan/brujah.gif",
-        "fonts/ankha.ttf",
+        "fonts/ankha.otf",
+        "webp_wb/clan/brujah.png",
+        "png_wb/clan/brujah.webp",
+        "logos/manifest.json",
+        "logos/other.svg",
     ):
         assert player.get(f"/vtes-symbols/{path}").status_code == 404, path
 
@@ -618,6 +661,31 @@ def test_a_failed_vtes_fetch_keeps_the_last(troupe: Troupe, fake: Fake, folder: 
     assert {p: (folder / p).read_bytes() for p in files(folder)} == kept
     assert not [p for p in folder.iterdir() if p.name.startswith(".")]
     assert status(troupe.custodian, "vtes-symbols")["fetched"] is True
+
+
+def test_an_older_krcg_without_bordered_symbols_or_paths_still_fetches(
+    troupe: Troupe, fake: Fake, folder: Path
+) -> None:
+    """The white-bordered folders and the paths are newer at KRCG: a 404 for one is
+    skipped. A fetch without them is "outdated": the Jyhad card wants them (#869)."""
+    krcg(fake, kinds=vtes_symbols.PLAIN, paths=False)
+    del fake.answers[f"{KRCG}dark-pack.png"]
+
+    fetch(troupe.custodian, "vtes-symbols", KRCG)
+
+    found = status(troupe.custodian, "vtes-symbols")
+    assert found["fetched"] is True and found["error"] is None
+    assert [c["kind"] for c in found["counts"] if c["clans"]] == list(vtes_symbols.PLAIN)
+    assert all(c["paths"] == 0 for c in found["counts"])
+    assert found["logos"] == ["vtes.svg"]
+    assert found["outdated"] is True
+    # A plain folder that's missing still fails the fetch.
+    krcg(fake, kinds=vtes_symbols.PLAIN, paths=False)
+    del fake.answers[f"{KRCG}webp/icon/"]
+    fetch(troupe.custodian, "vtes-symbols", KRCG)
+    assert status(troupe.custodian, "vtes-symbols")["error"] == (
+        f"{KRCG}webp/icon/ answered 404 Not Found."
+    )
 
 
 @pytest.mark.parametrize("address", [*ELSEWHERE, DROPBOX, "https://krcg.org/"])

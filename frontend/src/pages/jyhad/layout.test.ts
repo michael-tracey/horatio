@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ART, CAPACITY, CARD, FOOTER, FRAME, NAME, TEMPLATE_IMAGE, TEMPLATE_PX, TEXT, TEXT_SIZES, T_DROP, T_NAME, T_OVAL, T_SIDEBAR, T_TEXT, clanLetters, disciplineBox, layoutTemplateText, layoutText, lookOf, nameFit, NAME_WIDTH, ribbonEnd, templateDisciplineBox, templateNameFit, wrap, type Measure } from "./layout";
+import { ART, CAPACITY, CARD, FOOTER, FRAME, NAME, TEMPLATE_IMAGE, TEMPLATE_PX, TEXT, TEXT_SIZES, T_DROP, T_NAME, T_OVAL, T_SIDEBAR, T_TEXT, clanLetters, disciplineBox, layoutTemplateText, layoutText, lookOf, nameFit, NAME_WIDTH, RIBBON, RIBBON_END, BORDERED, isBordered, stackBox, templateDisciplineBox, templateNameFit, wrap, type Measure } from "./layout";
 
 /** Every letter half its size wide: near enough a serif's average. */
 const measure: Measure = (text, size) => text.length * size * 0.5;
@@ -76,9 +76,39 @@ describe("the Jyhad card's frame", () => {
     expect(FOOTER.y2).toBeLessThan(CARD.height);
   });
 
-  it("fits six disciplines and the ribbon's tail over the portrait", () => {
-    expect(disciplineBox(5).y + disciplineBox(5).h).toBeLessThan(ribbonEnd(6));
-    expect(ribbonEnd(6)).toBeLessThanOrEqual(ART.y + ART.h);
+  it("stacks six disciplines up the ribbon from its foot, over the portrait (#869)", () => {
+    const six = [false, false, false, false, true, true];
+    for (const bordered of [false, true]) {
+      const boxes = six.map((_, i) => disciplineBox(i, six, bordered));
+      // The lowest ends above the ribbon's tail, the highest below its top.
+      expect(boxes.at(-1)!.y + boxes.at(-1)!.h).toBeLessThan(RIBBON_END - RIBBON.tail);
+      expect(boxes[0]!.y).toBeGreaterThan(RIBBON.top);
+      // Top to bottom, without overlapping.
+      for (let i = 1; i < 6; i++) expect(boxes[i]!.y).toBeGreaterThanOrEqual(boxes[i - 1]!.y + boxes[i - 1]!.h - 0.01);
+    }
+    expect(RIBBON_END).toBeLessThanOrEqual(ART.y + ART.h);
+    // The foot stays put: one discipline sits where six's lowest does.
+    expect(disciplineBox(0, [true], true).y).toBeCloseTo(disciplineBox(5, six, true).y);
+  });
+
+  it("sizes white-bordered symbols as a printed card does: a diamond a little larger than a square", () => {
+    const stack = { centre: 10, bottom: 50, size: 6, step: 6.9 };
+    const square = stackBox(0, [false, true], true, stack);
+    const diamond = stackBox(1, [false, true], true, stack);
+    expect([square.w, diamond.w]).toEqual([BORDERED.inferior, BORDERED.superior]);
+    // Both centred across the sidebar, the diamond's foot at the stack's.
+    expect(square.x + square.w / 2).toBeCloseTo(10);
+    expect(diamond.x + diamond.w / 2).toBeCloseTo(10);
+    expect(diamond.y + diamond.h).toBeCloseTo(50);
+    expect(diamond.y + diamond.h / 2 - (square.y + square.h / 2)).toBeCloseTo(BORDERED.step);
+    // Plain symbols are all one size, on their plates.
+    expect(stackBox(1, [false, true], false, stack).w).toBe(6);
+  });
+
+  it("calls a card white-bordered only when every discipline is", () => {
+    expect(isBordered({ disciplines: [{ bordered: true }, { bordered: true }] })).toBe(true);
+    expect(isBordered({ disciplines: [{ bordered: true }, { bordered: false }] })).toBe(false);
+    expect(isBordered({ disciplines: [] })).toBe(false);
   });
 
   it("is dark for the Camarilla and a card with no sect, bone for the rest", () => {
@@ -110,12 +140,19 @@ describe("the Jyhad card on a clan's crypt card template (#850)", () => {
     expect(round(TEMPLATE_IMAGE)).toEqual([-3.17, -3.17, 69.37, 94.35]);
   });
 
-  it("puts six disciplines down the sidebar, under the clan symbol and above the card's foot", () => {
-    for (let n = 0; n < 6; n++) {
-      const b = templateDisciplineBox(n);
-      expect(b.x).toBeGreaterThanOrEqual(T_SIDEBAR.x);
-      expect(b.x + b.w).toBeLessThanOrEqual(T_SIDEBAR.x + T_SIDEBAR.w + 0.01);
-      expect(b.y + b.h).toBeLessThanOrEqual(T_TEXT.y + T_TEXT.h);
+  it("stacks six disciplines up the sidebar from beside the text box, under the clan symbol (#869)", () => {
+    const six = [false, false, false, true, true, true];
+    for (const bordered of [false, true]) {
+      for (let n = 0; n < 6; n++) {
+        const b = templateDisciplineBox(n, six, bordered);
+        expect(b.x).toBeGreaterThanOrEqual(T_SIDEBAR.x);
+        expect(b.x + b.w).toBeLessThanOrEqual(T_SIDEBAR.x + T_SIDEBAR.w + 0.01);
+        expect(b.y).toBeGreaterThanOrEqual(T_SIDEBAR.y);
+        expect(b.y + b.h).toBeLessThanOrEqual(T_TEXT.y + T_TEXT.h);
+      }
+      // The lowest sits beside the text box, as on KRCG's sample card.
+      const last = templateDisciplineBox(5, six, bordered);
+      expect(last.y + last.h).toBeGreaterThan(T_TEXT.y);
     }
     // The name's band is above the oval.
     expect(T_NAME.y + T_NAME.h).toBeLessThan(T_OVAL.y);
@@ -130,6 +167,6 @@ describe("the Jyhad card on a clan's crypt card template (#850)", () => {
       // A line level with the drop ends before it.
       if (line.y > T_DROP.y) expect(line.x + measure(line.text, laid.size, line.style)).toBeLessThanOrEqual(T_DROP.x);
     }
-    expect(templateNameFit("Varga", measure).size).toBeLessThanOrEqual(4.2);
+    expect(templateNameFit("Varga", measure).size).toBeLessThanOrEqual(3.9);
   });
 });

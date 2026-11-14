@@ -12856,6 +12856,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vtes-symbols/logos/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Logo
+         * @description KRCG's logos: VTES's (`vtes.svg`) and the Dark Pack's (`dark-pack.png`).
+         */
+        get: operations["logo_api_vtes_symbols_logos__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vtes-symbols/{kind}/{path}": {
         parameters: {
             query?: never;
@@ -12865,7 +12885,8 @@ export interface paths {
         };
         /**
          * Symbol
-         * @description A symbol, as `/api/vtes-symbols/svg/disc/inf/aus.svg`.
+         * @description A symbol, as `/api/vtes-symbols/svg/disc/inf/aus.svg`, or white-bordered as
+         *     `/api/vtes-symbols/webp_wb/disc/sup/aus.webp`.
          */
         get: operations["symbol_api_vtes_symbols__kind___path__get"];
         put?: never;
@@ -16730,6 +16751,8 @@ export interface components {
         CardDisciplineOut: {
             /** Abbreviation */
             abbreviation: string;
+            /** Bordered */
+            bordered: boolean;
             /** Name */
             name: string;
             /** Superior */
@@ -33246,6 +33269,8 @@ export interface components {
             inferior: number;
             /** Kind */
             kind: string;
+            /** Paths */
+            paths: number;
             /** Superior */
             superior: number;
         };
@@ -35445,6 +35470,10 @@ export interface components {
             job: components["schemas"]["FetchJob"] | null;
             /** Large Png */
             large_png: components["schemas"]["LargeSymbol"][];
+            /** Logos */
+            logos: string[];
+            /** Outdated */
+            outdated: boolean;
             /** Writable */
             writable: boolean;
         };
@@ -61468,6 +61497,35 @@ export interface operations {
         };
     };
     font_api_vtes_symbols_fonts__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logo_api_vtes_symbols_logos__name__get: {
         parameters: {
             query?: never;
             header?: never;

@@ -38,6 +38,7 @@ import {
   clanLetters,
   disciplineBox,
   font,
+  isBordered,
   layoutTemplateText,
   layoutText,
   lookOf,
@@ -66,6 +67,16 @@ function cover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, b: Box, top
   const w = b.w / scale;
   const h = b.h / scale;
   ctx.drawImage(img, (img.naturalWidth - w) / 2, (img.naturalHeight - h) * top, w, h, b.x, b.y, b.w, b.h);
+}
+
+/** A symbol fetched and tinted, loaded; null if it can't be had. */
+function tinted(src: string | null, colour: string): Promise<HTMLImageElement | null> | null {
+  return src ? tintedSymbol(src, colour).then((url) => (url ? loaded(url) : null)) : null;
+}
+
+/** How much of its box a discipline's symbol fills. */
+function shareOf(superior: boolean, bordered: boolean): number {
+  return bordered ? SYMBOL_SHARE.bordered : superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior;
 }
 
 /** An image fitted inside a box, its middle at the box's, at `share` of its size. */
@@ -126,14 +137,15 @@ export async function drawCard(card: JyhadCardOut, clanName: string | null, text
   const tints = symbolTints(look);
   const width = CARD.width * SCALE;
   const height = CARD.height * SCALE;
-  const frameOf = { look, superior: card.disciplines.map((d) => d.superior), capacity: card.capacity !== null };
-  const tinted = (src: string | null, colour: string) => (src ? tintedSymbol(src, colour).then((url) => (url ? loaded(url) : null)) : null);
+  const bordered = isBordered(card);
+  const superior = card.disciplines.map((d) => d.superior);
+  const frameOf = { look, superior, capacity: card.capacity !== null, bordered };
   const [art, frame, drop, clan, ...disciplines] = await Promise.all([
     card.picture ? loaded(`${card.picture}/portrait.webp`) : null,
     loaded(svgUrl(frameSvg(frameOf, { w: width, h: height }))),
     card.capacity !== null && card.capacity_symbol ? loaded(card.capacity_symbol) : null,
     tinted(card.clan_symbol, tints.clan),
-    ...card.disciplines.map((d) => tinted(d.symbol, tints.discipline)),
+    ...card.disciplines.map((d) => (d.bordered ? (d.symbol ? loaded(d.symbol) : null) : tinted(d.symbol, tints.discipline))),
   ]);
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -157,9 +169,9 @@ export async function drawCard(card: JyhadCardOut, clanName: string | null, text
   if (clan) contain(ctx, clan, CLAN, SYMBOL_SHARE.clan);
   else letters(ctx, clanLetters(clanName), CLAN, 2.6, DISPLAY, palette.name);
   card.disciplines.forEach((d, i) => {
-    const b = disciplineBox(i);
+    const b = disciplineBox(i, superior, bordered);
     const symbol = disciplines[i];
-    if (symbol) contain(ctx, symbol, b, d.superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior);
+    if (symbol) contain(ctx, symbol, b, shareOf(d.superior, bordered));
     else letters(ctx, d.superior ? d.abbreviation.toUpperCase() : d.abbreviation, b, d.superior ? 2.3 : 2.4, SERIF, COLOURS.ink);
   });
 
@@ -222,11 +234,12 @@ function png(canvas: HTMLCanvasElement): Promise<Blob> {
 async function drawTemplateCard(card: JyhadCardOut, template: string, text: string, flavour: string): Promise<Blob> {
   const width = CARD.width * SCALE;
   const height = CARD.height * SCALE;
-  const tinted = (src: string | null) => (src ? tintedSymbol(src, T_COLOURS.symbol).then((url) => (url ? loaded(url) : null)) : null);
+  const bordered = isBordered(card);
+  const superior = card.disciplines.map((d) => d.superior);
   const [art, frame, ...disciplines] = await Promise.all([
     card.picture ? loaded(`${card.picture}/portrait.webp`) : null,
     loaded(template),
-    ...card.disciplines.map((d) => tinted(d.symbol)),
+    ...card.disciplines.map((d) => (d.bordered ? (d.symbol ? loaded(d.symbol) : null) : tinted(d.symbol, T_COLOURS.symbol))),
   ]);
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -250,16 +263,16 @@ async function drawTemplateCard(card: JyhadCardOut, template: string, text: stri
   if (frame) ctx.drawImage(frame, TEMPLATE_IMAGE.x, TEMPLATE_IMAGE.y, TEMPLATE_IMAGE.w, TEMPLATE_IMAGE.h);
 
   card.disciplines.forEach((d, i) => {
-    const b = templateDisciplineBox(i);
+    const b = templateDisciplineBox(i, superior, bordered);
     const symbol = disciplines[i];
-    if (symbol) contain(ctx, symbol, b, d.superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior);
+    if (symbol) contain(ctx, symbol, b, shareOf(d.superior, bordered));
     else letters(ctx, d.superior ? d.abbreviation.toUpperCase() : d.abbreviation, b, d.superior ? 2.3 : 2.4, SERIF, T_COLOURS.symbol);
   });
 
-  const named = templateNameFit(card.name, canvasNameMeasure(ctx));
+  const named = templateNameFit(card.name, canvasMeasure(ctx));
   ctx.fillStyle = T_COLOURS.name;
   ctx.textAlign = "left";
-  write(ctx, card.name, T_NAME.x, T_NAME.y + T_NAME.h / 2 + named.size * 0.36, named.size, "bold", DISPLAY, {
+  write(ctx, card.name, T_NAME.x, T_NAME.y + T_NAME.h / 2 + named.size * 0.36, named.size, "bold", SERIF, {
     squeeze: named.squeeze,
     outline: { colour: T_COLOURS.outline, width: 0.45 },
   });
