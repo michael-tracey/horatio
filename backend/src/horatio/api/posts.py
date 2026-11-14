@@ -57,6 +57,8 @@ class AgencyIn(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(default="", max_length=500)
     colour: str = Field(default="#8b1e1e", pattern=COLOUR)
+    # Its own channel, or None for the troupe's news channel. Left out of a change,
+    # it stays as it is.
     discord_channel: str | None = None
 
 
@@ -938,9 +940,12 @@ def change_agency(
     agency_id: uuid.UUID, body: AgencyIn, db: DbSession, user: CurrentUser
 ) -> AgencyOut:
     agency, troupe = own_agency(db, user, agency_id)
-    agency.discord_channel = agency_channel(
-        db, user, troupe, agency.discord_channel, body.discord_channel
-    )
+    # Its channel is chosen under Connectors › Discord (#882): the agency's own form
+    # leaves it out, and so leaves it as it is.
+    if "discord_channel" in body.model_fields_set:
+        agency.discord_channel = agency_channel(
+            db, user, troupe, agency.discord_channel, body.discord_channel
+        )
     posts.keep_agency(db, user, troupe, agency, body.name, body.description, body.colour)
     db.commit()
     return agency_out(agency)

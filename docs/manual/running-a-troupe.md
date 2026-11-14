@@ -18,7 +18,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Show the setting on the troupe's profile | Yes | Yes | No | No |
 | Read and keep the story bible | Yes | Yes | Yes | No |
 | Tag scenes and quests with the setting's themes and moods, and see which are touched | Yes | Yes | Yes | No |
-| Set up connectors (Discord, email) and choose the Discord channels for news and announcements | Yes | Yes | No (can read them) | No |
+| Set up connectors (Discord, email) and choose the Discord channels for news, announcements and news agencies | Yes | Yes | No (can read them) | No |
 | Edit the troupe's profile, add games to the schedule | Yes | Yes | No | No |
 | See character sheets, the Characters list and the Players list | Yes | Yes | Yes | No |
 | Decide approvals, give exceptions, read backstories | Yes | Yes | Yes | No |
@@ -328,14 +328,15 @@ Each story is one-off: there are no repeating stories. For a regular bulletin, *
 **Customise › News agencies** lists the troupe's agencies. Storytellers and assistant storytellers keep them. **Add an agency** asks for:
 
 - its **Name**, and a line of **Description** for staff;
-- its **Masthead colour**, shown behind its name, beside its stories and down the side of its Discord posts;
-- its own **Discord channel**, if it should post somewhere other than the troupe's news channel (storytellers only).
+- its **Masthead colour**, shown behind its name, beside its stories and down the side of its Discord posts.
+
+An agency's stories go to the troupe's news channel on Discord, unless it has a channel of its own. Both are chosen under **Customise › Connectors** (see [The news channel on Discord](#the-news-channel-on-discord)). Where an agency has its own channel, the list names it, with **Change in Connectors**.
 
 Its **⋯** has **Edit…**, **Masthead picture…** (a nameplate or logo shown in place of its name) and **Retire**. A retired agency is no longer offered for new stories; its old stories stay, and **Bring back** returns it.
 
 ### The news channel on Discord
 
-Under **News on Discord** on the same tab, a storyteller picks **The troupe's news channel** from the connected server's text channels. Stories from agencies without a channel of their own go there. With no Discord server connected, or no channel chosen, news is in the app only, and the desk says so beside each story. The server is connected under [Connectors](#connectors-discord-and-email); the switches there for downtime results (on or off, test mode, alert or full) don't apply to news.
+Under Discord on **Customise › Connectors**, **Channels for the whole troupe** holds the troupe's own channels (see [Connectors](#connectors-discord-and-email)). There a storyteller picks **The troupe's news channel** from the connected server's text channels. Stories from agencies without a channel of their own go there. Under **Each news agency's channel**, a storyteller gives an agency a channel of its own instead, or sets it back to **The troupe's news channel**. With no Discord server connected, or no channel chosen, news is in the app only, and the desk says so beside each story. The Discord switches for downtime results (on or off, test mode, alert or full) don't apply to news.
 
 ### Writing a story
 
@@ -399,7 +400,7 @@ The email carries the whole announcement, in the site's email design: its title,
 
 ### Announcements on Discord
 
-Under **Customise › News agencies**, **Announcements on Discord** picks the troupe's announcements channel, separately from the news channel. An announcement goes there as a plain embed with its title, byline, message (split over several posts if it's long), picture and a **Read in Horatio** link. Editing it edits the post, and unpublishing deletes it. With no Discord server connected, or no announcements channel chosen, it's in the app only, and the desk says so.
+Under Discord on **Customise › Connectors**, in **Channels for the whole troupe**, **The troupe's announcements channel** picks where announcements go, separately from the news channel. An announcement goes there as a plain embed with its title, byline, message (split over several posts if it's long), picture and a **Read in Horatio** link. Editing it edits the post, and unpublishing deletes it. With no Discord server connected, or no announcements channel chosen, it's in the app only, and the desk says so.
 
 Publishing, editing a published announcement, pinning and unpinning, unpublishing and using Important go in the [troupe log](#the-troupe-log).
 
@@ -787,7 +788,7 @@ Choose **Add a written rule**, then give it a **Title**, a **Section** (such as 
 
 A connector the server isn't set up for says so; ask the custodian, who sets it up as in [Setting up Discord and email](custodian.md#setting-up-discord-and-email).
 
-The Discord channels for the troupe's news and its announcements are chosen apart from these, under **Customise › News agencies** (see [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord)).
+Once a Discord server is connected, **Channels for the whole troupe**, under Discord, chooses where Horatio posts for everyone in the troupe: **The troupe's news channel**, **The troupe's announcements channel**, and under **Each news agency's channel**, any agency's own. Each is saved as soon as you choose it, without **Save**, and the switches for downtime results don't apply to them. Storytellers choose them; assistant storytellers can read them. See [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord).
 
 #### Adding the Horatio bot
 
@@ -884,7 +885,7 @@ Back under Discord on **Customise › Connectors**:
 
 Where a channel's name matches a character's, Horatio suggests it: **Suggested: #agnes-wren**, with **Use** to take it. Case, spaces, dashes, underscores and accents don't matter, so `#agnes-wren`, `#Agnes_Wren` and `#agnès-wren` all match Agnes Wren. A channel named for the first name alone, such as `#agnes`, matches too, as long as no other character shares it; and a private channel is suggested before one everyone can see. **Use the suggestions** takes them all at once. Nothing is chosen until you use a suggestion and save.
 
-![Customise › Connectors: Discord connected, with the test channel, each character's channel, and a suggestion to use.](images/running-a-troupe/connectors-discord.png)
+![Customise › Connectors: Discord connected, with the troupe's news, announcements and agency channels, the test channel, each character's channel, and a suggestion to use.](images/running-a-troupe/connectors-discord.png)
 
 The list above the characters names any with no channel yet. They still get their results in Horatio, and by email if it's on, but nothing on Discord until one is chosen. Delivering a cycle warns of them too (see [Delivering results](#delivering-results)).
 

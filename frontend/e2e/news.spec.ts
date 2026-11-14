@@ -43,8 +43,8 @@ test("news: a storyteller makes an agency and schedules a story, it goes out, an
   await dialog.getByLabel("Description (optional)").fill("The city's late paper.");
   await dialog.getByRole("button", { name: "Add the agency" }).click();
   await expect(l.getByRole("table", { name: "News agencies" }).getByText("The Evening Gazette", { exact: true })).toBeVisible();
-  // No Discord server: news is in the app only, and the page says so.
-  await expect(l.getByText(/News is in the app only until a Discord server is connected/)).toBeVisible();
+  // Its Discord channel, and the troupe's news channel, are chosen under Connectors › Discord (#882).
+  await expect(l.getByRole("link", { name: "Connectors › Discord" })).toHaveAttribute("href", `/troupes/${troupe.id}/connectors`);
 
   // It writes a story on the News tab and schedules it for the next minute.
   await l.goto(`/troupes/${troupe.id}`);
