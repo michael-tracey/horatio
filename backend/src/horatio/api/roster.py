@@ -622,6 +622,7 @@ MESSAGES: dict[str, str] = {
     "scene.created": "{actor} made the scene {name}.",
     "scene.renamed": "{actor} renamed the scene {old} to {name}.",
     "scene.removed": "{actor} removed the scene {name}.",
+    "scene.tagged": "{actor} tagged the scene {name}: {tags}.",
     "scene.cleared": "{actor} removed the scenes not used since {since}: {count}.",
     "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
     "troupe.splats_limited": "{actor} set which splats may join: {splats}.",

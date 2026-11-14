@@ -236,6 +236,50 @@ test("a character's quests for staff: the lead storyteller opens Morgan, sees th
   await expect(l.getByRole("button", { name: "Send scenario 1's result" })).toBeVisible();
 });
 
+test("staff tag a quest with the setting's themes and moods, the Setting tab lists it under each, and removing a theme takes its tag off (#880)", async ({ browser }) => {
+  const custodian = await person(browser, "questtag-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "questtag-lead");
+  await custodian.page.reload();
+  const headers = { "X-Horatio": "1" };
+  const send = async (p: Page, method: "POST" | "PUT" | "DELETE", url: string, data: object = {}) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const troupeId = (await send(custodian.page, "POST", "/api/troupes", { name: `Tagged Quests Court ${run}`, lead_handle: lead.handle })).id;
+  const l = lead.page;
+  await send(l, "PUT", `/api/troupes/${troupeId}/quest-settings`, { enabled: true, requests_per_cycle: 1 });
+  const setting = await send(l, "POST", `/api/troupes/${troupeId}/setting/entries`, { kind: "theme", name: "Revenge", description: "" });
+  await send(l, "POST", `/api/troupes/${troupeId}/setting/entries`, { kind: "mood", name: "Desperate", description: "" });
+  const revenge: string = setting.themes[0].id;
+  const quest = await send(l, "POST", `/api/troupes/${troupeId}/quests`, { name: "The Burned Chantry" });
+
+  // In the quest's overview, the lead tags it with both.
+  await l.goto(`/troupes/${troupeId}/quests/${quest.id}`);
+  const tags = l.getByRole("group", { name: "Themes and moods" });
+  await tags.getByRole("button", { name: "Tag it" }).click();
+  await tags.getByRole("button", { name: "Revenge" }).click();
+  await tags.getByRole("button", { name: "Desperate" }).click();
+  await tags.getByRole("button", { name: "Save tags" }).click();
+  await expect(tags.getByRole("button", { name: "Change tags" })).toBeVisible();
+  await expect(tags).toContainText("Revenge");
+  await expect(tags).toContainText("Desperate");
+  await expect(l.getByText("questtag-lead tagged it: Revenge, Desperate")).toBeVisible();
+
+  // The Setting tab lists it under each, as a link back to it.
+  await l.goto(`/troupes/${troupeId}/setting`);
+  const touched = l.getByRole("list", { name: "Themes and moods touched" });
+  await expect(touched.getByRole("listitem", { name: "Revenge" })).toContainText("1 quest");
+  await expect(touched.getByRole("listitem", { name: "Desperate" }).getByRole("link", { name: "The Burned Chantry" })).toHaveAttribute("href", `/troupes/${troupeId}/quests/${quest.id}`);
+
+  // Removing the theme from the setting takes its tag off the quest.
+  await send(l, "DELETE", `/api/troupes/${troupeId}/setting/entries/${revenge}`);
+  await l.goto(`/troupes/${troupeId}/quests/${quest.id}`);
+  await expect(l.getByRole("group", { name: "Themes and moods" })).toContainText("Desperate");
+  await expect(l.getByRole("group", { name: "Themes and moods" })).not.toContainText("Revenge");
+});
+
 test("quests in downtime: a Quest action joins a Downtime Only quest, one result answers both members, and it goes out with the delivery", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "qdt-custodian");

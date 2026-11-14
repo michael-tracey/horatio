@@ -6728,6 +6728,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quests/{quest_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Tag Quest
+         * @description Tag the quest with these of the troupe's themes and moods, and no others: its
+         *     running staff, while it is open or after it ends.
+         */
+        put: operations["tag_quest_api_quests__quest_id__tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quests/{quest_id}/tale": {
         parameters: {
             query?: never;
@@ -11849,6 +11870,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/scenes/{scene_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Tag Scene
+         * @description Tag the scene with these of the troupe's themes and moods, and no others.
+         */
+        put: operations["tag_scene_api_troupes__troupe_id__scenes__scene_id__tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/seats": {
         parameters: {
             query?: never;
@@ -11975,6 +12016,27 @@ export interface paths {
          *     storytellers switch it on. A public profile shows it to anyone at all.
          */
         put: operations["show_setting_on_profile_api_troupes__troupe_id__setting_public_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/setting/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Motif Tags
+         * @description For running staff: every theme, then every mood, of the troupe's Setting Style
+         *     Document, each with the scenes and quests tagged with it.
+         */
+        get: operations["read_motif_tags_api_troupes__troupe_id__setting_tags_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -25548,6 +25610,52 @@ export interface components {
             /** Value */
             value: number;
         };
+        /**
+         * MotifTagOut
+         * @description A theme or mood a scene or quest is tagged with.
+         */
+        MotifTagOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "theme" | "mood";
+            /** Name */
+            name: string;
+        };
+        /** MotifTagsIn */
+        MotifTagsIn: {
+            /** Ids */
+            ids: string[];
+        };
+        /**
+         * MotifTouchedOut
+         * @description A theme or mood, with the scenes and quests tagged with it: none for one
+         *     nothing has touched yet.
+         */
+        MotifTouchedOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "theme" | "mood";
+            /** Name */
+            name: string;
+            /** Quests */
+            quests: components["schemas"]["TaggedQuestOut"][];
+            /** Scenes */
+            scenes: components["schemas"]["TaggedSceneOut"][];
+        };
         /** MoveIn */
         MoveIn: {
             /** Handle */
@@ -29566,6 +29674,11 @@ export interface components {
             /** Can Send */
             can_send: boolean;
             /**
+             * Can Tag
+             * @default false
+             */
+            can_tag: boolean;
+            /**
              * Category
              * @enum {string}
              */
@@ -29619,6 +29732,11 @@ export interface components {
             staff_notes: string;
             /** Status */
             status: string;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: components["schemas"]["MotifTagOut"][];
             /** Tale */
             tale: string;
             /** Tale Approved */
@@ -31354,6 +31472,11 @@ export interface components {
             name: string;
             /** Stock */
             stock: components["schemas"]["StockPin"][];
+            /**
+             * Tags
+             * @default []
+             */
+            tags: components["schemas"]["MotifTagOut"][];
         };
         /** SceneSummary */
         SceneSummary: {
@@ -33687,6 +33810,28 @@ export interface components {
         TableOut: {
             /** Entries */
             entries: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** TaggedQuestOut */
+        TaggedQuestOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+        };
+        /** TaggedSceneOut */
+        TaggedSceneOut: {
             /**
              * Id
              * Format: uuid
@@ -49555,6 +49700,41 @@ export interface operations {
             };
         };
     };
+    tag_quest_api_quests__quest_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MotifTagsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     staff_tale_api_quests__quest_id__tale_put: {
         parameters: {
             query?: never;
@@ -59846,6 +60026,42 @@ export interface operations {
             };
         };
     };
+    tag_scene_api_troupes__troupe_id__scenes__scene_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                scene_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MotifTagsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_seats_api_troupes__troupe_id__seats_get: {
         parameters: {
             query?: never;
@@ -60138,6 +60354,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_motif_tags_api_troupes__troupe_id__setting_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotifTouchedOut"][];
                 };
             };
             /** @description Validation Error */

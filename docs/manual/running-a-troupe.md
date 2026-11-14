@@ -17,6 +17,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Write the setting: its teaser, scope, themes, moods and storyteller notes (Troupe settings) | Yes | Yes | Yes | No |
 | Show the setting on the troupe's profile | Yes | Yes | No | No |
 | Read and keep the story bible | Yes | Yes | Yes | No |
+| Tag scenes and quests with the setting's themes and moods, and see which are touched | Yes | Yes | Yes | No |
 | Set up connectors (Discord, email) and choose the Discord channels for news, announcements and news agencies | Yes | Yes | No (can read them) | No |
 | Edit the troupe's profile, add games to the schedule | Yes | Yes | No | No |
 | See character sheets, the Characters list and the Players list | Yes | Yes | Yes | No |
@@ -440,7 +441,7 @@ The troupe's house options for locations are under [Location rules](#location-ru
 - **Requests**: players' quest requests, shown by **To answer**, **Unassigned**, **Assigned to me**, **Any narrator**, **Waiting to send** and **Answered**. Assign a request to a staff member or any narrator, then answer it, for example with **Build a quest** or **Build a location quest**.
 - **Quests**: the quests themselves, being built and under way. A quest has requirements and scenarios, and Horatio keeps track as the party meets them.
 
-Narrators see the requests and quests assigned to them; storytellers and assistant storytellers see them all. A merit or flaw request can also be answered with a quest (see [Merit and flaw requests](#merit-and-flaw-requests)).
+Narrators see the requests and quests assigned to them; storytellers and assistant storytellers see them all. Storytellers and assistant storytellers can tag a quest with the setting's themes and moods, at any point in its life (see [Theme and mood tags](#theme-and-mood-tags)). A merit or flaw request can also be answered with a quest (see [Merit and flaw requests](#merit-and-flaw-requests)).
 
 On a character's page, its home troupe's storytellers and assistant storytellers, and the custodian, also have a **Quests** tab, beside **Projects**, while the troupe runs quests. It shows the quests the character leads or has joined, those still being built too, with how many of each one's requirements are met, and the character's quest requests and how they were answered. Open a quest for its objective, party, each requirement (met or not, and by whom) and its results so far, including any not yet sent. Nothing changes there: **Manage it in the troupe's Quests** opens it under **Downtimes › Quests**. On your own character there is one **Quests** tab, the player's, where you ask for a quest.
 
@@ -526,6 +527,12 @@ The rest of the document is built from the troupe's own settings, so it's never 
 Every member reads the whole document on the troupe's **Setting** tab, beside **Overview**; running staff see an edit link beside each built part. **Print it** opens it black on white for the Storyteller table. Under **Where players read it**, storytellers can tick **Show it on the troupe's profile**, as written rules can be; a public profile then shows it to anyone. A character built to the troupe's rules shows its themes, moods and teaser on the wizard's Concept step, with a link to the whole document.
 
 When you change the document, the troupe's players hear of it in the bell, with what changed ("The setting changed: the theme Betrayal added; the teaser rewritten."), and the notice opens the **Setting** tab. A sitting's changes make one notice: each change within half an hour of the last joins the player's unread notice rather than making another. The parts you write count, as do the chronicle's name and city on the profile, the sects that may join, clan rarity and the New Character Incentive. Prices, house merits, checks and the other house rules don't: players read those on the **House rules** tab. Whoever makes a change isn't told of it, and showing the document on the profile tells no one.
+
+#### Theme and mood tags
+
+To see which themes and moods the chronicle is actually touching, tag your [scenes](#scenes) and [quests](#quests) with them: **Tag it** (or **Change tags**) under a scene's name, or in a quest's overview, picks from the troupe's themes and moods. Storytellers and assistant storytellers tag; narrators see a quest's tags but don't change them. Players never see tags, and tagging changes nothing in the document they read.
+
+Below the document on the **Setting** tab, **Themes and moods touched** lists every theme, then every mood, with how many scenes and quests are tagged with it and links to them. Those nothing is tagged with yet say **Not touched yet**. Removing a theme or mood removes its tags; so does removing a scene.
 
 #### The story bible
 
@@ -1259,6 +1266,7 @@ If an award takes a character past the monthly figure, Horatio warns you (or, wi
 - Scenes are kept for the troupe: every storyteller and assistant storyteller sees them all and can put characters in any.
 - A scene's maker, or the lead storyteller, renames or removes it. Removing a scene leaves its characters as they are.
 - The lead can clear **Old scenes** not used since a date.
+- Tag a scene with the setting's themes and moods, for staff only (see [Theme and mood tags](#theme-and-mood-tags)).
 
 ### Scenes at a game with no signal
 

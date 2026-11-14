@@ -31552,6 +31552,98 @@
         "title": "Morality",
         "type": "object"
       },
+      "MotifTagOut": {
+        "description": "A theme or mood a scene or quest is tagged with.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "theme",
+              "mood"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name"
+        ],
+        "title": "MotifTagOut",
+        "type": "object"
+      },
+      "MotifTagsIn": {
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "MotifTagsIn",
+        "type": "object"
+      },
+      "MotifTouchedOut": {
+        "description": "A theme or mood, with the scenes and quests tagged with it: none for one\nnothing has touched yet.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "theme",
+              "mood"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quests": {
+            "items": {
+              "$ref": "#/components/schemas/TaggedQuestOut"
+            },
+            "title": "Quests",
+            "type": "array"
+          },
+          "scenes": {
+            "items": {
+              "$ref": "#/components/schemas/TaggedSceneOut"
+            },
+            "title": "Scenes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "scenes",
+          "quests"
+        ],
+        "title": "MotifTouchedOut",
+        "type": "object"
+      },
       "MoveIn": {
         "properties": {
           "handle": {
@@ -41288,6 +41380,11 @@
             "title": "Can Send",
             "type": "boolean"
           },
+          "can_tag": {
+            "default": false,
+            "title": "Can Tag",
+            "type": "boolean"
+          },
           "category": {
             "enum": [
               "simple",
@@ -41467,6 +41564,14 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MotifTagOut"
+            },
+            "title": "Tags",
+            "type": "array"
           },
           "tale": {
             "title": "Tale",
@@ -46097,6 +46202,14 @@
               "$ref": "#/components/schemas/StockPin"
             },
             "title": "Stock",
+            "type": "array"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MotifTagOut"
+            },
+            "title": "Tags",
             "type": "array"
           }
         },
@@ -52152,6 +52265,49 @@
           "id"
         ],
         "title": "TableOut",
+        "type": "object"
+      },
+      "TaggedQuestOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "title": "TaggedQuestOut",
+        "type": "object"
+      },
+      "TaggedSceneOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TaggedSceneOut",
         "type": "object"
       },
       "TakeBackEquipmentIn": {
@@ -79665,6 +79821,60 @@
         ]
       }
     },
+    "/api/quests/{quest_id}/tags": {
+      "put": {
+        "description": "Tag the quest with these of the troupe's themes and moods, and no others: its\nrunning staff, while it is open or after it ends.",
+        "operationId": "tag_quest_api_quests__quest_id__tags_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MotifTagsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tag Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
     "/api/quests/{quest_id}/tale": {
       "put": {
         "description": "Edit the tale, and approve it as the official account.",
@@ -96270,6 +96480,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/scenes/{scene_id}/tags": {
+      "put": {
+        "description": "Tag the scene with these of the troupe's themes and moods, and no others.",
+        "operationId": "tag_scene_api_troupes__troupe_id__scenes__scene_id__tags_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MotifTagsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tag Scene",
+        "tags": [
+          "scenes"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/seats": {
       "get": {
         "description": "Which clans have a seat at the troupe's court, and which it could seat.",
@@ -96734,6 +97008,54 @@
           }
         },
         "summary": "Show Setting On Profile",
+        "tags": [
+          "setting style"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setting/tags": {
+      "get": {
+        "description": "For running staff: every theme, then every mood, of the troupe's Setting Style\nDocument, each with the scenes and quests tagged with it.",
+        "operationId": "read_motif_tags_api_troupes__troupe_id__setting_tags_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MotifTouchedOut"
+                  },
+                  "title": "Response Read Motif Tags Api Troupes  Troupe Id  Setting Tags Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Motif Tags",
         "tags": [
           "setting style"
         ]
