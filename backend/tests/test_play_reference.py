@@ -14,13 +14,16 @@ from horatio.models import CharacterTrait, TraitCategory, TraitDefinition
 from horatio.reference import (
     TRACKED,
     Cost,
+    Owner,
     Sheet,
+    _switch,
     actives,
     catalogue,
     cost,
     damage_effects,
     effects,
     forms_at_once,
+    option_switches,
     other_powers,
     own_tests,
     pools,
@@ -398,13 +401,15 @@ def test_luminary_powers_switch_on_forms_blood_health_and_a_frenzy() -> None:
     ghost = found["Ghost Body"]
     assert (ghost.form, ghost.origin, ghost.page) == (True, "Protean: Ghost Body", "Vol. 2, p. 233")
     assert found["Awaken the Heartsblood"].blood_per_turn == 2
-    assert [(h.level, h.boxes) for h in found["Mythic Form: Tough"].health] == [("Healthy", 4)]
-    assert not found["Mythic Form: Tough"].form
+    # Mythic Form's qualities are its own options, picked each use (issue #821).
+    tough = found["Mythic Form/Tough"]
+    assert [(h.level, h.boxes) for h in tough.health] == [("Healthy", 4)]
+    assert (tough.form, tough.option_of) == (False, "Mythic Form")
 
     made = {p.key: p for p in pools(sheet, worked.effects, worked.hurts, worked.switches)}
     on = [(s.switch, s.value) for s in made["attack:Brawl"].switched]
     assert ("Embrace the Beast", 1) in on and ("Embrace the Beast", 2) in on
-    assert ("Mythic Form: Vicious", 3) in on
+    assert ("Mythic Form/Vicious", 3) in on
     assert ("Embrace the Beast", -2) in [(s.switch, s.value) for s in made["dodge"].switched]
     physical = made["defense:Physical"].switched
     assert [(s.switch, s.value) for s in physical] == [("Embrace the Beast", -2)]
@@ -1176,6 +1181,18 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
             # Each quality it gives is one the equipment rules have (#820).
             for q in a.get("qualities", []):
                 assert (q["kind"], q["name"]) in rule_set.equipment.qualities, (e["name"], q)
+            # Its own options (issue #821): named without "/", which their keys use,
+            # from a page, with the qualities and kinds the equipment rules have.
+            picks = a.get("picks", {})
+            for kind in [*([picks["kind"]] if "kind" in picks else []), *picks.get("kinds", [])]:
+                assert rule_set.equipment.qualities_of(kind), (e["name"], kind)
+            for name in picks.get("only", []):
+                assert (picks["kind"], name) in rule_set.equipment.qualities, (e["name"], name)
+            for o in picks.get("options", []):
+                assert o["name"] and "/" not in o["name"], e["name"]
+                assert o.get("page", a["page"]) > 0, (e["name"], o["name"])
+                for q in o.get("qualities", []):
+                    assert (q["kind"], q["name"]) in rule_set.equipment.qualities, (e["name"], q)
     for category, name in book.others:
         assert (category, name) in rule_set.traits, name
 
@@ -1494,3 +1511,130 @@ def test_the_reference_sends_a_powers_uses(troupe: Troupe) -> None:
     wind = next(o for o in found["other_powers"] if o["name"] == "Second Wind")
     said = [(u["label"], u["convert_all"]) for u in wind["uses"]]
     assert said == [("Aggravated to normal", True)]
+
+
+# --- A power's own options, picked each use (issue #821) ----------------------
+
+
+def test_mantle_of_atiras_qualities_are_options_doubled_by_manipulation() -> None:
+    """Mantle of Atira (Vol. 2 p. 82): two of six qualities picked each use, each a
+    switch of its own while picked; the Manipulation focus doubles their bonuses."""
+
+    def mantle(focuses: set[str]) -> tuple[Any, dict[str, Any]]:
+        sheet = Sheet(
+            ratings={("attributes", "Physical"): 3, ("skills", "Dodge"): 2},
+            focuses=focuses,
+            disciplines={"Spiritus": 4},
+        )
+        worked = work_out(sheet, {})
+        switch = by_key(worked.switches)["Mantle of Atira"]
+        made = {p.key: p for p in pools(sheet, worked.effects, worked.hurts, worked.switches)}
+        return switch, made
+
+    switch, made = mantle(set())
+    assert switch.picks.count == 2
+    assert [o.name for o in switch.picks.options] == [
+        "Bear Strength",
+        "Stride of the Gazelle",
+        "Falcon's Eye",
+        "Speed of the Hare",
+        "Agility of the Fox",
+        "Chameleon Camouflage",
+    ]
+    assert [(s.switch, s.value) for s in made["dodge"].switched] == [
+        ("Mantle of Atira/Agility of the Fox", 1)
+    ]
+    assert ("Mantle of Atira/Speed of the Hare", 1) in [
+        (s.switch, s.value) for s in made["initiative"].switched
+    ]
+    stride = next(o for o in switch.picks.options if o.name == "Stride of the Gazelle")
+    assert stride.note.startswith("1 step more")
+
+    switch, made = mantle({"Manipulation"})
+    assert [(s.switch, s.value) for s in made["dodge"].switched] == [
+        ("Mantle of Atira/Agility of the Fox", 2)
+    ]
+    stride = next(o for o in switch.picks.options if o.name == "Stride of the Gazelle")
+    assert stride.note.startswith("2 steps more")
+
+
+def test_options_follow_a_focus_traits_that_add_them_and_a_flaw_that_hides_them() -> None:
+    """The shape Bonecraft and Malleable Visage (#812, #813) need: a count the
+    Manipulation focus raises, options another trait adds (Bonecraft Prodigy, Vol. 2
+    Issue 1 p. 61), options Tzimisce: Scar Tissue rules out (Vol. 2 p. 278), and one
+    that a form doesn't pause (Second Stomach)."""
+    active = {
+        "key": "Bonecraft",
+        "page": 168,
+        "normal_form_only": True,
+        "picks": {
+            "count": 1,
+            "focus_count": {"Manipulation": 2},
+            "options": [
+                {"name": "Tough", "health": [{"level": "Healthy", "boxes": 2}]},
+                {"name": "Crippled", "note": "On another only."},
+                {
+                    "name": "Second Stomach",
+                    "page": 61,
+                    "book": "Vol. 2 Issue 1",
+                    "from": "Bonecraft Prodigy",
+                    "normal_form_only": False,
+                    "blood": {"most": "half"},
+                },
+                {"name": "Extra Limbs", "hidden_by": "Tzimisce: Scar Tissue"},
+            ],
+        },
+    }
+
+    def picked(ratings: dict[tuple[str, str], int], focuses: set[str]) -> Any:
+        sheet = Sheet(ratings=ratings, focuses=focuses, disciplines={"Vicissitude": 3})
+        owner = Owner({"name": "Bonecraft"}, "Bonecraft", "Vicissitude 3")
+        return _switch(owner, active, sheet)
+
+    plain = picked({}, set())
+    assert plain.picks is not None and plain.picks.count == 1
+    assert [o.name for o in plain.picks.options] == ["Tough", "Crippled", "Extra Limbs"]
+    assert plain.picks.options[0].key == "Bonecraft/Tough"
+    assert plain.picks.options[0].page == "p. 168"
+
+    prodigy = picked(
+        {("techniques", "Bonecraft Prodigy"): 1, ("flaws", "Tzimisce: Scar Tissue"): 3},
+        {"Manipulation"},
+    )
+    assert prodigy.picks is not None and prodigy.picks.count == 2
+    assert [o.name for o in prodigy.picks.options] == ["Tough", "Crippled", "Second Stomach"]
+    stomach = prodigy.picks.options[2]
+    assert stomach.page == "Vol. 2 Issue 1, p. 61"
+
+    found = by_key(option_switches(prodigy))
+    assert set(found) == {"Bonecraft/Tough", "Bonecraft/Crippled", "Bonecraft/Second Stomach"}
+    assert found["Bonecraft/Tough"].normal_form_only
+    assert [(h.level, h.boxes) for h in found["Bonecraft/Tough"].health] == [("Healthy", 2)]
+    assert not found["Bonecraft/Second Stomach"].normal_form_only
+    assert found["Bonecraft/Second Stomach"].blood_half
+    assert found["Bonecraft/Crippled"].notes == ["On another only."]
+    assert {s.option_of for s in found.values()} == {"Bonecraft"}
+
+
+def test_blood_tempering_and_assimilate_switch_on_from_their_pages() -> None:
+    """Blood Tempering (Vol. 2 Issue 1 pp. 60-61): one of four applications each use;
+    Assimilate (Vol. 2 p. 131): the wraith's discipline is a note."""
+    sheet = Sheet(
+        ratings={("techniques", "Blood Tempering"): 1},
+        disciplines={"Necromancy: Path of Soul Bonding": 5},
+    )
+    sheet.others.append(("techniques", "Techniques", "Blood Tempering"))
+    found = by_key(work_out(sheet, {}).switches)
+    tempering = found["Blood Tempering"]
+    assert tempering.page == "Vol. 2 Issue 1, p. 60"
+    assert tempering.picks is not None
+    assert [(o.name, o.page) for o in tempering.picks.options] == [
+        ("Damaged or Old Equipment", "Vol. 2 Issue 1, p. 60"),
+        ("Improvised Weapon", "Vol. 2 Issue 1, p. 61"),
+        ("Incorrect Equipment", "Vol. 2 Issue 1, p. 61"),
+        ("Unbreakable", "Vol. 2 Issue 1, p. 61"),
+    ]
+    assimilate = found["Assimilate"]
+    assert assimilate.page == "Vol. 2, p. 131"
+    assert assimilate.picks is None
+    assert any("wraith's disciplines" in n for n in assimilate.notes)

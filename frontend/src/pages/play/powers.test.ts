@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView, PowerSwitch } from "../../api/types";
-import { addedNote, applyPick, applySwitch, bloodMost, bloodPerTurn, boxes, describePick, describeSwitch, formsOn, healthMost, onKeys, withPicks } from "./powers";
+import { addedNote, applyPick, applySwitch, bloodMost, bloodPerTurn, boxes, countedOptions, describePick, describeSwitch, formsOn, healthMost, onKeys, withPicks } from "./powers";
 import { makeTap, tapToast, trackerName, withPending } from "./tracker";
 
 const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
@@ -28,6 +28,18 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   normal_form_only: false,
   counts_as_form: false,
   paused: false,
+  ...over,
+});
+
+/** What a power picks each use: equipment qualities of a kind, or its own options (#821). */
+const picks = (over: Partial<NonNullable<PowerSwitch["picks"]>>): NonNullable<PowerSwitch["picks"]> => ({
+  kind: null,
+  count: 1,
+  kinds: [],
+  only: [],
+  immune: false,
+  options: [],
+  target: "self",
   ...over,
 });
 
@@ -197,7 +209,7 @@ describe("qualities picked each use (#599)", () => {
     key: "Flesh of Marble",
     name: "Protean: Flesh of Marble",
     form: false,
-    picks: { kind: "protective", count: 2 },
+    picks: picks({ kind: "protective", count: 2 }),
     options: ["Ballistic", "Hardened", "Rugged"].map(option),
   });
 
@@ -265,5 +277,90 @@ describe("a power kept until undone (#822)", () => {
     expect(said).toEqual(["replaces the one on before"]);
     expect(describeSwitch(v, "Heart removed", 1, said)).toBe("Heart of Darkness: heart removed on: replaces the one on before");
     expect(applySwitch(v, "Heart removed", -1)).toEqual([1, 0]);
+  });
+});
+
+describe("a power's own options picked each use (#821)", () => {
+  type Option = NonNullable<PowerSwitch["picks"]>["options"][number];
+  const own = (name: string, over: Partial<Option> = {}): Option => ({
+    name,
+    key: `Mythic Form/${name}`,
+    page: "Vol. 2, p. 234",
+    note: "",
+    health: [],
+    attributes: [],
+    focuses: [],
+    blood_per_turn: 0,
+    blood_half: false,
+    qualities: [],
+    normal_form_only: null,
+    ...over,
+  });
+  const chip = (name: string) => ({ name, play: "", page: "Vol. 2, p. 234", modifiers: [] });
+  const mythic = power({
+    key: "Mythic Form",
+    name: "Protean: Mythic Form",
+    form: false,
+    picks: picks({ count: 2, options: [own("Tough", { health: [{ level: "Healthy", boxes: 4 }] }), own("Agile"), own("Vicious")] }),
+    options: ["Tough", "Agile", "Vicious"].map(chip),
+  });
+
+  it("counts an option picked as a switch on, with its levels after the power's", () => {
+    const v = view([mythic]);
+    applySwitch(v, "Mythic Form", 1);
+    expect(onKeys(v)).toEqual(["Mythic Form"]);
+    applyPick(v, "Mythic Form/Tough", 1);
+    applyPick(v, "Mythic Form/Agile", 1);
+    expect(onKeys(v)).toEqual(["Mythic Form", "Mythic Form/Tough", "Mythic Form/Agile"]);
+    expect(countedOptions(v).map((o) => o.name)).toEqual(["Tough", "Agile"]);
+    const tough = boxes(v).filter((b) => b.option === "Tough");
+    expect(tough).toHaveLength(4);
+    expect(tough.every((b) => b.from?.key === "Mythic Form")).toBe(true);
+  });
+
+  it("takes the damage in a dropped option's levels with them, as the server does", () => {
+    const v = view([mythic]);
+    applySwitch(v, "Mythic Form", 1);
+    applyPick(v, "Mythic Form/Tough", 1);
+    const before = healthMost(v);
+    v.health.marks = Array(before).fill("normal");
+    applyPick(v, "Mythic Form/Agile", 1);
+    const said: string[] = [];
+    applyPick(v, "Mythic Form/Vicious", 1, said);
+    expect(v.powers[0]!.picked).toEqual(["Agile", "Vicious"]);
+    expect(said).toEqual(["dropped Tough (2 at most)", "4 damage in its levels gone"]);
+    expect(healthMost(v)).toBe(before - 4);
+    expect(v.health.marks).toHaveLength(before - 4);
+  });
+
+  it("pauses an option of a power that changes the normal form only while a form is on", () => {
+    const visage = power({
+      key: "Visage",
+      name: "Malleable Visage",
+      form: false,
+      on: true,
+      kept: true,
+      normal_form_only: true,
+      picks: picks({ options: [own("Beauty", { key: "Visage/Beauty", blood_per_turn: 1 }), own("Stomach", { key: "Visage/Stomach", normal_form_only: false, blood_half: true })] }),
+      picked: ["Beauty"],
+      options: ["Beauty", "Stomach"].map(chip),
+    });
+    const beast = { ...fight, on: true };
+    expect(onKeys(view([visage]))).toEqual(["Visage", "Visage/Beauty"]);
+    expect(bloodPerTurn(view([visage]))).toBe(1 + view([]).blood_per_turn);
+    // A form pauses the power and the option it doesn't keep in forms.
+    expect(onKeys(view([visage, beast]))).toEqual(["fight form"]);
+    const stomach = { ...visage, picked: ["Stomach"] };
+    expect(onKeys(view([stomach, beast]))).toEqual(["fight form", "Visage/Stomach"]);
+    expect(bloodMost(view([stomach, beast]))).toBe(view([]).blood_usual + Math.ceil(view([]).blood_usual / 2));
+  });
+
+  it("picks again when a kept power is used again", () => {
+    const visage = power({ key: "Visage", name: "Malleable Visage", form: false, on: true, kept: true, picks: picks({ options: [own("Beauty", { key: "Visage/Beauty" })] }), picked: ["Beauty"], options: [chip("Beauty")] });
+    const v = view([visage]);
+    const said: string[] = [];
+    applySwitch(v, "Visage", 1, said);
+    expect(said).toEqual(["replaces the one on before"]);
+    expect(v.powers[0]!.picked).toEqual([]);
   });
 });

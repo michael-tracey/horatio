@@ -56,9 +56,32 @@ export function counted(view: Pick<PlayView, "powers">): PowerSwitch[] {
   return view.powers.filter((p) => p.on && !isPaused(view, p));
 }
 
-/** The keys of the forms and powers on now whose effects count. */
+/**
+ * One of a power's own options picked (issue #821), such as Mythic Form's Tough: a
+ * switch of its own ("Mythic Form/Tough"), on while it is picked and its power is.
+ */
+export type PickedOption = { key: string; name: string; power: PowerSwitch; health: PowerSwitch["health"]; blood_half: boolean; blood_per_turn: number };
+
+/** A power's own options picked, those of every power on, after the powers themselves, whose effects count now. */
+export function countedOptions(view: Pick<PlayView, "powers">): PickedOption[] {
+  const formOn = view.powers.some((p) => p.on && p.form);
+  const found: PickedOption[] = [];
+  for (const power of view.powers) {
+    if (!power.on) continue;
+    for (const name of power.picked ?? []) {
+      const option = power.picks?.options?.find((o) => o.name === name);
+      if (!option) continue;
+      const pausedByForm = option.normal_form_only ?? power.normal_form_only;
+      if (formOn && pausedByForm) continue;
+      found.push({ key: option.key, name, power, health: option.health, blood_half: option.blood_half, blood_per_turn: option.blood_per_turn });
+    }
+  }
+  return found;
+}
+
+/** The keys of the forms and powers on now whose effects count, and of the options picked for them (#821). */
 export function onKeys(view: Pick<PlayView, "powers">): string[] {
-  return counted(view).map((p) => p.key);
+  return [...counted(view).map((p) => p.key), ...countedOptions(view).map((o) => o.key)];
 }
 
 /** The forms on now: usually none or one, two with Ravenous Conglomeration. */
@@ -66,16 +89,21 @@ export function formsOn(view: Pick<PlayView, "powers">): PowerSwitch[] {
   return view.powers.filter((p) => p.on && p.form);
 }
 
-/** One wound box: its category, and the form it comes from (null for the sheet's own). */
-export type Box = { level: string; from: PowerSwitch | null };
+/**
+ * One wound box: its category, and the form it comes from (null for the sheet's own),
+ * with the option picked for it that adds it (Mythic Form's Tough, issue #821).
+ */
+export type Box = { level: string; from: PowerSwitch | null; option?: string };
 
 /** Every wound box, in the order damage fills them. */
 export function boxes(view: Pick<PlayView, "health" | "powers">): Box[] {
   const found: Box[] = [];
   const on = counted(view);
+  const options = countedOptions(view);
   for (const level of view.health.levels) {
     for (let i = 0; i < level.boxes; i++) found.push({ level: level.name, from: null });
     for (const p of on) for (const h of p.health) if (h.level === level.name) for (let i = 0; i < h.boxes; i++) found.push({ level: level.name, from: p });
+    for (const o of options) for (const h of o.health) if (h.level === level.name) for (let i = 0; i < h.boxes; i++) found.push({ level: level.name, from: o.power, option: o.name });
   }
   return found;
 }
@@ -84,27 +112,35 @@ export const healthMost = (view: Pick<PlayView, "health" | "powers">) => boxes(v
 
 /** The most Blood: half again (rounded up) with Blood of Potency on. */
 export function bloodMost(view: Pick<PlayView, "blood_usual" | "powers">): number {
-  return view.blood_usual + counted(view).filter((p) => p.blood_half).reduce((sum) => sum + Math.ceil(view.blood_usual / 2), 0);
+  const halves = [...counted(view), ...countedOptions(view)].filter((p) => p.blood_half).length;
+  return view.blood_usual + halves * Math.ceil(view.blood_usual / 2);
 }
 
 /** Blood a turn, with what the powers on add. */
 export function bloodPerTurn(view: Pick<PlayView, "blood_per_turn" | "powers">): number {
-  return view.blood_per_turn + counted(view).reduce((sum, p) => sum + p.blood_per_turn, 0);
+  return view.blood_per_turn + [...counted(view), ...countedOptions(view)].reduce((sum, p) => sum + p.blood_per_turn, 0);
+}
+
+/** Take the damage marked in the wound levels these boxes are, as the levels go (Vol. 2 p. 55); how much went. */
+function loseLevels(view: Pick<PlayView, "health" | "powers">, going: (b: Box) => boolean): number {
+  const marks = view.health.marks;
+  const lost = boxes(view)
+    .map((b, i) => (going(b) && i < marks.length ? i : -1))
+    .filter((i) => i >= 0);
+  for (const i of lost.reverse()) marks.splice(i, 1);
+  return lost.length;
 }
 
 function switchOff(view: PlayView, power: PowerSwitch, said: string[]) {
-  const marks = view.health.marks;
-  const lost = boxes(view)
-    .map((b, i) => (b.from?.key === power.key && i < marks.length ? i : -1))
-    .filter((i) => i >= 0);
-  for (const i of lost.reverse()) marks.splice(i, 1);
+  // Its own options picked go with it (#821): their levels are its.
+  const lost = loseLevels(view, (b) => b.from?.key === power.key);
   power.on = false;
   // Using it again means picking again (Vol. 2 p. 232).
   power.picked = [];
   power.turned_on = 0;
   view.blood.most = bloodMost(view);
   view.blood.value = Math.min(view.blood.value, view.blood.most);
-  if (lost.length) said.push(`${lost.length} damage in its levels gone`);
+  if (lost) said.push(`${lost} damage in its levels gone`);
 }
 
 /**
@@ -130,8 +166,13 @@ export function applySwitch(view: PlayView, key: string, amount: number, said: s
   if (!power) return null;
   const before = power.on ? 1 : 0;
   if (amount > 0 && power.on && power.kept) {
-    // Used again: it replaces the one on, as a character carries one at a time (#822).
+    // Used again: it replaces the one on, as a character carries one at a time (#822),
+    // and its options are picked again (#821).
     said.push("replaces the one on before");
+    loseLevels(view, (b) => b.from?.key === power.key && b.option !== undefined);
+    power.picked = [];
+    view.blood.most = bloodMost(view);
+    view.blood.value = Math.min(view.blood.value, view.blood.most);
   } else if (amount > 0 && !power.on) {
     if (power.form) {
       for (const other of formsDisplaced(view, power)) {
@@ -160,19 +201,30 @@ export function describeSwitch(view: Pick<PlayView, "powers">, key: string, amou
  * Pick a quality for a power that is on (amount > 0), or drop it, in `view` (changed
  * in place), as the server does; null for a quality it can't pick.
  */
-export function applyPick(view: Pick<PlayView, "powers">, rest: string, amount: number, said: string[] = []): [number, number] | null {
+export function applyPick(view: PlayView, rest: string, amount: number, said: string[] = []): [number, number] | null {
   const [key, quality] = picking(rest);
   const power = view.powers.find((p) => p.key === key);
   if (!power?.picks || !(power.options ?? []).some((o) => o.name === quality)) return null;
   const now = [...(power.picked ?? [])];
   const before = now.includes(quality) ? 1 : 0;
+  const dropped: string[] = [];
   if (amount > 0 && !before && power.on) {
-    while (now.length && now.length >= power.picks.count) said.push(`dropped ${now.shift()} (${power.picks.count} at most)`);
+    while (now.length && now.length >= power.picks.count) {
+      const gone = now.shift()!;
+      dropped.push(gone);
+      said.push(`dropped ${gone} (${power.picks.count} at most)`);
+    }
     now.push(quality);
   } else if (amount < 0 && before) {
     now.splice(now.indexOf(quality), 1);
+    dropped.push(quality);
   }
+  // A power's own option dropped takes its levels and the damage in them (#821).
+  const lost = dropped.length ? loseLevels(view, (b) => b.from?.key === power.key && b.option !== undefined && dropped.includes(b.option)) : 0;
   power.picked = now;
+  view.blood.most = bloodMost(view);
+  view.blood.value = Math.min(view.blood.value, view.blood.most);
+  if (lost) said.push(`${lost} damage in its levels gone`);
   return [before, now.includes(quality) ? 1 : 0];
 }
 

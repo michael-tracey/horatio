@@ -19,7 +19,7 @@ import { Frenzy } from "./Frenzy";
 import { frenzyNumbers } from "./frenzy";
 import { trackersOf } from "./pools";
 import { KindBadge } from "../character/NpcKindBadge";
-import { bloodPerTurn, boxes, healthMost, onKeys } from "./powers";
+import { bloodPerTurn, boxes, countedOptions, healthMost, onKeys } from "./powers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { PlayBondReports } from "../character/BondReports";
@@ -734,7 +734,7 @@ export function HealthTracker({ view, record }: { view: PlayView; record: Record
                 .map((b, i) => (
                   <span
                     key={i}
-                    title={b.from ? `From ${b.from.name}` : undefined}
+                    title={b.from ? `From ${b.from.name}${b.option ? `: ${b.option}` : ""}` : undefined}
                     aria-label={`${b.mark ? `${b.mark} damage` : "unmarked"}${b.from ? ", from the form" : ""}`}
                     className={cx(
                       "grid h-9 w-9 place-items-center rounded-md border text-lg leading-none",
@@ -754,6 +754,13 @@ export function HealthTracker({ view, record }: { view: PlayView; record: Record
           {p.health.map((h) => `+${h.boxes} ${h.level}`).join(", ")} from {p.name}: they go when it ends, with any damage in them.
         </p>
       ))}
+      {countedOptions(view)
+        .filter((o) => o.health.length > 0)
+        .map((o) => (
+          <p key={o.key} className="mt-2 text-xs text-gold">
+            {o.health.map((h) => `+${h.boxes} ${h.level}`).join(", ")} from {o.power.name}: {o.name}: they go when it's dropped or the power ends, with any damage in them.
+          </p>
+        ))}
       {incapacitated(view) && (
         <p className="mt-2 rounded-md border border-blood/60 bg-blood/15 px-3 py-2 text-sm">
           {view.health.stamina_focus ? "Incapacitated, but a Stamina focus spares you the penalty." : "Incapacitated characters lose their simple action."}

@@ -74,7 +74,7 @@ server had before the item last came to the character no longer counts.
 
 import copy
 import uuid
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -356,6 +356,10 @@ class Limits:
         """The switches on whose effects count now: one that changes the normal form
         only (issue #822) is paused while a form is on (core pp. 168-169)."""
         found = self.on(on)
+        # A power's options picked (issue #821) count after the switches themselves.
+        found = [s for s in found if s.option_of is None] + [
+            s for s in found if s.option_of is not None
+        ]
         if any(s.form for s in found):
             return [s for s in found if not s.normal_form_only]
         return found
@@ -446,9 +450,20 @@ class Limits:
             "uses": {e.key: e.uses for e in self.expendables} | self.retainer_trackers(),
             # Forms and powers switched on: none, as a game starts, but for the
             # effects kept until undone (issue #822).
-            "on": list(dict.fromkeys(k.key for k in self.kept if self.switch(k.key))),
-            # The qualities picked for each power on, by its key.
-            "picked": {},
+            "on": list(
+                dict.fromkeys(
+                    key
+                    for k in self.kept
+                    if self.switch(k.key)
+                    for key in (k.key, *(f"{k.key}/{o}" for o in k.options))
+                    if self.switch(key)
+                )
+            ),
+            # The qualities picked for each power on, by its key: none, but for an
+            # effect kept until undone, which keeps what was picked (issue #821).
+            "picked": {
+                k.key: list(k.options) for k in self.kept if k.options and self.switch(k.key)
+            },
             # Items equipped: as the last game left them.
             "equipped": [list(e) for e in self.equipped],
         }
@@ -658,21 +673,50 @@ def held_items(db: Session, character: Character) -> tuple[HeldItem, ...]:
 def pick_options(
     rules: EquipmentRules, switches: Iterable[reference.Switch]
 ) -> dict[str, tuple[PickOption, ...]]:
-    """What can be picked for each switch with `picks` (issue #599): every quality of
-    its kind in the character's rules, in their order."""
-    return {
-        s.key: tuple(
-            PickOption(
-                name=q.name,
-                play=q.play,
-                page=q.page,
-                modifiers=tuple(equipment.picked_modifiers(rules, q.kind, q.name, s.key)),
+    """What can be picked for each switch with `picks`: every quality of its kinds in
+    the character's rules, in their order (issue #599), or only those it names; or
+    the power's own options (issue #821), each saying what it does. A quality picked
+    to be guarded against (Perfect Stance) changes no pool."""
+    switches = list(switches)
+    changes = {s.key: s.changes for s in switches}
+    found: dict[str, tuple[PickOption, ...]] = {}
+    for s in switches:
+        picks = s.picks
+        if picks is None:
+            continue
+        options: list[PickOption] = []
+        kinds: list[str] = [*([picks.kind] if picks.kind else []), *picks.kinds]
+        for kind in dict.fromkeys(kinds):
+            for q in rules.qualities_of(kind):
+                if picks.only and q.name not in picks.only:
+                    continue
+                options.append(
+                    PickOption(
+                        name=q.name,
+                        play=f"Guarded against: {q.play}" if picks.immune else q.play,
+                        page=q.page,
+                        modifiers=()
+                        if picks.immune
+                        else tuple(equipment.picked_modifiers(rules, q.kind, q.name, s.key)),
+                    )
+                )
+        for o in picks.options:
+            words = [*changes.get(o.key, []), *([o.note] if o.note else [])]
+            options.append(
+                PickOption(
+                    name=o.name,
+                    play="; ".join(dict.fromkeys(words)),
+                    page=o.page,
+                    modifiers=tuple(
+                        m
+                        for q in o.qualities
+                        if (q.kind, q.name) in rules.qualities
+                        for m in equipment.picked_modifiers(rules, q.kind, q.name, s.key)
+                    ),
+                )
             )
-            for q in rules.qualities_of(s.picks.kind)
-        )
-        for s in switches
-        if s.picks is not None
-    }
+        found[s.key] = tuple(options)
+    return found
 
 
 def fixed_qualities(
@@ -683,6 +727,9 @@ def fixed_qualities(
     quality's do. One the character's rules don't have is left out."""
     found: dict[str, tuple[PickOption, ...]] = {}
     for s in switches:
+        if s.option_of is not None:
+            # An option's qualities count while it is picked, as its pick's (issue #821).
+            continue
         given = tuple(
             PickOption(
                 name=known.name,
@@ -946,16 +993,28 @@ def switch_off(
     on: list[str] = state["on"]
     if key not in on:
         return
-    marks: list[str] = state["health"]
-    lost = [i for i, owner in enumerate(limits.boxes(on)) if owner == key and i < len(marks)]
-    for i in reversed(lost):
-        del marks[i]
-    on.remove(key)
+    # Its own options picked go with it (issue #821).
+    going = {key, *(k for k in on if k.startswith(f"{key}/"))}
+    lost = lose_levels(state, limits, going)
+    for k in going:
+        on.remove(k)
     # Using it again means picking its qualities again (Vol. 2 p. 232).
     state.get("picked", {}).pop(key, None)
     state["blood"] = min(state["blood"], limits.blood_most(on))
     if said is not None and lost:
-        said.append(f"{len(lost)} damage in its levels gone")
+        said.append(f"{lost} damage in its levels gone")
+
+
+def lose_levels(state: dict[str, Any], limits: Limits, keys: Collection[str]) -> int:
+    """Take the damage marked in the wound levels these switches add, as the levels go
+    with them (Vol. 2 p. 55), and say how much went."""
+    marks: list[str] = state["health"]
+    lost = [
+        i for i, owner in enumerate(limits.boxes(state["on"])) if owner in keys and i < len(marks)
+    ]
+    for i in reversed(lost):
+        del marks[i]
+    return len(lost)
 
 
 def forms_displaced(
@@ -987,7 +1046,14 @@ def switch(
     found = limits.switch(key)
     if found is not None and found.kept:
         # A kept switch is on while its effect is (horatio.play_effects): what is on
-        # comes from the effects, which the tap started or ended as it arrived.
+        # comes from the effects, which the tap started or ended as it arrived. Used
+        # again, it is a new application, whose options are picked again (issue #821).
+        if amount > 0 and before:
+            options = [k for k in on if k.startswith(f"{key}/")]
+            lose_levels(state, limits, options)
+            for k in options:
+                on.remove(k)
+            state.get("picked", {}).pop(key, None)
         return (0, 1) if amount > 0 else (1, 0)
     if amount > 0 and not before and found is not None:
         if found.form:
@@ -1014,18 +1080,34 @@ def pick(
     now = list(picked.get(switch.key, []))
     before = int(option.name in now)
     count = switch.picks.count if switch.picks else 0
+    dropped: list[str] = []
     if amount > 0 and not before and switch.key in state.get("on", []):
         while now and len(now) >= count:
             gone = now.pop(0)
+            dropped.append(gone)
             if said is not None:
                 said.append(f"dropped {gone} ({count} at most)")
         now.append(option.name)
     elif amount < 0 and before:
         now.remove(option.name)
+        dropped.append(option.name)
     if now:
         picked[switch.key] = now
     else:
         picked.pop(switch.key, None)
+    # A power's own option is a switch of its own, on while picked (issue #821).
+    on: list[str] = state.setdefault("on", [])
+    gone = {k for name in dropped if (k := f"{switch.key}/{name}") in on}
+    if gone:
+        lost = lose_levels(state, limits, gone)
+        for k in gone:
+            on.remove(k)
+        state["blood"] = min(state["blood"], limits.blood_most(on))
+        if said is not None and lost:
+            said.append(f"{lost} damage in its levels gone")
+    added = f"{switch.key}/{option.name}"
+    if option.name in now and added not in on and limits.switch(added) is not None:
+        on.append(added)
     return before, int(option.name in now)
 
 
@@ -1296,6 +1378,8 @@ def reset(db: Session, character: Character, actor: User, *, troupe_id: uuid.UUI
     if game is None or not game_events(db, game):
         return False
     refresh(db, game, limits(db, character, game))
+    # What was picked for an effect kept until undone stays with it (issue #821).
+    play_effects.keep_options(db, character, game.state.get("picked", {}))
     game.ended_at = datetime.now(UTC)
     game.ended_by_id = actor.id
     db.flush()

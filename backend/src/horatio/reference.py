@@ -51,7 +51,7 @@ read here like a book merit's.
 import re
 import tomllib
 from collections import defaultdict
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
@@ -312,16 +312,6 @@ class AddedNote(BaseModel):
     note: str
 
 
-class Picks(BaseModel):
-    """Equipment qualities the player picks each time a switch goes on (issue #599):
-    Flesh of Marble's two Protective Gear qualities (Vol. 2 p. 232). What they do
-    to the pools counts while it is on, as an equipped item's does (horatio.play)."""
-
-    # The kind of equipment they are qualities of: "protective", "melee".
-    kind: str
-    count: int
-
-
 class SwitchQuality(BaseModel):
     """An equipment quality a switch gives while it is on (#820): Armor of Terra's
     Hardened and Ballistic. What it does to the pools counts as a picked quality's
@@ -330,6 +320,54 @@ class SwitchQuality(BaseModel):
     # The kind of equipment it is a quality of: "protective", "melee".
     kind: str
     name: str
+
+
+class SwitchOption(BaseModel):
+    """One of a power's own options, picked each time it is used (issue #821): Mantle
+    of Atira's Bear Strength, Mythic Form's Tough. While its switch is on and it is
+    picked, what it does counts as a switch's does: its `key` ("Mythic Form/Tough") is
+    what a `when` in the powers file names, and it is on while it is picked."""
+
+    name: str
+    # "<switch key>/<name>": a switch of its own, on while picked.
+    key: str
+    page: str
+    # What it does that can't be worked out, in words.
+    note: str = ""
+    health: list[SwitchLevel] = []
+    attributes: list[AttributeChange] = []
+    focuses: list[str] = []
+    blood_per_turn: int = 0
+    blood_half: bool = False
+    # Equipment qualities it gives while picked, counted as a picked quality's are.
+    qualities: list[SwitchQuality] = []
+    # Whether a form pauses it; None follows its switch's.
+    normal_form_only: bool | None = None
+
+
+class Picks(BaseModel):
+    """What the player picks each time a switch goes on: equipment qualities (issue
+    #599: Flesh of Marble's two Protective Gear qualities, Vol. 2 p. 232), whose pool
+    effects count as an equipped item's do (horatio.play), or the power's own options
+    (issue #821: two of Mantle of Atira's qualities, Vol. 2 p. 82), each with what it
+    does. `count` is how many at once, after the focus that raises it."""
+
+    # The kind of equipment they are qualities of: "protective", "melee"; None for a
+    # power whose options are its own.
+    kind: str | None = None
+    count: int
+    # More kinds of equipment whose qualities can be picked (Perfect Stance: any weapon's).
+    kinds: list[str] = []
+    # Only these qualities of the kind (Mortician's Secret: four protective ones).
+    only: list[str] = []
+    # Qualities picked to be guarded against, not had (Perfect Stance, Vol. 2 p. 245):
+    # they change no pool.
+    immune: bool = False
+    # The power's own options, those this sheet can pick.
+    options: list[SwitchOption] = []
+    # Who the power is used on: "self", or "any" for a power that can be used on
+    # another character too, which the effects-on-others ticket (#823) follows.
+    target: str = "self"
 
 
 class Switch(BaseModel):
@@ -373,6 +411,9 @@ class Switch(BaseModel):
     counts_as_form: bool = False
     # Qualities it gives every time, without picking.
     qualities: list[SwitchQuality] = []
+    # For one of a power's own options (issue #821): the key of the switch it is
+    # picked for. It is never shown as a switch of its own: it is on while picked.
+    option_of: str | None = None
 
 
 class Frenzy(BaseModel):
@@ -420,6 +461,11 @@ def actives(entry: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     return [found] if isinstance(found, Mapping) else list(found)  # pyright: ignore[reportUnknownArgumentType]
 
 
+def option_keys(active: Mapping[str, Any]) -> list[str]:
+    """The keys of a switch's own options (issue #821): "Mythic Form/Tough"."""
+    return [f"{active['key']}/{o['name']}" for o in active.get("picks", {}).get("options", [])]
+
+
 def own_tests(entry: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     """An entry's tests that deal damage (issue #600): `test` is one table or a list."""
     found = entry.get("test", [])
@@ -439,7 +485,9 @@ def catalogue() -> Catalogue:
         powers={k: sorted(v, key=lambda p: p["level"]) for k, v in powers.items()},
         attacks={a["skill"]: a for a in raw.get("attacks", [])},
         others={(o["category"], o["name"]): o for o in raw.get("others", [])},
-        switch_keys=frozenset(a["key"] for e in entries for a in actives(e)),
+        switch_keys=frozenset(
+            k for e in entries for a in actives(e) for k in (a["key"], *option_keys(a))
+        ),
         kept_keys=frozenset(a["key"] for e in entries for a in actives(e) if a.get("kept")),
     )
 
@@ -1166,7 +1214,8 @@ def _changes(
             lines.append(f"Against {e.against}: {', '.join(gives)}")
             continue
         if e.when == switch.key and e.amount and not e.note:
-            by = "" if switch.name.startswith(e.source) else f" ({e.source})"
+            own = switch.option_of is not None or switch.name.startswith(e.source)
+            by = "" if own else f" ({e.source})"
             lines.append(f"{_signed(e.amount)} {_pool_words(e.pool)}{by}")
         if e.when == switch.key and e.pool == "frenzy" and e.beast:
             fewer = "fewer" if e.beast < 0 else "more"
@@ -1243,7 +1292,7 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
         focuses=list(active.get("focuses", [])),
         blood_per_turn=blood.get("per_turn", 0),
         blood_half=blood.get("most") == "half",
-        picks=Picks(**active["picks"]) if "picks" in active else None,
+        picks=_picks(owner, active, sheet),
         kept=active.get("kept", False),
         normal_form_only=active.get("normal_form_only", False),
         counts_as_form=active.get("counts_as_form", False),
@@ -1253,6 +1302,112 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
             if holds(q)
         ],
     )
+
+
+def _has(sheet: Sheet, name: str) -> bool:
+    """Whether the sheet holds a trait of this name, in any category."""
+    return any(held == name for _, held in sheet.ratings)
+
+
+def _names(spec: str | Sequence[str] | None) -> list[str]:
+    if spec is None:
+        return []
+    return [spec] if isinstance(spec, str) else list(spec)
+
+
+def _option(
+    active: Mapping[str, Any], o: Mapping[str, Any], holds: Callable[[Any], bool]
+) -> SwitchOption:
+    blood = o.get("blood", {})
+    return SwitchOption(
+        name=o["name"],
+        key=f"{active['key']}/{o['name']}",
+        page=_page({**({"book": active["book"]} if "book" in active else {}), **o})
+        if "page" in o
+        else _page(active),
+        note=o.get("note", ""),
+        health=[
+            SwitchLevel(level=h["level"], boxes=h["boxes"]) for h in o.get("health", []) if holds(h)
+        ],
+        attributes=[
+            AttributeChange(
+                attribute=a["attribute"],
+                amount=a.get("amount", 0),
+                most=a.get("most"),
+                pools=a.get("pools"),
+            )
+            for a in o.get("attributes", [])
+            if holds(a)
+        ],
+        focuses=list(o.get("focuses", [])),
+        blood_per_turn=blood.get("per_turn", 0),
+        blood_half=blood.get("most") == "half",
+        qualities=[
+            SwitchQuality(kind=q["kind"], name=q["name"])
+            for q in o.get("qualities", [])
+            if holds(q)
+        ],
+        normal_form_only=o.get("normal_form_only"),
+    )
+
+
+def _picks(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Picks | None:
+    """What the player picks each time a switch goes on (issues #599, #821): how many,
+    raised by a focus (`focus_count`: Bonecraft's two with Manipulation), and the
+    power's own options this sheet can pick: those its focus and purchase choices
+    allow, those another trait adds (`from`: Bonecraft Prodigy's), less those a trait
+    it has rules out (`hidden_by`: Tzimisce: Scar Tissue, Vol. 2 p. 278)."""
+    spec = active.get("picks")
+    if spec is None:
+        return None
+    holds = lambda e: not isinstance(e, Mapping) or _holds(e, sheet, owner.chosen)  # noqa: E731
+    count = spec.get("count", 1)
+    for focus, more in spec.get("focus_count", {}).items():
+        if focus in sheet.focuses:
+            count = max(count, more)
+    return Picks(
+        kind=spec.get("kind"),
+        count=count,
+        kinds=list(spec.get("kinds", [])),
+        only=list(spec.get("only", [])),
+        immune=spec.get("immune", False),
+        options=[
+            _option(active, o, holds)
+            for o in spec.get("options", [])
+            if holds(o)
+            and all(_has(sheet, n) for n in _names(o.get("from")))
+            and not any(_has(sheet, n) for n in _names(o.get("hidden_by")))
+        ],
+        target=spec.get("target", "self"),
+    )
+
+
+def option_switches(switch: Switch) -> list[Switch]:
+    """A switch's own options as switches of their own (issue #821), each on while it
+    is picked, so what it does counts as any switch's does."""
+    if switch.picks is None:
+        return []
+    return [
+        Switch(
+            key=o.key,
+            name=f"{switch.name}: {o.name}",
+            origin=switch.origin,
+            page=o.page,
+            notes=[o.note] if o.note else [],
+            health=o.health,
+            attributes=o.attributes,
+            focuses=o.focuses,
+            blood_per_turn=o.blood_per_turn,
+            blood_half=o.blood_half,
+            qualities=o.qualities,
+            kept=switch.kept,
+            normal_form_only=(
+                switch.normal_form_only if o.normal_form_only is None else o.normal_form_only
+            ),
+            option_of=switch.key,
+        )
+        for o in switch.picks.options
+    ]
 
 
 def focus_effects(
@@ -1303,6 +1458,8 @@ class Worked:
 
 def work_out(sheet: Sheet, bases: Mapping[str, set[str]]) -> Worked:
     found = [_switch(o, a, sheet) for o in owners(sheet) for a in actives(o.entry)]
+    # A power's own options are switches too, on while picked (issue #821).
+    found += [option for s in list(found) for option in option_switches(s)]
     pools, hurts = effects(sheet, bases), damage_effects(sheet)
     more_pools, more_hurts = focus_effects(sheet, bases, found)
     pools, hurts = pools + more_pools, hurts + more_hurts
