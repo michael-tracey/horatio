@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { BotLacks, FOR_POSTS, FOR_RESULTS, lacking } from "./botPermissions";
+import { BotLacks, FOR_NEWS, FOR_POSTS, FOR_RESULTS, lacking } from "./botPermissions";
 
 describe("the bot's permissions in a channel (#839)", () => {
   it("counts only what that channel's use needs", () => {
@@ -34,6 +34,14 @@ describe("the bot's permissions in a channel (#839)", () => {
     );
     expect(test!.textContent).toBe(
       "The Horatio bot lacks Send Messages in #st-test, so test results sent there will fail. Give it that permission in the channel's settings on Discord.",
+    );
+  });
+
+  it("says a story without Manage Webhooks posts as the bot, not its agency (#883)", () => {
+    expect(lacking(["Manage Webhooks"], FOR_POSTS)).toEqual([]);
+    const { container } = render(<BotLacks channel={{ name: "herald", missing: ["Manage Webhooks"] }} needs={FOR_NEWS} what="its stories" />);
+    expect(container.textContent).toBe(
+      "The Horatio bot lacks Manage Webhooks in #herald, so its stories there post as the Horatio bot, not as their agency. Give it that permission in the channel's settings on Discord.",
     );
   });
 });

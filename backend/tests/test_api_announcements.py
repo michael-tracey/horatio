@@ -410,6 +410,9 @@ def test_announcements_go_to_their_own_discord_channel(
     assert embed["color"] == posts.colour(posts.ANNOUNCEMENT_COLOUR)
     assert f"/troupes/{troupe.id}/announcements/{post}" in embed["url"]
     assert by_channel[OPEN_CHANNEL]["author"] == {"name": "The Boston Herald"}
+    # An announcement posts as the bot; the story as its agency (#883).
+    senders = {m.channel: m.webhook for m in fake_discord.messages.values()}
+    assert senders[TEST_CHANNEL] is None and senders[OPEN_CHANNEL] is not None
 
     # Editing it edits the post; unpublishing deletes it.
     [message_id] = [i for i, m in fake_discord.messages.items() if m.channel == TEST_CHANNEL]

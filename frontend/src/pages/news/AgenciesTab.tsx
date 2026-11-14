@@ -4,12 +4,14 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { AgencyOut, ChannelsOut } from "../../api/types";
 import { ActionMenu, MenuGroup, MenuItem } from "../../components/ActionMenu";
+import { Avatar } from "../../components/Avatar";
 import { Dialog } from "../../components/Dialog";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
-import { BotLacks, FOR_POSTS } from "../troupe/botPermissions";
+import { BotLacks, FOR_NEWS, FOR_POSTS } from "../troupe/botPermissions";
+import { AgencyPortrait } from "./AgencyPortrait";
 import type { Kind } from "./posts";
 import { ACCEPT, MAX_BYTES } from "./PostForm";
 import { useAgencies } from "./queries";
@@ -90,7 +92,7 @@ function channelName(channels: ChannelsOut | undefined, id: string | null): stri
   return found ? `#${found.name}` : "A channel no longer on the server";
 }
 
-type Opened = "edit" | "masthead";
+type Opened = "edit" | "masthead" | "portrait";
 
 function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels: ChannelsOut | undefined; archived: boolean }) {
   const [open, setOpen] = useState<Opened | null>(null);
@@ -102,6 +104,7 @@ function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels
     <tr>
       <td className="py-2.5 pr-3 align-top">
         <span className="flex flex-wrap items-center gap-2">
+          {agency.portrait && <Avatar name={agency.name} picture={agency.portrait} size="xs" />}
           <Masthead agency={agency} small />
           {agency.retired && <Badge>Retired</Badge>}
         </span>
@@ -113,7 +116,7 @@ function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels
       <td className={`${WIDE} py-2.5 pr-3 align-top`}>{about}</td>
       <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>
         {channelName(channels, agency.discord_channel)}
-        <BotLacks channel={channels?.channels.find((c) => c.id === agency.discord_channel)} needs={FOR_POSTS} what="its stories" />
+        <BotLacks channel={channels?.channels.find((c) => c.id === agency.discord_channel)} needs={FOR_NEWS} what="its stories" />
       </td>
       <td className="w-px py-1 text-right align-top">
         {!archived && (
@@ -121,6 +124,7 @@ function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels
             <MenuGroup label="Change">
               <MenuItem onSelect={() => setOpen("edit")}>Edit…</MenuItem>
               <MenuItem onSelect={() => setOpen("masthead")}>Masthead picture…</MenuItem>
+              <MenuItem onSelect={() => setOpen("portrait")}>Portrait…</MenuItem>
             </MenuGroup>
             <MenuGroup label="Retire">
               <MenuItem onSelect={() => retire.mutate(undefined, { onSuccess: () => toast({ message: agency.retired ? `${agency.name} is back.` : `${agency.name} is retired; its stories stay.` }) })}>
@@ -134,6 +138,9 @@ function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels
         </Dialog>
         <Dialog title={`${agency.name}'s masthead`} open={open === "masthead"} onClose={() => setOpen(null)}>
           <MastheadPicture agency={agency} />
+        </Dialog>
+        <Dialog title={`${agency.name}'s portrait`} open={open === "portrait"} onClose={() => setOpen(null)}>
+          <AgencyPortrait agency={agency} />
         </Dialog>
         <ErrorText error={retire.error} />
       </td>

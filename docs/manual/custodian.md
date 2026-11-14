@@ -555,6 +555,10 @@ Then fill in the three settings. All three are needed:
 
 The token and the secret are passwords: anyone who has them can post as your bot. Keep them out of the repository (`production.env` and `.env` aren't committed) and out of chat.
 
+Horatio also uses the client secret to sign the addresses of the pictures it sends to Discord as a message's sender, such as a news agency's portrait: Discord fetches those without signing in, and the signature keeps anyone from making up an address for any other picture. Changing the secret changes those addresses, so pictures on messages already sent may stop showing on Discord.
+
+Each Discord channel a troupe's news stories go to gets one webhook named Horatio, which the bot makes so a story can post as its agency. Horatio keeps the webhook's token in its database, as it must to post through it; disconnecting the troupe's server forgets them (the webhooks stay on Discord, for the server's staff to delete).
+
 ### Email: an SMTP service
 
 Horatio sends email through one SMTP service, from one address of its own; replies to downtime results go to each troupe's storytellers. The same service sends password reset links and the links that confirm a new email address. Any mail provider that offers SMTP works.
