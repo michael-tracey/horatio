@@ -33080,6 +33080,12 @@ export interface components {
              * @default []
              */
             qualities: components["schemas"]["SwitchQuality"][];
+            /**
+             * Target
+             * @default any
+             * @enum {string}
+             */
+            target: "self" | "other" | "any";
         };
         /**
          * SwitchQuality
