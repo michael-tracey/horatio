@@ -14,8 +14,9 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
+from PIL import Image
 from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -23,7 +24,7 @@ from sqlalchemy.orm import Session
 from horatio import audit, delivery, pictures, posts
 from horatio.api.connectors import connector_row
 from horatio.api.discord import ChannelOut
-from horatio.api.pictures import uploads
+from horatio.api.pictures import CropIn, as_fractions, uploads
 from horatio.api.troupe_profiles import read_upload
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.connectors import SendError, discord
@@ -51,6 +52,10 @@ class AgencyOut(BaseModel):
     # Its own Discord channel, or None for the troupe's news channel.
     discord_channel: str | None
     retired: bool
+    # Its portrait (#883), its stories' sender on Discord: add "/48.webp",
+    # "/128.webp", "/512.webp", or "/full.webp" to crop. None: Discord's default.
+    portrait: str | None = None
+    portrait_crop: CropIn | None = None
 
 
 class AgencyIn(BaseModel):
@@ -270,6 +275,8 @@ def agency_out(agency: NewsAgency) -> AgencyOut:
         picture=pictures.post_picture_url(agency.troupe_id, agency.picture_id),
         discord_channel=agency.discord_channel,
         retired=agency.retired_at is not None,
+        portrait=pictures.agency_portrait_url(agency.id, agency.portrait_id),
+        portrait_crop=CropIn(**agency.portrait_crop) if agency.portrait_crop else None,
     )
 
 
@@ -990,3 +997,115 @@ def remove_masthead(agency_id: uuid.UUID, db: DbSession, user: CurrentUser) -> A
     db.commit()
     drop_picture(troupe.id, old)
     return agency_out(agency)
+
+
+# --- an agency's portrait (#883) ---------------------------------------------------------
+
+
+def save_portrait(
+    db: Session,
+    user: User,
+    agency: NewsAgency,
+    image: Image.Image,
+    crop: pictures.Crop | None,
+    action: str,
+) -> None:
+    """Write the portrait's files under a new id, point the agency at them, and only
+    then remove the files they replace. A new id makes a new address, so Discord
+    shows the new portrait on the stories that follow."""
+    root = uploads()
+    old, new = agency.portrait_id, uuid.uuid4()
+    directory = pictures.agency_portrait_dir(root, agency.troupe_id, new)
+    with pictures.writing(directory):
+        pictures.write_agency_portrait(directory, image, crop)
+        box = pictures.square_box(image.width, image.height, crop)
+        agency.portrait_id = new
+        agency.portrait_crop = as_fractions(image.width, image.height, box)
+        audit.record(db, user, action, troupe_id=agency.troupe_id, name=agency.name)
+        db.commit()
+    if old is not None:
+        pictures.remove(pictures.agency_portrait_dir(root, agency.troupe_id, old))
+
+
+@router.post("/agencies/{agency_id}/portrait")
+def upload_agency_portrait(
+    agency_id: uuid.UUID,
+    file: PictureUpload,
+    db: DbSession,
+    user: CurrentUser,
+    crop_x: Annotated[float | None, Form(ge=0, le=1)] = None,
+    crop_y: Annotated[float | None, Form(ge=0, le=1)] = None,
+    crop_size: Annotated[float | None, Form(gt=0, le=1)] = None,
+) -> AgencyOut:
+    """A square portrait, cut like a character's picture, that its stories show on
+    Discord as their sender's. Without a crop, the biggest square in the middle."""
+    agency, _ = own_agency(db, user, agency_id)
+    uploads()
+    image = read_upload(file)
+    crop = (
+        pictures.Crop(crop_x, crop_y, crop_size)
+        if crop_x is not None and crop_y is not None and crop_size is not None
+        else None
+    )
+    save_portrait(db, user, agency, image, crop, "agency.portrait_changed")
+    return agency_out(agency)
+
+
+@router.put("/agencies/{agency_id}/portrait/crop")
+def crop_agency_portrait(
+    agency_id: uuid.UUID, body: CropIn, db: DbSession, user: CurrentUser
+) -> AgencyOut:
+    """Move the portrait's crop, cutting it again from the picture as kept."""
+    agency, _ = own_agency(db, user, agency_id)
+    root = uploads()
+    kept = (
+        pictures.agency_portrait_file(root, agency.troupe_id, agency.portrait_id, "full.webp")
+        if agency.portrait_id
+        else None
+    )
+    if kept is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "The agency has no portrait.")
+    with Image.open(kept) as opened:
+        image = opened.copy()
+    crop = pictures.Crop(body.x, body.y, body.size)
+    save_portrait(db, user, agency, image, crop, "agency.portrait_changed")
+    return agency_out(agency)
+
+
+@router.delete("/agencies/{agency_id}/portrait")
+def remove_agency_portrait(agency_id: uuid.UUID, db: DbSession, user: CurrentUser) -> AgencyOut:
+    """Its stories go on posting under its name, with Discord's default picture."""
+    agency, troupe = own_agency(db, user, agency_id)
+    old, agency.portrait_id, agency.portrait_crop = agency.portrait_id, None, None
+    if old is not None:
+        audit.record(db, user, "agency.portrait_removed", troupe_id=troupe.id, name=agency.name)
+    db.commit()
+    root = pictures.upload_dir()
+    if root is not None and old is not None:
+        pictures.remove(pictures.agency_portrait_dir(root, troupe.id, old))
+    return agency_out(agency)
+
+
+@router.get("/agencies/{agency_id}/portraits/{portrait_id}/{name}", response_class=FileResponse)
+def agency_portrait(
+    agency_id: uuid.UUID, portrait_id: uuid.UUID, name: str, db: DbSession, user: CurrentUser
+) -> FileResponse:
+    """An agency's portrait, for the troupe's members. Discord fetches it from an
+    address of its own (horatio.public_pictures)."""
+    agency = db.get(NewsAgency, agency_id)
+    if agency is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such picture.")
+    troupe = member_troupe(db, user, agency.troupe_id)
+    root = pictures.upload_dir()
+    path = (
+        pictures.agency_portrait_file(root, troupe.id, portrait_id, name)
+        if root and agency.portrait_id == portrait_id
+        else None
+    )
+    if path is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such picture.")
+    return FileResponse(
+        path,
+        media_type="image/webp",
+        headers={"Cache-Control": "private, max-age=31536000, immutable"},
+    )

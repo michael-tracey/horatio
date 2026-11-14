@@ -25,6 +25,10 @@ class NewsAgency(Record):
     # The masthead: its colour, always, and a picture to show in place of the name.
     colour: Mapped[str] = mapped_column(default="#8b1e1e", server_default="#8b1e1e")
     picture_id: Mapped[uuid.UUID | None]
+    # Its portrait (#883): a square picture, cut like a character's, that its stories
+    # show on Discord as their sender's; the crop is as fractions, as a troupe's is.
+    portrait_id: Mapped[uuid.UUID | None]
+    portrait_crop: Mapped[dict[str, float] | None] = mapped_column(JSONB)
     # Its own Discord channel; None posts to the troupe's news channel.
     discord_channel: Mapped[str | None]
     # A retired agency takes no new stories; its old ones stay.
