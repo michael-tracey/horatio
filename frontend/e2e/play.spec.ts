@@ -738,6 +738,58 @@ test("Flesh of Marble: two Protective Gear qualities picked each use, each again
   await expect(qualities).toContainText("(0 picked)");
 });
 
+test("a power's own options: Mythic Form's two qualities picked each use, Tough's levels going when it's dropped (#821)", async ({ browser }) => {
+  const { page: p } = await person(browser, "mythic-wyrm");
+  // A Gangrel luminary (Generation 5) with Protean 5 and Mythic Form (Vol. 2 p. 234).
+  const id = await builtVampire(
+    p,
+    "Tarasque",
+    "Gangrel",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Protean", 2], ["Animalism", 1], ["Fortitude", 1]] },
+    [
+      ["backgrounds", "Generation", 4],
+      ["backgrounds", "Generation", 5],
+      ["disciplines", "Protean", 5],
+      ["luminary_disciplines", "Protean: Mythic Form", 1],
+    ],
+  );
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const row = (name: RegExp) => p.getByRole("main").getByRole("listitem").filter({ hasText: name }).first();
+  const dodge = row(/^Dodge/);
+  await expect(dodge).toBeVisible();
+  const before = Number(await dodge.locator("strong").first().textContent());
+
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await p.getByLabel("Protean: Mythic Form on").check();
+  const qualities = p.getByRole("group", { name: "Protean: Mythic Form: qualities" });
+  await expect(qualities).toContainText("Pick two each use (0 picked).");
+  await qualities.getByRole("button", { name: "Agile" }).click();
+  await expect(p.getByText("Picked Agile for Protean: Mythic Form", { exact: true })).toBeVisible();
+  await expect(qualities).toContainText("Agile: +3 Dodge (Vol. 2, p. 234)");
+  await expect(dodge.locator("strong").first()).toHaveText(String(before + 3));
+  await qualities.getByRole("button", { name: "Tough" }).click();
+  await p.getByRole("dialog", { name: "Forms, powers and modifiers" }).getByRole("button", { name: "Close" }).click();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Protean: Mythic Form (Agile, Tough)");
+
+  // Tough's four Healthy levels are on the tracker while it's picked.
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await expect(p.getByText("+4 Healthy from Protean: Mythic Form: Tough")).toBeVisible();
+  await expect(p.getByLabel("unmarked, from the form")).toHaveCount(4);
+
+  // A third quality drops the oldest: Agile goes, and Dodge with it.
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await qualities.getByRole("button", { name: "Vicious" }).click();
+  await expect(p.getByText("Picked Vicious for Protean: Mythic Form: dropped Agile (2 at most)")).toBeVisible();
+  await expect(dodge.locator("strong").first()).toHaveText(String(before));
+  await qualities.getByRole("button", { name: "Tough" }).click();
+  await expect(p.getByText("Dropped Tough from Protean: Mythic Form", { exact: true })).toBeVisible();
+  await p.getByRole("dialog", { name: "Forms, powers and modifiers" }).getByRole("button", { name: "Close" }).click();
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await expect(p.getByLabel("unmarked, from the form")).toHaveCount(0);
+  await expect(p.getByRole("status")).toHaveText("Saved");
+});
+
 test("timed powers as switches: Armor of Terra's own qualities under Dodge, and Fleshcraft's attack in Combat (#820)", async ({ browser }) => {
   const { page: p } = await person(browser, "terra-flesh");
   // A Gargoyle elder (Generation 3) with Visceratika 4.

@@ -864,6 +864,8 @@ def play_view(db: Session, character: Character) -> PlayView:
                 since=since.get(s.key) if s.key in state["on"] else None,
             )
             for s in limits.switches
+            # A power's own options are on while picked, not switches shown (#821).
+            if s.option_of is None
         ],
         forms=limits.forms_now(state["on"]),
         effects=effects_out(db, character, limits, paused),

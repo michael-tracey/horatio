@@ -259,7 +259,7 @@ def marble(troupe: Troupe, session: Session) -> str:
 
 def test_flesh_of_marble_offers_every_protective_gear_quality(troupe: Troupe, marble: str) -> None:
     found = powers(view(troupe.player, marble))["Flesh of Marble"]
-    assert found["picks"] == {"kind": "protective", "count": 2}
+    assert (found["picks"]["kind"], found["picks"]["count"]) == ("protective", 2)
     assert found["picked"] == []
     options = {o["name"]: o for o in found["options"]}
     assert set(options) == {
@@ -386,7 +386,15 @@ def test_a_power_gives_its_own_qualities_every_time_it_is_on(
         ("Armor of Terra: Hardened", 1, "against firearms"),
     ]
     assert found["Mortician's Secret"]["fixed"][0]["name"] == "Chest Plate"
-    assert found["Mortician's Secret"]["picks"] == {"kind": "protective", "count": 1}
+    mortician = found["Mortician's Secret"]
+    assert (mortician["picks"]["kind"], mortician["picks"]["count"]) == ("protective", 1)
+    # Only the four the book names (Vol. 2 Issue 1 p. 73, issue #821).
+    assert [o["name"] for o in mortician["options"]] == [
+        "Ballistic",
+        "Hardened",
+        "Impact Absorption",
+        "Rugged",
+    ]
     state = send(
         troupe.player,
         character_id,
@@ -396,6 +404,130 @@ def test_a_power_gives_its_own_qualities_every_time_it_is_on(
     secret = powers(state)["Mortician's Secret"]
     assert (secret["on"], secret["picked"]) == (True, ["Rugged"])
     assert [o["name"] for o in secret["fixed"]] == ["Chest Plate"]
+
+
+# --- A power's own options, picked each use (issue #821) ------------------------
+
+
+def reset(troupe: Troupe, character_id: str) -> dict[str, Any]:
+    response = troupe.player.client.post(f"/characters/{character_id}/play/reset", json={})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+@pytest.fixture
+def wyvern(troupe: Troupe, session: Session) -> str:
+    """A character with Protean 5 and Mythic Form (Vol. 2 p. 234)."""
+    character_id = new_character(troupe, troupe.player, "Wyvern")
+    give(session, character_id, "disciplines", "Protean", 5)
+    give(session, character_id, "luminary_disciplines", "Protean: Mythic Form", None)
+    return character_id
+
+
+def test_mythic_forms_qualities_are_its_own_options(troupe: Troupe, wyvern: str) -> None:
+    found = powers(view(troupe.player, wyvern))
+    # Its options aren't switches of their own: they are on while picked.
+    assert [k for k in found if k.startswith("Mythic Form")] == ["Mythic Form"]
+    mythic = found["Mythic Form"]
+    assert mythic["picks"]["count"] == 2
+    options = {o["name"]: o for o in mythic["options"]}
+    assert list(options) == [
+        "Agile",
+        "Avian",
+        "Breath Attack",
+        "Defensive Spikes",
+        "Poisonous",
+        "Slick",
+        "Tough",
+        "Vicious",
+    ]
+    assert options["Tough"]["play"] == "+4 Healthy"
+    assert options["Agile"]["play"] == "+3 Dodge"
+    assert options["Avian"]["play"] == "Fly at your normal speed."
+    assert all(o["page"] == "Vol. 2, p. 234" for o in options.values())
+
+
+def test_an_option_picked_counts_and_goes_when_dropped(troupe: Troupe, wyvern: str) -> None:
+    state = send(
+        troupe.player,
+        wyvern,
+        tap("power:Mythic Form", 1),
+        tap("pick:Mythic Form/Tough", 1, at=1),
+        tap("health", 6, at=2, damage="normal"),
+    )
+    # Tough's four Healthy levels are on the tracker while it is picked.
+    assert len(state["health"]["marks"]) == 6
+    assert powers(state)["Mythic Form"]["picked"] == ["Tough"]
+
+    # Two at most: a third drops the oldest, and the damage in its levels with it.
+    state = send(
+        troupe.player,
+        wyvern,
+        tap("pick:Mythic Form/Agile", 1, at=3),
+        tap("pick:Mythic Form/Vicious", 1, at=4),
+    )
+    assert powers(state)["Mythic Form"]["picked"] == ["Agile", "Vicious"]
+    assert len(state["health"]["marks"]) == 3
+    assert texts(state)[0] == (
+        "Picked Vicious for Protean: Mythic Form: dropped Tough (2 at most), "
+        "3 damage in its levels gone"
+    )
+
+    # Switching the power off drops what was picked.
+    state = send(troupe.player, wyvern, tap("power:Mythic Form", -1, at=5))
+    assert powers(state)["Mythic Form"]["picked"] == []
+
+
+def test_a_kept_powers_pick_stays_through_reset(troupe: Troupe, session: Session) -> None:
+    """Mortician's Secret's quality stays picked until it is changed (Vol. 2 Issue 1
+    p. 73), through Reset."""
+    character_id = new_character(troupe, troupe.player, "Embalmer")
+    give(session, character_id, "disciplines", "Thanatosis", 2)
+    give(session, character_id, "techniques", "Mortician's Secret", None)
+    send(
+        troupe.player,
+        character_id,
+        tap("power:Mortician's Secret", 1),
+        tap("pick:Mortician's Secret/Rugged", 1, at=1),
+    )
+    state = reset(troupe, character_id)
+    secret = powers(state)["Mortician's Secret"]
+    assert (secret["on"], secret["picked"]) == (True, ["Rugged"])
+
+    # Changed in a game, the new pick is what the next game starts with.
+    send(troupe.player, character_id, tap("pick:Mortician's Secret/Hardened", 1, at=2))
+    state = reset(troupe, character_id)
+    assert powers(state)["Mortician's Secret"]["picked"] == ["Hardened"]
+
+
+def test_perfect_stance_guards_against_qualities_that_change_no_pool(
+    troupe: Troupe, session: Session
+) -> None:
+    """Perfect Stance (Vol. 2 p. 245): up to three weapon qualities guarded against."""
+    character_id = new_character(troupe, troupe.player, "Valerie")
+    give(session, character_id, "disciplines", "Valeren", 5)
+    give(session, character_id, "elder_disciplines", "Valeren: Perfect Stance", None)
+    stance = powers(view(troupe.player, character_id))["Perfect Stance"]
+    assert (stance["kept"], stance["picks"]["count"], stance["picks"]["immune"]) == (True, 3, True)
+    options = {o["name"]: o for o in stance["options"]}
+    assert {"Fast", "Accurate"} <= set(options)
+    assert options["Fast"]["modifiers"] == []
+    assert options["Fast"]["play"].startswith("Guarded against: ")
+
+
+def test_alchemical_attunements_quicksilver_gives_the_fast_quality(
+    troupe: Troupe, session: Session
+) -> None:
+    """Alchemical Attunement (Vol. 2 Issue 1 pp. 57-58): one metal each use."""
+    character_id = new_character(troupe, troupe.player, "Gargoyle")
+    give(session, character_id, "techniques", "Alchemical Attunement", None)
+    found = powers(view(troupe.player, character_id))["Alchemical Attunement"]
+    assert found["form"] and found["picks"]["count"] == 1
+    options = {o["name"]: o for o in found["options"]}
+    assert list(options) == ["Copper", "Gold", "Iron", "Lead", "Quicksilver", "Silver", "Tin"]
+    assert options["Silver"]["page"] == "Vol. 2 Issue 1, p. 58"
+    assert [m["amount"] for m in options["Quicksilver"]["modifiers"]] == [3]
+    assert options["Tin"]["modifiers"] == []
 
 
 # --- Choices made when buying a power ----------------------------------------

@@ -35147,19 +35147,59 @@
         "type": "object"
       },
       "Picks": {
-        "description": "Equipment qualities the player picks each time a switch goes on (issue #599):\nFlesh of Marble's two Protective Gear qualities (Vol. 2 p. 232). What they do\nto the pools counts while it is on, as an equipped item's does (horatio.play).",
+        "description": "What the player picks each time a switch goes on: equipment qualities (issue\n#599: Flesh of Marble's two Protective Gear qualities, Vol. 2 p. 232), whose pool\neffects count as an equipped item's do (horatio.play), or the power's own options\n(issue #821: two of Mantle of Atira's qualities, Vol. 2 p. 82), each with what it\ndoes. `count` is how many at once, after the focus that raises it.",
         "properties": {
           "count": {
             "title": "Count",
             "type": "integer"
           },
+          "immune": {
+            "default": false,
+            "title": "Immune",
+            "type": "boolean"
+          },
           "kind": {
-            "title": "Kind",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "kinds": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "only": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Only",
+            "type": "array"
+          },
+          "options": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SwitchOption"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "target": {
+            "default": "self",
+            "title": "Target",
             "type": "string"
           }
         },
         "required": [
-          "kind",
           "count"
         ],
         "title": "Picks",
@@ -38059,6 +38099,17 @@
           "on": {
             "title": "On",
             "type": "boolean"
+          },
+          "option_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Option Of"
           },
           "options": {
             "default": [],
@@ -50391,6 +50442,88 @@
           "boxes"
         ],
         "title": "SwitchLevel",
+        "type": "object"
+      },
+      "SwitchOption": {
+        "description": "One of a power's own options, picked each time it is used (issue #821): Mantle\nof Atira's Bear Strength, Mythic Form's Tough. While its switch is on and it is\npicked, what it does counts as a switch's does: its `key` (\"Mythic Form/Tough\") is\nwhat a `when` in the powers file names, and it is on while it is picked.",
+        "properties": {
+          "attributes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AttributeChange"
+            },
+            "title": "Attributes",
+            "type": "array"
+          },
+          "blood_half": {
+            "default": false,
+            "title": "Blood Half",
+            "type": "boolean"
+          },
+          "blood_per_turn": {
+            "default": 0,
+            "title": "Blood Per Turn",
+            "type": "integer"
+          },
+          "focuses": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Focuses",
+            "type": "array"
+          },
+          "health": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SwitchLevel"
+            },
+            "title": "Health",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "normal_form_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normal Form Only"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SwitchQuality"
+            },
+            "title": "Qualities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "key",
+          "page"
+        ],
+        "title": "SwitchOption",
         "type": "object"
       },
       "SwitchQuality": {

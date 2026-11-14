@@ -16,12 +16,15 @@ that ended one brings it back. What is on is then read from the rows, not from t
 taps: an effect staff ended, or one another character's power made (issue #823),
 counts as the rows say.
 
+What was picked for a kept power (its options, issue #821) stays with its effect as a
+game ends, so the next game starts with it picked.
+
 A switch that is `normal_form_only` changes the character's normal form only: while
 a form is on, what it does is paused, and it comes back when the form ends.
 """
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -186,6 +189,17 @@ def on_undo(db: Session, actor: User, target: PlayEvent, name: str) -> None:
     ended = db.scalar(select(PlayEffect).where(PlayEffect.ended_event_id == target.id))
     if ended is not None and ended.ended_how in ("off", "replaced"):
         bring_back(db, ended)
+
+
+def keep_options(db: Session, character: Character, picked: Mapping[str, Sequence[str]]) -> None:
+    """Keep what was picked for each effect on the character as a game ends (issue
+    #821): a kept power's options, such as Mortician's Secret's quality, stay picked
+    until it is used again, and the next game starts with them."""
+    for effect in on_character(db, character):
+        options = list(picked.get(effect.key, []))
+        if effect.options != options:
+            effect.options = options
+    db.flush()
 
 
 def on_character(db: Session, character: Character) -> Sequence[PlayEffect]:

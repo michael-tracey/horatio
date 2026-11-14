@@ -47,9 +47,21 @@
 #   - `blood = { per_turn?, most? }`: more Blood a turn, and `most = "half"` makes
 #     the Blood pool half again as big (rounded up) until it ends;
 #   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out;
-#   - `picks = { kind, count }`: the player picks `count` equipment qualities of
-#     that kind each time it goes on (issue #599: Flesh of Marble's two Protective
-#     Gear qualities), and their pool effects count as an equipped item's do;
+#   - `picks = { count, kind?, kinds?, only?, immune?, focus_count?, options?,
+#     target? }`: what the player picks each time it goes on, `count` at most, or
+#     more with a focus (`focus_count = { Manipulation = 2 }`). Equipment qualities
+#     of `kind` (and `kinds`), or `only` those named (issue #599: Flesh of Marble's
+#     two Protective Gear qualities), whose pool effects count as an equipped item's
+#     do, or none with `immune` (qualities guarded against: Perfect Stance). Or the
+#     power's own `options` (issue #821), each a table with `name`, `page` and
+#     `book` (its switch's by default), `note`, and what it does while picked, as a
+#     switch's: `health`, `attributes`, `focuses`, `blood`, `qualities`, and
+#     `normal_form_only` to differ from its switch. `from` names a trait that adds
+#     it (Bonecraft Prodigy's options), `hidden_by` one that rules it out (Tzimisce:
+#     Scar Tissue), and `focus`, `unless_focus` and `choice` hold as elsewhere. An
+#     option is a switch of its own, "<key>/<name>", on while picked: a `when` in a
+#     `pools`, `damage` or `test` entry may name it. `target` is "self", or "any"
+#     for a power that can be used on another character too (issue #823);
 #   - `qualities = [{ kind, name, focus? }]`: equipment qualities it gives every
 #     time it is on, without picking (#820: Armor of Terra's Hardened and Ballistic),
 #     counted as picked ones are.
@@ -1877,9 +1889,30 @@ level = 4
 name = "Mantle of Atira"
 note = "1 Blood, simple action: take two Beast Spirit qualities, such as Bear Strength (+1 Brawl attacks) or Stride of the Gazelle."
 focus = { Manipulation = "Double the qualities' bonuses." }
-# Vol. 2 p. 82: a major transformation that goes with Spiritwalker. The qualities
-# are chosen each time it's used, so they are notes.
-active = { key = "Mantle of Atira", form = true, combines = ["Spiritwalker"], page = 82, book = "Vol. 2", notes = ["Two qualities as you activate it: Bear Strength +1 Brawl attacks, Speed of the Hare +1 initiative, Agility of the Fox +1 Dodge, or another (doubled with the Manipulation focus). Add them under Your own."] }
+# Vol. 2 p. 82: a major transformation that goes with Spiritwalker. Two of six
+# qualities are picked each time it's used (issue #821); the Manipulation focus
+# doubles their bonuses. Your Beast Spirit has them too within 10 steps.
+active = { key = "Mantle of Atira", form = true, combines = ["Spiritwalker"], page = 82, book = "Vol. 2", notes = ["Pick two qualities as you activate it; your Beast Spirit has them too while it's within 10 steps.", "End it with a simple action."], picks = { count = 2, options = [
+  { name = "Bear Strength" },
+  { name = "Stride of the Gazelle", note = "1 step more for each action spent moving.", unless_focus = "Manipulation" },
+  { name = "Stride of the Gazelle", note = "2 steps more for each action spent moving.", focus = "Manipulation" },
+  { name = "Falcon's Eye" },
+  { name = "Speed of the Hare" },
+  { name = "Agility of the Fox" },
+  { name = "Chameleon Camouflage" },
+] } }
+pools = [
+  { pool = "attack:Brawl", amount = 1, when = "Mantle of Atira/Bear Strength", unless_focus = "Manipulation" },
+  { pool = "attack:Brawl", amount = 2, when = "Mantle of Atira/Bear Strength", focus = "Manipulation" },
+  { pool = "skill:Investigation", amount = 1, when = "Mantle of Atira/Falcon's Eye", unless_focus = "Manipulation" },
+  { pool = "skill:Investigation", amount = 2, when = "Mantle of Atira/Falcon's Eye", focus = "Manipulation" },
+  { pool = "initiative", amount = 1, when = "Mantle of Atira/Speed of the Hare", unless_focus = "Manipulation" },
+  { pool = "initiative", amount = 2, when = "Mantle of Atira/Speed of the Hare", focus = "Manipulation" },
+  { pool = "dodge", amount = 1, when = "Mantle of Atira/Agility of the Fox", unless_focus = "Manipulation" },
+  { pool = "dodge", amount = 2, when = "Mantle of Atira/Agility of the Fox", focus = "Manipulation" },
+  { pool = "skill:Stealth", amount = 1, when = "Mantle of Atira/Chameleon Camouflage", unless_focus = "Manipulation" },
+  { pool = "skill:Stealth", amount = 2, when = "Mantle of Atira/Chameleon Camouflage", focus = "Manipulation" },
+]
 
 [[powers]]
 discipline = "Spiritus"
@@ -1976,6 +2009,8 @@ level = 5
 name = "Assimilate"
 note = "1 Blood, standard action: let a wraith possess you and use one of its disciplines for an hour."
 focus = { Manipulation = "Twice a night, one at a time." }
+# Vol. 2 p. 131 (issue #821): the discipline is the wraith's own, so it's a note.
+active = { key = "Assimilate", page = 131, book = "Vol. 2", notes = ["An hour: one of the wraith's disciplines (the first 2 dots of Dementation if it has no other), any level of it. You and the wraith each pay its costs; it can't escape or possess you meanwhile.", { note = "Once a night.", unless_focus = "Manipulation" }, { note = "Twice a night, one at a time: using it again ends the first.", focus = "Manipulation" }] }
 
 [[disciplines]]
 name = "Thaumaturgy: Green Path"
@@ -2295,7 +2330,9 @@ test = { when = "Temporal Anomaly", name = "Chronoton Bolt", pool = "discipline:
 [[others]]
 category = "elder_disciplines"
 name = "Valeren: Perfect Stance"
-active = { key = "Perfect Stance", page = 245, book = "Vol. 2", notes = ["Up to 3 combat maneuvers or equipment qualities, 1 Blood each, don't work against you (supernatural ones need Occult 3 or the right Lore).", "Lasts until you use it again to change them; anyone with Brawl, Melee or Athletics can see which mundane ones."] }
+# Up to three weapon qualities (or combat maneuvers, which are notes) guarded
+# against, 1 Blood each, until it's used again (issue #821): kept through Reset.
+active = { key = "Perfect Stance", kept = true, page = 245, book = "Vol. 2", picks = { kinds = ["melee", "ranged"], count = 3, immune = true }, notes = ["Pick up to 3 equipment qualities, or combat maneuvers, 1 Blood each: they don't work against you (supernatural ones need Occult 3 or the right Lore). Note a maneuver under Your own.", "Lasts until you use it again to change them; anyone with Brawl, Melee or Athletics can see which mundane ones."] }
 
 # Core p. 223: 2 Blood per breath: a Physical + Athletics fire attack, 4 aggravated.
 [[others]]
@@ -2657,18 +2694,22 @@ active = { key = "Ghost Body", form = true, page = 233, book = "Vol. 2", notes =
 [[others]]
 category = "luminary_disciplines"
 name = "Protean: Mythic Form"
-active = [
-  { key = "Mythic Form", page = 234, book = "Vol. 2", notes = ["Switch on your two qualities too. Brawl attacks only, unless you have Breath Attack; not with Shape of the Beast's Wrath.", "Avian: fly at your normal speed. Defensive Spikes: whoever hits you with Brawl takes 3 normal damage. Poisonous: your Brawl hits cripple mortals and give the supernatural -2 Physical for an hour. Slick: a simple action escapes a Grapple."] },
-  { key = "Mythic Form: Agile", name = "Mythic Form: Agile", page = 234, book = "Vol. 2" },
-  { key = "Mythic Form: Breath Attack", name = "Mythic Form: Breath Attack", page = 234, book = "Vol. 2", notes = ["Once a turn, a thrown attack of fire, acid or the like: 2 aggravated, 3 on an exceptional success, at up to three targets within a step of one another."] },
-  { key = "Mythic Form: Tough", name = "Mythic Form: Tough", page = 234, book = "Vol. 2", health = [{ level = "Healthy", boxes = 4 }] },
-  { key = "Mythic Form: Vicious", name = "Mythic Form: Vicious", page = 234, book = "Vol. 2" },
-]
+# The two qualities are picked each time it's used (issue #821).
+active = { key = "Mythic Form", page = 234, book = "Vol. 2", notes = ["Pick your two qualities. Brawl attacks only, unless you have Breath Attack; not with Shape of the Beast's Wrath."], picks = { count = 2, options = [
+  { name = "Agile" },
+  { name = "Avian", note = "Fly at your normal speed." },
+  { name = "Breath Attack", note = "Once a turn, a thrown attack of fire, acid or the like: 2 aggravated, 3 on an exceptional success, at up to three targets within a step of one another." },
+  { name = "Defensive Spikes", note = "Whoever hits you with a Brawl attack takes 3 normal damage." },
+  { name = "Poisonous", note = "Your Brawl hits cripple mortals, and give the supernatural -2 Physical for an hour (not cumulative)." },
+  { name = "Slick", note = "A simple action escapes a Grapple." },
+  { name = "Tough", health = [{ level = "Healthy", boxes = 4 }] },
+  { name = "Vicious" },
+] } }
 pools = [
-  { pool = "dodge", amount = 3, when = "Mythic Form: Agile" },
-  { pool = "attack:Brawl", amount = 3, when = "Mythic Form: Vicious" },
+  { pool = "dodge", amount = 3, when = "Mythic Form/Agile" },
+  { pool = "attack:Brawl", amount = 3, when = "Mythic Form/Vicious" },
 ]
-damage = [{ attacks = ["Athletics"], amount = 1, type = "aggravated", when = "Mythic Form: Breath Attack", note = "2 aggravated with your breath", page = 234, book = "Vol. 2" }]
+damage = [{ attacks = ["Athletics"], amount = 1, type = "aggravated", when = "Mythic Form/Breath Attack", note = "2 aggravated with your breath", page = 234, book = "Vol. 2" }]
 
 # Vol. 2 p. 236: up to 2 more Blood a turn, drawn from the Heartsblood.
 [[others]]
@@ -2829,13 +2870,43 @@ name = "Maw of the Anaconda"
 cost = { blood = 1 }
 active = { key = "Maw of the Anaconda", page = 72, book = "Vol. 2 Issue 1", notes = ["Your bites are Brutal and Deadly; you still need a grapple to bite, unless something lets you bite without one.", "Drain 1 more Blood for each action spent feeding.", "A minor transformation, usable in any form with a jaw."] }
 
+# Vol. 2 Issue 1 pp. 57-58 (issue #821): 1 Blood and three standard actions, then
+# for an hour one of the seven alchemical metals, picked each use. A major
+# transformation. Each metal's benefit is a note but Quicksilver's Fast quality.
+[[others]]
+category = "techniques"
+name = "Alchemical Attunement"
+cost = { blood = 1 }
+active = { key = "Alchemical Attunement", form = true, page = 57, book = "Vol. 2 Issue 1", notes = ["An hour: your skin takes on the metal picked, with the Strange Composition quality for it."], picks = { count = 1, options = [
+  { name = "Copper", note = "+2 wild card defending against Presence; while you have someone's Gaze and Focus, everyone within 3 steps who sees you counts as having it too." },
+  { name = "Gold", note = "Brawl damage against shapeshifters vulnerable to gold is aggravated; their gnosis powers on you cost 1 more gnosis or fail; your Presence powers cost no Blood." },
+  { name = "Iron", note = "+2 wild card defending against Animalism; once a turn a Physical attack's exceptional success on you becomes a normal one; damage to changelings vulnerable to cold iron is aggravated." },
+  { name = "Lead", note = "Immune to Knock Down and Knockback; a simple action makes you up to four times as heavy; +2 wild card defending against Temporis." },
+  { name = "Quicksilver", note = "Three steps more when both your actions go on moving.", qualities = [{ kind = "melee", name = "Fast" }] },
+  { name = "Silver", note = "Your Brawl attacks have the Silver quality: aggravated against shapeshifters vulnerable to silver, whose gnosis powers on you cost 1 more gnosis or fail; your Auspex powers cost no Blood.", page = 58 },
+  { name = "Tin", note = "1 less damage from electricity or lightning, before other damage reduction; your Dominate powers cost no Blood.", page = 58 },
+] } }
+
+# Vol. 2 Issue 1 pp. 60-61 (issue #821): 1 Blood and a standard action to make a
+# piece of equipment work as needed for an hour, in one of four ways picked each use.
+[[others]]
+category = "techniques"
+name = "Blood Tempering"
+cost = { blood = 1 }
+active = { key = "Blood Tempering", page = 60, book = "Vol. 2 Issue 1", notes = ["An hour, on one piece of equipment."], picks = { count = 1, options = [
+  { name = "Damaged or Old Equipment", note = "Mostly intact equipment works as if new, with two qualities of your choice that suit it (not Flashy or Masterwork) in place of its own." },
+  { name = "Improvised Weapon", note = "An improvised weapon has two weapon qualities that suit it (not Flashy, Masterwork or supernatural ones) in place of its own.", page = 61 },
+  { name = "Incorrect Equipment", note = "A tool close to the one needed works for one specific job.", page = 61 },
+  { name = "Unbreakable", note = "The item has the Unbreakable quality until someone else handles it: nothing mundane or supernatural can break it.", page = 61 },
+] } }
+
 # Vol. 2 Issue 1 p. 73 (#820): always on with Hag's Wrinkles: the Chest Plate quality
 # and one more of Ballistic, Hardened, Impact Absorption or Rugged.
 [[others]]
 category = "techniques"
 name = "Mortician's Secret"
 needs = { discipline = "Thanatosis", level = 1 }
-active = { key = "Mortician's Secret", kept = true, page = 73, book = "Vol. 2 Issue 1", qualities = [{ kind = "protective", name = "Chest Plate" }], picks = { kind = "protective", count = 1 }, notes = ["Always on through Hag's Wrinkles: pick one of Ballistic, Hardened, Impact Absorption or Rugged.", "Changing the one picked, or mending it, takes three standard actions in a row."] }
+active = { key = "Mortician's Secret", kept = true, page = 73, book = "Vol. 2 Issue 1", qualities = [{ kind = "protective", name = "Chest Plate" }], picks = { kind = "protective", count = 1, only = ["Ballistic", "Hardened", "Impact Absorption", "Rugged"] }, notes = ["Always on through Hag's Wrinkles: pick one of Ballistic, Hardened, Impact Absorption or Rugged; it stays picked until you change it.", "Changing the one picked, or mending it, takes three standard actions in a row."] }
 
 # Vol. 2 Issue 1 p. 76 (#820): 1 Blood and a simple action, then Brawl attacks like
 # Fleshcraft's: 1 damage that nothing reduces (2 on an exceptional success), 1 more
