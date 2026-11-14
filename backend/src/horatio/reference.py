@@ -206,6 +206,44 @@ class Cost(BaseModel):
     amount: int
 
 
+class Heal(BaseModel):
+    """Damage a use heals: of one kind, the worst first (aggravated, then normal),
+    every box, or as much as the player says (issue #825)."""
+
+    damage: Literal["normal", "aggravated", "worst", "all", "asked"]
+    amount: int = 0
+
+
+class PowerUse(BaseModel):
+    """A use of a power that changes the trackers besides spending its cost (issue
+    #825): a button of its own on the Pools tab, made of ordinary taps with Undo."""
+
+    label: str
+    cost: Cost | None = None
+    # The cost is half the tracker as it stands, rounded down, in place of its
+    # amount (Indestructible, Vol. 2 p. 214); it needs at least 2.
+    half: bool = False
+    heal: Heal | None = None
+    # Aggravated damage turned to normal; `convert_all` for every box of it.
+    convert: int = 0
+    convert_all: bool = False
+    # Turn aggravated to normal, or where there is none heal normal (Cocoon).
+    mend: int = 0
+    # Blood or Willpower gained, never past the pool.
+    gains: list[Cost] = []
+    # Beast traits taken (Feed the Blighted Wolf, Beast's Vigor).
+    beast: int = 0
+    # Damage moved onto one of the character's ghoul Retainers, up to this much a use.
+    retainer: int = 0
+    # The switch that must be on for it, by key.
+    when: str | None = None
+    # How often the book allows it ("Once a turn"), shown with it; the Play View
+    # has no turns to count, so the player keeps to it.
+    once: str | None = None
+    note: str | None = None
+    page: str | None = None
+
+
 class PowerNote(BaseModel):
     level: int
     name: str
@@ -216,6 +254,8 @@ class PowerNote(BaseModel):
     cost: Cost | None = None
     # The keys of its switches (see `active`), which using it turns on.
     switches: list[str] = []
+    # Uses that heal, convert damage or gain Blood or Willpower (issue #825).
+    uses: list[PowerUse] = []
 
 
 class DisciplinePowers(BaseModel):
@@ -243,6 +283,7 @@ class OtherPower(BaseModel):
     # as for a numbered power (issue #588).
     cost: Cost | None = None
     switches: list[str] = []
+    uses: list[PowerUse] = []
 
 
 class SwitchLevel(BaseModel):
@@ -1298,12 +1339,49 @@ def cost(entry: Mapping[str, Any], sheet: Sheet) -> Cost | None:
         if given.get("unless_focus") in sheet.focuses:
             return None
         tracker = "willpower" if "willpower" in given else "blood"
+        if given[tracker] == "half":
+            return Cost(tracker=tracker, amount=0)
         return Cost(tracker=tracker, amount=given[tracker])
     found = COST_NOTE.match(entry.get("note", ""))
     if not found:
         return None
     tracker = "blood" if found[2] == "Blood" else "willpower"
     return Cost(tracker=tracker, amount=int(found[1]))
+
+
+TRACKER_COSTS: tuple[Literal["blood", "willpower"], ...] = ("blood", "willpower")
+
+
+def uses(entry: Mapping[str, Any], sheet: Sheet) -> list[PowerUse]:
+    """The uses of a discipline, power or [[others]] entry that change the
+    trackers (`use`, issue #825), those its focus or the lack of one allows."""
+    found: list[PowerUse] = []
+    for u in entry.get("use", []):
+        if "focus" in u and u["focus"] not in sheet.focuses:
+            continue
+        if u.get("unless_focus") in sheet.focuses:
+            continue
+        heal = u.get("heal")
+        gain = u.get("gain", {})
+        found.append(
+            PowerUse(
+                label=u["label"],
+                cost=cost(u, sheet) if "cost" in u else None,
+                half="half" in u.get("cost", {}).values(),
+                heal=Heal(damage=heal["damage"], amount=heal.get("amount", 0)) if heal else None,
+                convert=u.get("convert", 0) if u.get("convert") != "all" else 0,
+                convert_all=u.get("convert") == "all",
+                mend=u.get("mend", 0),
+                gains=[Cost(tracker=t, amount=gain[t]) for t in TRACKER_COSTS if t in gain],
+                beast=u.get("beast", 0),
+                retainer=u.get("retainer", 0),
+                when=u.get("when"),
+                once=u.get("once"),
+                note=u.get("note"),
+                page=_page(u) if "page" in u else None,
+            )
+        )
+    return found
 
 
 def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
@@ -1334,6 +1412,7 @@ def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
                         ),
                         cost=cost(p, sheet),
                         switches=[a["key"] for a in actives(p)],
+                        uses=uses(p, sheet),
                     )
                     for p in book.powers.get(name, [])
                     if p["level"] <= rating
@@ -1400,6 +1479,7 @@ def other_powers(sheet: Sheet, rule_set: RuleSetData) -> list[OtherPower]:
                 page=trait.page_reference if trait else None,
                 cost=cost(entry, sheet),
                 switches=[a["key"] for a in actives(entry)],
+                uses=uses(entry, sheet),
             )
         )
     return found

@@ -505,6 +505,16 @@ The **Pools** tab works out the character's test pools from its sheet: attacks, 
 A power that lasts a while (an hour of Armor of Terra, a turn of Split Second) is a switch that says how long it lasts and what it does; the Play View doesn't time it, so switch it off when it ends. One that gives equipment qualities, such as Armor of Terra's Hardened and Ballistic, counts them under the defences while it's on, as worn gear's do. One that attacks through a test of its own, such as Fleshcraft, adds its attack to the Combat pools while it's on.
 **Powers that last until undone.** Most powers last a scene or a game at most, and **Reset for next game** turns them off. A few change the character until the change is undone, such as Heart of Darkness, which keeps the heart out until it's put back (MET: VtM core p. 161). Their switch says **Kept through Reset until you turn it off**, and the banner at the top says **Kept:**. They stay on through Reset, until you turn them off. Using one again while it's on replaces it, as a character carries one at a time, so its **Use** asks first. One that changes your normal form only, such as a reshaped face, is paused while you're in a form, and counts again when the form ends. Your storytellers see these on the **At game** tab, and can turn one off from your Play View.
 
+Some powers do more than spend. Each of those has buttons of its own under its name, saying what they do and cost, and each press is ordinary taps with one **Undo**:
+
+- **Healing:** Corpore Sano's **Heal 1 normal · 1 Blood**, Mens Sana, Repair the Undead Flesh, King's Blessing (all your damage), Moment of Reflection (the worst first on its third use), and Will to Survive's free healing.
+- **Damage turned to normal:** Second Wind turns every aggravated box to normal; each minute in a Cocoon turns one, or heals one normal if there's none.
+- **Blood and Willpower gained:** Theft of Vitae's Blood on a win, Harvest Despair's, a spirit's Gnosis with Umbral Huntress, Retain the Quick Blood, and Mantle of Sutekh's tithes. Never past your pool: if a power lets you hold more, keep count of the rest yourself.
+- **Indestructible** asks how much damage you took this turn, and undoes it for half your Blood.
+- **Beast traits:** Feed the Blighted Wolf takes one in place of Willpower for a retest; Beast's Vigor moves up to 3 damage onto a ghoul Retainer for one.
+
+Where the book allows a use only so often ("once a turn"), the button says so. The Play View counts no turns, so keeping to it is up to you. Powers used on someone else heal only you here for now.
+
 #### Equipment at game
 
 The **Equipment** tab shows what the character carries, weapons first, each with what its qualities do in play. You can give an item to another character or discard it from here; it's listed under what was given or discarded this game, with **Undo**.
@@ -592,7 +602,7 @@ A troupe's **Announcements** tab, beside News, has out-of-character messages fro
 
 **Banners.** Staff can pin an announcement to the troupe's front page for a while. It shows as a banner at the top of the troupe's **Overview**, and first on the Announcements tab. **Dismiss** hides the banner for you alone; the announcement stays on the Announcements tab.
 
-**Bell and email.** Each announcement comes to the bell as "Announcement: *title*" and, unlike news, by email too, since they're often practical. Turn either off under Account › Settings: **Troupe announcements in the bell** in **Troupes**, and **Troupe announcements** under **Notifications by email**. One the staff mark **Important** is emailed to everyone in the troupe even so.
+**Bell and email.** Each announcement comes to the bell as "Announcement: *title*" and, unlike news, by email too, since they're often practical. Turn either off under Account › Settings: **Troupe announcements in the bell** in **Troupes**, and **Troupe announcements** under **Notifications by email**. One the staff mark **Important** is emailed to everyone in the troupe even so. The email carries the announcement itself: its title, who it's from, its picture if it has one, and its words, with a **Read it in Horatio** button. If you get your emails in a daily digest and several are waiting, the digest lists each announcement as a line with a link instead.
 
 If your characters are kept on your phone, their home troupe's announcements from the last 30 days, and any pinned, are kept too.
 

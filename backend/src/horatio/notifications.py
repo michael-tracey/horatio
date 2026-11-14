@@ -17,7 +17,6 @@ messages; a task emails when its work arrives (`approval_waiting`,
 `troupe_request_waiting`).
 """
 
-import re
 import uuid
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
@@ -27,6 +26,7 @@ from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
 from horatio import clan_names, notification_emails
+from horatio.announcement_emails import ANNOUNCEMENT_LINK
 from horatio.models import (
     Approval,
     Character,
@@ -401,7 +401,6 @@ def messages(db: Session, user: User) -> list[Item]:
 
 
 # Where a published announcement's notice links: horatio.posts.link.
-ANNOUNCEMENT_LINK = re.compile(r"^/troupes/[0-9a-f-]{36}/announcements/([0-9a-f-]{36})$")
 
 
 def announcement_pictures(

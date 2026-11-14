@@ -22944,6 +22944,32 @@
         "title": "HeaderImageOut",
         "type": "object"
       },
+      "Heal": {
+        "description": "Damage a use heals: of one kind, the worst first (aggravated, then normal),\nevery box, or as much as the player says (issue #825).",
+        "properties": {
+          "amount": {
+            "default": 0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "damage": {
+            "enum": [
+              "normal",
+              "aggravated",
+              "worst",
+              "all",
+              "asked"
+            ],
+            "title": "Damage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "damage"
+        ],
+        "title": "Heal",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "levels": {
@@ -33123,6 +33149,14 @@
             },
             "title": "Switches",
             "type": "array"
+          },
+          "uses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PowerUse"
+            },
+            "title": "Uses",
+            "type": "array"
           }
         },
         "required": [
@@ -37648,6 +37682,14 @@
             },
             "title": "Switches",
             "type": "array"
+          },
+          "uses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PowerUse"
+            },
+            "title": "Uses",
+            "type": "array"
           }
         },
         "required": [
@@ -37840,6 +37882,122 @@
           "on"
         ],
         "title": "PowerOut",
+        "type": "object"
+      },
+      "PowerUse": {
+        "description": "A use of a power that changes the trackers besides spending its cost (issue\n#825): a button of its own on the Pools tab, made of ordinary taps with Undo.",
+        "properties": {
+          "beast": {
+            "default": 0,
+            "title": "Beast",
+            "type": "integer"
+          },
+          "convert": {
+            "default": 0,
+            "title": "Convert",
+            "type": "integer"
+          },
+          "convert_all": {
+            "default": false,
+            "title": "Convert All",
+            "type": "boolean"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gains": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Cost"
+            },
+            "title": "Gains",
+            "type": "array"
+          },
+          "half": {
+            "default": false,
+            "title": "Half",
+            "type": "boolean"
+          },
+          "heal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Heal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mend": {
+            "default": 0,
+            "title": "Mend",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "once": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Once"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "retainer": {
+            "default": 0,
+            "title": "Retainer",
+            "type": "integer"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "PowerUse",
         "type": "object"
       },
       "PraisedClaimsOut": {
