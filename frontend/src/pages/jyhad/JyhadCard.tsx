@@ -38,6 +38,7 @@ import {
   canvasNameMeasure,
   clanLetters,
   disciplineBox,
+  isBordered,
   layoutTemplateText,
   layoutText,
   lookOf,
@@ -79,25 +80,31 @@ function useMeasures(): { text: Measure; name: Measure } {
 }
 
 /** KRCG's symbols, tinted for the frame (as the image draws them): a data: URL each,
- * undefined while loading, null if it couldn't be had (then its letters show). */
+ * undefined while loading, null if it couldn't be had (then its letters show). The
+ * white-bordered discipline symbols (#869) are shown as they are, untinted. */
 function useSymbols(card: JyhadCardOut, clanTint: string, disciplineTint: string) {
   const sources = useMemo(
     () => [
       [card.clan_symbol, clanTint],
-      ...card.disciplines.map((d) => [d.symbol, disciplineTint]),
-    ] as [string | null, string][],
+      ...card.disciplines.map((d) => [d.symbol, d.bordered ? null : disciplineTint]),
+    ] as [string | null, string | null][],
     [card.clan_symbol, card.disciplines, clanTint, disciplineTint],
   );
   const [found, setFound] = useState<(string | null | undefined)[]>([]);
   useEffect(() => {
     let live = true;
     setFound(sources.map(([src]) => (src ? undefined : null)));
-    Promise.all(sources.map(([src, colour]) => (src ? tintedSymbol(src, colour) : null))).then((urls) => live && setFound(urls));
+    Promise.all(sources.map(([src, colour]) => (src ? (colour ? tintedSymbol(src, colour) : src) : null))).then((urls) => live && setFound(urls));
     return () => {
       live = false;
     };
   }, [sources]);
   return { clan: found[0], disciplines: found.slice(1) };
+}
+
+/** How much of its box a discipline's symbol fills. */
+function shareOf(superior: boolean, bordered: boolean): number {
+  return bordered ? SYMBOL_SHARE.bordered : superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior;
 }
 
 /**
@@ -119,9 +126,11 @@ function FramedCard({ card, clanName, text, flavour }: { card: JyhadCardOut; cla
   const symbols = useSymbols(card, tints.clan, tints.discipline);
   const laid = useMemo(() => layoutText(card.sect_line, text, flavour, measure.text), [card.sect_line, text, flavour, measure]);
   const named = useMemo(() => nameFit(card.name, measure.name), [card.name, measure]);
+  const bordered = isBordered(card);
+  const superior = card.disciplines.map((d) => d.superior);
   const frame = useMemo(
-    () => svgUrl(frameSvg({ look, superior: card.disciplines.map((d) => d.superior), capacity: card.capacity !== null })),
-    [look, card.disciplines, card.capacity],
+    () => svgUrl(frameSvg({ look, superior: card.disciplines.map((d) => d.superior), capacity: card.capacity !== null, bordered: isBordered(card) })),
+    [look, card, card.capacity],
   );
   return (
     <article
@@ -140,7 +149,7 @@ function FramedCard({ card, clanName, text, flavour }: { card: JyhadCardOut; cla
       <ul aria-label="Disciplines">
         {card.disciplines.map((d, i) => (
           <li key={d.name} aria-label={`${d.name}${d.superior ? ", superior" : ""}`}>
-            <Symbol box={disciplineBox(i)} src={symbols.disciplines[i]} share={d.superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior}>
+            <Symbol box={disciplineBox(i, superior, bordered)} src={symbols.disciplines[i]} share={shareOf(d.superior, bordered)}>
               <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: mm(d.superior ? 2.3 : 2.4) }}>
                 {d.superior ? d.abbreviation.toUpperCase() : d.abbreviation}
               </span>
@@ -239,7 +248,9 @@ function TemplateCard({ card, clanName, text, flavour, template }: { card: Jyhad
   const measure = useMeasures();
   const symbols = useSymbols(card, T_COLOURS.symbol, T_COLOURS.symbol);
   const laid = useMemo(() => layoutTemplateText(card.sect_line, text, flavour, measure.text), [card.sect_line, text, flavour, measure]);
-  const named = useMemo(() => templateNameFit(card.name, measure.name), [card.name, measure]);
+  const named = useMemo(() => templateNameFit(card.name, measure.text), [card.name, measure]);
+  const bordered = isBordered(card);
+  const superior = card.disciplines.map((d) => d.superior);
   return (
     <article
       aria-label={`Jyhad card of ${card.name}`}
@@ -260,7 +271,7 @@ function TemplateCard({ card, clanName, text, flavour, template }: { card: Jyhad
       <ul aria-label="Disciplines">
         {card.disciplines.map((d, i) => (
           <li key={d.name} aria-label={`${d.name}${d.superior ? ", superior" : ""}`}>
-            <Symbol box={templateDisciplineBox(i)} src={symbols.disciplines[i]} share={d.superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior}>
+            <Symbol box={templateDisciplineBox(i, superior, bordered)} src={symbols.disciplines[i]} share={shareOf(d.superior, bordered)}>
               <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: mm(d.superior ? 2.3 : 2.4), color: T_COLOURS.symbol }}>
                 {d.superior ? d.abbreviation.toUpperCase() : d.abbreviation}
               </span>
@@ -272,7 +283,7 @@ function TemplateCard({ card, clanName, text, flavour, template }: { card: Jyhad
         <text
           x={T_NAME.x}
           y={T_NAME.y + T_NAME.h / 2 + named.size * 0.36}
-          fontFamily={DISPLAY}
+          fontFamily={SERIF}
           fontWeight={700}
           fontSize={named.size}
           {...(named.squeeze !== null && { textLength: named.squeeze, lengthAdjust: "spacingAndGlyphs" })}

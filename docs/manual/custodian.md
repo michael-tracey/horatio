@@ -369,19 +369,19 @@ If a fetch fails (the address has moved, or Dropbox refuses), the card says why,
 
 ### VTES symbols
 
-The **VTES symbols** card fetches the symbols of *Vampire: The Eternal Struggle* from [KRCG](https://static.krcg.org/): its clan symbols, its discipline symbols (inferior and superior), its game icons and its two fonts. Characters' Jyhad cards show them, with KRCG's capacity drop: a hidden, just-for-fun card of a vampire in the style of a VTES crypt card, which falls back to three-letter abbreviations and a drawn drop without them. Later they may show beside clans and disciplines, and as Discord emoji. They're free to use under the Dark Pack Agreement too; wherever Horatio shows them, it credits KRCG and gives Paradox's notice.
+The **VTES symbols** card fetches the symbols of *Vampire: The Eternal Struggle* from [KRCG](https://static.krcg.org/): its clan symbols, its discipline symbols (inferior and superior), its game icons and the Sabbat's path symbols, each plain and again with the white border printed cards draw them with; its three fonts; and its two logos, VTES's and the Dark Pack's. Characters' Jyhad cards show them, the disciplines white-bordered, with KRCG's capacity drop: a hidden, just-for-fun card of a vampire in the style of a VTES crypt card, which falls back to three-letter abbreviations and a drawn drop without them. Later they may show beside clans and disciplines, and as Discord emoji. They're free to use under the Dark Pack Agreement too; wherever Horatio shows them, it credits KRCG and gives Paradox's notice.
 
 1. Check the **Address**, `https://static.krcg.org/` unless KRCG moves.
 2. Tick **I accept Paradox's Dark Pack Agreement for this server**.
-3. Choose **Fetch**. The server fetches a few hundred small files one at a time, with a pause between each to be polite, so it takes a few minutes.
+3. Choose **Fetch**. The server fetches a thousand or so small files one at a time, with a pause between each to be polite, so it takes several minutes.
 
-The card then says when they were fetched, how many there are of each kind (SVG, WebP and PNG), which fonts came, and which of Horatio's clans, bloodlines and disciplines have a symbol and which don't. It lists any PNG over 256 KB, the most Discord allows for an emoji. **Fetch again** replaces them all, keeping the last set if it fails; **Remove** takes them off the server, once you've confirmed.
+The card then says when they were fetched, how many there are of each kind (SVG, WebP and PNG, and WebP and PNG white-bordered) and group (clans, disciplines, superior, icons and paths), which fonts and logos came, and which of Horatio's clans, bloodlines and disciplines have a symbol and which don't. It lists any PNG over 256 KB, the most Discord allows for an emoji. Symbols fetched before Horatio took the white-bordered ones are marked: **Fetch again** to have them, as Jyhad cards draw their disciplines with them and use the plain ones until then. **Fetch again** replaces them all, keeping the last set if it fails; **Remove** takes them off the server, once you've confirmed.
 
 ### Jyhad card templates
 
 The **Jyhad card templates** card takes the clans' 2020 crypt card templates: the Dark Pack's "Community Created Card" frames, one for each clan and antitribu, named `2020_Crypt_<Clan>.png`. A character's Jyhad card is then drawn on its clan's template instead of Horatio's own frame:
 - **The portrait** sits in the template's oval.
-- **The disciplines** go down the sidebar on the left, under the clan symbol the template prints.
+- **The disciplines** stack up the sidebar on the left from its foot, beside the text box, as a printed crypt card has them: the inferior ones first, the superior at the bottom, KRCG's white-bordered squares and diamonds once the VTES symbols are fetched.
 - **The name** goes across the top.
 - **The text** goes in the pale box at the bottom.
 - **The capacity** goes on the printed blood drop.

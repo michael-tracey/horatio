@@ -955,6 +955,8 @@ test("the custodian fetches the Dark Pack resources and the VTES symbols onto th
     address: null,
     counts: [],
     fonts: [],
+    logos: [],
+    outdated: false,
     clans: [],
     disciplines: [],
     large_png: [],

@@ -20,17 +20,19 @@ import {
   LOOKS,
   NAME,
   RIBBON,
+  RIBBON_END,
   TEXT,
   disciplineBox,
-  ribbonEnd,
   type Box,
   type Look,
 } from "./layout";
 
 export type FrameOf = {
   look: Look;
-  /** Each discipline on the card, highest first: superior or not. */
+  /** Each discipline on the card, top to bottom: superior or not. */
   superior: boolean[];
+  /** Whether they're KRCG's white-bordered symbols (#869), which need no plates. */
+  bordered?: boolean;
   /** Whether it has a capacity (only a card with a sheet does). */
   capacity: boolean;
 };
@@ -60,7 +62,7 @@ function diamond(cx: number, cy: number, r: number): string {
  * The frame as SVG markup. `px`, if given, is the size to draw it at (for the
  * canvas); else it fills whatever holds it.
  */
-export function frameSvg({ look, superior, capacity }: FrameOf, px?: { w: number; h: number }): string {
+export function frameSvg({ look, superior, capacity, bordered = false }: FrameOf, px?: { w: number; h: number }): string {
   const p = LOOKS[look];
   const size = px ? ` width="${px.w}" height="${px.h}"` : ' width="100%" height="100%" preserveAspectRatio="none"';
   const face = `${roundedRect(FRAME, FRAME_RADIUS)}${roundedRect(ART, 0.6)}`;
@@ -139,17 +141,19 @@ export function frameSvg({ look, superior, capacity }: FrameOf, px?: { w: number
   parts.push(`<path d="${roundedRect(ART, 0.6)}" fill="none" stroke="#000" stroke-width="0.5" stroke-opacity="0.8"/>`);
   parts.push(`<path d="${roundedRect(inset(ART, -0.35), 0.9)}" fill="none" stroke="${p.trim}" stroke-width="0.25"/>`);
 
-  // The discipline ribbon, hanging from the name plate, its tail cut in a V.
+  // The discipline ribbon, hanging from the name plate to the portrait's foot, its
+  // tail cut in a V: the disciplines stack up it from the foot, as on a VTES card.
   if (superior.length) {
     const x = RIBBON.x;
     const w = RIBBON.w;
-    const end = ribbonEnd(superior.length);
+    const end = RIBBON_END;
     const ribbon = `M${x} ${RIBBON.top}H${n(x + w)}V${n(end)}L${n(x + w / 2)} ${n(end - RIBBON.tail)}L${x} ${n(end)}Z`;
     parts.push(`<path d="${ribbon}" fill="url(#ribbon)" stroke="${p.trim}" stroke-width="0.22"/>`);
     parts.push(`<path d="M${n(x + 0.5)} ${RIBBON.top}V${n(end - 0.55)}M${n(x + w - 0.5)} ${RIBBON.top}V${n(end - 0.55)}" stroke="${p.trim}" stroke-width="0.08" stroke-opacity="0.6"/>`);
-    // Each discipline's plate: a disc, or a diamond for a superior one.
-    superior.forEach((sup, i) => {
-      const b = disciplineBox(i);
+    // Each plain discipline's plate: a disc, or a diamond for a superior one. KRCG's
+    // white-bordered symbols are their own square or diamond, and need none.
+    if (!bordered) superior.forEach((sup, i) => {
+      const b = disciplineBox(i, superior);
       const cx = b.x + b.w / 2;
       const cy = b.y + b.h / 2;
       const shape = sup ? `<path d="${diamond(cx, cy, DISCIPLINES.size / 2 + 0.45)}"` : `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(DISCIPLINES.size / 2)}"`;

@@ -9,20 +9,27 @@ notice** ("Portions of the materials are the copyrights and trademarks of Parado
 Interactive AB, and are used with permission."), on the About page with the rest.
 
 KRCG's folders can be listed, so the files are found from the listings, not from
-a list kept here: the clans, the disciplines (inferior and superior) and the game's
-icons, as SVG, WebP (for places that can't take SVG) and transparent PNG (for
-Discord emoji, which must be 256 KB or less), and the two fonts. Old clan symbols
-in `clan/deprecated/` are left out. A few icons are raster only: the capacity drop
-the Jyhad card shows is `webp/icon/capacity.webp` and `png/icon/capacity.png`.
-That's a few hundred small files, fetched one at a time with a short pause between,
-to be polite. They are kept beside the Dark
-Pack's:
+a list kept here: the clans, the disciplines (inferior and superior), the game's
+icons and the Sabbat's paths (#869), as SVG, WebP (for places that can't take SVG)
+and transparent PNG (for Discord emoji, which must be 256 KB or less), and again as
+WebP and PNG with a white border round each symbol, as printed cards draw them
+(`webp_wb`, `png_wb`: the Jyhad card's disciplines); its three fonts; and its two
+logos (VTES's and the Dark Pack's). Old clan symbols in `clan/deprecated/` are left
+out. A few icons are raster only: the capacity drop the Jyhad card shows is
+`webp/icon/capacity.webp` and `png/icon/capacity.png`. The white-bordered kinds and
+the paths are newer at KRCG than the rest, so a folder of them that isn't there is
+skipped rather than failing the fetch. That's a thousand or so small files, fetched
+one at a time with a short pause between, to be polite. They are kept beside the
+Dark Pack's:
 
     <dark pack folder>/vtes/
       manifest.json                 when, from where, and what came
-      svg/clan/brujah.svg, svg/disc/inf/aus.svg, svg/disc/sup/aus.svg, svg/icon/...
+      svg/clan/brujah.svg, svg/disc/inf/aus.svg, svg/disc/sup/aus.svg, svg/icon/...,
+      svg/path/caine.svg
       webp/..., png/...             the same in WebP and PNG
-      fonts/ankha2.otf, fonts/vtes-clans.otf
+      webp_wb/disc/sup/aus.webp, png_wb/...   white-bordered, as WebP and PNG
+      fonts/ankha2.otf, fonts/vtes-clans.otf, fonts/ankha.ttf
+      logos/vtes.svg, logos/dark-pack.png
 
 A fetch is written into a new folder and swapped in once it is whole, so one that
 fails leaves the last in place.
@@ -46,11 +53,22 @@ DEFAULT_ADDRESS = "https://static.krcg.org/"
 # Where a fetch of the symbols may go: KRCG's static files, which it serves itself,
 # without sending Horatio on anywhere else (checked 2026-11-10).
 SOURCE = fetching.Source("KRCG (static.krcg.org)", ("static.krcg.org",))
-KINDS = ("svg", "webp", "png")
-GROUPS = ("clan", "disc/inf", "disc/sup", "icon")
-# KRCG's fonts, in web/: the disciplines, virtues and card types, and the clans.
-FONTS = ("ankha2.otf", "vtes-clans.otf")
+# The kinds of symbol, as KRCG's folders name them: three plain, two white-bordered.
+PLAIN = ("svg", "webp", "png")
+BORDERED = ("webp_wb", "png_wb")
+KINDS = (*PLAIN, *BORDERED)
+# The file type each kind's files are.
+EXTENSION = {"svg": "svg", "webp": "webp", "png": "png", "webp_wb": "webp", "png_wb": "png"}
+GROUPS = ("clan", "disc/inf", "disc/sup", "icon", "path")
+# Newer at KRCG than the rest: a folder of these that isn't there is skipped.
+OPTIONAL_GROUPS = ("path",)
+# KRCG's fonts, in web/: the disciplines, virtues and card types (ankha2, and the
+# older ankha), and the clans.
+FONTS = ("ankha2.otf", "vtes-clans.otf", "ankha.ttf")
+# KRCG's logos, at its root: VTES's and the Dark Pack's.
+LOGOS = ("vtes.svg", "dark-pack.png")
 MEDIA_TYPES = {"svg": "image/svg+xml", "webp": "image/webp", "png": "image/png"}
+FONT_TYPES = {"otf": "font/otf", "ttf": "font/ttf"}
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]*")
 HREF = re.compile(r'href="([^"?#]+)"')
 MAX_LISTING = 1024 * 1024
@@ -147,17 +165,22 @@ def manifest() -> dict[str, Any]:
 
 
 def symbol_file(kind: str, path: str) -> Path | None:
-    """A symbol's file, as `svg`, `clan/brujah.svg`. Only names a fetch writes are
-    looked up, so a request can never reach outside the folder."""
+    """A symbol's file, as `svg`, `clan/brujah.svg` or `webp_wb`, `disc/sup/aus.webp`.
+    Only names a fetch writes are looked up, so a request can never reach outside the
+    folder."""
     found = folder()
     if found is None or kind not in KINDS:
         return None
     group, _, name = path.rpartition("/")
     stem, _, suffix = name.rpartition(".")
-    if group not in GROUPS or suffix != kind or not NAME.fullmatch(stem):
+    if group not in GROUPS or suffix != EXTENSION[kind] or not NAME.fullmatch(stem):
         return None
     file = found / kind / group / name
     return file if file.is_file() else None
+
+
+def media_type(kind: str) -> str:
+    return MEDIA_TYPES[EXTENSION[kind]]
 
 
 def font_file(name: str) -> Path | None:
@@ -168,16 +191,35 @@ def font_file(name: str) -> Path | None:
     return file if file.is_file() else None
 
 
+def logo_file(name: str) -> Path | None:
+    found = folder()
+    if found is None or name not in LOGOS:
+        return None
+    file = found / "logos" / name
+    return file if file.is_file() else None
+
+
 def discipline_of(name: str) -> str:
     """A path's discipline: "Necromancy: Ash Path" is Necromancy's."""
     return name.split(":")[0].strip()
 
 
-def symbols(record: dict[str, Any], group: str) -> set[str]:
-    """The names fetched in a group, in every kind."""
+def symbols(record: dict[str, Any], group: str, kinds: Iterable[str] = PLAIN) -> set[str]:
+    """The names fetched in a group, in every one of `kinds` (the plain ones, unless
+    said)."""
     files = record.get("files", {})
-    found = [set(files.get(f"{kind}/{group}", [])) for kind in KINDS]
+    found = [set(files.get(f"{kind}/{group}", [])) for kind in kinds]
     return set.intersection(*found) if found else set()
+
+
+def bordered(record: dict[str, Any], group: str) -> set[str]:
+    """The names fetched in a group with a white border, in WebP and PNG both."""
+    return symbols(record, group, BORDERED)
+
+
+def has_bordered(record: dict[str, Any]) -> bool:
+    """Whether a fetch brought the white-bordered symbols: one before #869 didn't."""
+    return bool(bordered(record, "disc/inf"))
 
 
 # --- fetching -----------------------------------------------------------------------------
@@ -186,16 +228,18 @@ def symbols(record: dict[str, Any], group: str) -> set[str]:
 def listed(page: bytes, kind: str) -> list[str]:
     """The files of a kind in one of KRCG's folder listings (nginx's): names only, so
     folders (`deprecated/`) and anything elsewhere are left out."""
+    suffix_wanted = EXTENSION.get(kind, kind)
     found: list[str] = []
     for href in HREF.findall(page.decode("utf-8", "replace")):
         name = unquote(href)
         stem, _, suffix = name.rpartition(".")
-        if suffix == kind and NAME.fullmatch(stem) and name not in found:
+        if suffix == suffix_wanted and NAME.fullmatch(stem) and name not in found:
             found.append(name)
     return found
 
 
 def looks_like(kind: str, data: bytes) -> bool:
+    kind = EXTENSION.get(kind, kind)
     if kind == "svg":
         head = data[:2048].lstrip().lower()
         return (head.startswith(b"<?xml") or head.startswith(b"<svg")) and (
@@ -255,7 +299,15 @@ def fetch_now(root: Path, address: str) -> dict[str, Any]:
             for kind in KINDS:
                 for group in GROUPS:
                     job.step("Listing the symbols", len(wanted))
-                    names = listed(get(urljoin(base, f"{kind}/{group}/"), MAX_LISTING), kind)
+                    try:
+                        page = get(urljoin(base, f"{kind}/{group}/"), MAX_LISTING)
+                    except fetching.Failed as error:
+                        # The newer folders may not be there; the rest must be.
+                        optional = kind in BORDERED or group in OPTIONAL_GROUPS
+                        if optional and error.status == 404:
+                            continue
+                        raise
+                    names = listed(page, kind)
                     if len(names) > MAX_FILES:
                         raise fetching.Failed(
                             f"{urljoin(base, f'{kind}/{group}/')} lists more files than expected."
@@ -263,20 +315,24 @@ def fetch_now(root: Path, address: str) -> dict[str, Any]:
                     wanted += [(kind, group, n) for n in names]
             if not any(group == "clan" for _, group, _ in wanted):
                 raise fetching.Failed(f"No clan symbols are listed at {base}.")
-            total = len(wanted) + len(FONTS)
-            record: dict[str, Any] = {"files": {}, "fonts": [], "large_png": {}}
+            total = len(wanted) + len(FONTS) + len(LOGOS)
+            record: dict[str, Any] = {"files": {}, "fonts": [], "logos": [], "large_png": {}}
             for done, (kind, group, name) in enumerate(wanted):
                 job.step("Fetching the symbols", done, total)
                 url = urljoin(base, f"{kind}/{group}/{name}")
                 data = get(url, MAX_SYMBOL)
                 if not looks_like(kind, data):
-                    raise fetching.Failed(f"{url} isn't the {kind.upper()} image it should be.")
+                    raise fetching.Failed(
+                        f"{url} isn't the {EXTENSION[kind].upper()} image it should be."
+                    )
                 target = new / kind / group / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(data)
                 record["files"].setdefault(f"{kind}/{group}", []).append(name.rpartition(".")[0])
                 if kind == "png" and len(data) > DISCORD_EMOJI:
                     record["large_png"][f"{group}/{name}"] = len(data)
+                elif kind == "png_wb" and len(data) > DISCORD_EMOJI:
+                    record["large_png"][f"{kind}/{group}/{name}"] = len(data)
             for done, name in enumerate(FONTS, len(wanted)):
                 job.step("Fetching the symbols", done, total)
                 url = urljoin(base, f"web/{name}")
@@ -286,6 +342,21 @@ def fetch_now(root: Path, address: str) -> dict[str, Any]:
                 (new / "fonts").mkdir(exist_ok=True)
                 (new / "fonts" / name).write_bytes(data)
                 record["fonts"].append(name)
+            for done, name in enumerate(LOGOS, len(wanted) + len(FONTS)):
+                job.step("Fetching the symbols", done, total)
+                url = urljoin(base, name)
+                try:
+                    data = get(url, MAX_SYMBOL)
+                except fetching.Failed as error:
+                    # The logos are a nicety: one that isn't there is skipped.
+                    if error.status == 404:
+                        continue
+                    raise
+                if not looks_like(name.rpartition(".")[2], data):
+                    raise fetching.Failed(f"{url} isn't the image it should be.")
+                (new / "logos").mkdir(exist_ok=True)
+                (new / "logos" / name).write_bytes(data)
+                record["logos"].append(name)
         record = {"fetched_at": datetime.now(UTC).isoformat(), "address": address, **record}
         (new / "manifest.json").write_text(json.dumps(record, indent=2) + "\n")
         swap_in(new, root / FOLDER)

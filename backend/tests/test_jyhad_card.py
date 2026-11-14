@@ -189,11 +189,13 @@ def test_a_prince_s_card(troupe: Troupe) -> None:
     assert card["missing"] is None
     assert (card["name"], card["clan"]) == ("Varga", "Tremere")
     assert card["sect_line"] == "Camarilla Prince of Asheville: 2 votes"
+    # As a VTES card prints them (#869): the inferior, then the superior, each by
+    # its three letters.
     assert [(d["name"], d["superior"], d["abbreviation"]) for d in card["disciplines"]] == [
+        ("Celerity", False, "cel"),
+        ("Dominate", False, "dom"),
         ("Auspex", True, "aus"),
         ("Thaumaturgy", True, "tha"),
-        ("Dominate", False, "dom"),
-        ("Celerity", False, "cel"),
     ]
     # 2 + 2 + 1 + 1 = 6 points in Pretender Elder's 6-7: capacity 6's 5.5 is nearest.
     assert card["capacity"] == 6
@@ -209,35 +211,89 @@ def test_a_prince_s_card(troupe: Troupe) -> None:
     assert troupe.stranger.client.get(f"/characters/{varga}/jyhad-card").status_code == 404
 
 
-def test_symbols_show_once_fetched(troupe: Troupe, monkeypatch: pytest.MonkeyPatch) -> None:
-    agnes = new_character(troupe, troupe.player, "Agnes", clan="Brujah: True Brujah")
-    give(troupe, agnes, ("disciplines", "Potence", 4, ""), ("disciplines", "Presence", 1, ""))
-    with_picture(troupe, agnes)
-    record = {
+def symbols_record(*, bordered: bool) -> dict[str, object]:
+    """A fetch of KRCG's symbols with True Brujah's, Potence's and Presence's; with
+    the white-bordered ones too, as a fetch since #869 has."""
+    kinds = vtes_symbols.KINDS if bordered else vtes_symbols.PLAIN
+    return {
         "files": {
             f"{kind}/{group}": names
-            for kind in vtes_symbols.KINDS
+            for kind in kinds
             for group, names in (
                 ("clan", ["truebrujah"]),
-                ("disc/inf", ["pre"]),
+                ("disc/inf", ["pre", "cel"]),
                 ("disc/sup", ["pot"]),
             )
         }
         # KRCG's capacity drop is WebP and PNG only.
         | {f"{kind}/icon": ["capacity"] for kind in ("webp", "png")}
     }
-    monkeypatch.setattr(vtes_symbols, "manifest", lambda: record)
+
+
+def test_symbols_show_once_fetched(troupe: Troupe, monkeypatch: pytest.MonkeyPatch) -> None:
+    agnes = new_character(troupe, troupe.player, "Agnes", clan="Brujah: True Brujah")
+    give(troupe, agnes, ("disciplines", "Potence", 4, ""), ("disciplines", "Presence", 1, ""))
+    with_picture(troupe, agnes)
+    # Fetched before #869: the plain symbols, no white-bordered ones.
+    monkeypatch.setattr(vtes_symbols, "manifest", lambda: symbols_record(bordered=False))
 
     card = card_of(troupe.player, agnes)
 
     assert card["clan_symbol"] == "/api/vtes-symbols/svg/clan/truebrujah.svg"
-    assert [d["symbol"] for d in card["disciplines"]] == [
-        "/api/vtes-symbols/svg/disc/sup/pot.svg",
-        "/api/vtes-symbols/svg/disc/inf/pre.svg",
+    # As a VTES card prints them: the inferior first, then the superior at the foot.
+    assert [(d["symbol"], d["bordered"]) for d in card["disciplines"]] == [
+        ("/api/vtes-symbols/svg/disc/inf/pre.svg", False),
+        ("/api/vtes-symbols/svg/disc/sup/pot.svg", False),
     ]
     assert card["capacity_symbol"] == "/api/vtes-symbols/webp/icon/capacity.webp"
     # A neonate with 3 points (one superior): capacity 4's 3.0 is nearest.
     assert card["capacity"] == 4
+
+
+def test_the_card_shows_white_bordered_symbols_in_printed_order(
+    troupe: Troupe, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#869: as a printed crypt card has them, white-bordered, inferior before
+    superior, each in the order of their three letters."""
+    agnes = new_character(troupe, troupe.player, "Agnes", clan="Brujah: True Brujah")
+    give(
+        troupe,
+        agnes,
+        ("disciplines", "Potence", 4, ""),
+        ("disciplines", "Presence", 2, ""),
+        ("disciplines", "Celerity", 3, ""),
+    )
+    with_picture(troupe, agnes)
+    monkeypatch.setattr(vtes_symbols, "manifest", lambda: symbols_record(bordered=True))
+
+    card = card_of(troupe.player, agnes)
+
+    assert [(d["abbreviation"], d["superior"]) for d in card["disciplines"]] == [
+        ("cel", False),
+        ("pre", False),
+        ("pot", True),
+    ]
+    assert [(d["symbol"], d["bordered"]) for d in card["disciplines"]] == [
+        ("/api/vtes-symbols/webp_wb/disc/inf/cel.webp", True),
+        ("/api/vtes-symbols/webp_wb/disc/inf/pre.webp", True),
+        ("/api/vtes-symbols/webp_wb/disc/sup/pot.webp", True),
+    ]
+    # The clan keeps its plain symbol: the template prints its own, the frame tints it.
+    assert card["clan_symbol"] == "/api/vtes-symbols/svg/clan/truebrujah.svg"
+
+    # A discipline without a white-bordered symbol: then all are plain, so the stack is
+    # all of a kind.
+    record = symbols_record(bordered=True)
+    files = record["files"]
+    assert isinstance(files, dict)
+    files["webp_wb/disc/inf"] = ["pre"]
+    monkeypatch.setattr(vtes_symbols, "manifest", lambda: record)
+    card = card_of(troupe.player, agnes)
+    assert [(d["symbol"], d["bordered"]) for d in card["disciplines"]] == [
+        ("/api/vtes-symbols/svg/disc/inf/cel.svg", False),
+        ("/api/vtes-symbols/svg/disc/inf/pre.svg", False),
+        ("/api/vtes-symbols/svg/disc/sup/pot.svg", False),
+    ]
 
 
 @pytest.mark.usefixtures("ghoul_rules")

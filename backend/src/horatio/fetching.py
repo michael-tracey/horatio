@@ -49,7 +49,12 @@ CHUNK = 1024 * 1024
 
 
 class Failed(Exception):
-    """Why a fetch or an import could not be done, in words for the custodian."""
+    """Why a fetch or an import could not be done, in words for the custodian; with the
+    HTTP status, when a server answered with an error."""
+
+    def __init__(self, message: str, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
 
 
 class Busy(Exception):
@@ -147,7 +152,8 @@ def _answered(response: httpx.Response) -> None:
     if response.status_code >= 400:
         raise Failed(
             f"{response.url} answered {response.status_code} {response.reason_phrase}".rstrip()
-            + "."
+            + ".",
+            response.status_code,
         )
 
 

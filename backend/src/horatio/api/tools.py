@@ -130,12 +130,14 @@ class DarkPackTool(BaseModel):
 
 
 class SymbolCount(BaseModel):
-    # "svg", "webp" or "png".
+    # "svg", "webp" or "png", or white-bordered "webp_wb" or "png_wb".
     kind: str
     clans: int
     inferior: int
     superior: int
     icons: int
+    # The Sabbat's paths (#869).
+    paths: int
 
 
 class Matched(BaseModel):
@@ -160,6 +162,11 @@ class VtesSymbolsTool(BaseModel):
     address: str | None
     counts: list[SymbolCount]
     fonts: list[str]
+    # KRCG's logos that came: "vtes.svg", "dark-pack.png".
+    logos: list[str]
+    # Fetched before the white-bordered symbols were (#869): the Jyhad card wants
+    # them, so fetch again.
+    outdated: bool
     clans: list[Matched]
     disciplines: list[Matched]
     # PNGs over Discord's 256 KB for an emoji.
@@ -251,12 +258,15 @@ def vtes_symbols_tool(db: DbSession) -> VtesSymbolsTool:
                 inferior=len(files.get(f"{kind}/disc/inf", [])),
                 superior=len(files.get(f"{kind}/disc/sup", [])),
                 icons=len(files.get(f"{kind}/icon", [])),
+                paths=len(files.get(f"{kind}/path", [])),
             )
             for kind in vtes_symbols.KINDS
         ]
         if record
         else [],
         fonts=list(record.get("fonts", [])),
+        logos=list(record.get("logos", [])),
+        outdated=bool(record) and not vtes_symbols.has_bordered(record),
         clans=[
             Matched(name=n, symbol=s)
             for n, s in vtes_symbols.matched(
