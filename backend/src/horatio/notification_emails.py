@@ -202,6 +202,10 @@ def about(topic: str) -> str:
 
 
 def absolute(link: str) -> str:
+    """A notice's link as an email gives it: Horatio's own, or one elsewhere (a
+    Discord channel or invite, horatio.discord_channels) as it is."""
+    if link.startswith(("https://", "http://")):
+        return link
     return f"{get_settings().public_url.rstrip('/')}{link}"
 
 

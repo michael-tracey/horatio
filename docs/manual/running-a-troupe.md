@@ -780,7 +780,7 @@ The bot may see channels and send messages in them, and, for news and announceme
 
 #### Making a channel for each character
 
-Each character's results go to a private text channel of its own, which you make in Discord; Horatio doesn't make channels. For each character:
+Each character's results go to a private text channel of its own. You can make them in Discord yourself, as below, or let Horatio make them (see [Letting Horatio make the channels](#letting-horatio-make-the-channels)). By hand, for each character:
 
 1. In the troupe's Discord server, make a text channel. Naming it after the character, such as `#agnes-wren`, lets Horatio suggest it (see below).
 2. Make it private, so everyone in the server is kept out of it.
@@ -789,6 +789,34 @@ Each character's results go to a private text channel of its own, which you make
 Where the bot lacks a permission it needs in a channel you've chosen, Horatio says so beside it: **View Channels** and **Send Messages** for results, and also **Embed Links** and **Attach Files** for news and announcements. A server that added the bot before Horatio asked for the last two needs them given to the bot's role (Server Settings › Roles), or in the channels' own settings. If Discord refuses a post anyway, the delivery's error names the permission that's missing.
 
 Make a **test channel** that only staff can see, with the bot let in, too. Putting the characters' channels in one category whose permissions they share saves setting each one up.
+
+#### Letting Horatio make the channels
+
+Instead of making each channel by hand, a storyteller can tick **Let Horatio make each character's private channel** under Discord on **Customise › Connectors**. Horatio then makes each one in a **Horatio · Characters** category on the troupe's server. Everyone in the server is kept out of it, except:
+
+- the character's player;
+- the Horatio bot;
+- the server's roles ticked under **Staff roles let into every channel**, such as `@sts`. **Save staff roles** keeps a change to them.
+
+The channel is named after the character (`#agnes-wren`, or `#agnes-wren-2` if that name is taken) and becomes its results channel at once, as one you chose would. Its player gets a notification with a link to it. A category holds 50 channels at most, so Horatio starts **Horatio · Characters 2** when the first is full.
+
+To make channels, the bot needs more on the server than results do, so the troupe switches this on itself. Give its role (Server Settings › Roles) these permissions too, and Horatio says beside the switch if any is missing:
+
+| Permission | Why |
+| --- | --- |
+| **Manage Channels** | to make the channels and the category |
+| **Manage Roles** (shown as Manage Permissions in a channel) | to set who can see each channel |
+| **Read Message History** | to let a player read back their own channel |
+| **Create Invite** (optional) | to invite a player who isn't on the server yet |
+
+Beside each character with no channel, **Make a channel** makes one now. **Make channels for every character without one** makes them all, a few at a time as Discord allows; the list says how many are still to come. Under the character, Horatio says what stood in the way, if anything:
+
+- **The player signs in to Horatio with Discord:** Horatio knows their Discord account for certain and lets them straight in.
+- **The player only typed a Discord username** in their profile: nobody has checked it's really theirs, so Horatio finds the member with that username and asks **Is @nightowl (Owl) Agnes Wren's player?**, with their picture. **Yes, let them in** makes the channel; **No** forgets the match, so check the username they gave. Horatio remembers a confirmed match for the troupe.
+- **No one on the server has that username**, or the player gave none: Horatio says so.
+- **The player isn't on the server:** if the bot has Create Invite, Horatio sends them an invite through their notifications (it works once, for a week) and says so; once they've joined, choose **Make a channel** again. Without it, invite them yourself.
+
+A channel Horatio made is marked **Made by Horatio**. Horatio never changes a channel someone made by hand. A retired, inactive or dead character's channel is left as it is. Every channel made, invite sent and match confirmed or turned down is in the troupe's log.
 
 #### Choosing each character's channel
 
