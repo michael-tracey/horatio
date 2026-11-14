@@ -6,6 +6,7 @@ channel, through the fake Discord."""
 import uuid
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -17,13 +18,14 @@ from horatio import delivery, notification_emails, posts
 from horatio.models import EmailNotice, Notification
 from tests import test_api_posts, test_discord_connector
 from tests.api_helpers import Person, Troupe
-from tests.test_api_posts import News, bell, on_discord, send_all
+from tests.test_api_posts import News, bell, on_discord, png, send_all
 from tests.test_discord_connector import OPEN_CHANNEL, TEST_CHANNEL, FakeDiscord
 from tests.test_email_connector import FakeSMTP, text_of
 
 # The fake Discord and mail server, for the tests here that use them.
 fake_discord = test_discord_connector.fake_discord
 mail = test_api_posts.mail
+kept = test_api_posts.kept
 
 SOON = datetime.now(UTC) + timedelta(days=3)
 
@@ -171,6 +173,38 @@ def test_each_person_dismisses_a_banner_for_themselves(board: Board) -> None:
     # News has no banner to dismiss.
     story = board.published()
     assert troupe.player.client.post(f"/posts/{story}/dismiss").status_code == 409
+
+
+def test_the_bell_shows_an_announcements_picture_while_it_has_one(board: Board, kept: Path) -> None:
+    """#832: the bell shows a published announcement's own picture beside its notice,
+    looked up as it is read; news keeps to its words, as its masthead is the agency's."""
+    troupe = board.troupe
+    made = board.announce(title="New venue")
+    post = made.json()["id"]
+    added = troupe.lead.client.post(
+        f"/posts/{post}/picture", files={"file": ("p.png", png(), "image/png")}
+    )
+    assert added.status_code == 200, added.text
+    picture = added.json()["picture"]
+    troupe.lead.client.post(f"/posts/{post}/publish", json={})
+    story = board.published()
+    troupe.lead.client.post(
+        f"/posts/{story}/picture", files={"file": ("p.png", png(), "image/png")}
+    )
+
+    def shown(kind: str) -> list[str | None]:
+        items = troupe.player.client.get("/notifications").json()["items"]
+        return [i["picture"] for i in items if i["kind"] == kind]
+
+    assert shown("announcement.published") == [picture]
+    assert shown("news.published") == [None]
+    # The bell's picture loads for the member, as the announcement's own does.
+    file = troupe.player.client.get(f"{picture}/600.webp".removeprefix("/api"))
+    assert file.status_code == 200
+
+    # Taken off the announcement, it goes from the bell too.
+    assert troupe.lead.client.delete(f"/posts/{post}/picture").status_code == 200
+    assert shown("announcement.published") == [None]
 
 
 def test_staff_unpin_sooner_and_pinning_goes_in_the_log(board: Board) -> None:
