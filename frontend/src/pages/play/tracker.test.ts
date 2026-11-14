@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView } from "../../api/types";
 import { afterSending, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, tapsToast, tapToast, withPending, type Tap } from "./tracker";
-import { usingTaps } from "./UsePower";
+import { amountsOf, usingTaps } from "./UsePower";
 
 function view(overrides: Partial<PlayView> = {}): PlayView {
   return {
@@ -313,7 +313,7 @@ describe("a power's Use (#370)", () => {
     attributes: [],
     focuses: [],
     blood_per_turn: 0,
-    blood_half: false,
+    blood_half: false, blood_extra: 0,
     on: false,
     options: [],
     picked: [],
@@ -340,6 +340,14 @@ describe("a power's Use (#370)", () => {
     const after = withPending(v, taps);
     expect(after.blood.value).toBe(9);
     expect(after.powers[0]!.on).toBe(true);
+  });
+
+  it("spends the amount its player chooses, from its cost up to its most (#824)", () => {
+    expect(amountsOf({ tracker: "blood", amount: 1, most: 3 })).toEqual([1, 2, 3]);
+    expect(amountsOf(blood)).toEqual([1]);
+    const v = view({ powers: [] });
+    const promises = made(usingTaps(v, { tracker: "blood", amount: 2 }, "Mytherceria: Promises Like Steel"));
+    expect(tapsToast(withPending(v, []), promises)).toBe("Spent 2 Blood on Mytherceria: Promises Like Steel · 8/10");
   });
 
   it("names the power when there is no switch to turn on, or it is on already", () => {
@@ -390,7 +398,7 @@ describe("an elder power's Use (#588)", () => {
     attributes: [],
     focuses: [],
     blood_per_turn: 0,
-    blood_half: false,
+    blood_half: false, blood_extra: 0,
     on: false,
     options: [],
     picked: [],

@@ -60,7 +60,7 @@ export function counted(view: Pick<PlayView, "powers">): PowerSwitch[] {
  * One of a power's own options picked (issue #821), such as Mythic Form's Tough: a
  * switch of its own ("Mythic Form/Tough"), on while it is picked and its power is.
  */
-export type PickedOption = { key: string; name: string; power: PowerSwitch; health: PowerSwitch["health"]; blood_half: boolean; blood_per_turn: number };
+export type PickedOption = { key: string; name: string; power: PowerSwitch; health: PowerSwitch["health"]; blood_half: boolean; blood_per_turn: number; blood_extra?: number };
 
 /** A power's own options picked, those of every power on, after the powers themselves, whose effects count now. */
 export function countedOptions(view: Pick<PlayView, "powers">): PickedOption[] {
@@ -73,7 +73,7 @@ export function countedOptions(view: Pick<PlayView, "powers">): PickedOption[] {
       if (!option) continue;
       const pausedByForm = option.normal_form_only ?? power.normal_form_only;
       if (formOn && pausedByForm) continue;
-      found.push({ key: option.key, name, power, health: option.health, blood_half: option.blood_half, blood_per_turn: option.blood_per_turn });
+      found.push({ key: option.key, name, power, health: option.health, blood_half: option.blood_half, blood_per_turn: option.blood_per_turn, blood_extra: option.blood_extra ?? 0 });
     }
   }
   return found;
@@ -95,13 +95,18 @@ export function formsOn(view: Pick<PlayView, "powers">): PowerSwitch[] {
  */
 export type Box = { level: string; from: PowerSwitch | null; option?: string };
 
-/** Every wound box, in the order damage fills them. */
+/**
+ * Every wound box, in the order damage fills them: in each category the sheet's own,
+ * less those the powers on give up (#824: Bonecraft's Extra Limbs, back when it ends),
+ * then those the forms and options on add.
+ */
 export function boxes(view: Pick<PlayView, "health" | "powers">): Box[] {
   const found: Box[] = [];
   const on = counted(view);
   const options = countedOptions(view);
   for (const level of view.health.levels) {
-    for (let i = 0; i < level.boxes; i++) found.push({ level: level.name, from: null });
+    const given = [...on, ...options].reduce((sum, p) => sum + p.health.reduce((n, h) => n + (h.level === level.name && h.boxes < 0 ? -h.boxes : 0), 0), 0);
+    for (let i = 0; i < Math.max(0, level.boxes - given); i++) found.push({ level: level.name, from: null });
     for (const p of on) for (const h of p.health) if (h.level === level.name) for (let i = 0; i < h.boxes; i++) found.push({ level: level.name, from: p });
     for (const o of options) for (const h of o.health) if (h.level === level.name) for (let i = 0; i < h.boxes; i++) found.push({ level: level.name, from: o.power, option: o.name });
   }
@@ -110,10 +115,18 @@ export function boxes(view: Pick<PlayView, "health" | "powers">): Box[] {
 
 export const healthMost = (view: Pick<PlayView, "health" | "powers">) => boxes(view).length;
 
-/** The most Blood: half again (rounded up) with Blood of Potency on. */
+/** The most Blood: half again (rounded up) with Blood of Potency on, and more with a power that adds to it (#824: Second Stomach). */
 export function bloodMost(view: Pick<PlayView, "blood_usual" | "powers">): number {
-  const halves = [...counted(view), ...countedOptions(view)].filter((p) => p.blood_half).length;
-  return view.blood_usual + halves * Math.ceil(view.blood_usual / 2);
+  const now = [...counted(view), ...countedOptions(view)];
+  const halves = now.filter((p) => p.blood_half).length;
+  return view.blood_usual + halves * Math.ceil(view.blood_usual / 2) + now.reduce((sum, p) => sum + (p.blood_extra ?? 0), 0);
+}
+
+/** The other amounts of the option `name` is one amount of (#824): "Tough: 1" and "Tough: 3" for "Tough: 2". */
+export function sameOption(power: Pick<PowerSwitch, "picks">, name: string): string[] {
+  const options = power.picks?.options ?? [];
+  const base = options.find((o) => o.name === name)?.base;
+  return base ? options.filter((o) => o.base === base && o.name !== name).map((o) => o.name) : [];
 }
 
 /** Blood a turn, with what the powers on add. */
@@ -209,6 +222,13 @@ export function applyPick(view: PlayView, rest: string, amount: number, said: st
   const before = now.includes(quality) ? 1 : 0;
   const dropped: string[] = [];
   if (amount > 0 && !before && power.on) {
+    // Another amount of the same option is one choice with it (#824).
+    for (const other of sameOption(power, quality)) {
+      if (!now.includes(other)) continue;
+      now.splice(now.indexOf(other), 1);
+      dropped.push(other);
+      said.push(`in place of ${other}`);
+    }
     while (now.length && now.length >= power.picks.count) {
       const gone = now.shift()!;
       dropped.push(gone);

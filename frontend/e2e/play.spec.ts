@@ -484,6 +484,30 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByText("Undid: Blood 8 → 7")).toHaveCount(2);
 });
 
+test("Use on an elder power whose player chooses how much to spend: Promises Like Steel's 1 to 3 Blood (#824)", async ({ browser }) => {
+  const { page: p } = await person(browser, "promise-weaver");
+  // A Kiasyd elder (Generation 3) with Mytherceria 5 and Promises Like Steel (Vol. 2 pp. 217-218).
+  const id = await builtVampire(
+    p,
+    "Gwenhwyfar",
+    "Lasombra: Kiasyd",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Mytherceria", 2], ["Dominate", 1], ["Obtenebration", 1]] },
+    [
+      ["disciplines", "Mytherceria", 5],
+      ["elder_disciplines", "Mytherceria: Promises Like Steel", 1],
+    ],
+  );
+  const blood = (await (await p.request.get(`/api/characters/${id}/play`)).json()).blood;
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  const promises = p.getByRole("listitem").filter({ hasText: /^Mytherceria: Promises Like Steel/ });
+  // A button for each amount: the more spent, the less time the target has.
+  for (const n of [1, 2, 3]) await expect(promises.getByRole("button", { name: `Use Mytherceria: Promises Like Steel, ${n} Blood` })).toBeVisible();
+  await promises.getByRole("button", { name: "Use Mytherceria: Promises Like Steel, 2 Blood" }).click();
+  await expect(p.getByText(`Spent 2 Blood on Mytherceria: Promises Like Steel · ${blood.value - 2}/${blood.most}`)).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+});
+
 test("Use on an elder power: Projectile spends 1 Blood on each attack, and switches itself on the first time (#588)", async ({ browser }) => {
   const { page: p } = await person(browser, "elder-thrower");
   // A Pretender Elder (Generation 3) with Celerity 5 and its elder power Projectile: Physical 7, Firearms 2.
