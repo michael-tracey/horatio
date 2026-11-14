@@ -591,7 +591,7 @@ A troupe's **Announcements** tab, beside News, has out-of-character messages fro
 
 **Banners.** Staff can pin an announcement to the troupe's front page for a while. It shows as a banner at the top of the troupe's **Overview**, and first on the Announcements tab. **Dismiss** hides the banner for you alone; the announcement stays on the Announcements tab.
 
-**Bell and email.** Each announcement comes to the bell as "Announcement: *title*" and, unlike news, by email too, since they're often practical. Turn either off under Account › Settings: **Troupe announcements in the bell** in **Troupes**, and **Troupe announcements** under **Notifications by email**. One the staff mark **Important** is emailed to everyone in the troupe even so.
+**Bell and email.** Each announcement comes to the bell as "Announcement: *title*" and, unlike news, by email too, since they're often practical. Turn either off under Account › Settings: **Troupe announcements in the bell** in **Troupes**, and **Troupe announcements** under **Notifications by email**. One the staff mark **Important** is emailed to everyone in the troupe even so. The email carries the announcement itself: its title, who it's from, its picture if it has one, and its words, with a **Read it in Horatio** button. If you get your emails in a daily digest and several are waiting, the digest lists each announcement as a line with a link instead.
 
 If your characters are kept on your phone, their home troupe's announcements from the last 30 days, and any pinned, are kept too.
 

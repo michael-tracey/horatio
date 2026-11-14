@@ -16,6 +16,10 @@ temporary refusal is tried again later, backing off as deliveries do; after
 `delivery.MAX_ATTEMPTS`, or a permanent refusal, the notices are dropped and the reason
 logged: the bell still has them.
 
+An announcement's own email carries the announcement itself: its title, byline,
+picture and words (horatio.announcement_emails, #831). A digest keeps a line for
+each.
+
 Every email links to turning its kind off (a digest, every kind), without
 signing in: the link holds a signature made with a key kept on the person's
 account (`users.unsubscribe_key`), good for that and nothing else.
@@ -37,7 +41,15 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, delivery, email_design, mail_sender, preferences, suspensions
+from horatio import (
+    announcement_emails,
+    audit,
+    delivery,
+    email_design,
+    mail_sender,
+    preferences,
+    suspensions,
+)
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
 from horatio.email_design import Body, Design, Line, compose, text_html
@@ -221,24 +233,37 @@ IMPORTANT = "Its staff marked this important, so it comes to everyone in the tro
 
 
 def one_email(
-    user: User, notice: EmailNotice, sender: Sender | None = None, design: Design | None = None
+    user: User,
+    notice: EmailNotice,
+    sender: Sender | None = None,
+    design: Design | None = None,
+    announcement: announcement_emails.Content | None = None,
 ) -> EmailMessage:
-    """One notification, as it happened."""
+    """One notification, as it happened; for an announcement, the announcement
+    itself (`announcement`, #831)."""
     mail = email.new_message(to(user), line(notice).removesuffix("."), sender)
     why = [Line(IMPORTANT)] if notice.forced else []
-    compose(
-        mail,
-        Body(
+    lines = [*why, *footer(user, notice.topic)]
+    if announcement is not None:
+        body = Body(
+            text=announcement.text,
+            html=announcement.html,
+            action=("Read it in Horatio", absolute(notice.link)),
+            lines=lines,
+            images=announcement.images,
+            preheader=announcement.preheader,
+        )
+    else:
+        body = Body(
             text=f"Hello {user.display_name},\n\n{line(notice)}\n\n{absolute(notice.link)}",
             html=text_html(
                 f"Hello {user.display_name},\n\n{line(notice)}", None, "margin: 0 0 16px 0"
             ),
             action=("Open it in Horatio", absolute(notice.link)),
-            lines=[*why, *footer(user, notice.topic)],
+            lines=lines,
             preheader=line(notice),
-        ),
-        design,
-    )
+        )
+    compose(mail, body, design)
     mail["List-Unsubscribe"] = f"<{unsubscribe_url(user, notice.topic)}>"
     return mail
 
@@ -310,11 +335,11 @@ def send_to(db: Session, user: User, notices: list[EmailNotice], at: datetime) -
     sender = mail_sender.sender(db)
     design = email_design.current(db)
     for batch in batches:
-        mail = (
-            one_email(user, batch[0], sender, design)
-            if len(batch) == 1
-            else digest_email(user, batch, sender, design)
-        )
+        if len(batch) == 1:
+            shown = announcement_emails.content(db, user, batch[0], design)
+            mail = one_email(user, batch[0], sender, design, shown)
+        else:
+            mail = digest_email(user, batch, sender, design)
         try:
             email.deliver(mail)
         except SendError as error:
