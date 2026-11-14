@@ -143,6 +143,10 @@ def rename(db: Session, user: User, character: Character, name: str) -> None:
     if troupes and by_player:
         character.renamed_at = datetime.now(UTC)
     db.flush()
+    # A channel Horatio made for it on Discord is renamed too (#856).
+    from horatio import discord_channels
+
+    discord_channels.changed(db, character)
 
     for troupe_id in [t.id for t in troupes] or [None]:
         audit.record(

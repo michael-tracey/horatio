@@ -118,6 +118,10 @@ def move(
     from_player = db.get_one(User, character.player_id)
     character.player_id = to_player.id
     db.flush()
+    # A channel Horatio made for it on Discord lets the new player in instead (#856).
+    from horatio import discord_channels
+
+    discord_channels.changed(db, character)
 
     troupes = troupes_of(db, character)
     for troupe_id in [t.id for t in troupes] or [None]:

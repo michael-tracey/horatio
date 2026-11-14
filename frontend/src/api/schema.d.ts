@@ -9632,6 +9632,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/discord/characters/{character_id}/fix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fix Channel
+         * @description Put right something wrong with a channel Horatio made (#856).
+         */
+        post: operations["fix_channel_api_troupes__troupe_id__discord_characters__character_id__fix_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/discord/characters/{character_id}/match": {
         parameters: {
             query?: never;
@@ -9647,6 +9667,27 @@ export interface paths {
          *     yes makes the channel.
          */
         post: operations["answer_match_api_troupes__troupe_id__discord_characters__character_id__match_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/discord/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Channels
+         * @description Ask Horatio to check every channel it made against what it set (#856); the
+         *     worker does it, and the page shows what it found.
+         */
+        post: operations["check_channels_api_troupes__troupe_id__discord_check_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16903,6 +16944,31 @@ export interface components {
             /** Private */
             private: boolean;
         };
+        /**
+         * ChannelProblemOut
+         * @description Something wrong with a channel Horatio made (#856), and its fix, if any:
+         *     "fix" (put it right), "remake" (make it again), "invite" (invite its player) or
+         *     "relink" (send its character's results there again).
+         */
+        ChannelProblemOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Fix */
+            fix: ("fix" | "remake" | "invite" | "relink") | null;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string | null;
+            /** Note */
+            note: string;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+        };
         /** ChannelsOut */
         ChannelsOut: {
             /** Announcements */
@@ -20976,6 +21042,14 @@ export interface components {
             /** Xp Now */
             xp_now: number;
         };
+        /** FixAsk */
+        FixAsk: {
+            /**
+             * How
+             * @enum {string}
+             */
+            how: "fix" | "remake" | "invite" | "relink";
+        };
         /** FlagIn */
         FlagIn: {
             /** Note */
@@ -24662,7 +24736,8 @@ export interface components {
         };
         /**
          * ManagedOut
-         * @description Character channels Horatio makes on the server (#855).
+         * @description Character channels Horatio makes on the server (#855), kept in step and
+         *     checked (#856).
          */
         ManagedOut: {
             /** Can Invite */
@@ -24671,16 +24746,33 @@ export interface components {
             characters: {
                 [key: string]: components["schemas"]["ManagedCharacter"];
             };
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Checking
+             * @default false
+             */
+            checking: boolean;
             /** Lacks */
             lacks: string[] | null;
             /** On */
             on: boolean;
+            /**
+             * Problems
+             * @default []
+             */
+            problems: components["schemas"]["ChannelProblemOut"][];
             /** Queued */
             queued: number;
             /** Roles */
             roles: components["schemas"]["RoleOut"][];
             /** Staff Roles */
             staff_roles: string[];
+            /**
+             * Syncing
+             * @default 0
+             */
+            syncing: number;
         };
         /** MatchAnswer */
         MatchAnswer: {
@@ -54279,6 +54371,42 @@ export interface operations {
             };
         };
     };
+    fix_channel_api_troupes__troupe_id__discord_characters__character_id__fix_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FixAsk"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     answer_match_api_troupes__troupe_id__discord_characters__character_id__match_post: {
         parameters: {
             query?: never;
@@ -54303,6 +54431,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OutcomeOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_channels_api_troupes__troupe_id__discord_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

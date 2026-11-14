@@ -936,6 +936,10 @@ test("staff let Horatio make character channels, confirming a typed Discord user
           can_invite: true,
           queued: 0,
           characters: { "c-agnes": agnes, "c-bram": bram },
+          problems: [],
+          checked_at: null,
+          checking: false,
+          syncing: 0,
         },
       },
     }),
@@ -975,6 +979,73 @@ test("staff let Horatio make character channels, confirming a typed Discord user
 
   await l.getByRole("button", { name: "Make a channel for Bram Holt" }).click();
   await expect(l.getByText("Their player hasn't given Horatio a Discord username, or signed in with Discord.")).toBeVisible();
+});
+
+/**
+ * Keeping Horatio's channels in step and checking them (#856). As above, the browser
+ * is shown Horatio's answers: staff ask for a check, see what it found, and fix it.
+ */
+test("staff check the channels Horatio made, and fix what a check found (#856)", async ({ browser }) => {
+  const custodian = await person(browser, "mkeep-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mkeep-lead");
+  await custodian.page.reload();
+  const created = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Kept Channels ${run}`, lead_handle: lead.handle } });
+  expect(created.status(), await created.text()).toBeLessThan(300);
+  const troupe = await created.json();
+  const l = lead.page;
+  const settings = { guild_id: "111", guild_name: "Court of Ash", channels: { "c-agnes": "301" }, test_channel: null };
+  await l.route(`**/api/troupes/${troupe.id}/connectors`, (route) =>
+    route.fulfill({ json: [{ kind: "discord", name: "Discord", unavailable: null, needs: [], enabled: true, mode: "alert", test_mode: false, settings }] }),
+  );
+  let checkedAt: string | null = null;
+  let problems: Record<string, unknown>[] = [];
+  await l.route(`**/api/troupes/${troupe.id}/discord`, (route) =>
+    route.fulfill({
+      json: {
+        guild_id: "111",
+        guild_name: "Court of Ash",
+        channels: [{ id: "301", name: "agnes-wren", category: "Horatio · Characters", private: true, missing: [] }],
+        characters: [{ id: "c-agnes", name: "Agnes Wren" }],
+        suggestions: {},
+        managed: {
+          on: true,
+          staff_roles: ["800"],
+          roles: [{ id: "800", name: "sts" }],
+          lacks: [],
+          can_invite: true,
+          queued: 0,
+          characters: { "c-agnes": { status: "made", note: "Made #agnes-wren.", made: true, channel: "301", discord: "verified", username: null, match: null } },
+          problems,
+          checked_at: checkedAt,
+          checking: false,
+          syncing: 0,
+        },
+      },
+    }),
+  );
+  await l.route(`**/api/troupes/${troupe.id}/discord/check`, async (route) => {
+    // The worker checks, and finds Agnes's channel renamed by hand on Discord.
+    checkedAt = new Date().toISOString();
+    problems = [
+      { key: "c-agnes:name", character_id: "c-agnes", name: "Agnes Wren", kind: "name", note: "Its channel #my-own-name was renamed on Discord.", fix: "fix", since: checkedAt },
+    ];
+    await route.fulfill({ status: 204 });
+  });
+  await l.route(`**/api/troupes/${troupe.id}/discord/characters/c-agnes/fix`, async (route) => {
+    expect(route.request().postDataJSON()).toEqual({ how: "fix" });
+    problems = [];
+    await route.fulfill({ json: { status: "made", note: "Horatio renamed #my-own-name to #agnes-wren.", channel: "301" } });
+  });
+
+  await l.goto(`/troupes/${troupe.id}/connectors`);
+  await expect(l.getByText("Not checked yet. Horatio checks once a day.")).toBeVisible();
+  await l.getByRole("button", { name: "Check channels" }).click();
+  await expect(l.getByText(/Last checked/)).toBeVisible();
+  const found = l.getByRole("list", { name: "Problems with Horatio's channels" });
+  await expect(found).toContainText("Agnes Wren: Its channel #my-own-name was renamed on Discord.");
+  await found.getByRole("button", { name: "Fix: Agnes Wren: Its channel #my-own-name was renamed on Discord." }).click();
+  await expect(l.getByRole("list", { name: "Problems with Horatio's channels" })).toHaveCount(0);
 });
 
 test("staff share out a cycle's responses by character, and assign several in one go", async ({ browser }) => {

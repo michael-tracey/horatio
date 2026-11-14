@@ -464,6 +464,12 @@ MESSAGES: dict[str, str] = {
     " {character}'s player.",
     "connector.discord_match_rejected": "{actor} said the Discord user @{username} isn't"
     " {character}'s player.",
+    "connector.discord_channel_kept": "Horatio kept {character}'s Discord channel in step: it"
+    " {changes}.",
+    "connector.discord_channels_checked": "{actor} asked Horatio to check the troupe's Discord"
+    " character channels.",
+    "connector.discord_channel_fixed": "{actor} asked Horatio to fix {character}'s Discord"
+    " channel, and it {what}.",
     "delivery.retried": "{actor} retried {character}'s {channel} delivery.",
     "delivery.marked_sent": "{actor} marked {character}'s {channel} delivery as sent by hand.",
     "post.published": "{actor} published {what} “{title}”.",

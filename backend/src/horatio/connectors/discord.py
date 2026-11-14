@@ -621,6 +621,31 @@ def create_channel(guild_id: str, body: Mapping[str, Any]) -> dict[str, Any]:
     return dict(request("POST", f"/guilds/{guild_id}/channels", json=dict(body)).json())
 
 
+def rename_channel(channel_id: str, name: str) -> None:
+    """Rename a channel (#856). Needs Manage Channels. Raises SendError."""
+    request("PATCH", f"/channels/{channel_id}", json={"name": name})
+
+
+def set_permission(channel_id: str, overwrite_id: str, kind: int, allow: int, deny: int) -> None:
+    """Set one role's or member's permission overwrite on a channel (#856), leaving
+    the others as they are. Needs Manage Roles. Raises SendError."""
+    request(
+        "PUT",
+        f"/channels/{channel_id}/permissions/{overwrite_id}",
+        json={"type": kind, "allow": str(allow), "deny": str(deny)},
+    )
+
+
+def remove_permission(channel_id: str, overwrite_id: str) -> None:
+    """Take one role's or member's overwrite off a channel (#856); one already gone
+    is fine. Needs Manage Roles. Raises SendError."""
+    try:
+        request("DELETE", f"/channels/{channel_id}/permissions/{overwrite_id}")
+    except SendError as error:
+        if error.status != 404:
+            raise
+
+
 def create_invite(channel_id: str, max_age: int = 7 * 24 * 3600) -> str:
     """A single-use invite to the server, through a channel; returns its link.
     Raises SendError."""

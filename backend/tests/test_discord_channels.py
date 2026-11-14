@@ -17,13 +17,21 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import discord_channels
+from horatio import character_moves, discord_channels, renames
 from horatio.config import get_settings
 from horatio.connectors import discord
-from horatio.models import TroupeConnector, User
+from horatio.models import Character, TroupeConnector, User
 from tests.api_helpers import Troupe
 from tests.test_api_downtimes import member_character
-from tests.test_discord_connector import BOT, BOT_ROLE, EVERYONE, GUILD, OWNER, FakeDiscord
+from tests.test_discord_connector import (
+    BOT,
+    BOT_ROLE,
+    EVERYONE,
+    GUILD,
+    OPEN_CHANNEL,
+    OWNER,
+    FakeDiscord,
+)
 
 STS = "800"
 PLAYERS_ROLE = "801"
@@ -45,6 +53,10 @@ class FakeServer(FakeDiscord):
         self.searches: list[str] = []
         # Responses to give to the next channel or category made: (status, body).
         self.refuse_making: list[tuple[int, dict[str, Any]]] = []
+        # Channels renamed and overwrites set or taken off (#856), in order; and
+        # responses to give to the next such change instead.
+        self.changes: list[tuple[str, str, str]] = []
+        self.refuse_changing: list[tuple[int, dict[str, Any]]] = []
 
     def add_member(self, user_id: str, username: str, nick: str | None = None) -> None:
         self.members[user_id] = {
@@ -116,6 +128,26 @@ class FakeServer(FakeDiscord):
             if member is None:
                 return httpx.Response(404, json={"message": "Unknown Member", "code": 10007})
             return httpx.Response(200, json=member)
+        # Keeping channels in step (#856): renaming, and one overwrite at a time.
+        if path.startswith("/channels/") and request.method in ("PATCH", "PUT", "DELETE"):
+            bits = path.split("/")
+            channel = next((c for c in self.channels if c["id"] == bits[2]), None)
+            if self.refuse_changing:
+                code, body = self.refuse_changing.pop(0)
+                return httpx.Response(code, json=body)
+            if channel is None:
+                return httpx.Response(404, json={"message": "Unknown Channel", "code": 10003})
+            if request.method == "PATCH" and len(bits) == 3:
+                channel.update(json.loads(request.content))
+                self.changes.append(("rename", bits[2], channel["name"]))
+                return httpx.Response(200, json=channel)
+            if len(bits) == 5 and bits[3] == "permissions":
+                rules = channel.setdefault("permission_overwrites", [])
+                rules[:] = [o for o in rules if o["id"] != bits[4]]
+                if request.method == "PUT":
+                    rules.append({"id": bits[4], **json.loads(request.content)})
+                self.changes.append((request.method.lower(), bits[2], bits[4]))
+                return httpx.Response(204)
         if path.endswith("/invites") and request.method == "POST":
             self.invites.append((path.split("/")[2], json.loads(request.content)))
             return httpx.Response(200, json={"code": f"invite{len(self.invites)}"})
@@ -493,3 +525,278 @@ def test_linking_their_discord_account_resolves_a_match(court: Court, fake: Fake
     shown = court.setup()["managed"]["characters"][court.agnes]
     assert (shown["discord"], shown["match"]) == ("verified", None)
     assert court.make()["status"] == "made"
+
+
+# --- keeping channels in step, checking and fixing them (#856) ----------------------------
+
+
+NARRATORS = "802"
+
+
+def made_channel(court: Court, fake: FakeServer) -> dict[str, Any]:
+    """Agnes's channel, made by Horatio for her verified player, as the fake server
+    holds it now."""
+    court.player.discord_user_id = PLAYER
+    court.session.flush()
+    fake.add_member(PLAYER, "nightowl")
+    court.manage(roles=[STS])
+    assert court.make()["status"] == "made"
+    [channel] = [c for c in fake.made if c["type"] == 0]
+    return channel
+
+
+def rules(channel: dict[str, Any]) -> dict[str, int]:
+    return {o["id"]: int(o["allow"]) for o in channel["permission_overwrites"]}
+
+
+def agnes(court: Court) -> Character:
+    return court.session.get_one(Character, uuid.UUID(court.agnes))
+
+
+def staff_bell(court: Court) -> list[str]:
+    found = court.troupe.storyteller.client.get("/notifications").json()["items"]
+    return [n["summary"] for n in found if "Discord channel" in n["summary"]]
+
+
+def problems(court: Court) -> dict[str, dict[str, Any]]:
+    return {p["kind"]: p for p in court.setup()["managed"]["problems"]}
+
+
+def test_a_renamed_character_has_its_channel_renamed(court: Court, fake: FakeServer) -> None:
+    channel = made_channel(court, fake)
+    lead = court.session.scalars(select(User).where(User.handle == court.troupe.lead.handle)).one()
+
+    renames.rename(court.session, lead, agnes(court), "Agnès Ash")
+    court.session.flush()
+
+    assert court.settings()["managed"]["sync"] == [court.agnes]
+    assert court.setup()["managed"]["syncing"] == 1
+    assert discord_channels.sync_due(court.session) == 1
+    assert channel["name"] == "agnes-ash"
+    assert court.settings()["managed"]["sync"] == []
+    kept = "renamed #agnes-wren to #agnes-ash"
+    assert any("Horatio kept" in m and kept in m for m in court.log())
+    # Nothing else changed, so nothing else was asked of Discord.
+    assert [c[0] for c in fake.changes] == ["rename"]
+
+
+def test_a_character_given_to_another_player_lets_them_in(court: Court, fake: FakeServer) -> None:
+    channel = made_channel(court, fake)
+    stranger = court.session.scalars(
+        select(User).where(User.handle == court.troupe.stranger.handle)
+    ).one()
+    stranger.discord_user_id = OTHER
+    fake.add_member(OTHER, "barnowl")
+    custodian = court.session.scalars(
+        select(User).where(User.handle == court.troupe.custodian.handle)
+    ).one()
+
+    character_moves.move(court.session, custodian, agnes(court), stranger, "Swapped", tell=False)
+    court.session.flush()
+    discord_channels.sync_due(court.session)
+
+    assert OTHER in rules(channel)
+    assert PLAYER not in rules(channel)
+    assert rules(channel)[OTHER] == discord_channels.PLAYER_ALLOW
+    told = court.troupe.stranger.client.get("/notifications").json()["items"]
+    assert any(n["summary"].startswith("Your Discord channel #agnes-wren is ready") for n in told)
+
+
+def test_a_new_player_known_by_a_typed_username_waits_for_a_storyteller(
+    court: Court, fake: FakeServer
+) -> None:
+    channel = made_channel(court, fake)
+    stranger = court.session.scalars(
+        select(User).where(User.handle == court.troupe.stranger.handle)
+    ).one()
+    stranger.discord_handle = "barnowl"
+    fake.add_member(OTHER, "barnowl")
+    custodian = court.session.scalars(
+        select(User).where(User.handle == court.troupe.custodian.handle)
+    ).one()
+    character_moves.move(court.session, custodian, agnes(court), stranger, "Swapped", tell=False)
+    court.session.flush()
+
+    discord_channels.sync_due(court.session)
+
+    # The old player is out; the new one waits for a storyteller.
+    assert PLAYER not in rules(channel)
+    assert OTHER not in rules(channel)
+    shown = court.setup()["managed"]["characters"][court.agnes]
+    assert shown["match"]["username"] == "barnowl"
+    answer = f"/troupes/{court.troupe.id}/discord/characters/{court.agnes}/match"
+    yes = court.troupe.storyteller.client.post(answer, json={"its_them": True}).json()
+    assert yes["status"] == "made"
+    assert "shortly" in yes["note"]
+
+    discord_channels.sync_due(court.session)
+
+    assert rules(channel)[OTHER] == discord_channels.PLAYER_ALLOW
+
+
+def test_leaving_the_troupe_takes_the_player_out(court: Court, fake: FakeServer) -> None:
+    channel = made_channel(court, fake)
+    character = agnes(court)
+    character.home_troupe_id = None
+    discord_channels.changed(court.session, character)
+    court.session.flush()
+
+    discord_channels.sync_due(court.session)
+
+    assert PLAYER not in rules(channel)
+    assert STS in rules(channel)
+
+
+def test_staff_roles_changing_reach_every_channel_but_hand_made_access_stays(
+    court: Court, fake: FakeServer
+) -> None:
+    channel = made_channel(court, fake)
+    # Someone lets narrators in by hand on Discord: Horatio leaves that alone.
+    channel["permission_overwrites"].append(
+        {"id": NARRATORS, "type": 0, "allow": str(discord.VIEW_CHANNEL), "deny": "0"}
+    )
+
+    assert court.manage(roles=[PLAYERS_ROLE]).status_code == 204
+    assert court.settings()["managed"]["sync"] == ["*"]
+    discord_channels.sync_due(court.session)
+
+    found = rules(channel)
+    assert STS not in found
+    assert found[PLAYERS_ROLE] == discord_channels.STAFF_ALLOW
+    assert NARRATORS in found
+    assert any("took @sts out" in m and "let @players in" in m for m in court.log())
+
+
+def test_a_retired_characters_channel_is_left_as_it_is(court: Court, fake: FakeServer) -> None:
+    channel = made_channel(court, fake)
+    agnes(court).status = "retired"
+    court.session.flush()
+    fake.changes.clear()
+
+    court.manage(roles=[PLAYERS_ROLE])
+    discord_channels.sync_due(court.session)
+
+    assert fake.changes == []
+    assert STS in rules(channel)
+    assert PLAYER in rules(channel)
+
+
+def test_discord_asking_to_slow_down_waits(court: Court, fake: FakeServer) -> None:
+    channel = made_channel(court, fake)
+    court.manage(roles=[PLAYERS_ROLE])
+    fake.refuse_changing = [(429, {"retry_after": 120})]
+    start = discord_channels.now()
+
+    discord_channels.sync_due(court.session, start)
+
+    managed = court.settings()["managed"]
+    assert managed["sync"] == [court.agnes]
+    assert discord_channels.sync_due(court.session, start + timedelta(seconds=30)) == 0
+    assert discord_channels.sync_due(court.session, start + timedelta(minutes=3)) == 1
+    assert PLAYERS_ROLE in rules(channel)
+
+
+def test_a_check_finds_hand_made_changes_and_fix_puts_them_right(
+    court: Court, fake: FakeServer
+) -> None:
+    channel = made_channel(court, fake)
+    channel["name"] = "my-own-name"
+    channel["permission_overwrites"] = [
+        o for o in channel["permission_overwrites"] if o["id"] != STS
+    ]
+    url = f"/troupes/{court.troupe.id}/discord/check"
+    assert court.troupe.assistant.client.post(url).status_code == 403
+
+    assert court.troupe.storyteller.client.post(url).status_code == 204
+    assert court.setup()["managed"]["checking"] is True
+    assert discord_channels.check_due(court.session) == 1
+
+    found = problems(court)
+    assert set(found) == {"name", "access"}
+    assert found["name"]["note"] == "Its channel #my-own-name was renamed on Discord."
+    assert found["access"]["note"] == "#my-own-name was changed on Discord: @sts isn't let in."
+    assert found["name"]["fix"] == found["access"]["fix"] == "fix"
+    assert court.setup()["managed"]["checking"] is False
+    assert len(staff_bell(court)) == 2
+    # Checked again, the same problems tell no one again.
+    court.troupe.storyteller.client.post(url)
+    discord_channels.check_due(court.session)
+    assert len(staff_bell(court)) == 2
+
+    fixed = court.troupe.storyteller.client.post(
+        f"/troupes/{court.troupe.id}/discord/characters/{court.agnes}/fix", json={"how": "fix"}
+    )
+
+    assert fixed.status_code == 200, fixed.text
+    assert channel["name"] == "agnes-wren"
+    assert rules(channel)[STS] == discord_channels.STAFF_ALLOW
+    assert problems(court) == {}
+    assert any(
+        "asked Horatio to fix Agnès Wren" in m and "put its channel right" in m for m in court.log()
+    )
+
+
+def test_a_deleted_channel_is_made_again(court: Court, fake: FakeServer) -> None:
+    channel = made_channel(court, fake)
+    fake.channels.remove(channel)
+    court.troupe.storyteller.client.post(f"/troupes/{court.troupe.id}/discord/check")
+    discord_channels.check_due(court.session)
+    assert problems(court)["deleted"]["fix"] == "remake"
+
+    again = court.troupe.storyteller.client.post(
+        f"/troupes/{court.troupe.id}/discord/characters/{court.agnes}/fix", json={"how": "remake"}
+    ).json()
+
+    assert again["status"] == "made"
+    assert again["channel"] != channel["id"]
+    assert court.settings()["channels"][court.agnes] == again["channel"]
+    assert problems(court) == {}
+
+
+def test_a_player_off_the_server_and_a_channel_no_longer_used(
+    court: Court, fake: FakeServer
+) -> None:
+    made_channel(court, fake)
+    del fake.members[PLAYER]
+    saved = court.troupe.storyteller.client.put(
+        f"/troupes/{court.troupe.id}/connectors/discord",
+        json={"enabled": True, "settings": {"channels": {court.agnes: OPEN_CHANNEL}}},
+    )
+    assert saved.status_code == 200, saved.text
+    court.troupe.storyteller.client.post(f"/troupes/{court.troupe.id}/discord/check")
+    discord_channels.check_due(court.session)
+
+    found = problems(court)
+    assert (found["absent"]["fix"], found["unlinked"]["fix"]) == ("invite", "relink")
+    fix = f"/troupes/{court.troupe.id}/discord/characters/{court.agnes}/fix"
+    invited = court.troupe.storyteller.client.post(fix, json={"how": "invite"}).json()
+    assert invited["status"] == "invited"
+    assert len(fake.invites) == 1
+    court.troupe.storyteller.client.post(fix, json={"how": "relink"})
+    assert (
+        court.settings()["channels"][court.agnes]
+        == court.settings()["managed"]["made"][court.agnes]
+    )
+
+
+def test_channels_are_checked_once_a_day_unasked(court: Court, fake: FakeServer) -> None:
+    made_channel(court, fake)
+    start = discord_channels.now()
+
+    assert discord_channels.check_due(court.session, start) == 1
+    assert discord_channels.check_due(court.session, start + timedelta(hours=1)) == 0
+    assert discord_channels.check_due(court.session, start + timedelta(hours=25)) == 1
+
+
+def test_a_check_queues_what_horatio_should_have_changed(court: Court, fake: FakeServer) -> None:
+    """A change no hook saw (a name changed straight in the database, say) is
+    caught by the daily check and brought into step."""
+    channel = made_channel(court, fake)
+    agnes(court).name = "Agnès Ash"
+    court.session.flush()
+
+    discord_channels.check_due(court.session)
+    assert court.settings()["managed"]["sync"] == [court.agnes]
+    discord_channels.sync_due(court.session)
+
+    assert channel["name"] == "agnes-ash"
