@@ -890,6 +890,12 @@ class DiscordConnector(Connector):
             "channels": channels,
             "test_channel": test_channel,
             **({"post_channels": current["post_channels"]} if current.get("post_channels") else {}),
+            # The In-Character channel too (horatio.in_character).
+            **(
+                {"in_character_channel": current["in_character_channel"]}
+                if current.get("in_character_channel")
+                else {}
+            ),
             # What Horatio does with the server's character channels (#855) is
             # changed only through horatio.discord_channels.
             **({"managed": current["managed"]} if current.get("managed") else {}),

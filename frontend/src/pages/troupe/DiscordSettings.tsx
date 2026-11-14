@@ -15,6 +15,7 @@ import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
 import { BotLacks, FOR_RESULTS, lacking } from "./botPermissions";
 import { DiscordEmoji } from "./DiscordEmoji";
+import { InCharacterChannel } from "./InCharacterChannel";
 import { ManagedCharacterRow, ManagedChannels } from "./ManagedChannels";
 
 type Settings = Record<string, unknown>;
@@ -211,6 +212,7 @@ export function DiscordSettings({
         />
       )}
       <DiscordEmoji troupeId={troupeId} canEdit={canEdit} />
+      <InCharacterChannel troupeId={troupeId} canEdit={canEdit} />
       <div>
         <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">
           Each character's channel

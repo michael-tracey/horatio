@@ -538,6 +538,9 @@ MESSAGES: dict[str, str] = {
     " rated {rating}; specializations: {specializations}; left off the sheet: {left_out})."
     " Its notes: {notes}",
     "npc.deleted": "{actor} deleted the NPC {character}.",
+    "npc.ic_posted": "{actor} posted in IC chat as {character}: “{text}”",
+    "npc.ic_edited": "{actor} edited a message {character} posted in IC chat: “{text}”",
+    "npc.ic_deleted": "{actor} deleted a message {character} posted in IC chat: “{text}”",
     "npc.imported": "{actor} imported the NPC {character} from Yorick (its id there: {legacy_id};"
     " label: {label}; printed lines left to staff: {unmatched}).",
     "npc.reimported": "{actor} imported the NPC {character} from Yorick again (its id there:"

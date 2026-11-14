@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter
 from sqlalchemy import or_, select
 
-from horatio import bonds, npc_copies
+from horatio import bonds, in_character, npc_copies
 from horatio.api.roster import LogEntry, log_entries
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import AuditEvent, Troupe, User
@@ -42,8 +42,11 @@ def character_log(
     )
     players_own = character.kind == "pc" and character.player_id == user.id
     if players_own and not user.is_custodian:
-        # Staff copying it as an NPC is theirs to tell (horatio.npc_copies).
-        query = query.where(AuditEvent.action != npc_copies.COPIED_AS_NPC)
+        # Staff copying it as an NPC is theirs to tell (horatio.npc_copies), and who
+        # spoke as it while it was an NPC is never told (horatio.in_character).
+        query = query.where(
+            AuditEvent.action.not_in((npc_copies.COPIED_AS_NPC, *in_character.ACTIONS))
+        )
     if not (user.is_custodian or players_own):
         troupe_ids = set(
             db.scalars(select(AuditEvent.troupe_id).where(AuditEvent.character_id == character.id))
