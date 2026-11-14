@@ -21,11 +21,12 @@ from urllib.parse import quote, unquote
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from horatio import mail_sender, suspensions
+from horatio import email_design, mail_sender, suspensions
 from horatio.audit import record
 from horatio.auth.sessions import hash_token
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
+from horatio.email_design import Body, compose
 from horatio.models import AuditEvent, PasswordReset, User
 from horatio.models import Session as SignInSession
 
@@ -190,7 +191,7 @@ def reset_email_text(user: User, url: str, by: User | None) -> str:
     return (
         f"Hello {user.display_name},\n\n{opening}\n\n{url}\n\n"
         "It works once, for the next 24 hours, and signs you out everywhere else. "
-        f"{ignore}\n\n-- \nSent by Horatio, {get_settings().public_url.rstrip('/')}\n"
+        f"{ignore}"
     )
 
 
@@ -202,7 +203,8 @@ def email_reset(db: Session, user: User, url: str, by: User | None) -> str | Non
         "Reset your Horatio password",
         mail_sender.sender(db),
     )
-    mail.set_content(reset_email_text(user, url, by))
+    body = Body(text=reset_email_text(user, url, by), action=("Set a new password", url))
+    compose(mail, body, email_design.current(db))
     about = {"member": user.display_name, "user_id": user.id}
     try:
         email.deliver(mail)

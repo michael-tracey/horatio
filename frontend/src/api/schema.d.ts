@@ -7101,6 +7101,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/site/email-design": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Design */
+        get: operations["get_design_api_site_email_design_get"];
+        /**
+         * Set Design
+         * @description The site's name, the header's colours, the accent and the footer. Blank parts
+         *     put back Horatio's own.
+         */
+        put: operations["set_design_api_site_email_design_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/site/email-design/header": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Header
+         * @description A picture for the top of every email, replacing any there was. It's kept as a
+         *     PNG or JPEG made small enough to go in every email.
+         */
+        post: operations["upload_header_api_site_email_design_header_post"];
+        /**
+         * Remove Header
+         * @description Emails go back to the site's name, as text, in the header.
+         */
+        delete: operations["remove_header_api_site_email_design_header_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/site/email-design/header/{image_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Header File
+         * @description The header picture, as emails carry it, for the custodian's card.
+         */
+        get: operations["header_file_api_site_email_design_header__image_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/site/email-design/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview
+         * @description A sample email in the design, as a mail client in light or dark shows it.
+         */
+        get: operations["preview_api_site_email_design_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/site/email-design/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Design
+         * @description Send the sample email, in the design, to the custodian's own address now.
+         */
+        post: operations["test_design_api_site_email_design_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/site/mail": {
         parameters: {
             query?: never;
@@ -14822,6 +14929,14 @@ export interface components {
              */
             file: string;
         };
+        /** Body_upload_header_api_site_email_design_header_post */
+        Body_upload_header_api_site_email_design_header_post: {
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
         /** Body_upload_image_api_troupes__troupe_id__throw_images__which__post */
         Body_upload_image_api_troupes__troupe_id__throw_images__which__post: {
             /**
@@ -19248,10 +19363,68 @@ export interface components {
             /** Pending */
             pending: components["schemas"]["PendingEmailFor"][];
         };
+        /** EmailDesignDefaults */
+        EmailDesignDefaults: {
+            /** Accent */
+            accent: string;
+            /** Header Colour */
+            header_colour: string;
+            /** Header Text Colour */
+            header_text_colour: string;
+            /** Site Name */
+            site_name: string;
+        };
+        /** EmailDesignIn */
+        EmailDesignIn: {
+            /** Accent */
+            accent?: string | null;
+            /** Footer */
+            footer?: string | null;
+            /** Header Colour */
+            header_colour?: string | null;
+            /** Header Text Colour */
+            header_text_colour?: string | null;
+            /** Site Name */
+            site_name?: string | null;
+        };
+        /** EmailDesignOut */
+        EmailDesignOut: {
+            /** Accent */
+            accent: string;
+            /** Chosen */
+            chosen: string[];
+            defaults: components["schemas"]["EmailDesignDefaults"];
+            /** Footer */
+            footer: string;
+            /** Footer Max */
+            footer_max: number;
+            /** Header Colour */
+            header_colour: string;
+            header_image: components["schemas"]["HeaderImageOut"] | null;
+            /** Header Text Colour */
+            header_text_colour: string;
+            /** Site Name */
+            site_name: string;
+            /** Site Name Max */
+            site_name_max: number;
+            /** Uploads */
+            uploads: boolean;
+            /** Warnings */
+            warnings: string[];
+        };
         /** EmailHelp */
         EmailHelp: {
             /** Available */
             available: boolean;
+        };
+        /** EmailPreviewOut */
+        EmailPreviewOut: {
+            /** Html */
+            html: string;
+            /** Subject */
+            subject: string;
+            /** Text */
+            text: string;
         };
         /** Emailed */
         Emailed: {
@@ -21393,6 +21566,17 @@ export interface components {
             /** Drafting */
             drafting: boolean;
             haven: components["schemas"]["OwnHavenOut"] | null;
+        };
+        /** HeaderImageOut */
+        HeaderImageOut: {
+            /** Height */
+            height: number;
+            /** Size */
+            size: number;
+            /** Url */
+            url: string;
+            /** Width */
+            width: number;
         };
         /** Health */
         Health: {
@@ -48706,6 +48890,193 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BotOut"];
+                };
+            };
+        };
+    };
+    get_design_api_site_email_design_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailDesignOut"];
+                };
+            };
+        };
+    };
+    set_design_api_site_email_design_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailDesignIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailDesignOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_header_api_site_email_design_header_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_header_api_site_email_design_header_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailDesignOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_header_api_site_email_design_header_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailDesignOut"];
+                };
+            };
+        };
+    };
+    header_file_api_site_email_design_header__image_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                image_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_api_site_email_design_preview_get: {
+        parameters: {
+            query?: {
+                scheme?: "light" | "dark";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_design_api_site_email_design_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTestOut"];
                 };
             };
         };

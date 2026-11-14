@@ -17,7 +17,7 @@ from horatio.config import get_settings
 from horatio.connectors import email
 from horatio.models import AuditEvent, EmailChange, User
 from tests.api_helpers import PASSWORD, Person, sign_up
-from tests.test_email_connector import FakeSMTP
+from tests.test_email_connector import FakeSMTP, text_of
 
 NEW = "new-address@example.com"
 
@@ -47,8 +47,8 @@ def change(by: Person, whose: Person, address: str = NEW, **body: Any) -> Any:
 
 
 def token_in(message: EmailMessage) -> str:
-    found = re.search(r"http://localhost:5173/confirm-email/(\S+)", message.get_content())
-    assert found, message.get_content()
+    found = re.search(r"http://localhost:5173/confirm-email/(\S+)", text_of(message))
+    assert found, text_of(message)
     return found.group(1)
 
 
@@ -98,7 +98,7 @@ def test_the_custodian_changes_an_email_confirmed_at_the_new_address(
     assert (started["made_by"], started["asked_themselves"]) == ("custodian", False)
     # The link goes to the new address only, and nothing has changed yet.
     assert [m["To"] for m in mail.sent] == [f"player <{NEW}>"]
-    assert "custodian, Horatio's custodian, is changing" in mail.sent[0].get_content()
+    assert "custodian, Horatio's custodian, is changing" in text_of(mail.sent[0])
     assert sign_in(client_for(), player.email) == 200
     assert sign_in(client_for(), NEW) == 401
 
@@ -117,7 +117,7 @@ def test_the_custodian_changes_an_email_confirmed_at_the_new_address(
     notice = mail.sent[1]
     assert notice["To"] == f"player <{player.email}>"
     assert notice["Subject"] == "Your Horatio email has changed"
-    text = notice.get_content()
+    text = text_of(notice)
     assert f"to {NEW}" in text
     assert "custodian, Horatio's custodian, made the change" in text
     assert f"contact Horatio's custodian straight away: custodian (@{custodian.handle})" in text
@@ -284,14 +284,14 @@ def test_a_player_changes_their_own_with_their_password(
     started = response.json()
     # They never see the link: it goes to the new address.
     assert (started["emailed_to"], started["url"], started["asked_themselves"]) == (NEW, None, True)
-    assert "You asked to change the email" in mail.sent[0].get_content()
+    assert "You asked to change the email" in text_of(mail.sent[0])
     # They can have it sent again, or cancel it.
     assert player.client.post(f"/players/{player.id}/email-change/resend").status_code == 200
     assert confirm(client_for(), token_in(mail.sent[0])).status_code == 404
     assert confirm(client_for(), token_in(mail.sent[1])).status_code == 200
 
     assert player.client.get("/auth/me").json()["email"] == NEW
-    notice = mail.sent[2].get_content()
+    notice = text_of(mail.sent[2])
     assert "Horatio's custodian, made the change" not in notice
     assert "contact Horatio's custodian straight away" in notice
     assert [e["message"] for e in custodian.client.get("/email-changes").json()["log"]] == [

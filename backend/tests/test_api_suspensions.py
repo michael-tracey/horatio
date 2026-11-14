@@ -21,7 +21,7 @@ from horatio.models import Session as SignInSession
 from tests.api_helpers import PASSWORD, Person, Troupe, new_character
 from tests.test_api_play import tap
 from tests.test_api_sheets import make_home_troupe_member
-from tests.test_email_connector import FakeSMTP
+from tests.test_email_connector import FakeSMTP, text_of
 
 
 @pytest.fixture
@@ -203,12 +203,12 @@ def test_the_person_is_emailed_but_never_told_the_reason(
 
     suspended, lifted = mail.sent
     assert suspended["To"] == f"player <{troupe.player.email}>"
-    text = suspended.get_content()
+    text = text_of(suspended)
     assert "suspended your account" in text
     assert "contact the custodian: custodian@example.org" in text
     assert "Harassing" not in text
-    assert "You can sign in again" in lifted.get_content()
-    assert "Talked it through" not in lifted.get_content()
+    assert "You can sign in again" in text_of(lifted)
+    assert "Talked it through" not in text_of(lifted)
 
 
 def test_a_failed_email_is_logged_and_said(

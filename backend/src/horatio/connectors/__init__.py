@@ -14,6 +14,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any, ClassVar
 
+from horatio.email_design import Design
 from horatio.mail_sender import Sender
 
 
@@ -38,6 +39,8 @@ class Message:
     link: str
     # Who an email of it comes from (horatio.mail_sender); None for the server's own.
     sender: Sender | None = None
+    # How an email of it looks (horatio.email_design); None for the defaults.
+    design: Design | None = None
 
 
 class SendError(Exception):

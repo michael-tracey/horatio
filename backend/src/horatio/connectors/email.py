@@ -19,11 +19,10 @@ the account's address, and the links that confirm a new address
 """
 
 import contextlib
-import html
-import re
 import smtplib
 import ssl
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from email.message import EmailMessage
 from email.utils import formataddr, make_msgid, parseaddr
 from typing import Any
@@ -32,6 +31,7 @@ from email_validator import EmailNotValidError, validate_email
 
 from horatio.config import get_settings
 from horatio.connectors import Connector, Message, Recipient, SendError, register
+from horatio.email_design import Body, Design, Line, compose, page, plain
 from horatio.mail_sender import Sender
 
 
@@ -67,52 +67,25 @@ def address(value: Any, what: str) -> str | None:
         raise ValueError(f"{what} is not an email address: {error}") from None
 
 
-INLINE = re.compile(r"(\*\*[^*]+\*\*|\*[^*\n]+\*|https?://\S+)")
-
-
-def inline_html(line: str) -> str:
-    """One line of results as HTML: **bold**, *italic* and links, everything
-    else escaped."""
-    out: list[str] = []
-    for part in INLINE.split(line):
-        if part.startswith("**") and part.endswith("**") and len(part) > 4:
-            out.append(f"<strong>{html.escape(part[2:-2])}</strong>")
-        elif part.startswith("*") and part.endswith("*") and len(part) > 2:
-            out.append(f"<em>{html.escape(part[1:-1])}</em>")
-        elif part.startswith(("http://", "https://")):
-            url = html.escape(part, quote=True)
-            out.append(f'<a href="{url}">{url}</a>')
-        else:
-            out.append(html.escape(part))
-    return "".join(out)
+def results_body(message: Message) -> Body:
+    """Downtime results (or a note they're ready) in the email design: the message as
+    it was written, a button to read it in Horatio, and who it's from."""
+    return Body(
+        text=message.text,
+        action=("Read it in Horatio", message.link),
+        lines=(Line(f"Sent by Horatio for {message.troupe}. Reply to reach the storytellers."),),
+    )
 
 
 def to_html(message: Message) -> str:
-    """The message as a simple HTML page: the same marks the app shows, as
-    paragraphs, and a link to read it in Horatio."""
-    paragraphs = "\n".join(
-        "<p>" + "<br>".join(inline_html(line) for line in para.split("\n")) + "</p>"
-        for para in message.text.split("\n\n")
-    )
-    link = html.escape(message.link, quote=True)
-    troupe = html.escape(message.troupe)
-    return f"""<!doctype html>
-<html><body>
-<div style="font-family: Georgia, serif; line-height: 1.5; color: #222222; max-width: 40em">
-{paragraphs}
-<p><a href="{link}">Read it in Horatio</a></p>
-<p style="color: #777; font-size: 0.9em">
-Sent by Horatio for {troupe}. Reply to reach the storytellers.</p>
-</div>
-</body></html>
-"""
+    """The message as its email's HTML, without its header picture (see compose)."""
+    design = message.design or Design()
+    shown = replace(design, header_image=None)
+    return page(results_body(message), shown, subject=message.subject, header_src=None)
 
 
 def to_text(message: Message) -> str:
-    footer = f"Sent by Horatio for {message.troupe}. Reply to reach the storytellers."
-    if message.link in message.text:
-        return f"{message.text}\n\n-- \n{footer}\n"
-    return f"{message.text}\n\nRead it in Horatio: {message.link}\n\n-- \n{footer}\n"
+    return plain(results_body(message), message.design or Design())
 
 
 def configured() -> bool:
@@ -169,8 +142,7 @@ class EmailConnector(Connector):
             # The troupe's storytellers, over the server's default.
             del mail["Reply-To"]
             mail["Reply-To"] = formataddr((f"{message.troupe} storytellers", settings["reply_to"]))
-        mail.set_content(to_text(message))
-        mail.add_alternative(to_html(message), subtype="html")
+        compose(mail, results_body(message), message.design)
         deliver(mail)
         return {"message_id": mail["Message-ID"]}
 

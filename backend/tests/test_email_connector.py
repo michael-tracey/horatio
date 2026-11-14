@@ -64,6 +64,11 @@ def send(ready: Scene, session: Session) -> None:
     delivery.send_due(session, START)
 
 
+def text_of(message: EmailMessage) -> str:
+    """An email's plain-text part."""
+    return body(message, "plain")
+
+
 def body(message: EmailMessage, subtype: str) -> str:
     part = message.get_body(preferencelist=(subtype,))
     assert part is not None
@@ -112,10 +117,12 @@ def test_an_alert_goes_to_the_player_with_the_troupe_as_reply_to(
     assert message["Subject"] == "Lords of the Night: downtime results for Agnes (October 2026)"
     link = f"http://localhost:5173/characters/{scene.agnes}/results"
     text = body(message, "plain")
-    assert text.startswith("Your downtime results for Agnes (October 2026) are ready: ")
+    # The design's header, the site's name, comes first (#830).
+    assert text.startswith("Horatio\n\nYour downtime results for Agnes (October 2026) are ready: ")
     assert link in text
     assert "Feed at the docks" not in text
-    assert f'<a href="{link}">Read it in Horatio</a>' in body(message, "html")
+    assert f'<a href="{link}" style=' in body(message, "html")
+    assert ">Read it in Horatio</a>" in body(message, "html")
     assert agnes_on(scene, "email")["status"] == "sent"
 
 
@@ -196,5 +203,5 @@ def test_html_escapes_what_players_wrote() -> None:
     assert "<script>" not in page
     assert "&lt;script&gt;" in page
     assert "<strong>Bold</strong>" in page
-    assert '<a href="https://example.com/a?b=1&amp;c=2">' in page
+    assert '<a href="https://example.com/a?b=1&amp;c=2" style=' in page
     assert "Court &lt;of&gt; Ash" in page
