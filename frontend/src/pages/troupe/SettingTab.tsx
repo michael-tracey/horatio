@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { Card } from "../../components/ui";
+import { MotifsTouched } from "./MotifTags";
 import { SettingDocumentFor } from "./SettingDocument";
 
 /**
@@ -20,7 +21,11 @@ export function SettingTab({ troupeId, staff }: { troupeId: string; staff: boole
             <Link to={`${base}/settings`} className="underline hover:text-parchment">
               Troupe settings
             </Link>
-            ; the rest follows the troupe's settings.{" "}
+            ; the rest follows the troupe's settings. Keep what players mustn't read in the{" "}
+            <Link to={`${base}/story-bible`} className="underline hover:text-parchment">
+              story bible
+            </Link>
+            .{" "}
           </>
         )}
         <Link to={`/print/setting/${troupeId}`} target="_blank" className="underline hover:text-parchment">
@@ -30,6 +35,7 @@ export function SettingTab({ troupeId, staff }: { troupeId: string; staff: boole
       <Card>
         <SettingDocumentFor troupeId={troupeId} editBase={staff ? base : undefined} />
       </Card>
+      {staff && <MotifsTouched troupeId={troupeId} />}
     </div>
   );
 }
