@@ -10,7 +10,7 @@ function wrap(children: ReactNode) {
   return render(<QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>);
 }
 
-const off = { on: false, staff_roles: [], roles: [], lacks: [], can_invite: true, queued: 0, characters: {} };
+const off = { on: false, staff_roles: [], roles: [], lacks: [], can_invite: true, queued: 0, characters: {}, problems: [], checked_at: null, checking: false, syncing: 0 };
 
 describe("channels Horatio makes (#855)", () => {
   it("asks only to be switched on while off", () => {
@@ -90,5 +90,46 @@ describe("channels Horatio makes (#855)", () => {
     expect(screen.getByText("Discord: @ghost, typed, not checked")).toBeTruthy();
     expect(screen.getByText("No one on the server has the Discord username @ghost.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Make a channel for Agnes Wren" })).toBeTruthy();
+  });
+  it("lists what a check found, with Horatio's fix for each (#856)", () => {
+    wrap(
+      <ManagedChannels
+        troupeId="t1"
+        managed={{
+          ...off,
+          on: true,
+          checked_at: "2026-11-13T21:00:00Z",
+          syncing: 2,
+          problems: [
+            {
+              key: "c1:deleted",
+              character_id: "c1",
+              name: "Agnes Wren",
+              kind: "deleted",
+              note: "Its channel was deleted on Discord.",
+              fix: "remake",
+              since: "2026-11-13T21:00:00Z",
+            },
+            {
+              key: "server:server",
+              character_id: null,
+              name: null,
+              kind: "server",
+              note: "Discord refused Horatio's bot token.",
+              fix: null,
+              since: "2026-11-13T21:05:00Z",
+            },
+          ],
+        }}
+        canEdit
+        without={0}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Make it again: Agnes Wren: Its channel was deleted on Discord." })).toBeTruthy();
+    expect(screen.getByText("Discord refused Horatio's bot token.")).toBeTruthy();
+    expect(screen.queryAllByRole("button", { name: /Discord refused/ })).toHaveLength(0);
+    expect(screen.getByText(/Bringing 2 channels into step/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Check channels" })).toBeTruthy();
+    expect(screen.getByText(/Last checked/)).toBeTruthy();
   });
 });

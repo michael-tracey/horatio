@@ -2,6 +2,7 @@
 
 import secrets
 import uuid
+from datetime import datetime
 from typing import Literal
 from urllib.parse import urlencode
 
@@ -69,8 +70,24 @@ class ManagedCharacter(BaseModel):
     match: MatchOut | None
 
 
+class ChannelProblemOut(BaseModel):
+    """Something wrong with a channel Horatio made (#856), and its fix, if any:
+    "fix" (put it right), "remake" (make it again), "invite" (invite its player) or
+    "relink" (send its character's results there again)."""
+
+    key: str
+    # The character, or None for the server as a whole.
+    character_id: str | None
+    name: str | None
+    kind: str
+    note: str
+    fix: Literal["fix", "remake", "invite", "relink"] | None
+    since: datetime
+
+
 class ManagedOut(BaseModel):
-    """Character channels Horatio makes on the server (#855)."""
+    """Character channels Horatio makes on the server (#855), kept in step and
+    checked (#856)."""
 
     on: bool
     # The server's roles let into every channel Horatio makes, by id.
@@ -84,6 +101,13 @@ class ManagedOut(BaseModel):
     can_invite: bool | None
     queued: int
     characters: dict[str, ManagedCharacter]
+    # What a check found wrong, the oldest first.
+    problems: list[ChannelProblemOut] = []
+    # When Horatio last checked the channels, whether staff asked it to check again,
+    # and how many channels wait to be brought into step.
+    checked_at: datetime | None = None
+    checking: bool = False
+    syncing: int = 0
 
 
 class DiscordSetup(BaseModel):
@@ -274,6 +298,24 @@ def managed_out(
         can_invite=bool(server & discord.CREATE_INSTANT_INVITE) if server is not None else None,
         queued=len(parts["queue"]),
         characters=found,
+        problems=sorted(
+            (
+                ChannelProblemOut(
+                    key=key,
+                    character_id=p.get("character_id") if p.get("kind") != "server" else None,
+                    name=p.get("name"),
+                    kind=p.get("kind", ""),
+                    note=p.get("note", ""),
+                    fix=p.get("fix"),
+                    since=datetime.fromisoformat(p["since"]),
+                )
+                for key, p in parts["problems"].items()
+            ),
+            key=lambda p: (p.since, p.key),
+        ),
+        checked_at=datetime.fromisoformat(parts["checked_at"]) if parts["checked_at"] else None,
+        checking=bool(parts["check_asked"]),
+        syncing=len(parts["made"]) if "*" in parts["sync"] else len(parts["sync"]),
     )
 
 
@@ -356,6 +398,9 @@ def change_managed(
             troupe_id=troupe.id,
             roles=", ".join(f"@{names[r]}" for r in roles) if roles else "none",
         )
+    if parts["staff_roles"] != roles:
+        # Every channel Horatio made lets the new roles in and the old ones out (#856).
+        discord_channels.staff_roles_changed(parts)
     parts["on"] = body.on
     parts["staff_roles"] = roles
     if not body.on:
@@ -420,3 +465,42 @@ def make_every_channel(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -
     queued = discord_channels.queue_all(db, troupe, user)
     db.commit()
     return Queued(queued=queued)
+
+
+class FixAsk(BaseModel):
+    how: Literal["fix", "remake", "invite", "relink"]
+
+
+@router.post("/troupes/{troupe_id}/discord/check", status_code=status.HTTP_204_NO_CONTENT)
+def check_channels(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
+    """Ask Horatio to check every channel it made against what it set (#856); the
+    worker does it, and the page shows what it found."""
+    troupe, row = managing_troupe(db, user, troupe_id)
+    if not discord_channels.managed(row.settings)["on"]:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Horatio doesn't make this troupe's channels: switch it on first.",
+        )
+    discord_channels.ask_check(db, troupe, user)
+    db.commit()
+
+
+@router.post("/troupes/{troupe_id}/discord/characters/{character_id}/fix")
+def fix_channel(
+    troupe_id: uuid.UUID, character_id: uuid.UUID, body: FixAsk, db: DbSession, user: CurrentUser
+) -> OutcomeOut:
+    """Put right something wrong with a channel Horatio made (#856)."""
+    troupe, _ = managing_troupe(db, user, troupe_id)
+    character = db.get(Character, character_id)
+    if character is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character.")
+    try:
+        outcome = discord_channels.fix(db, troupe, character, body.how, user)
+    except LookupError as missing:
+        db.rollback()
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(missing)) from None
+    except SendError as failure:
+        db.rollback()
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, failure.reason) from None
+    db.commit()
+    return outcome_out(outcome)

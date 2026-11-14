@@ -30,8 +30,12 @@ export function DiscordSettings({
   const setup = useQuery({
     queryKey: ["discord", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/discord", { params: { path: { troupe_id: troupeId } } })),
-    // While Horatio makes queued channels (#855), see them arrive.
-    refetchInterval: (q) => (q.state.data?.managed?.queued ? 5000 : false),
+    // While Horatio makes queued channels (#855), brings them into step or checks
+    // them (#856), see it happen.
+    refetchInterval: (q) => {
+      const managed = q.state.data?.managed;
+      return managed && (managed.queued || managed.syncing || managed.checking) ? 5000 : false;
+    },
   });
   const invite = useAction(async () => {
     const { url } = await unwrap(api.POST("/api/troupes/{troupe_id}/discord/invite", { params: { path: { troupe_id: troupeId } } }));

@@ -258,6 +258,10 @@ def end_membership(
     troupe if this was it, and its requests waiting there are withdrawn. Its sheet,
     XP and history stay as they are. The caller logs why."""
     membership.left_at = datetime.now(UTC)
+    # A channel Horatio made for it on the troupe's Discord takes its player out (#856).
+    from horatio import discord_channels
+
+    discord_channels.changed(db, character)
     # Its titles and who spoke for it at court were this troupe's.
     titles.drop_all(db, troupe.id, character.id)
     membership.represented_by = None
@@ -847,6 +851,10 @@ def approve_change(
         )
     character.home_troupe_id = change.to_troupe_id
     sync_fixed_ratings(db, character)
+    # A channel Horatio made for it in its old home troupe takes its player out (#856).
+    from horatio import discord_channels
+
+    discord_channels.changed(db, character)
     # The sheet as the new home troupe accepted it: the floor for lowering ratings.
     freeze_sheet(db, staff, character, change.to_troupe_id)
     if character.kind == "pc":
