@@ -13495,6 +13495,17 @@
             "title": "Amount",
             "type": "integer"
           },
+          "most": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Most"
+          },
           "tracker": {
             "enum": [
               "blood",
@@ -38352,6 +38363,11 @@
             "title": "Attributes",
             "type": "array"
           },
+          "blood_extra": {
+            "default": 0,
+            "title": "Blood Extra",
+            "type": "integer"
+          },
           "blood_half": {
             "default": false,
             "title": "Blood Half",
@@ -50793,6 +50809,7 @@
         "type": "object"
       },
       "SwitchLevel": {
+        "description": "Wound levels a switch adds while it is on, or gives up (fewer than none: issue\n#824, Bonecraft's Extra Limbs, core p. 168): those come off the sheet's own in the\ncategory, and come back only when it ends (core p. 169).",
         "properties": {
           "boxes": {
             "title": "Boxes",
@@ -50813,6 +50830,28 @@
       "SwitchOption": {
         "description": "One of a power's own options, picked each time it is used (issue #821): Mantle\nof Atira's Bear Strength, Mythic Form's Tough. While its switch is on and it is\npicked, what it does counts as a switch's does: its `key` (\"Mythic Form/Tough\") is\nwhat a `when` in the powers file names, and it is on while it is picked.",
         "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "amount_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Label"
+          },
           "attributes": {
             "default": [],
             "items": {
@@ -50820,6 +50859,22 @@
             },
             "title": "Attributes",
             "type": "array"
+          },
+          "base": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base"
+          },
+          "blood_extra": {
+            "default": 0,
+            "title": "Blood Extra",
+            "type": "integer"
           },
           "blood_half": {
             "default": false,

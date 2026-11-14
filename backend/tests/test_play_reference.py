@@ -194,7 +194,7 @@ def test_powers_say_what_using_them_costs(troupe: Troupe, swift: str) -> None:
     disciplines = {d["name"]: d for d in reference(troupe, swift)["disciplines"]}
     celerity = disciplines["Celerity"]
     # Celerity is activated as a whole, for 1 Blood (core p. 121), and switched on.
-    assert celerity["cost"] == {"tracker": "blood", "amount": 1}
+    assert celerity["cost"] == {"tracker": "blood", "amount": 1, "most": None}
     assert celerity["switches"] == ["Celerity"]
     assert all(p["cost"] is None for p in celerity["powers"])
     # Dominate's orders cost nothing; Obfuscate's powers neither.
@@ -220,7 +220,7 @@ def test_elder_powers_say_what_using_them_costs(troupe: Troupe, swift: str) -> N
     others = {o["name"]: o for o in found["other_powers"]}
     projectile = others["Celerity: Projectile"]
     assert projectile["category_name"] == "Elder Disciplines"
-    assert projectile["cost"] == {"tracker": "blood", "amount": 1}
+    assert projectile["cost"] == {"tracker": "blood", "amount": 1, "most": None}
     assert projectile["switches"] == ["Projectile"]
     # With no [[others]] entry, no cost and no switch.
     assert others["Instinctive Command"]["cost"] is None
@@ -300,7 +300,7 @@ def test_elder_powers_switch_on_what_they_change(troupe: Troupe) -> None:
 
     found = reference(troupe, character_id)
     others = {o["name"]: o for o in found["other_powers"]}
-    blood = {"tracker": "blood", "amount": 1}
+    blood = {"tracker": "blood", "amount": 1, "most": None}
     assault = others["Auspex: Psychic Assault"]
     assert assault["note"].startswith("1 Blood, standard action, Auspex test: 4 damage")
     assert (assault["page"], assault["cost"], assault["switches"]) == (
@@ -310,7 +310,11 @@ def test_elder_powers_switch_on_what_they_change(troupe: Troupe) -> None:
     )
     flick = others["Potence: Flick"]
     assert (flick["page"], flick["cost"], flick["switches"]) == ("220", blood, ["Flick"])
-    assert others["Vicissitude: Breath of the Dragon"]["cost"] == {"tracker": "blood", "amount": 2}
+    assert others["Vicissitude: Breath of the Dragon"]["cost"] == {
+        "tracker": "blood",
+        "amount": 2,
+        "most": None,
+    }
 
     brawl = pool(found, "attack:Brawl")
     assert ("Flick", "Flick", 3) in switched(brawl)
@@ -489,7 +493,7 @@ def test_the_path_of_the_graveborn_has_its_five_powers(troupe: Troupe) -> None:
         (5, "Death Perfected"),
     ]
     assert path["pool"] == "Social + Occult"
-    blood = {"tracker": "blood", "amount": 1}
+    blood = {"tracker": "blood", "amount": 1, "most": None}
     assert [p["cost"] for p in path["powers"]] == [blood, blood, None, blood, blood]
     assert all(p["note"] for p in path["powers"])
     # With Appearance, the focus notes of the powers that have one for it.
@@ -537,7 +541,10 @@ def test_every_power_that_switches_on_has_a_plain_cost_or_none() -> None:
     for entry in [*entries, *book.others.values()]:
         given = entry.get("cost")
         if given is not None:
-            assert set(given) <= {"blood", "willpower", "unless_focus"}, entry["name"]
+            assert set(given) <= {"blood", "willpower", "unless_focus", "most"}, entry["name"]
+            # A cost chosen each use runs up from its amount (issue #824).
+            if "most" in given:
+                assert given["most"] > given.get("blood", given.get("willpower")), entry["name"]
     # Elder and luminary powers and techniques with a plain cost in the book.
     others = {name: cost(entry, Sheet()) for (_, name), entry in book.others.items()}
     blood = {n: c.amount for n, c in others.items() if c and c.tracker == "blood"}
@@ -1193,6 +1200,10 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
             for o in picks.get("options", []):
                 assert o["name"] and "/" not in o["name"], e["name"]
                 assert o.get("page", a["page"]) > 0, (e["name"], o["name"])
+                # An amount chosen each use runs from at least 1 (issue #824).
+                if "amount" in o:
+                    least = o["amount"].get("least", 1)
+                    assert 1 <= least <= o["amount"]["most"], (e["name"], o["name"])
                 for q in o.get("qualities", []):
                     assert (q["kind"], q["name"]) in rule_set.equipment.qualities, (e["name"], q)
     for category, name in book.others:
@@ -1553,13 +1564,13 @@ def test_the_reference_sends_a_powers_uses(troupe: Troupe) -> None:
     assert [(u["label"], u["cost"], u["heal"], u["target"]) for u in corpore["uses"]] == [
         (
             "Heal 1 normal",
-            {"tracker": "blood", "amount": 1},
+            {"tracker": "blood", "amount": 1, "most": None},
             {"damage": "normal", "amount": 1},
             "self",
         ),
         (
             "Heal 1 normal",
-            {"tracker": "blood", "amount": 1},
+            {"tracker": "blood", "amount": 1, "most": None},
             {"damage": "normal", "amount": 1},
             "other",
         ),
@@ -1728,3 +1739,19 @@ def test_blood_tempering_and_assimilate_switch_on_from_their_pages() -> None:
     assert assimilate.page == "Vol. 2, p. 131"
     assert assimilate.picks is None
     assert any("wraith's disciplines" in n for n in assimilate.notes)
+
+
+# --- An amount chosen at use (issue #824) --------------------------------------
+
+
+def test_a_cost_the_player_chooses_from_one_up() -> None:
+    """Promises Like Steel spends 1 to 3 Blood, as its user chooses (Vol. 2 pp. 217-
+    218); Fog of War spends 1 Blood for each ten minutes (Vol. 2 p. 195), a Use each;
+    Deny 3 Blood for each object (core p. 215)."""
+    book = catalogue()
+    promises = book.others[("elder_disciplines", "Mytherceria: Promises Like Steel")]
+    assert cost(promises, Sheet()) == Cost(tracker="blood", amount=1, most=3)
+    fog = book.others[("elder_disciplines", "Auspex: Fog of War")]
+    assert cost(fog, Sheet()) == Cost(tracker="blood", amount=1)
+    deny = book.others[("elder_disciplines", "Dementation: Deny")]
+    assert cost(deny, Sheet()) == Cost(tracker="blood", amount=3)

@@ -37,15 +37,18 @@
 #   transformation: core p. 114, Vol. 2 Issue 1 p. 56): only one form is on at a
 #   time, but for those it `combines` with. `page` (and `book`, the core book by
 #   default) is where its rules are. While it is on:
-#   - `health = [{ level, boxes, choice? }]` adds wound levels to the tracker;
+#   - `health = [{ level, boxes, choice? }]` adds wound levels to the tracker, or
+#     with fewer than none gives that many of the sheet's own in the category up
+#     (issue #824: Bonecraft's Extra Limbs), back only when it ends (core p. 169);
 #   - `attributes = [{ attribute, amount?, most?, pools?, choice? }]` changes an
 #     attribute in the pools made on it: `amount` is added, `most` is the most it
 #     counts as ("reduced to 3"), and `pools` (attack, defense or one pool's key)
 #     limits it to some pools;
 #   - `focuses = [Name]`: the character counts as having that focus, so what the
 #     focus adds elsewhere in this file counts too;
-#   - `blood = { per_turn?, most? }`: more Blood a turn, and `most = "half"` makes
-#     the Blood pool half again as big (rounded up) until it ends;
+#   - `blood = { per_turn?, most?, extra? }`: more Blood a turn, `most = "half"` makes
+#     the Blood pool half again as big (rounded up) until it ends, and `extra` adds
+#     that much to it (issue #824: Second Stomach);
 #   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out;
 #   - `picks = { count, kind?, kinds?, only?, immune?, focus_count?, options?,
 #     target? }`: what the player picks each time it goes on, `count` at most, or
@@ -56,7 +59,11 @@
 #     power's own `options` (issue #821), each a table with `name`, `page` and
 #     `book` (its switch's by default), `note`, and what it does while picked, as a
 #     switch's: `health`, `attributes`, `focuses`, `blood`, `qualities`, and
-#     `normal_form_only` to differ from its switch. `from` names a trait that adds
+#     `normal_form_only` to differ from its switch. `amount = { least?, most, label? }`
+#     makes the player choose how much each use (issue #824: Tough's 1 to 3 Physical,
+#     core p. 168): it is then one option for each amount, "Tough: 2", of which one is
+#     picked at a time, and what its `health`, `attributes` and `blood` entries marked
+#     `scale = true` give is that many times theirs. `from` names a trait that adds
 #     it (Bonecraft Prodigy's options), `hidden_by` one that rules it out (Tzimisce:
 #     Scar Tissue), and `focus`, `unless_focus` and `choice` hold as elsewhere. An
 #     option is a switch of its own, "<key>/<name>", on while picked: a `when` in a
@@ -89,7 +96,9 @@
 #   `choice = { key = value }` on an entry makes it hold only for that choice.
 # `cost` (on a discipline, power or [[others]] entry): what using it costs, for
 #   its Use button on the Play View (issues #370 and #588): { blood = n } or
-#   { willpower = n }, with `unless_focus` for a focus that makes it free. Leave it
+#   { willpower = n }, with `unless_focus` for a focus that makes it free, and `most`
+#   for one whose player chooses how much to spend, from n to `most` (issue #824:
+#   Promises Like Steel's 1 to 3 Blood), a Use button for each. Leave it
 #   out where the `note` starts with the cost ("1 Blood, standard action: …"),
 #   which is read instead; a power whose cost comes later in its note gets no Use
 #   button. Use spends it on every press, and turns the switch on if it is off, so
@@ -2222,10 +2231,12 @@ name = "Auspex: Clairvoyance"
 cost = { blood = 1 }
 active = { key = "Clairvoyance", page = 213, notes = ["Five minutes for each Investigation dot; you still sense your own surroundings.", "Only Auspex 1-5 work through it, not elder powers or techniques."] }
 
-# Vol. 2 p. 195: Blood and a simple action: a battle map in your head, ten minutes a Blood.
+# Vol. 2 p. 195: Blood and a simple action: a battle map in your head, ten minutes a
+# Blood. Each Use spends 1 Blood for ten minutes more (issue #824).
 [[others]]
 category = "elder_disciplines"
 name = "Auspex: Fog of War"
+cost = { blood = 1 }
 active = { key = "Fog of War", page = 195, book = "Vol. 2", notes = ["Ten minutes for each Blood spent: enemy numbers and places, even through walls, once a fight is near.", "Once a turn, let someone in a challenge you can see retest with your Willpower."] }
 
 # Vol. 2 p. 199: 1 Blood: double speed, and run up walls, across ceilings and over water.
@@ -2506,6 +2517,13 @@ cost = { blood = 1 }
 category = "elder_disciplines"
 name = "Mytherceria: Fiddlesticks"
 cost = { blood = 3 }
+
+# Vol. 2 pp. 217-218: 1 to 3 Blood, chosen as it is used (issue #824), and a standard
+# action: the more spent, the less time the target has to keep their promise.
+[[others]]
+category = "elder_disciplines"
+name = "Mytherceria: Promises Like Steel"
+cost = { blood = 1, most = 3 }
 
 [[others]]
 category = "elder_disciplines"

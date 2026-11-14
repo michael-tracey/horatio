@@ -17,7 +17,7 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   attributes: [],
   focuses: [],
   blood_per_turn: 0,
-  blood_half: false,
+  blood_half: false, blood_extra: 0,
   on: false,
   options: [],
   picked: [],
@@ -294,7 +294,7 @@ describe("a power's own options picked each use (#821)", () => {
     attributes: [],
     focuses: [],
     blood_per_turn: 0,
-    blood_half: false,
+    blood_half: false, blood_extra: 0,
     qualities: [],
     normal_form_only: null,
     ...over,
@@ -365,5 +365,71 @@ describe("a power's own options picked each use (#821)", () => {
     applySwitch(v, "Visage", 1, said);
     expect(said).toEqual(["replaces the one on before"]);
     expect(v.powers[0]!.picked).toEqual([]);
+  });
+});
+
+describe("health levels given up and amounts chosen each use (#824)", () => {
+  type Option = NonNullable<PowerSwitch["picks"]>["options"][number];
+  const own = (name: string, over: Partial<Option> = {}): Option => ({
+    name,
+    key: `Bonecraft/${name}`,
+    page: "p. 168",
+    note: "",
+    health: [],
+    attributes: [],
+    focuses: [],
+    blood_per_turn: 0,
+    blood_half: false,
+    blood_extra: 0,
+    qualities: [],
+    normal_form_only: null,
+    ...over,
+  });
+  const chip = (name: string) => ({ name, play: "", page: "p. 168", modifiers: [] });
+  const toughs = [1, 2, 3].map((n) => own(`Tough: ${n}`, { base: "Tough", amount: n, amount_label: "Physical given up", health: [{ level: "Healthy", boxes: n }], attributes: [{ attribute: "Physical", amount: -n }] }));
+  const limbs = own("Extra Limbs", { health: [{ level: "Healthy", boxes: -2 }] });
+  const stomach = own("Second Stomach: 3", { base: "Second Stomach", amount: 3, health: [{ level: "Healthy", boxes: -3 }], blood_extra: 6 });
+  const bonecraft = power({
+    key: "Bonecraft",
+    name: "Vicissitude: Bonecraft",
+    form: false,
+    picks: picks({ count: 2, options: [...toughs, limbs, stomach] }),
+    options: [...toughs, limbs, stomach].map((o) => chip(o.name)),
+  });
+
+  it("takes the levels given up off the sheet's own, and gives them back when the power ends", () => {
+    const v = view([bonecraft]);
+    const before = healthMost(v);
+    const healthy = boxes(v).filter((b) => b.level === "Healthy").length;
+    applySwitch(v, "Bonecraft", 1);
+    applyPick(v, "Bonecraft/Extra Limbs", 1);
+    expect(healthMost(v)).toBe(before - 2);
+    expect(boxes(v).filter((b) => b.level === "Healthy" && b.from === null)).toHaveLength(healthy - 2);
+    v.health.marks = ["normal", "normal"];
+    applySwitch(v, "Bonecraft", -1);
+    expect(healthMost(v)).toBe(before);
+    // Damage marked stays: the levels come back, the damage with them.
+    expect(v.health.marks).toEqual(["normal", "normal"]);
+  });
+
+  it("never gives up more than a category has, and adds the Blood an option gives", () => {
+    const v = view([bonecraft]);
+    const healthy = boxes(v).filter((b) => b.level === "Healthy").length;
+    applySwitch(v, "Bonecraft", 1);
+    applyPick(v, "Bonecraft/Second Stomach: 3", 1);
+    expect(boxes(v).filter((b) => b.level === "Healthy")).toHaveLength(Math.max(0, healthy - 3));
+    expect(bloodMost(v)).toBe(v.blood_usual + 6);
+  });
+
+  it("picks one amount of an option at a time, as the server does", () => {
+    const v = view([bonecraft]);
+    applySwitch(v, "Bonecraft", 1);
+    applyPick(v, "Bonecraft/Tough: 1", 1);
+    const said: string[] = [];
+    expect(applyPick(v, "Bonecraft/Tough: 3", 1, said)).toEqual([0, 1]);
+    expect(v.powers[0]!.picked).toEqual(["Tough: 3"]);
+    expect(said).toEqual(["in place of Tough: 1"]);
+    expect(boxes(v).filter((b) => b.option === "Tough: 3")).toHaveLength(3);
+    expect(withPicks(v.powers[0]!)).toBe("Vicissitude: Bonecraft (Tough: 3)");
   });
 });

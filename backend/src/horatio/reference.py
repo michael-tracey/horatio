@@ -204,6 +204,9 @@ class Cost(BaseModel):
 
     tracker: Literal["blood", "willpower"]
     amount: int
+    # The most the player may spend on one use, choosing how much from `amount` up
+    # (issue #824: Promises Like Steel's 1 to 3 Blood, Vol. 2 pp. 217-218).
+    most: int | None = None
 
 
 class Heal(BaseModel):
@@ -290,6 +293,10 @@ class OtherPower(BaseModel):
 
 
 class SwitchLevel(BaseModel):
+    """Wound levels a switch adds while it is on, or gives up (fewer than none: issue
+    #824, Bonecraft's Extra Limbs, core p. 168): those come off the sheet's own in the
+    category, and come back only when it ends (core p. 169)."""
+
     level: str
     boxes: int
 
@@ -342,10 +349,20 @@ class SwitchOption(BaseModel):
     focuses: list[str] = []
     blood_per_turn: int = 0
     blood_half: bool = False
+    # More Blood at most while picked (issue #824: Second Stomach's 2 for each level
+    # given up, Vol. 2 Issue 1 p. 61).
+    blood_extra: int = 0
     # Equipment qualities it gives while picked, counted as a picked quality's are.
     qualities: list[SwitchQuality] = []
     # Whether a form pauses it; None follows its switch's.
     normal_form_only: bool | None = None
+    # For an option whose amount is chosen each use (issue #824: Tough's 1 to 3
+    # Physical, core p. 168), one option per amount, named "Tough: 2": the option's
+    # own name, the amount, and what the amount counts. Picking one drops another
+    # amount of the same option, as it is one choice.
+    base: str | None = None
+    amount: int | None = None
+    amount_label: str | None = None
 
 
 class Picks(BaseModel):
@@ -401,6 +418,8 @@ class Switch(BaseModel):
     blood_per_turn: int = 0
     # The Blood pool is half again as big (rounded up) while it is on.
     blood_half: bool = False
+    # More Blood at most while it is on (issue #824).
+    blood_extra: int = 0
     picks: Picks | None = None
     # Kept until undone, not until the game ends (issue #822): it lasts through Reset
     # until the player turns it off (horatio.play_effects). Using it again while it
@@ -1240,7 +1259,12 @@ def _changes(
     levels: dict[str, int] = defaultdict(int)
     for level in switch.health:
         levels[level.level] += level.boxes
-    lines += [f"+{boxes} {level}" for level, boxes in levels.items()]
+    # Levels given up read "-2 Healthy given up" (issue #824).
+    lines += [
+        f"{_signed(boxes)} {level}{' given up' if boxes < 0 else ''}"
+        for level, boxes in levels.items()
+        if boxes
+    ]
     for d in hurts:
         if d.when != switch.key:
             continue
@@ -1266,6 +1290,8 @@ def _changes(
         lines.append(f"{_signed(switch.blood_per_turn)} Blood a turn")
     if switch.blood_half:
         lines.append("Blood pool half again as big")
+    if switch.blood_extra:
+        lines.append(f"{_signed(switch.blood_extra)} most Blood")
     return lines
 
 
@@ -1300,6 +1326,7 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
         focuses=list(active.get("focuses", [])),
         blood_per_turn=blood.get("per_turn", 0),
         blood_half=blood.get("most") == "half",
+        blood_extra=blood.get("extra", 0),
         picks=_picks(owner, active, sheet),
         kept=active.get("kept", False),
         normal_form_only=active.get("normal_form_only", False),
@@ -1331,23 +1358,40 @@ def _ruled_out(active: Mapping[str, Any], sheet: Sheet) -> bool:
 
 
 def _option(
-    active: Mapping[str, Any], o: Mapping[str, Any], holds: Callable[[Any], bool]
+    active: Mapping[str, Any],
+    o: Mapping[str, Any],
+    holds: Callable[[Any], bool],
+    amount: int | None = None,
 ) -> SwitchOption:
+    """One of a power's own options, or for one whose amount is chosen each use
+    (`amount = { least, most, label }`, issue #824) the option at that amount: what
+    its entries marked `scale` give is that many times theirs (Tough's 2 Physical for
+    2 Healthy levels), and it is named with the amount ("Tough: 2")."""
+    times = amount or 1
+
+    def scaled(entry: Mapping[str, Any], value: int) -> int:
+        return value * times if entry.get("scale") else value
+
     blood = o.get("blood", {})
+    spec = o.get("amount", {})
     return SwitchOption(
-        name=o["name"],
-        key=f"{active['key']}/{o['name']}",
+        name=f"{o['name']}: {amount}" if amount is not None else o["name"],
+        key=f"{active['key']}/{o['name']}: {amount}"
+        if amount is not None
+        else f"{active['key']}/{o['name']}",
         page=_page({**({"book": active["book"]} if "book" in active else {}), **o})
         if "page" in o
         else _page(active),
         note=o.get("note", ""),
         health=[
-            SwitchLevel(level=h["level"], boxes=h["boxes"]) for h in o.get("health", []) if holds(h)
+            SwitchLevel(level=h["level"], boxes=scaled(h, h["boxes"]))
+            for h in o.get("health", [])
+            if holds(h)
         ],
         attributes=[
             AttributeChange(
                 attribute=a["attribute"],
-                amount=a.get("amount", 0),
+                amount=scaled(a, a.get("amount", 0)),
                 most=a.get("most"),
                 pools=a.get("pools"),
             )
@@ -1357,13 +1401,27 @@ def _option(
         focuses=list(o.get("focuses", [])),
         blood_per_turn=blood.get("per_turn", 0),
         blood_half=blood.get("most") == "half",
+        blood_extra=scaled(blood, blood.get("extra", 0)),
         qualities=[
             SwitchQuality(kind=q["kind"], name=q["name"])
             for q in o.get("qualities", [])
             if holds(q)
         ],
         normal_form_only=o.get("normal_form_only"),
+        base=o["name"] if amount is not None else None,
+        amount=amount,
+        amount_label=spec.get("label") if amount is not None else None,
     )
+
+
+def _options(
+    active: Mapping[str, Any], o: Mapping[str, Any], holds: Callable[[Any], bool]
+) -> list[SwitchOption]:
+    """An option as it can be picked: itself, or one for each amount it allows."""
+    spec = o.get("amount")
+    if spec is None:
+        return [_option(active, o, holds)]
+    return [_option(active, o, holds, n) for n in range(spec.get("least", 1), spec["most"] + 1)]
 
 
 def _picks(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Picks | None:
@@ -1387,11 +1445,12 @@ def _picks(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Picks | Non
         only=list(spec.get("only", [])),
         immune=spec.get("immune", False),
         options=[
-            _option(active, o, holds)
+            option
             for o in spec.get("options", [])
             if holds(o)
             and all(_has(sheet, n) for n in _names(o.get("from")))
             and not any(_has(sheet, n) for n in _names(o.get("hidden_by")))
+            for option in _options(active, o, holds)
         ],
         target=spec.get("target", "self"),
     )
@@ -1414,6 +1473,7 @@ def option_switches(switch: Switch) -> list[Switch]:
             focuses=o.focuses,
             blood_per_turn=o.blood_per_turn,
             blood_half=o.blood_half,
+            blood_extra=o.blood_extra,
             qualities=o.qualities,
             kept=switch.kept,
             normal_form_only=(
@@ -1554,7 +1614,7 @@ def cost(entry: Mapping[str, Any], sheet: Sheet) -> Cost | None:
         tracker = "willpower" if "willpower" in given else "blood"
         if given[tracker] == "half":
             return Cost(tracker=tracker, amount=0)
-        return Cost(tracker=tracker, amount=given[tracker])
+        return Cost(tracker=tracker, amount=given[tracker], most=given.get("most"))
     found = COST_NOTE.match(entry.get("note", ""))
     if not found:
         return None
