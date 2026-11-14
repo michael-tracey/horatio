@@ -194,12 +194,28 @@ def on_undo(db: Session, actor: User, target: PlayEvent, name: str) -> None:
         bring_back(db, ended)
 
 
+def top(options: Sequence[str]) -> list[str]:
+    """An effect's options picked, without what was picked for them (issue #876)."""
+    return [o for o in options if "/" not in o]
+
+
+def nested(options: Sequence[str]) -> list[tuple[str, str]]:
+    """What was picked for an effect's options, kept with them as "<option>/<quality>"
+    (issue #876: Body Weaponry's weapon qualities)."""
+    return [(name, quality) for o in options if "/" in o for name, _, quality in [o.partition("/")]]
+
+
 def keep_options(db: Session, character: Character, picked: Mapping[str, Sequence[str]]) -> None:
     """Keep what was picked for each effect on the character as a game ends (issue
     #821): a kept power's options, such as Mortician's Secret's quality, stay picked
-    until it is used again, and the next game starts with them."""
+    until it is used again, and the next game starts with them; and what was picked
+    for one of those options (issue #876: Body Weaponry's weapon), as
+    "<option>/<quality>"."""
     for effect in on_character(db, character):
-        options = list(picked.get(effect.key, []))
+        mine = list(picked.get(effect.key, []))
+        options = mine + [
+            f"{name}/{q}" for name in mine for q in picked.get(f"{effect.key}/{name}", [])
+        ]
         if effect.options != options:
             effect.options = options
     db.flush()

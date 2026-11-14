@@ -82,7 +82,7 @@ const bonus = (m: EquipmentModifier) => [m.quality, m.pools, m.when, m.situation
  * Marble's Ballistic; and those a power gives every time it is on (#820): Armor of
  * Terra's Hardened and Ballistic. A Play View kept on the phone from before has no `fixed`.
  */
-type Powered = Pick<PowerSwitch, "key" | "on" | "picked" | "options"> & Partial<Pick<PowerSwitch, "fixed">>;
+type Powered = Pick<PowerSwitch, "key" | "on" | "picked" | "options"> & Partial<Pick<PowerSwitch, "fixed" | "option_picks">>;
 
 function picked(powers: Powered[]): Holding[] {
   return powers
@@ -90,6 +90,10 @@ function picked(powers: Powered[]): Holding[] {
     .flatMap((p) => [
       ...(p.picked ?? []).map((name) => ({ id: pickKey(p.key, name), modifiers: p.options?.find((o) => o.name === name)?.modifiers ?? [] })),
       ...(p.fixed ?? []).map((o) => ({ id: pickKey(p.key, o.name), modifiers: o.modifiers })),
+      // What is picked for an option picked (#876: Body Weaponry's weapon), as its own item's qualities.
+      ...(p.option_picks ?? [])
+        .filter((o) => (p.picked ?? []).includes(o.name))
+        .flatMap((o) => o.picked.map((name) => ({ id: pickKey(o.key, name), modifiers: o.options.find((q) => q.name === name)?.modifiers ?? [] }))),
     ]);
 }
 

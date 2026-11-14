@@ -1280,6 +1280,11 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
                     assert 0 <= least <= o["amount"]["most"], (e["name"], o["name"])
                 for q in o.get("qualities", []):
                     assert (q["kind"], q["name"]) in rule_set.equipment.qualities, (e["name"], q)
+                # An option's own picks are equipment qualities (issue #876).
+                own = o.get("picks", {})
+                assert set(own) <= {"kind", "kinds", "count", "only"}, (e["name"], o["name"])
+                for kind in [*([own["kind"]] if "kind" in own else []), *own.get("kinds", [])]:
+                    assert rule_set.equipment.qualities_of(kind), (e["name"], kind)
     for category, name in book.others:
         assert (category, name) in rule_set.traits, name
 
@@ -1495,8 +1500,9 @@ USE_KEYS = {
     "summon_all",
     "charges",
     "on",
+    "spends",
 }
-CHANGES = ("heal", "convert", "mend", "gain", "beast", "retainer", "summon", "charges")
+CHANGES = ("heal", "convert", "mend", "gain", "beast", "retainer", "summon", "charges", "spends")
 
 
 def test_every_use_says_what_it_changes_and_where() -> None:

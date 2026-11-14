@@ -292,6 +292,9 @@ class PowerUse(BaseModel):
     charges: ChargeChange | None = None
     # A switch it turns on, if off (Reaper's Due's mark).
     on: str | None = None
+    # Its whole effect is what it spends (issue #876: reforming Bonecraft's broken
+    # body weapon for 1 Blood, core p. 169).
+    spends: bool = False
 
 
 class Summon(BaseModel):
@@ -475,6 +478,10 @@ class SwitchOption(BaseModel):
     # that rules it out (`hidden_by`: Tzimisce: Scar Tissue) rules it out on yourself
     # only, so it is left for others.
     target: Literal["self", "other", "any"] = "any"
+    # Equipment qualities picked for it while it is picked (issue #876: Bonecraft's
+    # Body Weaponry, a weapon built by the weapon rules, core p. 169): its switch's
+    # own picks, which count as an equipped item's qualities do.
+    picks: "Picks | None" = None
 
 
 class Picks(BaseModel):
@@ -500,6 +507,10 @@ class Picks(BaseModel):
     # Who the power is used on: "self", or "any" for a power that can be used on
     # another character too, which the effects-on-others ticket (#823) follows.
     target: str = "self"
+
+
+# An option's own picks name Picks, defined after it (issue #876).
+SwitchOption.model_rebuild()
 
 
 class Switch(BaseModel):
@@ -1557,10 +1568,22 @@ def _option(
             if holds(q)
         ],
         normal_form_only=o.get("normal_form_only"),
+        picks=_quality_picks(o["picks"]) if "picks" in o else None,
         base=o["name"] if amount is not None else None,
         amount=amount,
         amount_label=spec.get("label") if amount is not None else None,
         target=o.get("target", "any"),
+    )
+
+
+def _quality_picks(spec: Mapping[str, Any]) -> Picks:
+    """An option's own picks (issue #876): equipment qualities only, `count` of them,
+    of its `kind` (and `kinds`), or `only` those named."""
+    return Picks(
+        kind=spec.get("kind"),
+        count=spec.get("count", 1),
+        kinds=list(spec.get("kinds", [])),
+        only=list(spec.get("only", [])),
     )
 
 
@@ -1640,6 +1663,7 @@ def option_switches(switch: Switch) -> list[Switch]:
             blood_half=o.blood_half,
             blood_extra=o.blood_extra,
             qualities=o.qualities,
+            picks=o.picks,
             kept=switch.kept,
             normal_form_only=(
                 switch.normal_form_only if o.normal_form_only is None else o.normal_form_only
@@ -1881,6 +1905,7 @@ def uses(entry: Mapping[str, Any], sheet: Sheet) -> list[PowerUse]:
                 summon_all=u.get("summon_all", False),
                 charges=_charges(u["charges"]) if "charges" in u else None,
                 on=u.get("on"),
+                spends=u.get("spends", False),
             )
         )
     return found

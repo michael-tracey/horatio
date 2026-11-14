@@ -1046,6 +1046,54 @@ test("Bonecraft on yourself: Tough gives Physical for Healthy levels, kept throu
   await expect(physical.locator("strong").first()).toHaveText(String(before - 2));
 });
 
+test("Bonecraft's Body Weaponry: its weapon's qualities picked by the weapon rules, kept through Reset, and reformed for 1 Blood (#876)", async ({ browser }) => {
+  const { page: p } = await person(browser, "bone-armourer");
+  // A Tzimisce with Vicissitude 3: Bonecraft, whose Body Weaponry is a weapon (core p. 169).
+  const id = await builtVampire(
+    p,
+    "Vaclav",
+    "Tzimisce",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]] },
+    [["disciplines", "Vicissitude", 3]],
+  );
+  const headers = { "X-Horatio": "1" };
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  await p.getByRole("button", { name: /^Use Bonecraft: remade, 1 Blood/ }).click();
+  await expect(p.getByText(/Bonecraft: remade switched on/)).toBeVisible();
+  // The reform Use waits for Body Weaponry: not offered yet.
+  await expect(p.getByRole("button", { name: /Reform the body weapon/ })).toHaveCount(0);
+
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  await drawer.getByRole("group", { name: "Bonecraft: remade: qualities" }).getByRole("button", { name: "Body Weaponry" }).click();
+  // Its weapon is built by the weapon rules: two melee qualities, as a standard weapon has.
+  const weapon = drawer.getByRole("group", { name: "Body Weaponry: qualities" });
+  await expect(weapon).toContainText("Body Weaponry: pick two (0 picked).");
+  await weapon.getByRole("button", { name: "Accurate" }).click();
+  await expect(p.getByText("Picked Accurate for Bonecraft: remade: Body Weaponry", { exact: true })).toBeVisible();
+  await weapon.getByRole("button", { name: "Reach" }).click();
+  await expect(weapon).toContainText("Accurate: +2 wild card bonus");
+  await drawer.getByRole("button", { name: "Close" }).first().click();
+  const banner = p.getByRole("region", { name: "Switched on now" });
+  await expect(banner).toContainText("Kept: Bonecraft: remade (Body Weaponry: Accurate and Reach)");
+
+  // Reset keeps it, weapon and all (kept until undone), once the server has the picks.
+  const weaponPicked = async () => {
+    const play = await (await p.request.get(`/api/characters/${id}/play`)).json();
+    return play.powers.find((x: { key: string }) => x.key === "Bonecraft")?.option_picks?.[0]?.picked;
+  };
+  await expect.poll(weaponPicked).toEqual(["Accurate", "Reach"]);
+  const response = await p.request.post(`/api/characters/${id}/play/reset`, { headers, data: {} });
+  expect(response.status(), await response.text()).toBe(200);
+  await p.reload();
+  await expect(banner).toContainText("Kept: Bonecraft: remade (Body Weaponry: Accurate and Reach)");
+
+  // Broken, it is reformed for 1 Blood, beside Bonecraft's own Use.
+  await expect(p.getByRole("button", { name: /^Use Bonecraft: remade, 1 Blood/ })).toBeVisible();
+  await p.getByRole("button", { name: /Reform the body weapon · 1 Blood/ }).click();
+  await expect(p.getByText(/^Spent 1 Blood on Bonecraft/)).toBeVisible();
+});
+
 test("a power used on another of the home troupe: Fleshcraft's alien beauty reaches their Play View, they dispute it, and whoever used it ends it (#823)", async ({ browser }) => {
   const custodian = await person(browser, "onothers-cust");
   makeCustodian(custodian.email);
