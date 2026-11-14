@@ -65,6 +65,8 @@
 #   - `qualities = [{ kind, name, focus? }]`: equipment qualities it gives every
 #     time it is on, without picking (#820: Armor of Terra's Hardened and Ballistic),
 #     counted as picked ones are.
+#   `hidden_by` on a switch rules the whole switch out for a character with that
+#   trait, as on an option (Tzimisce: Scar Tissue on Malleable Visage, #812).
 #   `kept = true` makes it last until undone rather than until the game ends (issue
 #   #822): it is kept through Reset until the player turns it off (a removed heart,
 #   a reshaped face), and using it again while it is on replaces it, as a character
@@ -1117,6 +1119,13 @@ level = 1
 name = "Malleable Visage"
 note = "1 Blood, five standard actions sculpting: reshape your own face and body within human range."
 focus = { Charisma = "One standard action, no hands needed." }
+# Core p. 168 (#812): what the sculpting is for is picked each use. The new face
+# stays until it is sculpted again (kept through Reset), counts only in the normal
+# form, and Tzimisce: Scar Tissue (Vol. 2 p. 278) rules it out on yourself.
+active = { key = "Malleable Visage", name = "Malleable Visage: reshaped", kept = true, normal_form_only = true, hidden_by = "Tzimisce: Scar Tissue", page = 168, notes = ["Not in a transformed shape: it comes back when the form ends."], picks = { count = 1, options = [
+  { name = "Ordinary change", note = "A new face, build or voice within human range: nothing on the sheet changes." },
+  { name = "Alien beauty", note = "Beautiful, if slightly alien.", attributes = [{ attribute = "Social", amount = -2 }], focuses = ["Appearance"] },
+] } }
 
 [[powers]]
 discipline = "Vicissitude"

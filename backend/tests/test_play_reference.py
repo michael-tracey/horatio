@@ -21,6 +21,7 @@ from horatio.reference import (
     catalogue,
     cost,
     damage_effects,
+    disciplines,
     effects,
     forms_at_once,
     option_switches,
@@ -1614,6 +1615,40 @@ def test_options_follow_a_focus_traits_that_add_them_and_a_flaw_that_hides_them(
     assert found["Bonecraft/Second Stomach"].blood_half
     assert found["Bonecraft/Crippled"].notes == ["On another only."]
     assert {s.option_of for s in found.values()} == {"Bonecraft"}
+
+
+def test_malleable_visage_reshapes_for_an_ordinary_change_or_alien_beauty() -> None:
+    """Malleable Visage (core p. 168, #812): each use is an ordinary change or alien
+    beauty (-2 Social, the Appearance focus), kept until it is sculpted again, in the
+    normal form only; Tzimisce: Scar Tissue (Vol. 2 p. 278) rules it out on yourself."""
+    sheet = Sheet(
+        ratings={("attributes", "Social"): 4}, disciplines={"Vicissitude": 1, "Presence": 1}
+    )
+    worked = work_out(sheet, {})
+    found = by_key(worked.switches)
+    visage = found["Malleable Visage"]
+    assert (visage.kept, visage.normal_form_only, visage.form) == (True, True, False)
+    assert visage.page == "p. 168"
+    assert visage.picks is not None and visage.picks.count == 1
+    assert [o.name for o in visage.picks.options] == ["Ordinary change", "Alien beauty"]
+    beauty = found["Malleable Visage/Alien beauty"]
+    assert beauty.normal_form_only
+    assert beauty.changes == ["-2 Social", "The Appearance focus"]
+    assert found["Malleable Visage/Ordinary change"].changes == []
+    made = {p.key: p for p in pools(sheet, worked.effects, worked.hurts, worked.switches)}
+    for key in ("defense:Social", "discipline:Presence"):
+        assert [(s.switch, s.value) for s in made[key].switched if s.attribute] == [
+            ("Malleable Visage/Alien beauty", -2)
+        ], key
+    vicissitude = next(d for d in disciplines(sheet) if d.name == "Vicissitude")
+    assert vicissitude.powers[0].switches == ["Malleable Visage"]
+
+    # With Scar Tissue there is nothing to switch on: Use only spends the Blood.
+    scarred = Sheet(ratings={("flaws", "Tzimisce: Scar Tissue"): 3}, disciplines={"Vicissitude": 1})
+    assert not [s for s in work_out(scarred, {}).switches if s.key.startswith("Malleable Visage")]
+    vicissitude = next(d for d in disciplines(scarred) if d.name == "Vicissitude")
+    assert vicissitude.powers[0].switches == []
+    assert vicissitude.powers[0].cost == Cost(tracker="blood", amount=1)
 
 
 def test_blood_tempering_and_assimilate_switch_on_from_their_pages() -> None:
