@@ -1233,6 +1233,14 @@ test("throwing by flipping the phone face down and back up, on a phone, and swit
     }, betas);
   const flip = [0, 60, 120, 180, 170, 120, 60, 0];
 
+  // Hold the sheet back until the switch shows: the Play View remakes the Throws tab when it
+  // arrives, and the switch must stay without waiting for another reading (#837).
+  let sheet!: () => void;
+  const held = new Promise<void>((done) => (sheet = done));
+  await p.route(`**/api/characters/${id}/play`, async (route) => {
+    await held;
+    await route.continue();
+  });
   await p.goto(`/play/characters/${id}`);
   await p.getByRole("tab", { name: "Throws" }).click();
   const throws = p.getByRole("region", { name: "Throws" });
@@ -1240,6 +1248,10 @@ test("throwing by flipping the phone face down and back up, on a phone, and swit
   // Offered once the sensor reads, on unless turned off.
   await orient([0]);
   const flipping = throws.getByRole("checkbox", { name: "Throw by flipping" });
+  await expect(flipping).toBeChecked();
+  sheet();
+  await expect(p.getByRole("button", { name: /^Blood \d+ of \d+: open the Tracker$/ })).toBeVisible();
+  await p.unroute(`**/api/characters/${id}/play`);
   await expect(flipping).toBeChecked();
   await expect(throws).toContainText("Flip the phone face down and back up to throw.");
 
