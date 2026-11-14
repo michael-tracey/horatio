@@ -158,10 +158,52 @@ def test_a_profile_lists_only_the_characters_the_viewer_may_see(troupe: Troupe) 
     def names(person: Person) -> list[str]:
         return [c["name"] for c in profile(person, troupe.player.id)["characters"]]
 
-    assert names(troupe.player) == ["Agnes", "Mr. Carbuncle"]
-    assert names(troupe.custodian) == ["Agnes", "Mr. Carbuncle"]
+    assert names(troupe.player) == ["Mr. Carbuncle", "Agnes"]
+    assert names(troupe.custodian) == ["Mr. Carbuncle", "Agnes"]
     assert names(troupe.lead) == ["Mr. Carbuncle"]
     assert names(troupe.stranger) == []
+
+
+def test_a_profile_lists_every_character_with_where_it_stands(troupe: Troupe) -> None:
+    """For the custodian's People tab (#890): in creation, asking a troupe, retired
+    and NPCs too, active ones first and the newest first within each."""
+    gone = new_character(troupe, troupe.player, "Old Wren")
+    retired = troupe.player.client.post(
+        f"/characters/{gone}/retire", json={"reason": "final_death", "note": "", "listed": False}
+    )
+    assert retired.status_code == 200, retired.text
+    asking = new_character(troupe, troupe.player, "Mr. Carbuncle")
+    asked = troupe.player.client.post(
+        f"/characters/{asking}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    assert asked.status_code == 201, asked.text
+    new_character(troupe, troupe.player, "Agnes", finished=False, clan="Brujah")
+    npc = troupe.lead.client.post(f"/troupes/{troupe.id}/npcs", json={"name": "Old Marrow"})
+    assert npc.status_code == 201, npc.text
+
+    def standing(c: dict[str, Any]) -> tuple[Any, ...]:
+        return (
+            c["name"],
+            c["status"],
+            c["left_reason"],
+            c["creation_complete"],
+            c["asking_troupe"],
+            c["kind"],
+            c["owner_troupe"],
+            c["clan"],
+        )
+
+    seen = profile(troupe.custodian, troupe.player.id)["characters"]
+    assert [standing(c) for c in seen] == [
+        ("Agnes", "active", None, False, None, "pc", None, "Brujah"),
+        ("Mr. Carbuncle", "active", None, True, "Lords of the Night", "pc", None, None),
+        ("Old Wren", "retired", "final_death", True, None, "pc", None, None),
+    ]
+    assert all(c["picture"] is None for c in seen)
+    made = profile(troupe.custodian, troupe.lead.id)["characters"]
+    assert [standing(c) for c in made] == [
+        ("Old Marrow", "active", None, True, None, "npc", "Lords of the Night", None),
+    ]
 
 
 @pytest.mark.parametrize(

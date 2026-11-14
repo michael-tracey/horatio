@@ -27945,6 +27945,15 @@ export interface components {
         };
         /** PlayerCharacter */
         PlayerCharacter: {
+            /** Asking Troupe */
+            asking_troupe?: string | null;
+            /** Clan */
+            clan?: string | null;
+            /**
+             * Creation Complete
+             * @default true
+             */
+            creation_complete: boolean;
             /** Home Troupe */
             home_troupe: string | null;
             /**
@@ -27952,10 +27961,34 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Kind
+             * @default pc
+             */
+            kind: string;
+            /** Left Reason */
+            left_reason?: string | null;
             /** Name */
             name: string;
+            /** Npc Form */
+            npc_form?: string | null;
+            /** Npc Kind Name */
+            npc_kind_name?: string | null;
+            /** Owner Troupe */
+            owner_troupe?: string | null;
+            /** Owner Troupe Id */
+            owner_troupe_id?: string | null;
+            /** Picture */
+            picture?: string | null;
             /** Retired */
             retired: boolean;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Status */
+            status: string;
         };
         /** PlayerMeetingIn */
         PlayerMeetingIn: {
