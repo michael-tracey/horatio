@@ -59,7 +59,9 @@ export function NotificationBell() {
   const go = (item: NotificationOut) => {
     setOpen(false);
     if (!item.task && !item.read) read.mutate([item.id]);
-    navigate(item.link);
+    // A link elsewhere, such as a Discord channel or invite (#855), opens in a tab of its own.
+    if (/^https?:\/\//i.test(item.link)) window.open(item.link, "_blank", "noopener,noreferrer");
+    else navigate(item.link);
   };
 
   return (

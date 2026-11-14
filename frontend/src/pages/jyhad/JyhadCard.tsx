@@ -21,16 +21,29 @@ import {
   NOTICE,
   SERIF,
   SYMBOL_SHARE,
+  TEMPLATE_IMAGE,
   TEXT,
   TEXT_PAD,
+  T_CAPACITY_SIZE,
+  T_COLOURS,
+  T_DROP,
+  T_FOOTER,
+  T_NAME,
+  T_OVAL,
+  T_TEXT,
+  T_TEXT_PAD,
+  T_UNOFFICIAL,
   UNOFFICIAL,
   canvasMeasure,
   canvasNameMeasure,
   clanLetters,
   disciplineBox,
+  layoutTemplateText,
   layoutText,
   lookOf,
   nameFit,
+  templateDisciplineBox,
+  templateNameFit,
   type Box,
   type Measure,
 } from "./layout";
@@ -93,7 +106,12 @@ function useSymbols(card: JyhadCardOut, clanTint: string, disciplineTint: string
  * the symbols and words over that. `text` and `flavour` are as typed, so the card
  * shows them before they're saved.
  */
-export function JyhadCard({ card, clanName, text, flavour }: { card: JyhadCardOut; clanName: string | null; text: string; flavour: string }) {
+export function JyhadCard(props: { card: JyhadCardOut; clanName: string | null; text: string; flavour: string }) {
+  return props.card.template ? <TemplateCard {...props} template={props.card.template} /> : <FramedCard {...props} />;
+}
+
+/** The card on Horatio's own frame (#560). */
+function FramedCard({ card, clanName, text, flavour }: { card: JyhadCardOut; clanName: string | null; text: string; flavour: string }) {
   const measure = useMeasures();
   const look = lookOf(card.sect);
   const palette = LOOKS[look];
@@ -201,6 +219,107 @@ export function JyhadCard({ card, clanName, text, flavour }: { card: JyhadCardOu
         ))}
       </svg>
       {/* For screen readers, what the drawing says. */}
+      <p className="sr-only">
+        {card.sect_line ? `${card.sect_line}. ` : ""}
+        {card.capacity !== null ? `Capacity ${card.capacity}. ` : ""}
+        {text} {flavour}
+      </p>
+    </article>
+  );
+}
+
+/**
+ * The card on its clan's crypt card template (#850), which the custodian uploaded:
+ * the portrait in its oval, under the template; the disciplines down its sidebar,
+ * the name across its top, the words in its box and the capacity on its drop, over
+ * it. The template prints the clan symbol, that it isn't for play and Paradox's
+ * notice itself.
+ */
+function TemplateCard({ card, clanName, text, flavour, template }: { card: JyhadCardOut; clanName: string | null; text: string; flavour: string; template: string }) {
+  const measure = useMeasures();
+  const symbols = useSymbols(card, T_COLOURS.symbol, T_COLOURS.symbol);
+  const laid = useMemo(() => layoutTemplateText(card.sect_line, text, flavour, measure.text), [card.sect_line, text, flavour, measure]);
+  const named = useMemo(() => templateNameFit(card.name, measure.name), [card.name, measure]);
+  return (
+    <article
+      aria-label={`Jyhad card of ${card.name}`}
+      data-template={template}
+      className="relative shrink-0 overflow-hidden select-none"
+      style={{ ...exact, width: mm(CARD.width), height: mm(CARD.height), borderRadius: mm(CARD.radius), background: COLOURS.edge, color: COLOURS.ink }}
+    >
+      {card.picture && (
+        <img
+          src={`${card.picture}/portrait.webp`}
+          alt=""
+          className="object-cover"
+          style={{ ...at(T_OVAL), objectPosition: "50% 30%", clipPath: "ellipse(50% 50% at 50% 50%)" }}
+        />
+      )}
+      <img src={template} alt="" className="pointer-events-none" style={{ ...at(TEMPLATE_IMAGE), maxWidth: "none" }} />
+      <span className="sr-only">{clanName ? `Clan: ${clanName}` : ""}</span>
+      <ul aria-label="Disciplines">
+        {card.disciplines.map((d, i) => (
+          <li key={d.name} aria-label={`${d.name}${d.superior ? ", superior" : ""}`}>
+            <Symbol box={templateDisciplineBox(i)} src={symbols.disciplines[i]} share={d.superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior}>
+              <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: mm(d.superior ? 2.3 : 2.4), color: T_COLOURS.symbol }}>
+                {d.superior ? d.abbreviation.toUpperCase() : d.abbreviation}
+              </span>
+            </Symbol>
+          </li>
+        ))}
+      </ul>
+      <svg viewBox={`0 0 ${CARD.width} ${CARD.height}`} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
+        <text
+          x={T_NAME.x}
+          y={T_NAME.y + T_NAME.h / 2 + named.size * 0.36}
+          fontFamily={DISPLAY}
+          fontWeight={700}
+          fontSize={named.size}
+          {...(named.squeeze !== null && { textLength: named.squeeze, lengthAdjust: "spacingAndGlyphs" })}
+          fill={T_COLOURS.name}
+          stroke={T_COLOURS.outline}
+          strokeWidth={0.45}
+          paintOrder="stroke"
+        >
+          {card.name}
+        </text>
+        {laid.rule !== null && (
+          <line x1={T_TEXT.x + T_TEXT_PAD} x2={T_TEXT.x + T_TEXT.w - T_TEXT_PAD} y1={laid.rule} y2={laid.rule} stroke={T_COLOURS.rule} strokeWidth={0.15} />
+        )}
+        {laid.lines.map((l, i) => (
+          <text
+            key={i}
+            x={l.x}
+            y={l.y}
+            fontFamily={SERIF}
+            fontSize={laid.size}
+            fontWeight={l.style === "bold" ? 700 : 400}
+            fontStyle={l.style === "italic" ? "italic" : "normal"}
+            fill={COLOURS.ink}
+          >
+            {l.text}
+          </text>
+        ))}
+        {card.capacity !== null && (
+          <text
+            x={T_DROP.x + T_DROP.w / 2}
+            y={T_DROP.y + T_DROP.h / 2 + T_CAPACITY_SIZE * 0.36}
+            textAnchor="middle"
+            fontFamily={DISPLAY}
+            fontWeight={700}
+            fontSize={T_CAPACITY_SIZE}
+            fill="#ffffff"
+            stroke="#2a0008"
+            strokeWidth={0.35}
+            paintOrder="stroke"
+          >
+            {card.capacity}
+          </text>
+        )}
+        <text x={CARD.width / 2} y={T_FOOTER.y} textAnchor="middle" fontFamily={SERIF} fontSize={T_FOOTER.size} fill={COLOURS.footer}>
+          {T_UNOFFICIAL}
+        </text>
+      </svg>
       <p className="sr-only">
         {card.sect_line ? `${card.sect_line}. ` : ""}
         {card.capacity !== null ? `Capacity ${card.capacity}. ` : ""}

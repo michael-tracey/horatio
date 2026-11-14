@@ -76,3 +76,118 @@ test("a player taps their clan seven times and finds a Jyhad card, and staff ope
   await expect(shown.getByLabel("Card text")).toHaveCount(0);
   await expect(shown.getByRole("link", { name: "← Back" })).toHaveAttribute("href", `/troupes/${troupeId}/characters`);
 });
+
+test("a Jyhad card on its clan's crypt card template, which the custodian uploads in Tools (#850)", async ({ browser }) => {
+  const custodian = await person(browser, "jyhad-tmpl-cust");
+  makeCustodian(custodian.email);
+  const player = await person(browser, "jyhad-tmpl-play");
+  const headers = { "X-Horatio": "1" };
+
+  // The templates are the Dark Pack's and the e2e server has no Dark Pack folder, so
+  // the server's answers are stood in for: the Tools card's, and the card's template,
+  // drawn here like a 2020 one (the frame, its transparent oval, the pale text box).
+  const c = custodian.page;
+  const empty = {
+    configured: true,
+    writable: true,
+    agreement: "https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement",
+    uploaded_at: null,
+    templates: [],
+    clans: [
+      { name: "Tzimisce", symbol: null },
+      { name: "Ventrue", symbol: null },
+    ],
+    missing: ["Tzimisce", "Ventrue"],
+  };
+  const uploaded = {
+    ...empty,
+    uploaded_at: new Date().toISOString(),
+    templates: [{ key: "tzimisce", name: "Tzimisce", uploaded_from: "2020_Crypt_Tzimisce.png" }],
+    clans: [
+      { name: "Tzimisce", symbol: "Tzimisce" },
+      { name: "Ventrue", symbol: null },
+    ],
+    missing: ["Ventrue"],
+  };
+  let now: object = empty;
+  const sent: string[] = [];
+  await c.route("**/api/tools/crypt-templates", async (route) => {
+    if (route.request().method() === "POST") {
+      sent.push(route.request().postDataBuffer()?.toString("latin1") ?? "");
+      now = uploaded;
+      await route.fulfill({ json: { tool: uploaded, added: ["Tzimisce"], skipped: [{ name: "2020_Crypt_Unicorn.png", why: "not a 2020_Crypt_<Clan>.png file of a clan Horatio knows" }] } });
+    } else await route.fulfill({ json: now });
+  });
+  await c.goto("/custodian/tools");
+  const tool = c.locator("section").filter({ has: c.getByRole("heading", { name: "Jyhad card templates", exact: true }) });
+  await expect(tool.getByText("None on this server yet.")).toBeVisible();
+  const choose = tool.getByRole("button", { name: "Upload templates" });
+  await expect(choose).toBeDisabled();
+  await tool.getByLabel("I accept Paradox's Dark Pack Agreement for this server").check();
+  await tool.getByLabel("Templates to upload").setInputFiles([
+    { name: "2020_Crypt_Tzimisce.png", mimeType: "image/png", buffer: Buffer.from("tzimisce") },
+    { name: "2020_Crypt_Unicorn.png", mimeType: "image/png", buffer: Buffer.from("unicorn") },
+  ]);
+  await expect(tool.getByRole("status")).toContainText("Added: Tzimisce.");
+  await expect(tool.getByRole("status")).toContainText("2020_Crypt_Unicorn.png: not a 2020_Crypt_<Clan>.png file of a clan Horatio knows");
+  expect(sent[0]).toContain('filename="2020_Crypt_Tzimisce.png"');
+  expect(sent[0]).toContain('name="accept_licence"');
+  const status = tool.getByRole("region", { name: "On the server" });
+  await expect(status).toContainText("1 template, last uploaded");
+  await expect(status).toContainText("Horatio's clans and bloodlines with a template: 1 of 2. Horatio's frame for: Ventrue.");
+
+  // A Tzimisce with a picture.
+  const p = player.page;
+  const id = await builtVampire(p, "Sorin", "Tzimisce", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Animalism", 2], ["Auspex", 1], ["Vicissitude", 1]],
+  });
+  const picture = await p.request.post(`/api/characters/${id}/picture`, {
+    headers,
+    multipart: { file: { name: "portrait.jpg", mimeType: "image/jpeg", buffer: readFileSync("e2e/portrait.jpg") } },
+  });
+  expect(picture.status(), await picture.text()).toBeLessThan(300);
+  await p.goto("/characters");
+  const png = await p.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 819;
+    canvas.height = 1114;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#3c4632";
+    ctx.fillRect(0, 0, 819, 1114);
+    ctx.fillStyle = "#cdc8b9";
+    ctx.fillRect(188, 858, 546, 146);
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.ellipse(459.5, 497.5, 265.5, 344.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    return canvas.toDataURL("image/png").split(",")[1]!;
+  });
+  const template = `/api/characters/${id}/jyhad-card/template.webp?v=1`;
+  await p.route("**/api/characters/*/jyhad-card/template.webp**", (route) => route.fulfill({ contentType: "image/png", body: Buffer.from(png, "base64") }));
+  await p.route(`**/api/characters/${id}/jyhad-card`, async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const real = await route.fetch();
+    await route.fulfill({ response: real, json: { ...(await real.json()), template } });
+  });
+
+  await p.goto(`/print/characters/${id}/jyhad`);
+  const card = p.getByRole("article", { name: "Jyhad card of Sorin" });
+  await expect(card).toHaveAttribute("data-template", template);
+  await expect(card.locator(`img[src="${template}"]`)).toBeVisible();
+  // The disciplines down the sidebar; the template's own lines say it isn't for play,
+  // so only Horatio's and KRCG's go on the edge below it.
+  await expect(card.getByRole("list", { name: "Disciplines" }).getByRole("listitem")).toHaveText(["ani", "aus", "vic"]);
+  await expect(card.getByText("Unofficial · made with Horatio · symbols by KRCG", { exact: true })).toBeAttached();
+  await expect(card.getByText("Unofficial · not a real card · made with Horatio", { exact: true })).toHaveCount(0);
+  await expect(card).toContainText("Capacity 4.");
+  await p.getByLabel("Card text").fill("Once each turn, Sorin may reshape a minion.");
+  await expect(card).toContainText("Once each turn, Sorin may reshape a minion.");
+  await p.screenshot(shots("jyhad-card-template"));
+
+  // Downloaded as an image on the template too.
+  const download = p.waitForEvent("download");
+  await p.getByRole("button", { name: "Download image" }).click();
+  expect((await download).suggestedFilename()).toBe("Sorin Jyhad card.png");
+});

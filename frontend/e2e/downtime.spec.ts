@@ -879,6 +879,104 @@ test("staff use the Discord channels names suggest, and delivering warns of a ch
  * Sharing out a cycle's responses (#376): they come by character, each folding
  * away; filtered by who has them; and several ticked are assigned in one go.
  */
+/**
+ * Character channels Horatio makes (#855). The e2e server has no Discord, so the
+ * browser is shown a connected server and Horatio's answers: staff switch it on,
+ * confirm the member a player's typed username found, and the channel made joins
+ * the character's choices; another character has no Discord to find.
+ */
+test("staff let Horatio make character channels, confirming a typed Discord username (#855)", async ({ browser }) => {
+  const custodian = await person(browser, "mchan-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mchan-lead");
+  await custodian.page.reload();
+  const created = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Managed Channels ${run}`, lead_handle: lead.handle } });
+  expect(created.status(), await created.text()).toBeLessThan(300);
+  const troupe = await created.json();
+  const l = lead.page;
+  const settings = { guild_id: "111", guild_name: "Court of Ash", channels: {}, test_channel: null };
+  // Answered here, not fetched, so a refetch at the end can't outlive the test.
+  await l.route(`**/api/troupes/${troupe.id}/connectors`, (route) =>
+    route.fulfill({ json: [{ kind: "discord", name: "Discord", unavailable: null, needs: [], enabled: true, mode: "alert", test_mode: false, settings }] }),
+  );
+  // What Horatio says of each character, as staff act.
+  let on = false;
+  const agnes: Record<string, unknown> = {
+    status: "confirm",
+    note: "@nightowl on the server has the username their player gave.",
+    made: false,
+    channel: null,
+    discord: "typed",
+    username: "nightowl",
+    match: { username: "nightowl", display_name: "Owl", avatar: null },
+  };
+  const bram: Record<string, unknown> = { status: null, note: null, made: false, channel: null, discord: "none", username: null, match: null };
+  await l.route(`**/api/troupes/${troupe.id}/discord`, (route) =>
+    route.fulfill({
+      json: {
+        guild_id: "111",
+        guild_name: "Court of Ash",
+        channels: [
+          { id: "203", name: "general", category: null, private: false, missing: [] },
+          { id: "301", name: "agnes-wren", category: "Horatio · Characters", private: true, missing: [] },
+        ],
+        characters: [
+          { id: "c-agnes", name: "Agnes Wren" },
+          { id: "c-bram", name: "Bram Holt" },
+        ],
+        suggestions: {},
+        managed: {
+          on,
+          staff_roles: ["800"],
+          roles: [
+            { id: "800", name: "sts" },
+            { id: "801", name: "players" },
+          ],
+          lacks: [],
+          can_invite: true,
+          queued: 0,
+          characters: { "c-agnes": agnes, "c-bram": bram },
+        },
+      },
+    }),
+  );
+  const switched: unknown[] = [];
+  await l.route(`**/api/troupes/${troupe.id}/discord/managed`, async (route) => {
+    const body = route.request().postDataJSON();
+    switched.push(body);
+    on = body.on;
+    await route.fulfill({ status: 204 });
+  });
+  await l.route(`**/api/troupes/${troupe.id}/discord/characters/c-agnes/match`, async (route) => {
+    expect(route.request().postDataJSON()).toEqual({ its_them: true });
+    Object.assign(agnes, { status: "made", note: "Made #agnes-wren.", made: true, channel: "301", discord: "confirmed", match: null });
+    await route.fulfill({ json: { status: "made", note: "Made #agnes-wren.", channel: "301" } });
+  });
+  await l.route(`**/api/troupes/${troupe.id}/discord/characters/c-bram/channel`, async (route) => {
+    Object.assign(bram, { status: "no_discord", note: "Their player hasn't given Horatio a Discord username, or signed in with Discord." });
+    await route.fulfill({ json: { status: "no_discord", note: bram.note, channel: null } });
+  });
+
+  await l.goto(`/troupes/${troupe.id}/connectors`);
+  const offer = l.getByRole("checkbox", { name: "Let Horatio make each character's private channel" });
+  await expect(offer).not.toBeChecked();
+  await expect(l.getByRole("button", { name: "Make a channel for Agnes Wren" })).toHaveCount(0);
+  await offer.check();
+  await expect(offer).toBeChecked();
+  expect(switched).toEqual([{ on: true, staff_roles: ["800"] }]);
+  await expect(l.getByRole("checkbox", { name: "@sts" })).toBeChecked();
+
+  // The member her player's typed username found: a storyteller says it's them.
+  const confirm = l.getByRole("group", { name: "Confirm Agnes Wren's player on Discord" });
+  await expect(confirm).toContainText("Is @nightowl (Owl) Agnes Wren's player?");
+  await confirm.getByRole("button", { name: "Yes, let them in" }).click();
+  await expect(l.getByLabel("Discord channel for Agnes Wren")).toHaveValue("301");
+  await expect(l.getByText("Made by Horatio")).toBeVisible();
+
+  await l.getByRole("button", { name: "Make a channel for Bram Holt" }).click();
+  await expect(l.getByText("Their player hasn't given Horatio a Discord username, or signed in with Discord.")).toBeVisible();
+});
+
 test("staff share out a cycle's responses by character, and assign several in one go", async ({ browser }) => {
   const custodian = await person(browser, "bulkassign-cust");
   makeCustodian(custodian.email);

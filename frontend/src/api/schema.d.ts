@@ -4,6 +4,50 @@
  */
 
 export interface paths {
+    "/api/account/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discord Account
+         * @description The signed-in person's Discord account, linked or not.
+         */
+        get: operations["discord_account_api_account_discord_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Unlink
+         * @description Forget the person's Discord account. Their Discord username stays, as typed.
+         */
+        delete: operations["unlink_api_account_discord_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/discord/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Link
+         * @description Discord's page for linking. Its other half of the state goes in a cookie.
+         */
+        post: operations["start_link_api_account_discord_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/account/viewed-as": {
         parameters: {
             query?: never;
@@ -2286,6 +2330,27 @@ export interface paths {
         };
         /** Read Card */
         get: operations["read_card_api_characters__character_id__jyhad_card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/jyhad-card/template.webp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Card Template
+         * @description The crypt card template the character's card is drawn on: only for whoever
+         *     can see the character, as the templates are the Dark Pack's, not Horatio's.
+         */
+        get: operations["card_template_api_characters__character_id__jyhad_card_template_webp_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7369,6 +7434,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/crypt-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Crypt Templates Status
+         * @description The clan crypt card templates on the server, for Jyhad cards.
+         */
+        get: operations["crypt_templates_status_api_tools_crypt_templates_get"];
+        put?: never;
+        /**
+         * Upload Crypt Templates
+         * @description Add the templates uploaded, replacing any of the same clan; the rest stay.
+         */
+        post: operations["upload_crypt_templates_api_tools_crypt_templates_post"];
+        /**
+         * Remove Crypt Templates
+         * @description Take the templates off the server: Jyhad cards go back to Horatio's frame.
+         */
+        delete: operations["remove_crypt_templates_api_tools_crypt_templates_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/dark-pack": {
         parameters: {
             query?: never;
@@ -9498,6 +9591,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/discord/channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make Every Channel
+         * @description Queue every character without a channel; the worker makes them, a few at a
+         *     time, as Discord allows.
+         */
+        post: operations["make_every_channel_api_troupes__troupe_id__discord_channels_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/discord/characters/{character_id}/channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make Channel
+         * @description Make the character's private channel now, or say what stands in the way.
+         */
+        post: operations["make_channel_api_troupes__troupe_id__discord_characters__character_id__channel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/discord/characters/{character_id}/match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Match
+         * @description Say whether the member a player's typed Discord username found is them;
+         *     yes makes the channel.
+         */
+        post: operations["answer_match_api_troupes__troupe_id__discord_characters__character_id__match_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/discord/invite": {
         parameters: {
             query?: never;
@@ -9513,6 +9668,27 @@ export interface paths {
          *     sends the storyteller back to `/api/discord/callback`.
          */
         post: operations["discord_invite_api_troupes__troupe_id__discord_invite_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/discord/managed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Managed
+         * @description Switch Horatio making the troupe's character channels on or off, and choose
+         *     the server's roles let into each (#855).
+         */
+        put: operations["change_managed_api_troupes__troupe_id__discord_managed_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -14938,6 +15114,19 @@ export interface components {
              */
             file: string;
         };
+        /** Body_upload_crypt_templates_api_tools_crypt_templates_post */
+        Body_upload_crypt_templates_api_tools_crypt_templates_post: {
+            /**
+             * Accept Licence
+             * @default false
+             */
+            accept_licence: boolean;
+            /**
+             * Files
+             * @description 2020_Crypt_<Clan>.png templates, or a zip of them.
+             */
+            files: string[];
+        };
         /** Body_upload_dark_pack_api_tools_dark_pack_upload_post */
         Body_upload_dark_pack_api_tools_dark_pack_upload_post: {
             /**
@@ -18271,6 +18460,40 @@ export interface components {
             /** Y */
             y: number;
         };
+        /** CryptTemplate */
+        CryptTemplate: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Uploaded From */
+            uploaded_from: string;
+        };
+        /** CryptTemplatesTool */
+        CryptTemplatesTool: {
+            /** Agreement */
+            agreement: string;
+            /** Clans */
+            clans: components["schemas"]["Matched"][];
+            /** Configured */
+            configured: boolean;
+            /** Missing */
+            missing: string[];
+            /** Templates */
+            templates: components["schemas"]["CryptTemplate"][];
+            /** Uploaded At */
+            uploaded_at: string | null;
+            /** Writable */
+            writable: boolean;
+        };
+        /** CryptTemplatesUpload */
+        CryptTemplatesUpload: {
+            /** Added */
+            added: string[];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedFile"][];
+            tool: components["schemas"]["CryptTemplatesTool"];
+        };
         /**
          * CustomKind
          * @description A custom kind, for one the book does not cover: its name, whether it is
@@ -19062,6 +19285,17 @@ export interface components {
             /** Versus */
             versus: string | null;
         };
+        /** DiscordAccount */
+        DiscordAccount: {
+            /** Available */
+            available: boolean;
+            /** Can Unlink */
+            can_unlink: boolean;
+            /** Handle */
+            handle: string | null;
+            /** Linked */
+            linked: boolean;
+        };
         /**
          * DiscordOut
          * @description How a post stands on Discord, for its staff.
@@ -19087,6 +19321,7 @@ export interface components {
             guild_id: string | null;
             /** Guild Name */
             guild_name: string | null;
+            managed?: components["schemas"]["ManagedOut"] | null;
             /** Suggestions */
             suggestions: {
                 [key: string]: string;
@@ -22902,6 +23137,8 @@ export interface components {
             sect: string | null;
             /** Sect Line */
             sect_line: string | null;
+            /** Template */
+            template: string | null;
             /** Text */
             text: string;
         };
@@ -23382,6 +23619,11 @@ export interface components {
             linked: number;
             /** Skipped */
             skipped: number;
+        };
+        /** LinkStart */
+        LinkStart: {
+            /** Url */
+            url: string;
         };
         /** LinkedRetainer */
         LinkedRetainer: {
@@ -24389,22 +24631,67 @@ export interface components {
             /** To */
             to: string;
         };
+        /** ManagedChange */
+        ManagedChange: {
+            /** On */
+            on: boolean;
+            /**
+             * Staff Roles
+             * @default []
+             */
+            staff_roles: string[];
+        };
+        /** ManagedCharacter */
+        ManagedCharacter: {
+            /** Channel */
+            channel?: string | null;
+            /**
+             * Discord
+             * @enum {string}
+             */
+            discord: "verified" | "confirmed" | "typed" | "none";
+            /** Made */
+            made: boolean;
+            match: components["schemas"]["horatio__api__discord__MatchOut"] | null;
+            /** Note */
+            note: string | null;
+            /** Status */
+            status: string | null;
+            /** Username */
+            username: string | null;
+        };
+        /**
+         * ManagedOut
+         * @description Character channels Horatio makes on the server (#855).
+         */
+        ManagedOut: {
+            /** Can Invite */
+            can_invite: boolean | null;
+            /** Characters */
+            characters: {
+                [key: string]: components["schemas"]["ManagedCharacter"];
+            };
+            /** Lacks */
+            lacks: string[] | null;
+            /** On */
+            on: boolean;
+            /** Queued */
+            queued: number;
+            /** Roles */
+            roles: components["schemas"]["RoleOut"][];
+            /** Staff Roles */
+            staff_roles: string[];
+        };
+        /** MatchAnswer */
+        MatchAnswer: {
+            /** Its Them */
+            its_them: boolean;
+        };
         /** MatchIn */
         MatchIn: {
             /** Location Id */
             location_id?: string | null;
             new?: components["schemas"]["NewLocationIn"] | null;
-        };
-        /** MatchOut */
-        MatchOut: {
-            /** Character Id */
-            character_id: string;
-            /** Name */
-            name: string;
-            /** Overwritable */
-            overwritable: boolean;
-            /** Whose */
-            whose: string;
         };
         /** Matched */
         Matched: {
@@ -25689,6 +25976,15 @@ export interface components {
             status: components["schemas"]["SeenOut"][] | null;
             /** Troupe Id */
             troupe_id: string | null;
+        };
+        /** OutcomeOut */
+        OutcomeOut: {
+            /** Channel */
+            channel: string | null;
+            /** Note */
+            note: string;
+            /** Status */
+            status: string;
         };
         /**
          * OverOut
@@ -27099,6 +27395,11 @@ export interface components {
             characters: components["schemas"]["PlayerCharacter"][];
             /** Discord Handle */
             discord_handle: string | null;
+            /**
+             * Discord Linked
+             * @default false
+             */
+            discord_linked: boolean;
             /** Display Name */
             display_name: string;
             /** Email */
@@ -28824,6 +29125,11 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** Queued */
+        Queued: {
+            /** Queued */
+            queued: number;
+        };
         /** QueuedApproval */
         QueuedApproval: {
             /**
@@ -29194,7 +29500,7 @@ export interface components {
             /** Legacy Id */
             legacy_id: string;
             /** Matches */
-            matches: components["schemas"]["MatchOut"][];
+            matches: components["schemas"]["horatio__api__yorick_imports__MatchOut"][];
             /** Name */
             name: string;
             /**
@@ -29975,6 +30281,13 @@ export interface components {
          * @enum {string}
          */
         Role: "lead_storyteller" | "storyteller" | "assistant_storyteller" | "narrator";
+        /** RoleOut */
+        RoleOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** Roll */
         Roll: {
             /** Text */
@@ -31552,6 +31865,13 @@ export interface components {
             name: string;
             /** Pool */
             pool: number;
+        };
+        /** SkippedFile */
+        SkippedFile: {
+            /** Name */
+            name: string;
+            /** Why */
+            why: string;
         };
         /** SkippedNpc */
         SkippedNpc: {
@@ -35403,6 +35723,19 @@ export interface components {
              */
             on: string;
         };
+        /**
+         * MatchOut
+         * @description The member a player's typed Discord username found, for a storyteller to
+         *     confirm is them.
+         */
+        horatio__api__discord__MatchOut: {
+            /** Avatar */
+            avatar: string | null;
+            /** Display Name */
+            display_name: string;
+            /** Username */
+            username: string;
+        };
         /** AppliedOut */
         horatio__api__downtime_effects__AppliedOut: {
             /** Character Name */
@@ -35582,6 +35915,17 @@ export interface components {
              */
             trial: boolean;
         };
+        /** MatchOut */
+        horatio__api__yorick_imports__MatchOut: {
+            /** Character Id */
+            character_id: string;
+            /** Name */
+            name: string;
+            /** Overwritable */
+            overwritable: boolean;
+            /** Whose */
+            whose: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -35591,6 +35935,66 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    discord_account_api_account_discord_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordAccount"];
+                };
+            };
+        };
+    };
+    unlink_api_account_discord_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordAccount"];
+                };
+            };
+        };
+    };
+    start_link_api_account_discord_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkStart"];
+                };
+            };
+        };
+    };
     viewed_as_api_account_viewed_as_get: {
         parameters: {
             query?: never;
@@ -39980,6 +40384,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["JyhadCardOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    card_template_api_characters__character_id__jyhad_card_template_webp_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -49570,6 +50003,79 @@ export interface operations {
             };
         };
     };
+    crypt_templates_status_api_tools_crypt_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CryptTemplatesTool"];
+                };
+            };
+        };
+    };
+    upload_crypt_templates_api_tools_crypt_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_crypt_templates_api_tools_crypt_templates_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CryptTemplatesUpload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_crypt_templates_api_tools_crypt_templates_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CryptTemplatesTool"];
+                };
+            };
+        };
+    };
     dark_pack_status_api_tools_dark_pack_get: {
         parameters: {
             query?: never;
@@ -53791,6 +54297,105 @@ export interface operations {
             };
         };
     };
+    make_every_channel_api_troupes__troupe_id__discord_channels_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Queued"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_channel_api_troupes__troupe_id__discord_characters__character_id__channel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_match_api_troupes__troupe_id__discord_characters__character_id__match_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MatchAnswer"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     discord_invite_api_troupes__troupe_id__discord_invite_post: {
         parameters: {
             query?: never;
@@ -53810,6 +54415,39 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Invite"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_managed_api_troupes__troupe_id__discord_managed_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
