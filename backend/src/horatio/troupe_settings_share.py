@@ -334,7 +334,8 @@ class FillTableItem(Strict):
 
 
 class NewsAgencyItem(Strict):
-    """A news agency: its name, description and colour, never its picture or channel."""
+    """A news agency: its name, description and colour, never its pictures (masthead
+    and portrait) or channel."""
 
     type: Literal["news_agency"] = "news_agency"
     name: str = Field(min_length=1, max_length=100)
@@ -976,6 +977,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "teachings": PLAY,
     "title_holdings": PLAY,
     "troupe_connectors": "connectors (tokens, Discord channels) are never carried",
+    "discord_webhooks": "the webhooks Horatio made on the troupe's own Discord server",
     "troupe_location_qualities": "house location qualities aren't carried",
     "troupe_memberships": PLAY,
     "troupe_requests": "how the troupe began",
