@@ -17,6 +17,7 @@ messages; a task emails when its work arrives (`approval_waiting`,
 `troupe_request_waiting`).
 """
 
+import re
 import uuid
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
@@ -32,6 +33,7 @@ from horatio.models import (
     DisciplinePurchase,
     HomeTroupeChange,
     Notification,
+    Post,
     Quest,
     QuestRequest,
     TraitDefinition,
@@ -40,8 +42,8 @@ from horatio.models import (
     TroupeStaff,
     User,
 )
-from horatio.permissions import TROUPE_POLICY, TroupeAction
-from horatio.pictures import picture_url
+from horatio.permissions import TROUPE_POLICY, TroupeAction, member_troupe_ids
+from horatio.pictures import picture_url, post_picture_url
 
 
 @dataclass(frozen=True)
@@ -57,7 +59,9 @@ class Item:
     link: str
     at: datetime
     read: bool
-    # The picture of the character it is about, if any (horatio.pictures).
+    # The picture of the character it is about, if any (horatio.pictures); for a
+    # published announcement, the announcement's own picture (#832), whose files are
+    # "/600.webp" and "/1200.webp" rather than a character's sizes.
     picture: str | None = None
 
 
@@ -377,6 +381,7 @@ def messages(db: Session, user: User) -> list[Item]:
             .limit(READ_MESSAGES_SHOWN)
         )
     )
+    shown = announcement_pictures(db, user, [n for n, _, _ in rows])
     return [
         Item(
             id=str(n.id),
@@ -388,10 +393,51 @@ def messages(db: Session, user: User) -> list[Item]:
             link=n.link,
             at=n.created_at,
             read=n.read_at is not None,
-            picture=picture_url(n.character_id, picture) if n.character_id else None,
+            picture=shown.get(n.id)
+            or (picture_url(n.character_id, picture) if n.character_id else None),
         )
         for n, troupe_name, picture in rows
     ]
+
+
+# Where a published announcement's notice links: horatio.posts.link.
+ANNOUNCEMENT_LINK = re.compile(r"^/troupes/[0-9a-f-]{36}/announcements/([0-9a-f-]{36})$")
+
+
+def announcement_pictures(
+    db: Session, user: User, notices: list[Notification]
+) -> dict[uuid.UUID, str]:
+    """The picture to show beside each notice of a published announcement that has
+    one (#832), by the notice's id. Looked up as the bell is read, so a picture
+    changed or removed since shows as it is now, and only while the person is still
+    in the troupe: its pictures are for members (horatio.api.posts.post_picture)."""
+    about: dict[uuid.UUID, uuid.UUID] = {}
+    for n in notices:
+        found = ANNOUNCEMENT_LINK.match(n.link) if n.kind == "announcement.published" else None
+        if found:
+            about[n.id] = uuid.UUID(found.group(1))
+    if not about:
+        return {}
+    posts = {
+        p.id: p
+        for p in db.scalars(
+            select(Post).where(
+                Post.id.in_(set(about.values())),
+                Post.kind == "announcement",
+                Post.status == "published",
+                Post.picture_id.is_not(None),
+            )
+        )
+    }
+    members = member_troupe_ids(db, user)
+    shown: dict[uuid.UUID, str] = {}
+    for notice, post_id in about.items():
+        post = posts.get(post_id)
+        if post is not None and post.troupe_id in members:
+            url = post_picture_url(post.troupe_id, post.picture_id)
+            if url:
+                shown[notice] = url
+    return shown
 
 
 def for_user(db: Session, user: User) -> list[Item]:
