@@ -274,10 +274,14 @@ test("the custodian views Horatio as a player, read-only, and the player sees th
   expect(refused.status()).toBe(403);
   await expect(banner).toBeVisible();
 
-  // Stopping makes them the custodian again.
+  // Stopping makes them the custodian again. Stop loads People afresh: wait for it, as on a
+  // phone topBar opens the menu, and opened on the page before it the fresh page's menu is
+  // shut, so the Custodian link inside it was never seen (#818).
   await banner.getByRole("button", { name: "Stop" }).click();
-  await expect((await topBar(c)).getByRole("link", { name: "Custodian", exact: true })).toBeVisible();
+  await expect(c).toHaveURL(/\/custodian\/people$/);
+  await expect(c.getByLabel("Search people")).toBeVisible();
   await expect(c.getByText(`Viewing as @${player.handle}, read-only.`)).toHaveCount(0);
+  await expect((await topBar(c)).getByRole("link", { name: "Custodian", exact: true })).toBeVisible();
 
   // The player sees when, by whom and why in their account's settings; their bio is as it was.
   await p.reload();
