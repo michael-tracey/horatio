@@ -26421,15 +26421,42 @@ export interface components {
         };
         /**
          * Picks
-         * @description Equipment qualities the player picks each time a switch goes on (issue #599):
-         *     Flesh of Marble's two Protective Gear qualities (Vol. 2 p. 232). What they do
-         *     to the pools counts while it is on, as an equipped item's does (horatio.play).
+         * @description What the player picks each time a switch goes on: equipment qualities (issue
+         *     #599: Flesh of Marble's two Protective Gear qualities, Vol. 2 p. 232), whose pool
+         *     effects count as an equipped item's do (horatio.play), or the power's own options
+         *     (issue #821: two of Mantle of Atira's qualities, Vol. 2 p. 82), each with what it
+         *     does. `count` is how many at once, after the focus that raises it.
          */
         Picks: {
             /** Count */
             count: number;
+            /**
+             * Immune
+             * @default false
+             */
+            immune: boolean;
             /** Kind */
-            kind: string;
+            kind?: string | null;
+            /**
+             * Kinds
+             * @default []
+             */
+            kinds: string[];
+            /**
+             * Only
+             * @default []
+             */
+            only: string[];
+            /**
+             * Options
+             * @default []
+             */
+            options: components["schemas"]["SwitchOption"][];
+            /**
+             * Target
+             * @default self
+             */
+            target: string;
         };
         /** PictureOut */
         PictureOut: {
@@ -27610,6 +27637,8 @@ export interface components {
             notes: string[];
             /** On */
             on: boolean;
+            /** Option Of */
+            option_of?: string | null;
             /**
              * Options
              * @default []
@@ -32301,6 +32330,58 @@ export interface components {
             boxes: number;
             /** Level */
             level: string;
+        };
+        /**
+         * SwitchOption
+         * @description One of a power's own options, picked each time it is used (issue #821): Mantle
+         *     of Atira's Bear Strength, Mythic Form's Tough. While its switch is on and it is
+         *     picked, what it does counts as a switch's does: its `key` ("Mythic Form/Tough") is
+         *     what a `when` in the powers file names, and it is on while it is picked.
+         */
+        SwitchOption: {
+            /**
+             * Attributes
+             * @default []
+             */
+            attributes: components["schemas"]["AttributeChange"][];
+            /**
+             * Blood Half
+             * @default false
+             */
+            blood_half: boolean;
+            /**
+             * Blood Per Turn
+             * @default 0
+             */
+            blood_per_turn: number;
+            /**
+             * Focuses
+             * @default []
+             */
+            focuses: string[];
+            /**
+             * Health
+             * @default []
+             */
+            health: components["schemas"]["SwitchLevel"][];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Normal Form Only */
+            normal_form_only?: boolean | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Page */
+            page: string;
+            /**
+             * Qualities
+             * @default []
+             */
+            qualities: components["schemas"]["SwitchQuality"][];
         };
         /**
          * SwitchQuality
