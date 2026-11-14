@@ -106,6 +106,33 @@ test("news: a storyteller makes an agency and schedules a story, it goes out, an
   await expect(p.getByRole("link", { name: /Fire at the harbour warehouses/ })).toBeVisible();
 });
 
+test("an agency's portrait: a storyteller uploads and crops it, and it shows beside the masthead (#883)", async ({ browser }) => {
+  const custodian = await person(browser, "herald-desk-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "herald-desk-lead");
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Herald Portrait Court ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/agencies`, { name: "The Crimson Herald" });
+
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/news-agencies`);
+  await l.getByRole("button", { name: "Actions for The Crimson Herald" }).click();
+  await l.getByRole("menuitem", { name: "Portrait…" }).click();
+  const dialog = l.getByRole("dialog", { name: "The Crimson Herald's portrait" });
+  await expect(dialog.getByText(/its stories show on Discord beside its name/)).toBeVisible();
+  await dialog.getByLabel("Choose a portrait").setInputFiles("e2e/portrait.jpg");
+  await expect(dialog.getByRole("slider", { name: /Where the portrait is/ })).toBeVisible();
+  await dialog.getByRole("button", { name: "Save picture" }).click();
+  await expect(dialog.locator('img[src*="/portraits/"]')).toHaveAttribute("src", /\/api\/agencies\/.+\/portraits\/.+\/512\.webp$/);
+  await expect(dialog.getByRole("button", { name: "Move the crop" })).toBeVisible();
+  await l.keyboard.press("Escape");
+
+  // Beside its masthead in the list, and in the troupe's log.
+  const row = l.getByRole("table", { name: "News agencies" }).getByRole("row").filter({ hasText: "The Crimson Herald" });
+  await expect(row.locator('img[src*="/portraits/"]')).toHaveJSProperty("complete", true);
+  await l.goto(`/troupes/${troupe.id}/log`);
+  await expect(l.getByText("changed the portrait of the news agency The Crimson Herald.")).toBeVisible();
+});
+
 test("announcements: a storyteller pins one, a player sees its banner, dismisses it, and reads it under Announcements, never under News", async ({ browser }) => {
   const custodian = await person(browser, "noticeboard-cust");
   makeCustodian(custodian.email);
