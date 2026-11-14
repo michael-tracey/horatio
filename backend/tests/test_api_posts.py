@@ -716,6 +716,13 @@ def test_an_agency_with_its_own_channel_posts_there(
         json={"name": "The Boston Herald", "discord_channel": TEST_CHANNEL, "colour": "#102030"},
     )
     assert own.status_code == 200, own.text
+    # Its own form leaves the channel out (#882), so an assistant can change the rest
+    # of it and the channel stays.
+    renamed = news.troupe.assistant.client.put(
+        f"/agencies/{news.agency}", json={"name": "The Herald", "colour": "#102030"}
+    )
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["discord_channel"] == TEST_CHANNEL
     news.published()
 
     send_all(session)
