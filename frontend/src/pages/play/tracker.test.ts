@@ -43,6 +43,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     forms: 1,
     game: null,
     log: [],
+    effects: [],
     ...overrides,
   };
 }
@@ -319,6 +320,10 @@ describe("a power's Use (#370)", () => {
     qualities: [],
     fixed: [],
     turned_on: 0,
+    kept: false,
+    normal_form_only: false,
+    counts_as_form: false,
+    paused: false,
   };
   const blood = { tracker: "blood" as const, amount: 1 };
   const made = (whats: ReturnType<typeof usingTaps>) => whats.map((w, i) => makeTap(w, "g1", at(i + 1)));
@@ -346,6 +351,15 @@ describe("a power's Use (#370)", () => {
 
     const again = made(usingTaps(v, { tracker: "willpower", amount: 1 }, "Celerity", "Celerity"));
     expect(tapsToast(withPending(v, []), again)).toBe("Spent 1 Willpower on Celerity · 5/6");
+  });
+
+  it("taps a kept power's switch again when it is used while on, to replace it (#822)", () => {
+    const v = view({ powers: [{ ...celerity, key: "Heart removed", name: "Heart of Darkness: heart removed", kept: true, on: true }] });
+    const taps = made(usingTaps(v, blood, "Heart of Darkness", "Heart removed"));
+    expect(taps.map((t) => [t.tracker, t.amount])).toEqual([
+      ["blood", -1],
+      ["power:Heart removed", 1],
+    ]);
   });
 
   it("says Undone once when its Undo takes both back", () => {
@@ -383,6 +397,10 @@ describe("an elder power's Use (#588)", () => {
     qualities: [],
     fixed: [],
     turned_on: 0,
+    kept: false,
+    normal_form_only: false,
+    counts_as_form: false,
+    paused: false,
   };
   const blood = { tracker: "blood" as const, amount: 1 };
   const made = (whats: ReturnType<typeof usingTaps>, from: number) => whats.map((w, i) => makeTap(w, "g1", at(from + i)));

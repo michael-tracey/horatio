@@ -15,16 +15,19 @@ export function Frenzy({
   willpower,
   beast,
   morality,
+  on = [],
 }: {
   /** Mental and what changes it, from the sheet; none until the reference loads. */
   resist?: PlayReference["frenzy"];
   willpower: number;
   beast: number;
   morality: { name: string; value: number } | null;
+  /** The keys of the powers on, for what holds while one is (#822). */
+  on?: readonly string[];
 }) {
   const [open, setOpen] = useState(false);
   const panel = useId();
-  const you = resist ? frenzyNumbers(resist, willpower, beast, morality) : null;
+  const you = resist ? frenzyNumbers(resist, willpower, beast, morality, on) : null;
   const line = you && (
     <p className="text-sm">
       <span className="text-parchment">

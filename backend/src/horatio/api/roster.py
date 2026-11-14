@@ -809,6 +809,8 @@ MESSAGES: dict[str, str] = {
     "yorick_import.decided": "{actor} chose what to do with {name}, imported from Yorick under a"
     " name already here: {choice}.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
+    "play.effect_started": "{actor} used {power} on {character}, kept until undone.",
+    "play.effect_ended": "{actor} ended {power} on {character} ({how}).",
     "play.checkin_opened": "{actor} opened check-in for the game on {game}, with a new code.",
     "play.checkin_closed": "{actor} closed check-in for the game on {game}.",
     "play.checked_in": "{actor} checked {character} in to the game on {game}.",

@@ -2903,6 +2903,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play/effects/{effect_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End Effect
+         * @description End an effect that lasts until undone (issue #822), for those who can't make
+         *     the Play View tap: staff, or the character who used the power on another. A
+         *     player turns their own off with the switch, which works offline.
+         */
+        post: operations["end_effect_api_characters__character_id__play_effects__effect_id__end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/play/games": {
         parameters: {
             query?: never;
@@ -20962,6 +20984,11 @@ export interface components {
             beast: components["schemas"]["PoolPart"][];
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
+            /**
+             * Switched Beast
+             * @default []
+             */
+            switched_beast: components["schemas"]["SwitchedPart"][];
         };
         /** GallantAnswerIn */
         GallantAnswerIn: {
@@ -26616,6 +26643,36 @@ export interface components {
             troupe_name: string;
         };
         /**
+         * PlayEffectOut
+         * @description An effect on the character that lasts until undone (issue #822): kept through
+         *     Reset until it is turned off.
+         */
+        PlayEffectOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Paused
+             * @default false
+             */
+            paused: boolean;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /** Source Character Name */
+            source_character_name?: string | null;
+            /** Started By */
+            started_by: string;
+        };
+        /**
          * PlayItemOut
          * @description An item the character holds, to equip at a game (issue #306).
          */
@@ -26839,6 +26896,11 @@ export interface components {
             /** Clan */
             clan: string | null;
             derangements: components["schemas"]["Derangements"];
+            /**
+             * Effects
+             * @default []
+             */
+            effects: components["schemas"]["PlayEffectOut"][];
             /**
              * Equipment
              * @default []
@@ -27476,6 +27538,11 @@ export interface components {
              */
             combines: string[];
             /**
+             * Counts As Form
+             * @default false
+             */
+            counts_as_form: boolean;
+            /**
              * Fixed
              * @default []
              */
@@ -27495,10 +27562,20 @@ export interface components {
              * @default []
              */
             health: components["schemas"]["SwitchLevel"][];
+            /**
+             * Kept
+             * @default false
+             */
+            kept: boolean;
             /** Key */
             key: string;
             /** Name */
             name: string;
+            /**
+             * Normal Form Only
+             * @default false
+             */
+            normal_form_only: boolean;
             /**
              * Notes
              * @default []
@@ -27516,6 +27593,11 @@ export interface components {
             /** Page */
             page: string;
             /**
+             * Paused
+             * @default false
+             */
+            paused: boolean;
+            /**
              * Picked
              * @default []
              */
@@ -27526,6 +27608,8 @@ export interface components {
              * @default []
              */
             qualities: components["schemas"]["SwitchQuality"][];
+            /** Since */
+            since?: string | null;
             /**
              * Turned On
              * @default 0
@@ -33767,6 +33851,11 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /**
+             * Effects
+             * @default []
+             */
+            effects: string[];
             /** Game Number */
             game_number: number | null;
             /** Health Boxes */
@@ -40845,6 +40934,38 @@ export interface operations {
             path: {
                 character_id: string;
                 counter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    end_effect_api_characters__character_id__play_effects__effect_id__end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                effect_id: string;
             };
             cookie?: never;
         };

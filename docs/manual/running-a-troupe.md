@@ -1168,7 +1168,7 @@ If an award takes a character past the monthly figure, Horatio warns you (or, wi
 
 ### The At game tab and the Play View
 
-**Games › At game** shows each character's Blood, Willpower and health as their Play View has them, with their player's lines and veils. Open a character to tap for them, run an NPC, or read what they spent and why. How the Play View works is in [Players](players.md#at-game).
+**Games › At game** shows each character's Blood, Willpower and health as their Play View has them, with their player's lines and veils. Open a character to tap for them, run an NPC, or read what they spent and why. How the Play View works is in [Players](players.md#at-game). A character with a power that lasts until undone (Heart of Darkness's removed heart) shows it under **Kept until undone**; it stays on through Reset. Open the character's Play View to turn it off as they would.
 
 ### Scenes
 
