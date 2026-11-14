@@ -502,6 +502,8 @@ The **Pools** tab works out the character's test pools from its sheet: attacks, 
 
 **Forms, powers and modifiers**, at the foot of the screen, opens a drawer of switches: the forms and powers in use, the equipment the character has equipped, and modifiers of your own. The pools count whatever is switched on.
 
+**Powers that last until undone.** Most powers last a scene or a game at most, and **Reset for next game** turns them off. A few change the character until the change is undone, such as Heart of Darkness, which keeps the heart out until it's put back (MET: VtM core p. 161). Their switch says **Kept through Reset until you turn it off**, and the banner at the top says **Kept:**. They stay on through Reset, until you turn them off. Using one again while it's on replaces it, as a character carries one at a time, so its **Use** asks first. One that changes your normal form only, such as a reshaped face, is paused while you're in a form, and counts again when the form ends. Your storytellers see these on the **At game** tab, and can turn one off from your Play View.
+
 #### Equipment at game
 
 The **Equipment** tab shows what the character carries, weapons first, each with what its qualities do in play. You can give an item to another character or discard it from here; it's listed under what was given or discarded this game, with **Undo**.

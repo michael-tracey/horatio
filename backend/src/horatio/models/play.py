@@ -144,3 +144,58 @@ class PoolModifier(Record):
     when: Mapped[str] = mapped_column(default="", server_default="")
     on: Mapped[bool] = mapped_column(default=True, server_default="true")
     created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class PlayEffect(Record):
+    """A power's effect that lasts until undone, not until the game ends (issue
+    #822): Heart of Darkness's removed heart, a Malleable Visage, Bonecraft. It
+    belongs to the character it is on, not to a game, so it is kept through Reset
+    (horatio.play_effects).
+
+    `character_id` is who it is on and `source_character_id` who used the power:
+    the same character for one on itself. One used on another character in the same
+    troupe (issue #823) is made `active` at once, as the target can't refuse a
+    power that worked; they acknowledge it, or dispute it to staff. `offered` and
+    `declined` are kept for flows that ask first."""
+
+    __tablename__ = "play_effects"
+    __table_args__ = (
+        CheckConstraint("state in ('offered', 'active', 'declined', 'ended')", name="state"),
+        # A character carries one application of a power at a time (core p. 168):
+        # using it again replaces the last.
+        Index(
+            "uq_play_effects_active",
+            "character_id",
+            "key",
+            unique=True,
+            postgresql_where=text("state = 'active'"),
+        ),
+    )
+
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    source_character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    # The switch it holds on (horatio.reference.Switch.key): "Heart removed".
+    key: Mapped[str]
+    # What was chosen when the power was used (issue #821), such as Bonecraft's
+    # modifications, and amounts picked (issue #824), such as Tough's 1-3.
+    options: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    amounts: Mapped[dict[str, int]] = mapped_column(JSONB, default=dict, server_default="{}")
+    state: Mapped[str] = mapped_column(default="active", server_default="active")
+    # The device's id for it: the tap that made it, so a tap sent twice makes it once.
+    client_id: Mapped[uuid.UUID] = mapped_column(unique=True)
+    # The Play View tap that made it, and the one that ended it, if taps did.
+    event_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("play_events.id"))
+    ended_event_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("play_events.id"))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    started_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # For one on another character: when its target acknowledged it, or disputed it
+    # to staff with a note (issue #823).
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    disputed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    dispute_note: Mapped[str] = mapped_column(default="", server_default="")
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # Why it ended: "off" (turned off), "replaced" (used again), "undone", "staff".
+    ended_how: Mapped[str] = mapped_column(default="", server_default="")
+    # The effect this one replaced, which undoing this one brings back.
+    replaced_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("play_effects.id"))

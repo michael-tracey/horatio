@@ -49,6 +49,15 @@
 #   - `picks = { kind, count }`: the player picks `count` equipment qualities of
 #     that kind each time it goes on (issue #599: Flesh of Marble's two Protective
 #     Gear qualities), and their pool effects count as an equipped item's do.
+#   `kept = true` makes it last until undone rather than until the game ends (issue
+#   #822): it is kept through Reset until the player turns it off (a removed heart,
+#   a reshaped face), and using it again while it is on replaces it, as a character
+#   carries one application at a time. Never a form. `normal_form_only = true`
+#   pauses what it does while a form is on (core pp. 168-169: Vicissitude changes
+#   don't carry into a transformed shape). `counts_as_form = true` makes it take one
+#   of the forms Ravenous Conglomeration allows at once while it is kept (Vol. 2
+#   p. 249). A frenzy `pools` entry with a switch's `when` counts its `beast` only
+#   while that switch is on.
 # `notes` (on a discipline, power or [[others]] entry): what it adds to another
 #   entry's switch while the character has it (issue #601), shown with that switch
 #   under its own name and page: [{ when, note, page, book?, focus?, choice? }],
@@ -891,6 +900,10 @@ level = 5
 name = "Heart of Darkness"
 note = "1 Blood and an hour's ritual on a new moon: remove a willing vampire's heart (your own too), safe from staking."
 focus = { Charisma = "Any night, and on an unwilling vampire in torpor." }
+# Core p. 161: the heart stays out until it is put back with another use, so the
+# switch is kept through Reset.
+active = { key = "Heart removed", name = "Heart of Darkness: heart removed", kept = true, page = 161, notes = ["You can't be staked.", "Your heart can be: staked, it paralyses you; fire or sunlight on it destroys you."] }
+pools = [{ pool = "frenzy", beast = -1, when = "Heart removed" }]
 
 [[disciplines]]
 name = "Temporis"

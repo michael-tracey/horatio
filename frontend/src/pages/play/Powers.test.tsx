@@ -25,6 +25,10 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   options: [],
   picked: [],
   turned_on: 0,
+  kept: false,
+  normal_form_only: false,
+  counts_as_form: false,
+  paused: false,
   ...over,
 });
 
@@ -86,5 +90,24 @@ describe("an Off button for each power in the banner (#697)", () => {
     expect(screen.getAllByRole("button", { name: /^Switch . off$/ })).toHaveLength(4);
     expect(screen.queryByText(/Quickness/)).toBeNull();
     expect(screen.queryByText(/For the turn/)).toBeNull();
+  });
+});
+
+describe("a power kept until undone (#822)", () => {
+  const heart = power({ key: "Heart removed", name: "Heart of Darkness: heart removed", kept: true, notes: [] });
+  const visage = power({ key: "Alien beauty", name: "Malleable Visage: alien beauty", kept: true, normal_form_only: true, notes: [], on: true });
+  const wolf = power({ key: "fight form", name: "fight form", form: true, notes: [], on: true });
+
+  it("says it is kept through Reset, and paused in a form when it changes the normal form only", () => {
+    render(<PowersList powers={[heart, visage, wolf]} tap={vi.fn()} />);
+    expect(screen.getByText("Lasts until undone: kept through Reset until you turn it off.")).toBeTruthy();
+    expect(screen.getByText("Kept through Reset until you turn it off.")).toBeTruthy();
+    expect(screen.getByText("Paused while you're in a form: it changes your normal form only.")).toBeTruthy();
+  });
+
+  it("is shown as kept in the banner", () => {
+    render(<PowersBanner powers={[{ ...heart, on: true }]} tap={vi.fn()} />);
+    const banner = screen.getByRole("region", { name: "Switched on now" });
+    expect(banner.textContent).toContain("Kept: Heart of Darkness: heart removed");
   });
 });

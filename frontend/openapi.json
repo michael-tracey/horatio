@@ -21136,6 +21136,14 @@
             },
             "title": "Parts",
             "type": "array"
+          },
+          "switched_beast": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SwitchedPart"
+            },
+            "title": "Switched Beast",
+            "type": "array"
           }
         },
         "required": [
@@ -35051,6 +35059,58 @@
         "title": "PlayBoonsOut",
         "type": "object"
       },
+      "PlayEffectOut": {
+        "description": "An effect on the character that lasts until undone (issue #822): kept through\nReset until it is turned off.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paused": {
+            "default": false,
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          },
+          "source_character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Character Name"
+          },
+          "started_by": {
+            "title": "Started By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "name",
+          "since",
+          "started_by"
+        ],
+        "title": "PlayEffectOut",
+        "type": "object"
+      },
       "PlayItemOut": {
         "description": "An item the character holds, to equip at a game (issue #306).",
         "properties": {
@@ -35635,6 +35695,14 @@
           },
           "derangements": {
             "$ref": "#/components/schemas/Derangements"
+          },
+          "effects": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlayEffectOut"
+            },
+            "title": "Effects",
+            "type": "array"
           },
           "equipment": {
             "default": [],
@@ -37255,6 +37323,11 @@
             "title": "Combines",
             "type": "array"
           },
+          "counts_as_form": {
+            "default": false,
+            "title": "Counts As Form",
+            "type": "boolean"
+          },
           "focuses": {
             "default": [],
             "items": {
@@ -37276,6 +37349,11 @@
             "title": "Health",
             "type": "array"
           },
+          "kept": {
+            "default": false,
+            "title": "Kept",
+            "type": "boolean"
+          },
           "key": {
             "title": "Key",
             "type": "string"
@@ -37283,6 +37361,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "normal_form_only": {
+            "default": false,
+            "title": "Normal Form Only",
+            "type": "boolean"
           },
           "notes": {
             "default": [],
@@ -37312,6 +37395,11 @@
             "title": "Page",
             "type": "string"
           },
+          "paused": {
+            "default": false,
+            "title": "Paused",
+            "type": "boolean"
+          },
           "picked": {
             "default": [],
             "items": {
@@ -37329,6 +37417,18 @@
                 "type": "null"
               }
             ]
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
           },
           "turned_on": {
             "default": 0,
@@ -53545,6 +53645,14 @@
             "title": "Character Name",
             "type": "string"
           },
+          "effects": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
           "game_number": {
             "anyOf": [
               {
@@ -66014,6 +66122,60 @@
           }
         },
         "summary": "Remove Counter",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/effects/{effect_id}/end": {
+      "post": {
+        "description": "End an effect that lasts until undone (issue #822), for those who can't make\nthe Play View tap: staff, or the character who used the power on another. A\nplayer turns their own off with the switch, which works offline.",
+        "operationId": "end_effect_api_characters__character_id__play_effects__effect_id__end_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "effect_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Effect Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "End Effect",
         "tags": [
           "play"
         ]

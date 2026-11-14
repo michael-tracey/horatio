@@ -307,6 +307,16 @@ class Switch(BaseModel):
     # The Blood pool is half again as big (rounded up) while it is on.
     blood_half: bool = False
     picks: Picks | None = None
+    # Kept until undone, not until the game ends (issue #822): it lasts through Reset
+    # until the player turns it off (horatio.play_effects). Using it again while it
+    # is on replaces it, as a character carries one application at a time.
+    kept: bool = False
+    # It changes the character's normal form only (Malleable Visage, Bonecraft: core
+    # pp. 168-169): while a form is on, what it does is paused, and comes back after.
+    normal_form_only: bool = False
+    # Kept while on, it takes one of the forms Ravenous Conglomeration allows at once
+    # (Vol. 2 p. 249: kept Bonecraft alterations count as one).
+    counts_as_form: bool = False
 
 
 class Frenzy(BaseModel):
@@ -316,6 +326,9 @@ class Frenzy(BaseModel):
     parts: list[PoolPart]
     # Beast traits the character counts as having more (or fewer) for it: Short Fuse.
     beast: list[PoolPart] = []
+    # The same, while a switch is on: Heart of Darkness's removed heart, one fewer
+    # (core p. 161). `value` is the Beast traits more, or fewer.
+    switched_beast: list[SwitchedPart] = []
 
 
 class Reference(BaseModel):
@@ -338,6 +351,8 @@ class Catalogue:
     others: Mapping[tuple[str, str], Mapping[str, Any]] = field(default_factory=dict)
     # Every switch's key: a `when` naming one holds while it is on.
     switch_keys: frozenset[str] = frozenset()
+    # The keys of switches kept until undone (issue #822).
+    kept_keys: frozenset[str] = frozenset()
 
     def power(self, discipline: str, name: str) -> Mapping[str, Any] | None:
         return next((p for p in self.powers.get(discipline, []) if p["name"] == name), None)
@@ -369,6 +384,7 @@ def catalogue() -> Catalogue:
         attacks={a["skill"]: a for a in raw.get("attacks", [])},
         others={(o["category"], o["name"]): o for o in raw.get("others", [])},
         switch_keys=frozenset(a["key"] for e in entries for a in actives(e)),
+        kept_keys=frozenset(a["key"] for e in entries for a in actives(e) if a.get("kept")),
     )
 
 
@@ -1096,6 +1112,10 @@ def _changes(
         if e.when == switch.key and e.amount and not e.note:
             by = "" if switch.name.startswith(e.source) else f" ({e.source})"
             lines.append(f"{_signed(e.amount)} {_pool_words(e.pool)}{by}")
+        if e.when == switch.key and e.pool == "frenzy" and e.beast:
+            fewer = "fewer" if e.beast < 0 else "more"
+            traits = "trait" if abs(e.beast) == 1 else "traits"
+            lines.append(f"Frenzy resisted as if with {abs(e.beast)} Beast {traits} {fewer}")
     for change in switch.attributes:
         to = {"attack": " for attacks", "defense": " for defences", None: ""}.get(
             change.pools, f" for {_pool_words(change.pools or '')}"
@@ -1166,6 +1186,9 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
         blood_per_turn=blood.get("per_turn", 0),
         blood_half=blood.get("most") == "half",
         picks=Picks(**active["picks"]) if "picks" in active else None,
+        kept=active.get("kept", False),
+        normal_form_only=active.get("normal_form_only", False),
+        counts_as_form=active.get("counts_as_form", False),
     )
 
 
@@ -1299,17 +1322,18 @@ def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
 
 
 def frenzy(sheet: Sheet, found: Sequence[Effect]) -> Frenzy:
+    switched = sheet.switch_keys
+    always = [e for e in found if e.pool == "frenzy" and e.when not in switched]
     return Frenzy(
         parts=[
             PoolPart(label="Mental", value=sheet.rating("attributes", "Mental")),
-            *(
-                PoolPart(label=e.source, value=e.amount)
-                for e in found
-                if e.pool == "frenzy" and e.amount
-            ),
+            *(PoolPart(label=e.source, value=e.amount) for e in always if e.amount),
         ],
-        beast=[
-            PoolPart(label=e.source, value=e.beast) for e in found if e.pool == "frenzy" and e.beast
+        beast=[PoolPart(label=e.source, value=e.beast) for e in always if e.beast],
+        switched_beast=[
+            SwitchedPart(switch=e.when, label=e.source, value=e.beast)
+            for e in found
+            if e.pool == "frenzy" and e.beast and e.when is not None and e.when in switched
         ],
     )
 
@@ -1331,7 +1355,7 @@ def other_notes(found: Sequence[Effect], shown: Collection[str] = ()) -> list[st
             notes.append(f"{e.source}: use {other} in place of {', '.join(e.instead_of)}")
         elif e.pool == "all":
             notes.append(f"{e.source}: {_signed(e.amount)} to every pool {e.when or ''}".strip())
-        elif e.pool == "frenzy":
+        elif e.pool == "frenzy" and (e.note or e.amount):
             notes.append(f"{e.source}: {e.note or _signed(e.amount) + ' to resist frenzy'}")
     return notes
 

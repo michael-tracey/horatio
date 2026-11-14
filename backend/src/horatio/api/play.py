@@ -22,6 +22,7 @@ from horatio import (
     house_traits,
     influence_log,
     play,
+    play_effects,
     play_influence,
     play_status,
     play_tabs,
@@ -232,6 +233,27 @@ class PowerOut(reference.Switch):
     # Its place in the order those on were switched on (1 for the first), so the
     # Play View knows which form goes first past the limit; 0 while off.
     turned_on: int = 0
+    # A kept switch that changes the normal form only, on while a form is: what it
+    # does is paused until the form ends (issue #822).
+    paused: bool = False
+    # For a kept switch on: when its effect began (horatio.play_effects).
+    since: datetime | None = None
+
+
+class PlayEffectOut(BaseModel):
+    """An effect on the character that lasts until undone (issue #822): kept through
+    Reset until it is turned off."""
+
+    id: uuid.UUID
+    key: str
+    # The switch's name: "Heart of Darkness: heart removed".
+    name: str
+    since: datetime
+    # Who used it, and from which character when it isn't this one (issue #823).
+    started_by: str
+    source_character_name: str | None = None
+    # Paused while a form is on: it changes the normal form only.
+    paused: bool = False
 
 
 class PlayItemOut(BaseModel):
@@ -354,8 +376,12 @@ class PlayView(BaseModel):
     # each category; `blood_per_turn` and `blood_usual` are without them.
     powers: list[PowerOut] = []
     # How many forms it can be in at once: one (core p. 114), two with Ravenous
-    # Conglomeration (Vol. 2 p. 249, issue #597).
+    # Conglomeration (Vol. 2 p. 249, issue #597), less one while a kept effect that
+    # counts as one is on.
     forms: int = 1
+    # Effects that last until undone (issue #822), kept through Reset: what is on
+    # the character now, oldest first.
+    effects: list[PlayEffectOut] = []
     # The items it holds, and those equipped, in the order they were (issue #306):
     # like what is switched on, kept from game to game.
     equipment: list[PlayItemOut] = []
@@ -501,6 +527,9 @@ class TroupePlayEntry(BaseModel):
     # Whether it has a Play View: a PC's troupe may not use one for players; an NPC
     # always has one (horatio.play_tabs).
     play_view: bool = True
+    # Effects on it that last until undone (issue #822): "Heart of Darkness: heart
+    # removed", so staff can see them.
+    effects: list[str] = []
 
 
 class TroupeReset(BaseModel):
@@ -669,12 +698,42 @@ def vitae_out(
     )
 
 
+def effects_out(
+    db: Session, character: Character, limits: play.Limits, paused: set[str]
+) -> list[PlayEffectOut]:
+    """The effects on the character now that last until undone (issue #822)."""
+    found = play_effects.on_character(db, character)
+    who = names(db, {e.started_by_id for e in found})
+    sources = {
+        e.source_character_id: db.get_one(Character, e.source_character_id).name
+        for e in found
+        if e.source_character_id != character.id
+    }
+    out: list[PlayEffectOut] = []
+    for e in found:
+        switch = limits.switch(e.key)
+        out.append(
+            PlayEffectOut(
+                id=e.id,
+                key=e.key,
+                name=switch.name if switch is not None else e.key,
+                since=e.started_at,
+                started_by=who.get(e.started_by_id, ""),
+                source_character_name=sources.get(e.source_character_id),
+                paused=e.key in paused,
+            )
+        )
+    return out
+
+
 def play_view(db: Session, character: Character) -> PlayView:
     game = play.current_game(db, character)
     limits = play.limits(db, character, game)
     events = play.game_events(db, game) if game else []
     state = play.replay(limits, events).state
     rows = sheets.sheet_rows(db, character)
+    paused = limits.paused(state["on"])
+    since = {k.key: k.since for k in limits.kept}
 
     def one(category: str) -> str | None:
         return next((r.definition.name for r in rows if r.category.key == category), None)
@@ -788,10 +847,13 @@ def play_view(db: Session, character: Character) -> PlayView:
                 ],
                 picked=state.get("picked", {}).get(s.key, []),
                 turned_on=state["on"].index(s.key) + 1 if s.key in state["on"] else 0,
+                paused=s.key in paused,
+                since=since.get(s.key) if s.key in state["on"] else None,
             )
             for s in limits.switches
         ],
-        forms=limits.forms,
+        forms=limits.forms_now(state["on"]),
+        effects=effects_out(db, character, limits, paused),
         equipment=[
             PlayItemOut(
                 id=uuid.UUID(i.id),
@@ -1190,6 +1252,28 @@ def remove_counter(
     return play_view(db, character)
 
 
+@router.post("/characters/{character_id}/play/effects/{effect_id}/end")
+def end_effect(
+    character_id: uuid.UUID, effect_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> PlayView:
+    """End an effect that lasts until undone (issue #822), for those who can't make
+    the Play View tap: staff, or the character who used the power on another. A
+    player turns their own off with the switch, which works offline."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    effect = play_effects.one(db, character, effect_id)
+    if effect.state != "active":
+        raise HTTPException(status.HTTP_409_CONFLICT, "That effect has ended already.")
+    limits = play.limits(db, character)
+    switch = limits.switch(effect.key)
+    how = "off" if character.player_id == user.id else "staff"
+    play_effects.end(db, effect, user, how, switch.name if switch is not None else effect.key)
+    game = play.current_game(db, character)
+    if game is not None:
+        play.refresh(db, game, play.limits(db, character, game))
+    db.commit()
+    return play_view(db, character)
+
+
 @router.get("/troupes/{troupe_id}/play")
 def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[TroupePlayEntry]:
     """Every character in the troupe at the game now, in the roster's order."""
@@ -1228,6 +1312,7 @@ def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
                 health_boxes=len(limits.boxes(state["on"])),
                 lines_veils=entry.lines_veils,
                 play_view=character.id not in without,
+                effects=[s.name for k in limits.kept if (s := limits.switch(k.key)) is not None],
             )
         )
     return found
