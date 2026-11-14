@@ -488,6 +488,27 @@
             ],
             "title": "Picture"
           },
+          "portrait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portrait"
+          },
+          "portrait_crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CropIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "retired": {
             "title": "Retired",
             "type": "boolean"
@@ -5108,6 +5129,60 @@
           "files"
         ],
         "title": "Body_run_troupe_import_api_troupes__troupe_id__character_imports_post",
+        "type": "object"
+      },
+      "Body_upload_agency_portrait_api_agencies__agency_id__portrait_post": {
+        "properties": {
+          "crop_size": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Size"
+          },
+          "crop_x": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop X"
+          },
+          "crop_y": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Y"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_agency_portrait_api_agencies__agency_id__portrait_post",
         "type": "object"
       },
       "Body_upload_banner_api_troupes__troupe_id__banner_post": {
@@ -60424,6 +60499,212 @@
         ]
       }
     },
+    "/api/agencies/{agency_id}/portrait": {
+      "delete": {
+        "description": "Its stories go on posting under its name, with Discord's default picture.",
+        "operationId": "remove_agency_portrait_api_agencies__agency_id__portrait_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agency_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Agency Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Agency Portrait",
+        "tags": [
+          "posts"
+        ]
+      },
+      "post": {
+        "description": "A square portrait, cut like a character's picture, that its stories show on\nDiscord as their sender's. Without a crop, the biggest square in the middle.",
+        "operationId": "upload_agency_portrait_api_agencies__agency_id__portrait_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agency_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Agency Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_agency_portrait_api_agencies__agency_id__portrait_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Agency Portrait",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
+    "/api/agencies/{agency_id}/portrait/crop": {
+      "put": {
+        "description": "Move the portrait's crop, cutting it again from the picture as kept.",
+        "operationId": "crop_agency_portrait_api_agencies__agency_id__portrait_crop_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agency_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Agency Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CropIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgencyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Crop Agency Portrait",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
+    "/api/agencies/{agency_id}/portraits/{portrait_id}/{name}": {
+      "get": {
+        "description": "An agency's portrait, for the troupe's members. Discord fetches it from an\naddress of its own (horatio.public_pictures).",
+        "operationId": "agency_portrait_api_agencies__agency_id__portraits__portrait_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agency_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Agency Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "portrait_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Portrait Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Agency Portrait",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
     "/api/agencies/{agency_id}/restore": {
       "post": {
         "operationId": "restore_agency_api_agencies__agency_id__restore_post",
@@ -78695,6 +78976,71 @@
         "summary": "Sheet Changed",
         "tags": [
           "projects"
+        ]
+      }
+    },
+    "/api/public-pictures/{kind}/{owner_id}/{picture_id}/{signed}.webp": {
+      "get": {
+        "description": "A news agency's portrait or a character's picture, at an address only the\nmessages Horatio sends to Discord carry. Its files never change (a new picture\nhas a new id), so anyone may keep them.",
+        "operationId": "public_picture_api_public_pictures__kind___owner_id___picture_id___signed__webp_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "owner_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Owner Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "signed",
+            "required": true,
+            "schema": {
+              "title": "Signed",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Picture",
+        "tags": [
+          "pictures"
         ]
       }
     },

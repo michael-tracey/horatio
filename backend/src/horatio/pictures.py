@@ -17,6 +17,8 @@ Horatio shows, all WebP, in `HORATIO_UPLOAD_DIR`:
 
 - a troupe's post's picture, or a news agency's masthead (issue #510): the whole
   picture, shrunk to 1200 and 600 px wide.
+- a news agency's portrait (issue #883), its stories' sender on Discord: the same
+  squares as a character's, and the whole picture for moving the crop.
 - a troupe's rock, paper or scissors for the Throws tab (issue #670): the whole
   picture, centred on a transparent square of 128 and 512 px, as a clan logo is.
 
@@ -221,6 +223,11 @@ def write_troupe_portrait(directory: Path, image: Image.Image, crop: Crop | None
     _squares(directory, image, crop)
 
 
+def write_agency_portrait(directory: Path, image: Image.Image, crop: Crop | None) -> None:
+    """Write a news agency's portrait's files into `directory`, which must be new."""
+    _squares(directory, image, crop)
+
+
 def write_banner(directory: Path, image: Image.Image) -> None:
     """Write a troupe's banner's files into `directory`, which must be new."""
     directory.mkdir(parents=True)
@@ -312,6 +319,19 @@ def post_picture_file(
     if name not in POST_FILES:
         return None
     path = post_picture_dir(root, troupe_id, picture_id) / name
+    return path if path.is_file() else None
+
+
+def agency_portrait_dir(root: Path, troupe_id: uuid.UUID, portrait_id: uuid.UUID) -> Path:
+    return troupe_dir(root, troupe_id) / "agency-portraits" / str(portrait_id)
+
+
+def agency_portrait_file(
+    root: Path, troupe_id: uuid.UUID, portrait_id: uuid.UUID, name: str
+) -> Path | None:
+    if name not in TROUPE_PORTRAIT_FILES:
+        return None
+    path = agency_portrait_dir(root, troupe_id, portrait_id) / name
     return path if path.is_file() else None
 
 
@@ -409,6 +429,13 @@ def post_picture_url(troupe_id: uuid.UUID, picture_id: uuid.UUID | None) -> str 
     if picture_id is None:
         return None
     return f"/api/troupes/{troupe_id}/post-pictures/{picture_id}"
+
+
+def agency_portrait_url(agency_id: uuid.UUID, portrait_id: uuid.UUID | None) -> str | None:
+    """Where the app finds a news agency's portrait: add "/128.webp" and so on."""
+    if portrait_id is None:
+        return None
+    return f"/api/agencies/{agency_id}/portraits/{portrait_id}"
 
 
 def throw_image_url(troupe_id: uuid.UUID, image_id: uuid.UUID | None) -> str | None:

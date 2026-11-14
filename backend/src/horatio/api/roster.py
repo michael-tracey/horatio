@@ -500,6 +500,8 @@ MESSAGES: dict[str, str] = {
     "agency.retired": "{actor} retired the news agency {name}.",
     "agency.restored": "{actor} brought back the news agency {name}.",
     "agency.masthead_changed": "{actor} changed the masthead of the news agency {name}.",
+    "agency.portrait_changed": "{actor} changed the portrait of the news agency {name}.",
+    "agency.portrait_removed": "{actor} removed the portrait of the news agency {name}.",
     "downtime.participant_added": "{actor} added {character} to a downtime cycle.",
     "downtime.participant_removed": "{actor} removed {character} from a downtime cycle.",
     "downtime.reminded": "{actor} reminded the players of {characters} downtimes not yet"

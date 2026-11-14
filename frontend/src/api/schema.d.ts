@@ -132,6 +132,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agencies/{agency_id}/portrait": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Agency Portrait
+         * @description A square portrait, cut like a character's picture, that its stories show on
+         *     Discord as their sender's. Without a crop, the biggest square in the middle.
+         */
+        post: operations["upload_agency_portrait_api_agencies__agency_id__portrait_post"];
+        /**
+         * Remove Agency Portrait
+         * @description Its stories go on posting under its name, with Discord's default picture.
+         */
+        delete: operations["remove_agency_portrait_api_agencies__agency_id__portrait_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agencies/{agency_id}/portrait/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Crop Agency Portrait
+         * @description Move the portrait's crop, cutting it again from the picture as kept.
+         */
+        put: operations["crop_agency_portrait_api_agencies__agency_id__portrait_crop_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agencies/{agency_id}/portraits/{portrait_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agency Portrait
+         * @description An agency's portrait, for the troupe's members. Discord fetches it from an
+         *     address of its own (horatio.public_pictures).
+         */
+        get: operations["agency_portrait_api_agencies__agency_id__portraits__portrait_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agencies/{agency_id}/restore": {
         parameters: {
             query?: never;
@@ -6398,6 +6464,28 @@ export interface paths {
          * @description Staff have changed the sheet's Morality to the finished Path change's Path.
          */
         post: operations["sheet_changed_api_projects__project_id__sheet_changed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public-pictures/{kind}/{owner_id}/{picture_id}/{signed}.webp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public Picture
+         * @description A news agency's portrait or a character's picture, at an address only the
+         *     messages Horatio sends to Discord carry. Its files never change (a new picture
+         *     has a new id), so anyone may keep them.
+         */
+        get: operations["public_picture_api_public_pictures__kind___owner_id___picture_id___signed__webp_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -13512,6 +13600,9 @@ export interface components {
             name: string;
             /** Picture */
             picture: string | null;
+            /** Portrait */
+            portrait?: string | null;
+            portrait_crop?: components["schemas"]["CropIn"] | null;
             /** Retired */
             retired: boolean;
         };
@@ -15390,6 +15481,20 @@ export interface components {
              * @description A .zip exported from Horatio, or character files, or both.
              */
             files: string[];
+        };
+        /** Body_upload_agency_portrait_api_agencies__agency_id__portrait_post */
+        Body_upload_agency_portrait_api_agencies__agency_id__portrait_post: {
+            /** Crop Size */
+            crop_size?: number | null;
+            /** Crop X */
+            crop_x?: number | null;
+            /** Crop Y */
+            crop_y?: number | null;
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
         };
         /** Body_upload_banner_api_troupes__troupe_id__banner_post */
         Body_upload_banner_api_troupes__troupe_id__banner_post: {
@@ -37050,6 +37155,138 @@ export interface operations {
             };
         };
     };
+    upload_agency_portrait_api_agencies__agency_id__portrait_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_agency_portrait_api_agencies__agency_id__portrait_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_agency_portrait_api_agencies__agency_id__portrait_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    crop_agency_portrait_api_agencies__agency_id__portrait_crop_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CropIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agency_portrait_api_agencies__agency_id__portraits__portrait_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+                portrait_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     restore_agency_api_agencies__agency_id__restore_post: {
         parameters: {
             query?: never;
@@ -48892,6 +49129,38 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProjectOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_picture_api_public_pictures__kind___owner_id___picture_id___signed__webp_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                owner_id: string;
+                picture_id: string;
+                signed: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

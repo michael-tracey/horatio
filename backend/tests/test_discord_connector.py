@@ -65,11 +65,14 @@ class Posted:
     channel: str
     payload: dict[str, Any]
     files: dict[str, tuple[str, bytes]]
+    # The webhook it was sent through (horatio.discord_webhooks); None for the bot's.
+    webhook: str | None = None
 
 
 class FakeDiscord:
     """Enough of Discord's API for the connector: the code exchange, a server's
-    channels, and posting, editing and deleting messages."""
+    channels, and posting, editing and deleting messages, as the bot or through a
+    channel's webhook. Neither may edit or delete the other's messages."""
 
     def __init__(self) -> None:
         self.posted: list[tuple[str, str]] = []
@@ -82,8 +85,12 @@ class FakeDiscord:
         self.next: list[tuple[int, dict[str, Any]]] = []
         self.waits: list[float] = []
         self.guild = (GUILD, "Court of Ash")
-        # The permissions of the bot's own role: those an invite asked for.
-        self.bot_role = discord.PERMISSIONS
+        # The permissions of the bot's own role: those an invite asked for, and Manage
+        # Webhooks, for stories to post as their agencies (#883).
+        self.bot_role = discord.PERMISSIONS | discord.FOR_WEBHOOKS
+        # Channels' webhooks, by id, as Discord lists them.
+        self.webhooks: dict[str, dict[str, Any]] = {}
+        self.webhooks_made = 0
         # Whether Discord answers questions about the bot and its server.
         self.answers_about_bot = True
         everyone_denied = {"id": GUILD, "type": 0, "deny": str(1 << 10), "allow": "0"}
@@ -110,6 +117,8 @@ class FakeDiscord:
             if form.get("code") != ["good-code"]:
                 return httpx.Response(400, json={"error": "invalid_grant"})
             return httpx.Response(200, json={"guild": {"id": self.guild[0], "name": self.guild[1]}})
+        if path.startswith("/api/v10/webhooks/"):
+            return self.through_webhook(request)
         assert request.headers["Authorization"] == "Bot test-token"
         if path == f"/api/v10/guilds/{GUILD}/channels":
             return httpx.Response(200, json=self.channels)
@@ -143,6 +152,8 @@ class FakeDiscord:
                 return httpx.Response(code, json=body)
             if channel in self.gone:
                 return httpx.Response(404, json={"message": "Unknown Channel", "code": 10003})
+            if path.endswith("/webhooks"):
+                return self.channel_webhooks(request, channel)
             message_id = path.split("/")[6] if path.count("/") >= 6 else None
             if request.method == "POST":
                 body, files = read_body(request)
@@ -154,6 +165,10 @@ class FakeDiscord:
             there = self.messages.get(message_id or "")
             if there is None or there.channel != channel:
                 return httpx.Response(404, json={"message": "Unknown Message", "code": 10008})
+            if there.webhook is not None:
+                # Not the bot's own: it may neither edit it, nor delete it without
+                # Manage Messages, which Horatio never asks for.
+                return httpx.Response(403, json={"message": "Missing Permissions", "code": 50013})
             if request.method == "PATCH":
                 body, files = read_body(request)
                 assert body["allowed_mentions"] == {"parse": []}
@@ -165,6 +180,62 @@ class FakeDiscord:
                 self.deletions.append(message_id or "")
                 return httpx.Response(204)
         return httpx.Response(404, json={"message": "Unknown"})
+
+    def channel_webhooks(self, request: httpx.Request, channel: str) -> httpx.Response:
+        """Listing and making a channel's webhooks, which needs Manage Webhooks."""
+        if not self.bot_role & discord.MANAGE_WEBHOOKS:
+            return httpx.Response(403, json={"message": "Missing Permissions", "code": 50013})
+        if request.method == "GET":
+            return httpx.Response(
+                200, json=[w for w in self.webhooks.values() if w["channel_id"] == channel]
+            )
+        self.webhooks_made += 1
+        made = {
+            "id": f"9{self.webhooks_made:03d}",
+            "type": 1,
+            "token": f"secret-{self.webhooks_made}",
+            "channel_id": channel,
+            "name": json.loads(request.content)["name"],
+            "application_id": "app-id",
+        }
+        self.webhooks[made["id"]] = made
+        return httpx.Response(200, json=made)
+
+    def through_webhook(self, request: httpx.Request) -> httpx.Response:
+        """A webhook's own routes: no bot token, the webhook's in the address."""
+        assert "Authorization" not in request.headers
+        parts = request.url.path.split("/")
+        hook = self.webhooks.get(parts[4])
+        if self.next:
+            code, body = self.next.pop(0)
+            return httpx.Response(code, json=body)
+        if hook is None:
+            return httpx.Response(404, json={"message": "Unknown Webhook", "code": 10015})
+        if hook["token"] != parts[5]:
+            return httpx.Response(401, json={"message": "Invalid Webhook Token", "code": 50027})
+        channel = hook["channel_id"]
+        if len(parts) == 6 and request.method == "POST":
+            assert request.url.params["wait"] == "true"
+            body, files = read_body(request)
+            assert body["allowed_mentions"] == {"parse": []}
+            self.posted.append((channel, body.get("content", "")))
+            new_id = str(len(self.posted))
+            self.messages[new_id] = Posted(channel, body, files, hook["id"])
+            return httpx.Response(200, json={"id": new_id, "webhook_id": hook["id"]})
+        message_id = parts[7]
+        there = self.messages.get(message_id)
+        if there is None or there.webhook != hook["id"]:
+            return httpx.Response(404, json={"message": "Unknown Message", "code": 10008})
+        if request.method == "PATCH":
+            body, files = read_body(request)
+            assert body["allowed_mentions"] == {"parse": []}
+            assert "username" not in body and "avatar_url" not in body
+            self.messages[message_id] = Posted(channel, body, files, hook["id"])
+            self.edits.append(message_id)
+            return httpx.Response(200, json={"id": message_id})
+        del self.messages[message_id]
+        self.deletions.append(message_id)
+        return httpx.Response(204)
 
 
 @pytest.fixture
@@ -436,6 +507,7 @@ def test_the_invite_asks_for_what_posts_need() -> None:
 
     assert discord.PERMISSIONS == 52224
     assert names == ["View Channels", "Send Messages", "Embed Links", "Attach Files"]
+    assert discord.missing(0, discord.FOR_WEBHOOKS) == ["Manage Webhooks"]
 
 
 def test_staff_see_which_permissions_the_bot_lacks_in_each_channel(
@@ -452,15 +524,16 @@ def test_staff_see_which_permissions_the_bot_lacks_in_each_channel(
     setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
     posting = troupe.storyteller.client.get(f"/troupes/{troupe.id}/post-channels").json()
 
+    old_invite = ["Embed Links", "Attach Files", "Manage Webhooks"]
     expected = {
-        "agnes": ["Embed Links", "Attach Files"],
-        "general": ["Embed Links", "Attach Files"],
-        "st-test": ["View Channels", "Send Messages", "Embed Links", "Attach Files"],
+        "agnes": old_invite,
+        "general": old_invite,
+        "st-test": ["View Channels", "Send Messages", *old_invite],
     }
     assert {c["name"]: c["missing"] for c in setup["channels"]} == expected
     assert {c["name"]: c["missing"] for c in posting["channels"]} == expected
 
-    fake_discord.bot_role = discord.PERMISSIONS
+    fake_discord.bot_role = discord.CHECKED
     fake_discord.channels[3]["permission_overwrites"] = []
     setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
     assert {c["name"]: c["missing"] for c in setup["channels"]} == {

@@ -49,6 +49,9 @@ EMBED_LINKS = 1 << 14
 ATTACH_FILES = 1 << 15
 READ_MESSAGE_HISTORY = 1 << 16
 MANAGE_ROLES = 1 << 28
+# To make the channel's Horatio webhook, through which a news story posts as its
+# agency (#883, horatio.discord_webhooks).
+MANAGE_WEBHOOKS = 1 << 29
 # To add emoji to a server, and edit or delete the ones the bot added itself (#870);
 # Manage Expressions (1 << 30) would be needed only for anyone else's, which Horatio
 # never touches.
@@ -62,6 +65,12 @@ FOR_MANAGED = PERMISSIONS | MANAGE_CHANNELS | MANAGE_ROLES | READ_MESSAGE_HISTOR
 # What a troupe that lets Horatio add the clan and discipline symbols to its server
 # as emoji grants the bot as well (#870, horatio.discord_emoji).
 FOR_EMOJI = CREATE_EXPRESSIONS
+# What the bot needs as well in a channel where a story posts as its agency (#883,
+# horatio.discord_webhooks); without it, stories there post as the bot.
+FOR_WEBHOOKS = MANAGE_WEBHOOKS
+# What each channel's list says the bot lacks: what it needs to post, and Manage
+# Webhooks; each place that shows it picks those that matter there.
+CHECKED = PERMISSIONS | FOR_WEBHOOKS
 # Each of them by the name Discord shows in a server's or channel's settings, in
 # that order.
 PERMISSION_NAMES = {
@@ -69,6 +78,7 @@ PERMISSION_NAMES = {
     SEND_MESSAGES: "Send Messages",
     EMBED_LINKS: "Embed Links",
     ATTACH_FILES: "Attach Files",
+    MANAGE_WEBHOOKS: "Manage Webhooks",
     READ_MESSAGE_HISTORY: "Read Message History",
     MANAGE_CHANNELS: "Manage Channels",
     MANAGE_ROLES: "Manage Roles",
@@ -214,22 +224,19 @@ def whoami() -> Bot:
     )
 
 
-def client() -> httpx.Client:
-    return httpx.Client(
-        base_url=API,
-        transport=transport,
-        timeout=15,
-        headers={
-            "Authorization": f"Bot {get_settings().discord_bot_token}",
-            "User-Agent": "DiscordBot (https://github.com/michael-tracey/horatio, 0.1)",
-        },
-    )
+def client(bot: bool = True) -> httpx.Client:
+    """Discord's API, as the bot; or with `bot` False, as nobody, for a webhook's
+    own routes, whose token is in the address."""
+    headers = {"User-Agent": "DiscordBot (https://github.com/michael-tracey/horatio, 0.1)"}
+    if bot:
+        headers["Authorization"] = f"Bot {get_settings().discord_bot_token}"
+    return httpx.Client(base_url=API, transport=transport, timeout=15, headers=headers)
 
 
-def request(method: str, path: str, **kwargs: Any) -> httpx.Response:
+def request(method: str, path: str, *, bot: bool = True, **kwargs: Any) -> httpx.Response:
     """One call to Discord's API, sitting out short rate limits. Raises SendError,
     saying whether trying again later could help."""
-    with client() as http:
+    with client(bot) as http:
         for _ in range(SHORT_WAITS + 1):
             try:
                 response = http.request(method, path, **kwargs)
@@ -244,7 +251,12 @@ def request(method: str, path: str, **kwargs: Any) -> httpx.Response:
             if response.status_code >= 500:
                 raise SendError(f"Discord is having trouble ({response.status_code}).", retry=True)
             if response.status_code == 401:
-                raise SendError("Discord refused Horatio's bot token.", retry=False)
+                raise SendError(
+                    "Discord refused Horatio's bot token.",
+                    retry=False,
+                    status=401,
+                    code=error_code(response),
+                )
             if response.status_code == 403:
                 reason = (
                     "The Horatio bot is missing a permission in that channel."
@@ -394,8 +406,8 @@ class Channel:
     category: str | None
     # Whether @everyone is kept out, so only roles and people given access see it.
     private: bool
-    # Of the permissions Horatio asks for (PERMISSION_NAMES), those the bot lacks
-    # in this channel; None when they weren't checked or couldn't be.
+    # Of the permissions Horatio checks for (CHECKED), those the bot lacks in this
+    # channel; None when they weren't checked or couldn't be.
     missing: tuple[str, ...] | None = None
 
 
@@ -435,9 +447,7 @@ def text_channels(
             private=private(c),
             missing=None
             if access is None
-            else tuple(
-                missing(access.permissions(c.get("permission_overwrites", [])), PERMISSIONS)
-            ),
+            else tuple(missing(access.permissions(c.get("permission_overwrites", [])), CHECKED)),
         )
         for c in sorted(found, key=lambda c: (c.get("position", 0), c["id"]))
         if c.get("type") in TEXT_CHANNEL_TYPES

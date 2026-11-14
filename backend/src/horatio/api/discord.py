@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select, update
 
-from horatio import audit, discord_channels, discord_emoji
+from horatio import audit, discord_channels, discord_emoji, discord_webhooks
 from horatio.api import discord_account
 from horatio.api.connectors import connector_row
 from horatio.api.downtimes import staff_troupe
@@ -214,6 +214,7 @@ def discord_disconnect(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -
     server = row.settings.get("guild_name") or row.settings["guild_id"]
     row.settings = {}
     row.enabled = False
+    discord_webhooks.forget(db, troupe.id)
     audit.record(db, user, "connector.discord_disconnected", troupe_id=troupe.id, server=server)
     db.commit()
 
