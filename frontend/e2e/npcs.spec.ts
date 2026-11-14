@@ -420,6 +420,40 @@ test("a storyteller makes an NPC of a retired character, and its player keeps th
   expect(notes.items.map((n: { summary: string }) => n.summary).join("\n")).not.toContain("[NPC]");
 });
 
+test("a storyteller opens Post in IC chat as NPC, told where to choose the channel, and sees the NPC's IC chat (#884)", async ({ browser }) => {
+  const custodian = await person(browser, "echo-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "echo-lead");
+  const { troupeId, npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Echoes", "Bastien Moreau");
+
+  const p = lead.page;
+  await p.goto(`/characters/${npcId}`);
+  await expect(p.getByRole("heading", { level: 1, name: "Bastien Moreau" })).toBeVisible();
+  await p.getByRole("button", { name: "More for Bastien Moreau" }).click();
+  await p.getByRole("menuitem", { name: "Post in IC chat as NPC…" }).click();
+  // No In-Character channel is chosen (e2e has no Discord), so the composer says where it is set.
+  const dialog = p.getByRole("dialog", { name: "Post in IC chat as Bastien Moreau" });
+  await expect(dialog.getByText(/The In-Character channel is set in/)).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Connectors › Discord" })).toHaveAttribute("href", `/troupes/${troupeId}/connectors`);
+  await expect(dialog.getByRole("button", { name: "Post as Bastien Moreau" })).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(dialog).toBeHidden();
+
+  // Its IC chat tab lists what it has said, for staff: nothing yet.
+  await p.getByRole("link", { name: "IC chat", exact: true }).click();
+  await expect(p).toHaveURL(new RegExp(`/characters/${npcId}/ic-chat$`));
+  await expect(p.getByText("Bastien Moreau hasn't posted in IC chat yet.")).toBeVisible();
+  await expect(p.getByRole("link", { name: "Connectors › Discord" })).toBeVisible();
+
+  // A retired NPC can't post, so the item goes.
+  const retired = await p.request.post(`/api/characters/${npcId}/retire`, { headers: { "X-Horatio": "1" } });
+  expect(retired.status(), await retired.text()).toBe(200);
+  await p.reload();
+  await p.getByRole("button", { name: "More for Bastien Moreau" }).click();
+  await expect(p.getByRole("menuitem", { name: "Rename…" })).toBeVisible();
+  await expect(p.getByRole("menuitem", { name: "Post in IC chat as NPC…" })).toHaveCount(0);
+});
+
 test("a storyteller exports the troupe's characters and NPCs as a .zip, with emails only if ticked (#567)", async ({ browser }) => {
   const custodian = await person(browser, "export-cust");
   makeCustodian(custodian.email);
@@ -487,7 +521,7 @@ test("a storyteller sends a claim link, and a newcomer signs up through it and c
   await dialog.getByRole("button", { name: "Make a claim link" }).click();
   const url = await dialog.getByLabel("Claim link").inputValue();
   await p.screenshot(shots("claim-link"));
-  await dialog.getByRole("button", { name: "Close" }).click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await p.goto(`/troupes/${troupeId}/npcs`);
   await expect(p.getByRole("row", { name: /Bastien Roux/ }).getByText("Claim link out")).toBeVisible();
 

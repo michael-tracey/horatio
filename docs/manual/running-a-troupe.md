@@ -274,6 +274,21 @@ When a player's character turns villain, or its player can no longer run it, sta
 - Its boons, blood bonds, titles, status, equipment, Retainers' records and Who's Who listing stay with the original: give the NPC what it needs by hand. The NPC starts off the Who's Who, with no XP history.
 - Its player isn't told, so a turn to villainy can stay a surprise in play. The NPC's log, the original's log and the troupe log say who made the copy and when; the player's own view of the original's log leaves it out.
 
+### Posting in IC chat as an NPC
+
+Storytellers and assistant storytellers can speak as an NPC in the troupe's **In-Character channel** on Discord: a public channel for in-world talk. The message shows under the NPC's name and picture, as if the NPC wrote it, not as the Horatio bot or as you.
+
+First, a storyteller chooses the channel: on **Customise › Connectors**, under Discord, pick it as the **In-Character channel**. It saves straight away. The bot needs **Manage Webhooks** there, as well as View Channels and Send Messages, since it posts through the channel's webhook; Horatio says beside the channel if any is missing.
+
+Then, on the NPC's own page:
+
+1. Choose **⋯ › Post in IC chat as NPC…**. Only the troupe's own NPCs that aren't retired have it, and narrators don't see it.
+2. Write the message (text only, up to 2,000 characters, Discord's limit; it never pings anyone) and choose **Post as *name***.
+
+With no In-Character channel chosen yet, the composer says so, with a link to Connectors.
+
+The NPC's **IC chat** tab lists its recent messages, newest first, with when each was sent and who sent it. **Edit** changes a message and **Delete** removes it, on Discord too. Players never see who was behind an NPC: only the troupe's storytellers and assistant storytellers see the list, and the NPC's log and the troupe log. If the NPC is later given to a player, its new player doesn't see them either.
+
 ## Titles and status
 
 **Court › Titles** lists the titles the troupe gives in tables: those held first, with who holds them, then the vacant ones by sect, folded away under **Show vacant**. Each row has the title, its sect, the status it gives, whether it is a **House rule** (a title the troupe added), and its **One holder at a time** switch. On a phone each row folds into a short card, with the switch under it.
