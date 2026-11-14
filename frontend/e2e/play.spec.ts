@@ -900,6 +900,68 @@ test("Malleable Visage's alien beauty: -2 Social and the Appearance focus, kept 
   await expect(social.locator("strong").first()).toHaveText(String(before - 2));
 });
 
+test("a power used on another of the home troupe: Fleshcraft's alien beauty reaches their Play View, they dispute it, and whoever used it ends it (#823)", async ({ browser }) => {
+  const custodian = await person(browser, "onothers-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "onothers-lead");
+  const sculptor = await person(browser, "onothers-sculpt");
+  const sitter = await person(browser, "onothers-sitter");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Flesh and Bone ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  await backstoryOptional(custodian.page, troupeId);
+  const home = async (page: Page, id: string) => {
+    const asked = await page.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+    expect(asked.status(), await asked.text()).toBeLessThan(300);
+    const approved = await lead.page.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+    expect(approved.status(), await approved.text()).toBeLessThan(300);
+  };
+  // A Tzimisce with Fleshcraft (Vicissitude 2, core p. 168), and another player's Toreador.
+  const nadia = await builtVampire(sculptor.page, "Nadia", "Tzimisce", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]] });
+  const corvin = await builtVampire(sitter.page, "Corvin", "Toreador", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]] });
+  await home(sculptor.page, nadia);
+  await home(sitter.page, corvin);
+
+  const t = sitter.page;
+  await t.goto(`/play/characters/${corvin}?tab=pools`);
+  const social = t.getByRole("main").getByRole("listitem").filter({ hasText: /^Resisting Social powers/ }).first();
+  await expect(social).toBeVisible();
+  const before = Number(await social.locator("strong").first().textContent());
+
+  // Nadia uses it on Corvin: whom, and what the sculpting is for.
+  const s = sculptor.page;
+  await s.goto(`/play/characters/${nadia}?tab=pools`);
+  await s.getByRole("button", { name: "Use Fleshcraft: reshaped on someone else, 1 Blood" }).click();
+  const picker = s.getByRole("dialog", { name: "Fleshcraft: reshaped: on whom?" });
+  await picker.getByLabel("On whom").selectOption({ label: "Corvin" });
+  await picker.getByRole("radio", { name: /^Alien beauty/ }).check();
+  await picker.getByRole("button", { name: "Use · 1 Blood" }).click();
+  const mine = s.getByRole("list", { name: "Your powers on others" });
+  await expect(mine).toContainText("Fleshcraft: reshaped (Alien beauty) on Corvin");
+
+  // It counts on Corvin's Play View at once: -2 Social.
+  await t.reload();
+  const fromOthers = t.getByRole("list", { name: "On you, from others" });
+  await expect(fromOthers).toContainText("Nadia used Fleshcraft: reshaped (Alien beauty) on you");
+  await expect(social.locator("strong").first()).toHaveText(String(before - 2));
+  // Corvin disputes it to the storytellers; it stays on until Nadia or staff end it.
+  await fromOthers.getByRole("button", { name: "Dispute" }).click();
+  await fromOthers.getByLabel("Why, for the storytellers").fill("Corvin never agreed to be sculpted.");
+  await fromOthers.getByRole("button", { name: "Dispute it" }).click();
+  await expect(fromOthers).toContainText("Disputed to the storytellers: Corvin never agreed to be sculpted.");
+  await expect(social.locator("strong").first()).toHaveText(String(before - 2));
+
+  // Nadia sees the dispute and ends it; Corvin's face is his own again.
+  await s.reload();
+  await expect(mine).toContainText("Disputed to the storytellers: Corvin never agreed to be sculpted.");
+  await mine.getByRole("button", { name: "End Fleshcraft: reshaped on Corvin" }).click();
+  await expect(mine).toHaveCount(0);
+  await t.reload();
+  await expect(social.locator("strong").first()).toHaveText(String(before));
+  await expect(t.getByRole("region", { name: "Powers used on others" })).toHaveCount(0);
+});
+
 test("timed powers as switches: Armor of Terra's own qualities under Dodge, and Fleshcraft's attack in Combat (#820)", async ({ browser }) => {
   const { page: p } = await person(browser, "terra-flesh");
   // A Gargoyle elder (Generation 3) with Visceratika 4.
@@ -955,6 +1017,52 @@ test("timed powers as switches: Armor of Terra's own qualities under Dodge, and 
   await p.getByLabel("Fleshcraft on").uncheck();
   await drawer.getByRole("button", { name: "Close" }).click();
   await expect(flesh).toHaveCount(0);
+});
+
+test("Mercurial Vitality counts Potence a dot higher while on, and Quickened Blood makes Celerity's Use free (#849)", async ({ browser }) => {
+  const { page: p } = await person(browser, "vital-quickener");
+  // A Tzimisce with Vicissitude 2, Potence 1, Fortitude 1 and Celerity 2, and the techniques
+  // Mercurial Vitality (core p. 229) and Quickened Blood (core p. 230).
+  const id = await builtVampire(
+    p,
+    "Dobromila",
+    "Tzimisce",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]] },
+    [
+      ["disciplines", "Potence", 1],
+      ["disciplines", "Fortitude", 1],
+      ["disciplines", "Celerity", 2],
+      ["techniques", "Mercurial Vitality", 1],
+      ["techniques", "Quickened Blood", 1],
+    ],
+  );
+  const play = async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { blood: { value: number; most: number } };
+  const { blood } = await play();
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const unarmed = p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ });
+  await expect(unarmed.getByText("Damage 1 (unarmed) · exceptional 2")).toBeVisible();
+
+  // Mercurial Vitality: Potence counts as 2 for the turn, so Might's point is in the damage.
+  await p.getByRole("button", { name: "Use Mercurial Vitality, 1 Blood" }).click();
+  await expect(p.getByText(/Mercurial Vitality switched on$/)).toBeVisible();
+  await expect(unarmed.getByText("Damage 2 (1 unarmed + 1 Might) · exceptional 3")).toBeVisible();
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await switches.click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  await expect(drawer).toContainText("Potence counts as 2");
+  await expect(drawer).toContainText("Fortitude counts as 2");
+  await expect(drawer).toContainText("Fortitude 2, Mettle:");
+  await p.getByLabel("Mercurial Vitality on").uncheck();
+  await expect(unarmed.getByText("Damage 1 (unarmed) · exceptional 2")).toBeVisible();
+
+  // Quickened Blood on: Celerity's Use spends nothing, and switches Celerity on.
+  await p.getByLabel("Quickened Blood on").check();
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await p.getByRole("button", { name: "Use Celerity, free while Quickened Blood is on" }).click();
+  await expect(p.getByText(/Celerity switched on$/)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Use Celerity, free while Quickened Blood is on" })).toBeDisabled();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.value - 1);
 });
 
 test("Azhi Dahaka gives every attribute focus: on the sheet and the Play View, from the power, and counted in its powers (#598)", async ({ browser }) => {

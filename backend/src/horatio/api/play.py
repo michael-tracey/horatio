@@ -24,6 +24,7 @@ from horatio import (
     play,
     play_effects,
     play_influence,
+    play_on_others,
     play_status,
     play_tabs,
     reference,
@@ -143,6 +144,33 @@ class ItemTapIn(BaseModel):
     to_name: str = Field(default="", max_length=200)
 
 
+class OnOtherIn(BaseModel):
+    """A power used on another character in the home troupe (a note tap, issue #823;
+    horatio.play_on_others)."""
+
+    character_id: uuid.UUID
+    # The power, as the reference names it: "Fleshcraft".
+    power: str = Field(min_length=1, max_length=200)
+    # A switch used on them (`target` "other" or "any"), by its key, with what was picked.
+    switch: str | None = Field(default=None, max_length=200)
+    options: list[Annotated[str, StringConstraints(max_length=200)]] = Field(
+        default=[], max_length=10
+    )
+    # Or a use's label, for one that changes their trackers: "Heal 1 normal".
+    use: str | None = Field(default=None, max_length=200)
+    # As the device's log names them until the server has the tap.
+    character_name: str = Field(default="", max_length=200)
+
+    def use_of(self) -> play_on_others.Use:
+        return play_on_others.Use(
+            character_id=self.character_id,
+            power=self.power,
+            switch=self.switch,
+            options=tuple(self.options),
+            use=self.use,
+        )
+
+
 class ExpendableOut(BaseModel):
     key: str
     name: str
@@ -242,6 +270,9 @@ class PowerOut(reference.Switch):
     paused: bool = False
     # For a kept switch on: when its effect began (horatio.play_effects).
     since: datetime | None = None
+    # Here only for an effect another character's power left on this one (issue
+    # #823): it can't be switched from here.
+    foreign: bool = False
 
 
 class PlayEffectOut(BaseModel):
@@ -258,6 +289,36 @@ class PlayEffectOut(BaseModel):
     source_character_name: str | None = None
     # Paused while a form is on: it changes the normal form only.
     paused: bool = False
+    # What was picked for it (issue #821).
+    options: list[str] = []
+    # For one from another character's power (issue #823): when its target
+    # acknowledged it, or disputed it to staff, and why.
+    acknowledged_at: datetime | None = None
+    disputed_at: datetime | None = None
+    dispute_note: str = ""
+
+
+class EffectMadeOut(BaseModel):
+    """An effect this character's power left on another, still on (issue #823), which
+    its player can end."""
+
+    id: uuid.UUID
+    character_id: uuid.UUID
+    character_name: str
+    name: str
+    options: list[str] = []
+    since: datetime
+    acknowledged_at: datetime | None = None
+    disputed_at: datetime | None = None
+    dispute_note: str = ""
+
+
+class PlayTargetOut(BaseModel):
+    """A character a power can be used on: of the user's home troupe (issue #823)."""
+
+    id: uuid.UUID
+    name: str
+    kind: str
 
 
 class PlayItemOut(BaseModel):
@@ -386,6 +447,8 @@ class PlayView(BaseModel):
     # Effects that last until undone (issue #822), kept through Reset: what is on
     # the character now, oldest first.
     effects: list[PlayEffectOut] = []
+    # Effects its powers have left on other characters, still on (issue #823).
+    effects_made: list[EffectMadeOut] = []
     # The items it holds, and those equipped, in the order they were (issue #306):
     # like what is switched on, kept from game to game.
     equipment: list[PlayItemOut] = []
@@ -443,6 +506,8 @@ class TapIn(BaseModel):
     derangement: TemporaryDerangementIn | None = None
     # Giving or discarding an item ("item:<id>", −1).
     equipment: ItemTapIn | None = None
+    # A power used on another character (a note, issue #823).
+    on_other: OnOtherIn | None = None
 
     @model_validator(mode="after")
     def complete(self) -> Self:
@@ -457,6 +522,11 @@ class TapIn(BaseModel):
             raise ValueError("A note needs some words.")
         if self.kind == "undo" and self.undoes is None:
             raise ValueError("An undo names the tap it undoes.")
+        if self.on_other is not None:
+            if self.kind != "note":
+                raise ValueError("A power used on another character is a note.")
+            if (self.on_other.switch is None) == (self.on_other.use is None):
+                raise ValueError("Say whether it is a switch or a use.")
         return self
 
 
@@ -727,6 +797,32 @@ def effects_out(
                 started_by=who.get(e.started_by_id, ""),
                 source_character_name=sources.get(e.id),
                 paused=e.key in paused,
+                options=list(e.options),
+                acknowledged_at=e.acknowledged_at,
+                disputed_at=e.disputed_at,
+                dispute_note=e.dispute_note,
+            )
+        )
+    return out
+
+
+def effects_made_out(db: Session, character: Character) -> list[EffectMadeOut]:
+    """The effects this character's powers have left on others (issue #823)."""
+    out: list[EffectMadeOut] = []
+    for e in play_on_others.made_by(db, character):
+        on = db.get_one(Character, e.character_id)
+        switch = reference.switch_for(e.key)
+        out.append(
+            EffectMadeOut(
+                id=e.id,
+                character_id=on.id,
+                character_name=on.name,
+                name=switch[0].name if switch else e.key,
+                options=list(e.options),
+                since=e.started_at,
+                acknowledged_at=e.acknowledged_at,
+                disputed_at=e.disputed_at,
+                dispute_note=e.dispute_note,
             )
         )
     return out
@@ -865,6 +961,7 @@ def play_view(db: Session, character: Character) -> PlayView:
                 turned_on=state["on"].index(s.key) + 1 if s.key in state["on"] else 0,
                 paused=s.key in paused,
                 since=since.get(s.key) if s.key in state["on"] else None,
+                foreign=s.key in limits.foreign,
             )
             for s in limits.switches
             # A power's own options are on while picked, not switches shown (#821).
@@ -872,6 +969,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         ],
         forms=limits.forms_now(state["on"]),
         effects=effects_out(db, character, limits, paused),
+        effects_made=effects_made_out(db, character),
         equipment=[
             PlayItemOut(
                 id=uuid.UUID(i.id),
@@ -961,10 +1059,12 @@ def domitor_line(db: Session, character: Character) -> DomitorLine | None:
 @router.get("/characters/{character_id}/play/reference")
 def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> PlayReference:
     character = visible_character(db, user, character_id)
+    limits = play.limits(db, character)
     found = reference.reference(
         sheets.sheet_rows(db, character),
         sheets.rules_for(db, character).rule_set,
-        play.limits(db, character).blood_per_turn,
+        limits.blood_per_turn,
+        [s for s in limits.switches if s.key in limits.foreign],
     )
     settle = not read_only(db)
     felt = felt_bonds(db, user, character, settle=settle)
@@ -1094,6 +1194,7 @@ def record_taps(character_id: uuid.UUID, body: Taps, db: DbSession, user: Curren
                 influence=t.influence.details() if t.influence else None,
                 derangement=(t.derangement.name, t.derangement.source) if t.derangement else None,
                 given_to=t.equipment.to_character_id if t.equipment else None,
+                on_other=t.on_other.use_of() if t.on_other else None,
             )
             for t in body.taps
         ],
@@ -1284,10 +1385,66 @@ def end_effect(
     limits = play.limits(db, character)
     switch = limits.switch(effect.key)
     how = "off" if character.player_id == user.id else "staff"
-    play_effects.end(db, effect, user, how, switch.name if switch is not None else effect.key)
+    name = switch.name if switch is not None else effect.key
+    play_effects.end(db, effect, user, how, name)
+    if how == "staff":
+        play_on_others.ended_by_staff(db, character, effect, name)
     game = play.current_game(db, character)
     if game is not None:
         play.refresh(db, game, play.limits(db, character, game))
+    db.commit()
+    return play_view(db, character)
+
+
+@router.get("/characters/{character_id}/play/targets")
+def read_targets(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[PlayTargetOut]:
+    """The characters this one can use a power on (issue #823): its home troupe's
+    player characters at home there and its titled NPCs."""
+    character = visible_character(db, user, character_id)
+    return [
+        PlayTargetOut(id=c.id, name=c.name, kind=c.kind)
+        for c in play_on_others.targets(db, character)
+    ]
+
+
+class DisputeIn(BaseModel):
+    note: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
+
+
+@router.post("/characters/{character_id}/play/effects/{effect_id}/acknowledge")
+def acknowledge_effect(
+    character_id: uuid.UUID, effect_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> PlayView:
+    """Its target acknowledges an effect another character's power left on it."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    play_on_others.acknowledge(db, character, user, effect_id)
+    db.commit()
+    return play_view(db, character)
+
+
+@router.post("/characters/{character_id}/play/effects/{effect_id}/dispute")
+def dispute_effect(
+    character_id: uuid.UUID,
+    effect_id: uuid.UUID,
+    body: DisputeIn,
+    db: DbSession,
+    user: CurrentUser,
+) -> PlayView:
+    """Its target disputes an effect another character's power left on it, to the
+    troupe's staff with a note. It stays on until whoever used it, or staff, end it."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    play_on_others.dispute(db, character, user, effect_id, body.note)
+    db.commit()
+    return play_view(db, character)
+
+
+@router.post("/characters/{character_id}/play/effects-made/{effect_id}/end")
+def end_effect_made(
+    character_id: uuid.UUID, effect_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> PlayView:
+    """End an effect this character's power left on another (issue #823)."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    play_on_others.end_made(db, character, user, effect_id)
     db.commit()
     return play_view(db, character)
 

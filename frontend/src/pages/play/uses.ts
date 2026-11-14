@@ -5,7 +5,7 @@ import type { makeTap } from "./tracker";
 type TapWhat = Parameters<typeof makeTap>[0];
 
 /** What a use reads of the Play View: its trackers, its switches and its Retainers. */
-export type UseView = Pick<PlayView, "powers" | "blood" | "willpower" | "blood_name" | "health" | "beast" | "panels"> & Partial<Pick<PlayView, "retainers">>;
+export type UseView = Pick<PlayView, "powers" | "blood" | "willpower" | "blood_name" | "health" | "beast" | "panels"> & Partial<Pick<PlayView, "retainers" | "character_id">>;
 
 /** Damage marked now, by kind. */
 export function marked(view: Pick<PlayView, "health">): { normal: number; aggravated: number } {

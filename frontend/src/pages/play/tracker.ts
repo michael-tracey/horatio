@@ -1,4 +1,4 @@
-import type { InfluenceDetailsIn, ItemTapIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
+import type { InfluenceDetailsIn, ItemTapIn, OnOtherIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
 import { TYPE_NAMES } from "../../influence";
 import { applyEquip, describeEquip, EQUIP } from "./equipped";
 import { applyPick, applySwitch, bloodOver, describePick, describeSwitch, healthMost, PICK, pickedFor, SWITCH } from "./powers";
@@ -56,6 +56,8 @@ export function makeTap(
     derangement?: TemporaryDerangementIn | null;
     /** Giving an item away ("item:<id>", −1): who to, and the names for the log. */
     equipment?: ItemTapIn | null;
+    /** A power used on another character (a note, #823): whom, and what. */
+    on_other?: OnOtherIn | null;
   },
   gameId: string | null | undefined,
   now: Date = new Date(),
@@ -73,6 +75,7 @@ export function makeTap(
     influence: what.influence ?? null,
     derangement: what.derangement ?? null,
     equipment: what.equipment ?? null,
+    on_other: what.on_other ?? null,
   };
 }
 
@@ -108,6 +111,13 @@ export const ITEM = "item:";
 export function itemText(equipment: ItemTapIn | null | undefined): string {
   const name = equipment?.item_name || "an item";
   return equipment?.to_character_id ? `Gave ${name} to ${equipment.to_name || "another character"}` : `Discarded ${name}`;
+}
+
+/** A power used on another character as the log reads it until the server has it: "Used Fleshcraft: reshaped (Alien beauty) on Bram" (#823). */
+export function onOtherText(on: OnOtherIn, view?: Pick<PlayView, "powers">): string {
+  const what = (on.switch && view?.powers.find((p) => p.key === on.switch)?.name) || on.power;
+  const picked = on.options?.length ? ` (${on.options.join(", ")})` : "";
+  return `Used ${what}${picked} on ${on.character_name || "another character"}`;
 }
 
 /** The items given or discarded by taps not yet sent, and not undone: gone from the Equipment tab already. */
@@ -272,11 +282,11 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
 /** The change as the log reads it: "Blood 7 → 6". */
 export function describe(
   view: PlayView,
-  tap: Pick<Tap, "kind" | "tracker" | "amount" | "damage" | "influence" | "equipment">,
+  tap: Pick<Tap, "kind" | "tracker" | "amount" | "damage" | "influence" | "equipment"> & Partial<Pick<Tap, "on_other">>,
   change: [number, number] | null,
   said: string[] = [],
 ): string {
-  if (tap.kind === "note") return "Note";
+  if (tap.kind === "note") return tap.on_other ? onOtherText(tap.on_other, view) : "Note";
   if (tap.tracker.startsWith(ITEM)) return itemText(tap.equipment);
   if (tap.tracker.startsWith(SWITCH)) return describeSwitch(view, tap.tracker.slice(SWITCH.length), tap.amount, said);
   if (tap.tracker.startsWith(PICK)) return describePick(view, tap.tracker.slice(PICK.length), tap.amount, said);
@@ -411,7 +421,7 @@ function level(view: PlayView, tracker: string): string | null {
  */
 export function tapToast(view: Shown, tap: Tap): string {
   const after = withPending(view, [tap]);
-  if (tap.kind === "note") return "Note added";
+  if (tap.kind === "note") return tap.on_other ? onOtherText(tap.on_other, view) : "Note added";
   if (tap.kind === "undo") {
     const undone = view.log.find((e) => e.id === tap.undoes);
     const now = undone?.kind === "change" ? level(after, undone.tracker) : null;

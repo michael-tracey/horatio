@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView } from "../../api/types";
 import { afterSending, applyChange, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, tapsToast, tapToast, withPending, type Tap } from "./tracker";
-import { amountsOf, usingTaps } from "./UsePower";
+import { amountsOf, usingTaps, waivedBy } from "./UsePower";
 
 function view(overrides: Partial<PlayView> = {}): PlayView {
   return {
@@ -44,6 +44,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     game: null,
     log: [],
     effects: [],
+    effects_made: [],
     ...overrides,
   };
 }
@@ -323,7 +324,11 @@ describe("a power's Use (#370)", () => {
     kept: false,
     normal_form_only: false,
     counts_as_form: false,
+    disciplines: [],
+    waives: [],
     paused: false,
+    foreign: false,
+    target: "self" as const,
   };
   const blood = { tracker: "blood" as const, amount: 1 };
   const made = (whats: ReturnType<typeof usingTaps>) => whats.map((w, i) => makeTap(w, "g1", at(i + 1)));
@@ -385,6 +390,23 @@ describe("a power's Use (#370)", () => {
     ]);
   });
 
+  it("spends nothing while a switch on waives it, and only turns its switch on (#849)", () => {
+    const quickened = { ...celerity, key: "Quickened Blood", name: "Quickened Blood", page: "p. 230", waives: ["Celerity"] };
+    expect(waivedBy(view({ powers: [celerity, quickened] }), "Celerity")).toBeUndefined();
+    const v = view({ powers: [celerity, { ...quickened, on: true }] });
+    expect(waivedBy(v, "Celerity")).toBe("Quickened Blood");
+    expect(waivedBy(v, "Celerity: Projectile")).toBeUndefined();
+    // Paused while a form is on, it waives nothing.
+    expect(waivedBy(view({ powers: [{ ...quickened, on: true, paused: true }] }), "Celerity")).toBeUndefined();
+
+    const taps = made(usingTaps(v, { ...blood, amount: 0 }, "Celerity", "Celerity"));
+    expect(taps.map((t) => [t.tracker, t.amount])).toEqual([["power:Celerity", 1]]);
+    expect(withPending(v, taps).blood.value).toBe(10);
+    // On already, there is nothing to tap.
+    const on = view({ powers: [{ ...celerity, on: true }, { ...quickened, on: true }] });
+    expect(usingTaps(on, { ...blood, amount: 0 }, "Celerity", "Celerity")).toEqual([]);
+  });
+
   it("says Undone once when its Undo takes both back", () => {
     const v = view({ powers: [celerity] });
     const taps = made(usingTaps(v, blood, "Celerity", "Celerity"));
@@ -423,7 +445,11 @@ describe("an elder power's Use (#588)", () => {
     kept: false,
     normal_form_only: false,
     counts_as_form: false,
+    disciplines: [],
+    waives: [],
     paused: false,
+    foreign: false,
+    target: "self" as const,
   };
   const blood = { tracker: "blood" as const, amount: 1 };
   const made = (whats: ReturnType<typeof usingTaps>, from: number) => whats.map((w, i) => makeTap(w, "g1", at(from + i)));
