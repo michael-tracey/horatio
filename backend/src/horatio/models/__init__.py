@@ -108,6 +108,7 @@ from horatio.models.server_settings import ServerSetting
 from horatio.models.setting_style import ChronicleMotif
 from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
 from horatio.models.status import HeldStatus, StatusBanMark, StatusSuppression
+from horatio.models.story_bible import StoryBibleNote
 from horatio.models.teachers import TeacherRule, Teaching
 from horatio.models.troupes import (
     CalendarFeed,
@@ -161,6 +162,7 @@ __all__ = [
     "Embrace",
     "StatusBanMark",
     "StatusSuppression",
+    "StoryBibleNote",
     "DisciplinePurchase",
     "DowntimeCycle",
     "DowntimeKeyword",

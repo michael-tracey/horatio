@@ -12321,6 +12321,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/story-bible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Story Bible
+         * @description The troupe's story bible: its chronicle, NPCs and locations as Horatio holds
+         *     them, and staff's own notes. For its running staff only.
+         */
+        get: operations["read_story_bible_api_troupes__troupe_id__story_bible_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/story-bible/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Story Bible Note
+         * @description Add a note, last in the bible.
+         */
+        post: operations["add_story_bible_note_api_troupes__troupe_id__story_bible_notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/story-bible/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Story Bible Note */
+        put: operations["change_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__put"];
+        post?: never;
+        /** Remove Story Bible Note */
+        delete: operations["remove_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/story-bible/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Order Story Bible Notes
+         * @description Put the notes in a new order.
+         */
+        put: operations["order_story_bible_notes_api_troupes__troupe_id__story_bible_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/teacher-rules": {
         parameters: {
             query?: never;
@@ -33199,6 +33278,78 @@ export interface components {
             name: string;
             /** Rating */
             rating: number;
+        };
+        /** StoryBibleLocaleOut */
+        StoryBibleLocaleOut: {
+            /** Address */
+            address: string;
+            /** Controller */
+            controller: string | null;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "prestige" | "iconic" | "haven";
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+            /** Parent */
+            parent: string | null;
+            /** Rating */
+            rating: number;
+        };
+        /** StoryBibleNoteIn */
+        StoryBibleNoteIn: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** StoryBibleNoteOut */
+        StoryBibleNoteOut: {
+            /** Body */
+            body: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+        };
+        /** StoryBibleOrderIn */
+        StoryBibleOrderIn: {
+            /** Ids */
+            ids: string[];
+        };
+        /** StoryBibleOut */
+        StoryBibleOut: {
+            /** Chronicle */
+            chronicle: string;
+            /** Chronology */
+            chronology: components["schemas"]["ChronicleEventOut"][];
+            /** Locales */
+            locales: components["schemas"]["StoryBibleLocaleOut"][];
+            /** Notes */
+            notes: components["schemas"]["StoryBibleNoteOut"][];
+            /** Npcs */
+            npcs: components["schemas"]["CharacterOut"][];
+            /** Troupe */
+            troupe: string;
         };
         /** SuggestedRequirementOut */
         SuggestedRequirementOut: {
@@ -60576,6 +60727,175 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatusRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_story_bible_api_troupes__troupe_id__story_bible_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_story_bible_note_api_troupes__troupe_id__story_bible_notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryBibleNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryBibleNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_story_bible_notes_api_troupes__troupe_id__story_bible_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryBibleOrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
                 };
             };
             /** @description Validation Error */
