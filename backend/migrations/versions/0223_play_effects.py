@@ -23,7 +23,8 @@ def upgrade() -> None:
     op.create_table(
         "play_effects",
         sa.Column("character_id", sa.Uuid(), nullable=False),
-        sa.Column("source_character_id", sa.Uuid(), nullable=False),
+        sa.Column("source_character_id", sa.Uuid(), nullable=True),
+        sa.Column("source_name", sa.String(), server_default="", nullable=False),
         sa.Column("key", sa.String(), nullable=False),
         sa.Column(
             "options",

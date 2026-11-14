@@ -173,7 +173,12 @@ class PlayEffect(Record):
     )
 
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
-    source_character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    # None once the character who used it is deleted: the effect stays on its
+    # target, with that character's name (horatio.deletion).
+    source_character_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("characters.id"), index=True
+    )
+    source_name: Mapped[str] = mapped_column(default="", server_default="")
     # The switch it holds on (horatio.reference.Switch.key): "Heart removed".
     key: Mapped[str]
     # What was chosen when the power was used (issue #821), such as Bonecraft's

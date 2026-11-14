@@ -48,7 +48,8 @@ class Kept:
     id: uuid.UUID
     key: str
     since: datetime
-    source_character_id: uuid.UUID
+    # None once the character who used it is deleted.
+    source_character_id: uuid.UUID | None
     options: tuple[str, ...] = ()
 
 

@@ -707,7 +707,9 @@ def effects_out(
     found = play_effects.on_character(db, character)
     who = names(db, {e.started_by_id for e in found})
     sources = {
-        e.source_character_id: db.get_one(Character, e.source_character_id).name
+        e.id: db.get_one(Character, e.source_character_id).name
+        if e.source_character_id is not None
+        else e.source_name
         for e in found
         if e.source_character_id != character.id
     }
@@ -721,7 +723,7 @@ def effects_out(
                 name=switch.name if switch is not None else e.key,
                 since=e.started_at,
                 started_by=who.get(e.started_by_id, ""),
-                source_character_name=sources.get(e.source_character_id),
+                source_character_name=sources.get(e.id),
                 paused=e.key in paused,
             )
         )

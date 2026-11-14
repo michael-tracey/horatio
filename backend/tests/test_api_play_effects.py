@@ -4,6 +4,7 @@ that changes the normal form only."""
 
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -12,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import play, reference
-from horatio.models import AuditEvent, PlayEffect
+from horatio.models import AuditEvent, Character, PlayEffect
 from tests.api_helpers import Troupe, new_character
 from tests.test_api_play import send, tap, view
 from tests.test_api_play_powers import give, on
@@ -166,6 +167,38 @@ def test_staff_can_see_and_end_an_effect(troupe: Troupe, setne: str, session: Se
     assert ended.ended_how == "staff"
     again = troupe.storyteller.client.post(f"/characters/{setne}/play/effects/{effect['id']}/end")
     assert again.status_code == 409
+
+
+def test_deleting_a_character_takes_its_effects_and_leaves_those_it_used_on_others(
+    troupe: Troupe, setne: str, session: Session
+) -> None:
+    # One with an effect of its own, deleted: its effect goes with it.
+    loner = new_character(troupe, troupe.player, "Loner")
+    give(session, loner, "disciplines", "Serpentis", 5)
+    send(troupe.player, loner, tap(HEART, 1))
+    assert troupe.player.client.delete(f"/characters/{loner}").status_code == 204
+    assert effects(session, loner) == []
+
+    # One that used a power on another (issue #823), deleted: the effect stays, with its name.
+    healer = new_character(troupe, troupe.player, "Healer")
+    player_id = session.get_one(Character, uuid.UUID(healer)).player_id
+    session.add(
+        PlayEffect(
+            character_id=uuid.UUID(setne),
+            source_character_id=uuid.UUID(healer),
+            key="Heart removed",
+            client_id=uuid.uuid4(),
+            started_at=datetime.now(UTC),
+            started_by_id=player_id,
+        )
+    )
+    session.flush()
+    assert view(troupe.player, setne)["effects"][0]["source_character_name"] == "Healer"
+    assert troupe.player.client.delete(f"/characters/{healer}").status_code == 204
+    session.expire_all()
+    [kept] = effects(session, setne)
+    assert (kept.source_character_id, kept.source_name) == (None, "Healer")
+    assert view(troupe.player, setne)["effects"][0]["source_character_name"] == "Healer"
 
 
 def test_resisting_frenzy_counts_one_fewer_beast_trait_while_the_heart_is_out(
