@@ -47,45 +47,56 @@ function shortName(name: string, power: string): string {
   return name.startsWith(`${power}: `) ? name.slice(power.length + 2) : name;
 }
 
+/** The amounts a cost can be spent at: its own, or each from it to its `most` (#824: Promises Like Steel's 1 to 3 Blood). */
+export function amountsOf(cost: Cost): number[] {
+  const most = cost.most ?? cost.amount;
+  return Array.from({ length: Math.max(1, most - cost.amount + 1) }, (_, i) => cost.amount + i);
+}
+
 /**
  * "Use · 1 Blood" on a power with a plain cost: one tap spends it and turns on
  * the power's switch, with one Undo in the toast. A power with several switches
- * (Shape of the Beast's forms) has a button for each.
+ * (Shape of the Beast's forms) has a button for each, and one whose player
+ * chooses how much to spend (#824) a button for each amount.
  */
 export function UseButtons({ costed, view, use }: { costed: Costed; view: Pick<PlayView, "powers" | "blood" | "willpower" | "blood_name">; use: UseTaps }) {
   // A kept power on (#822): using it again replaces it, so it asks first.
-  const [again, setAgain] = useState<string | null>(null);
+  const [again, setAgain] = useState<{ key: string; amount: number } | null>(null);
   const cost = costed.cost;
   if (!cost) return null;
   const what = cost.tracker === "blood" ? view.blood_name : "Willpower";
   const left = cost.tracker === "blood" ? view.blood.value : view.willpower.value;
   const keys = choices(view, costed);
+  const amounts = amountsOf(cost);
+  const spending = (amount: number): Cost => ({ ...cost, amount });
   return (
     <span className="flex flex-wrap justify-end gap-2">
-      {keys.map((key) => {
-        const name = key ? (view.powers.find((p) => p.key === key)?.name ?? costed.name) : costed.name;
-        const shown = keys.length > 1 ? shortName(name, costed.name) : "Use";
-        return (
-          <Button
-            key={key ?? ""}
-            type="button"
-            variant="danger"
-            className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
-            disabled={left < cost.amount}
-            title={left < cost.amount ? `Not enough ${what}` : undefined}
-            aria-label={`Use ${name}, ${cost.amount} ${what}`}
-            onClick={() => {
-              const power = key ? view.powers.find((p) => p.key === key) : undefined;
-              if (power?.kept && power.on) setAgain(key ?? null);
-              else use(usingTaps(view, cost, costed.name, key));
-            }}
-          >
-            {shown} · {cost.amount} {what}
-          </Button>
-        );
-      })}
+      {keys.flatMap((key) =>
+        amounts.map((amount) => {
+          const name = key ? (view.powers.find((p) => p.key === key)?.name ?? costed.name) : costed.name;
+          const shown = keys.length > 1 ? shortName(name, costed.name) : "Use";
+          return (
+            <Button
+              key={`${key ?? ""}/${amount}`}
+              type="button"
+              variant="danger"
+              className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
+              disabled={left < amount}
+              title={left < amount ? `Not enough ${what}` : undefined}
+              aria-label={`Use ${name}, ${amount} ${what}`}
+              onClick={() => {
+                const power = key ? view.powers.find((p) => p.key === key) : undefined;
+                if (power?.kept && power.on && key) setAgain({ key, amount });
+                else use(usingTaps(view, spending(amount), costed.name, key));
+              }}
+            >
+              {shown} · {amount} {what}
+            </Button>
+          );
+        }),
+      )}
       <Dialog title="Use it again?" open={again !== null} onClose={() => setAgain(null)}>
-        <p className="text-sm">{view.powers.find((p) => p.key === again)?.name} is on, kept until you turn it off. Using it again replaces it: a character carries one at a time.</p>
+        <p className="text-sm">{view.powers.find((p) => p.key === again?.key)?.name} is on, kept until you turn it off. Using it again replaces it: a character carries one at a time.</p>
         <div className="mt-4 flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => setAgain(null)}>
             Cancel
@@ -94,11 +105,11 @@ export function UseButtons({ costed, view, use }: { costed: Costed; view: Pick<P
             type="button"
             variant="danger"
             onClick={() => {
-              use(usingTaps(view, cost, costed.name, again ?? undefined));
+              if (again) use(usingTaps(view, spending(again.amount), costed.name, again.key));
               setAgain(null);
             }}
           >
-            Use again · {cost.amount} {what}
+            Use again · {again?.amount ?? cost.amount} {what}
           </Button>
         </div>
       </Dialog>

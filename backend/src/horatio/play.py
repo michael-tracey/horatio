@@ -377,17 +377,27 @@ class Limits:
 
     def boxes(self, on: Sequence[str] = ()) -> list[str | None]:
         """Every wound box, in the order damage fills them: in each category the
-        sheet's own (None), then those of the forms on, by their keys."""
+        sheet's own (None), less those the powers on give up (issue #824), then those
+        of the forms on, by their keys."""
         found: list[str | None] = []
+        counting = self.counting(on)
         for level, count in self.health:
-            found += [None] * count
-            for switch in self.counting(on):
-                found += [switch.key] * sum(h.boxes for h in switch.health if h.level == level)
+            given = sum(
+                -h.boxes for s in counting for h in s.health if h.level == level and h.boxes < 0
+            )
+            found += [None] * max(0, count - given)
+            for switch in counting:
+                found += [switch.key] * sum(
+                    h.boxes for h in switch.health if h.level == level and h.boxes > 0
+                )
         return found
 
     def blood_most(self, on: Sequence[str] = ()) -> int:
-        """The most Blood, half again with Blood of Potency on (rounded up)."""
-        return self.blood + sum(-(-self.blood // 2) for s in self.counting(on) if s.blood_half)
+        """The most Blood, half again with Blood of Potency on (rounded up), and more
+        with a power that adds to it (issue #824: Second Stomach)."""
+        counting = self.counting(on)
+        half = sum(-(-self.blood // 2) for s in counting if s.blood_half)
+        return self.blood + half + sum(s.blood_extra for s in counting)
 
     def blood_per_turn_now(self, on: Sequence[str] = ()) -> int:
         return self.blood_per_turn + sum(s.blood_per_turn for s in self.counting(on))
@@ -1082,6 +1092,13 @@ def pick(
     count = switch.picks.count if switch.picks else 0
     dropped: list[str] = []
     if amount > 0 and not before and switch.key in state.get("on", []):
+        # Another amount of the same option is one choice with it (issue #824).
+        for other in same_option(switch, option.name):
+            if other in now:
+                now.remove(other)
+                dropped.append(other)
+                if said is not None:
+                    said.append(f"in place of {other}")
         while now and len(now) >= count:
             gone = now.pop(0)
             dropped.append(gone)
@@ -1109,6 +1126,16 @@ def pick(
     if option.name in now and added not in on and limits.switch(added) is not None:
         on.append(added)
     return before, int(option.name in now)
+
+
+def same_option(switch: reference.Switch, name: str) -> list[str]:
+    """The other amounts of the option `name` is one amount of (issue #824): "Tough: 1"
+    and "Tough: 3" for "Tough: 2"; none for an option without amounts."""
+    options = switch.picks.options if switch.picks else []
+    base = next((o.base for o in options if o.name == name), None)
+    if base is None:
+        return []
+    return [o.name for o in options if o.base == base and o.name != name]
 
 
 def equip(

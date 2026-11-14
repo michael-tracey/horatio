@@ -10,36 +10,64 @@ export const toggle = (tap: Tap, power: PowerSwitch) => tap({ kind: "change", tr
 
 const COUNTS = ["none", "one", "two", "three", "four"];
 
+type PickChoice = PowerSwitch["options"][number];
+
+/**
+ * The options to pick from, with those whose amount is chosen each use (#824:
+ * Tough's 1 to 3 Physical) together: one entry for the option, with a button for
+ * each amount.
+ */
+function choicesOf(power: PowerSwitch): { name: string; label?: string | null; amounts: { option: PickChoice; amount: number | null }[] }[] {
+  const found: { name: string; label?: string | null; amounts: { option: PickChoice; amount: number | null }[] }[] = [];
+  for (const option of power.options) {
+    const own = power.picks?.options?.find((o) => o.name === option.name);
+    const base = own?.base;
+    const last = found[found.length - 1];
+    if (base && last?.name === base) last.amounts.push({ option, amount: own?.amount ?? null });
+    else found.push({ name: base ?? option.name, label: base ? own?.amount_label : null, amounts: [{ option, amount: base ? (own?.amount ?? null) : null }] });
+  }
+  return found;
+}
+
+const pill = (picked: boolean) => `min-h-9 rounded-full border px-3 text-xs pointer-coarse:min-h-11 ${picked ? "border-gold/60 bg-gold/10 text-gold" : "border-line text-mist hover:text-parchment"}`;
+
 /**
  * A power whose qualities are picked each use (issue #599), such as Flesh of
  * Marble's two Protective Gear qualities: while it is on, a button for each, and
- * what those picked do. Past its count, the oldest picked goes.
+ * what those picked do. Past its count, the oldest picked goes. An option whose
+ * amount is chosen each use (#824) has a button for each amount, one picked at a time.
  */
 function Picks({ power, tap }: { power: PowerSwitch; tap: Tap }) {
   const count = power.picks?.count ?? 0;
   const chosen = power.options.filter((o) => power.picked.includes(o.name));
+  const pick = (o: PickChoice) => {
+    const picked = power.picked.includes(o.name);
+    tap({ kind: "change", tracker: pickKey(power.key, o.name), amount: picked ? -1 : 1 });
+  };
   return (
     <div className="mt-1 pl-8" role="group" aria-label={`${power.name}: qualities`}>
       <p className="text-xs text-mist">
         Pick {COUNTS[count] ?? count} each use ({power.picked.length} picked).
       </p>
       <ul className="mt-1 flex flex-wrap gap-1">
-        {power.options.map((o) => {
-          const picked = power.picked.includes(o.name);
-          return (
-            <li key={o.name}>
-              <button
-                type="button"
-                aria-pressed={picked}
-                title={o.play}
-                onClick={() => tap({ kind: "change", tracker: pickKey(power.key, o.name), amount: picked ? -1 : 1 })}
-                className={`min-h-9 rounded-full border px-3 text-xs pointer-coarse:min-h-11 ${picked ? "border-gold/60 bg-gold/10 text-gold" : "border-line text-mist hover:text-parchment"}`}
-              >
-                {o.name}
+        {choicesOf(power).map((c) =>
+          c.amounts.length === 1 && c.amounts[0]!.amount === null ? (
+            <li key={c.name}>
+              <button type="button" aria-pressed={power.picked.includes(c.amounts[0]!.option.name)} title={c.amounts[0]!.option.play} onClick={() => pick(c.amounts[0]!.option)} className={pill(power.picked.includes(c.amounts[0]!.option.name))}>
+                {c.name}
               </button>
             </li>
-          );
-        })}
+          ) : (
+            <li key={c.name} className="flex items-center gap-1" role="group" aria-label={c.label ? `${c.name}: ${c.label}` : c.name}>
+              <span className="text-xs text-mist">{c.label ? `${c.name} (${c.label})` : c.name}:</span>
+              {c.amounts.map(({ option, amount }) => (
+                <button key={option.name} type="button" aria-pressed={power.picked.includes(option.name)} aria-label={option.name} title={option.play} onClick={() => pick(option)} className={pill(power.picked.includes(option.name))}>
+                  {amount}
+                </button>
+              ))}
+            </li>
+          ),
+        )}
       </ul>
       {chosen.map((o) => (
         <p key={o.name} className="mt-1 text-xs text-parchment/80">

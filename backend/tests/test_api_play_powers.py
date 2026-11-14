@@ -179,7 +179,7 @@ def test_ravenous_conglomeration_holds_two_forms_but_not_two_of_one_power(
         ]
         if o["name"] == "Vicissitude: Ravenous Conglomeration"
     )
-    assert other["cost"] == {"tracker": "blood", "amount": 4}
+    assert other["cost"] == {"tracker": "blood", "amount": 4, "most": None}
     assert other["page"] == "Vol. 2, p. 249"
 
 

@@ -18247,6 +18247,8 @@ export interface components {
         Cost: {
             /** Amount */
             amount: number;
+            /** Most */
+            most?: number | null;
             /**
              * Tracker
              * @enum {string}
@@ -27965,6 +27967,11 @@ export interface components {
              */
             attributes: components["schemas"]["AttributeChange"][];
             /**
+             * Blood Extra
+             * @default 0
+             */
+            blood_extra: number;
+            /**
              * Blood Half
              * @default false
              */
@@ -32736,7 +32743,12 @@ export interface components {
             /** To Name */
             to_name: string;
         };
-        /** SwitchLevel */
+        /**
+         * SwitchLevel
+         * @description Wound levels a switch adds while it is on, or gives up (fewer than none: issue
+         *     #824, Bonecraft's Extra Limbs, core p. 168): those come off the sheet's own in the
+         *     category, and come back only when it ends (core p. 169).
+         */
         SwitchLevel: {
             /** Boxes */
             boxes: number;
@@ -32751,11 +32763,22 @@ export interface components {
          *     what a `when` in the powers file names, and it is on while it is picked.
          */
         SwitchOption: {
+            /** Amount */
+            amount?: number | null;
+            /** Amount Label */
+            amount_label?: string | null;
             /**
              * Attributes
              * @default []
              */
             attributes: components["schemas"]["AttributeChange"][];
+            /** Base */
+            base?: string | null;
+            /**
+             * Blood Extra
+             * @default 0
+             */
+            blood_extra: number;
             /**
              * Blood Half
              * @default false
