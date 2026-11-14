@@ -51207,6 +51207,16 @@
             },
             "title": "Qualities",
             "type": "array"
+          },
+          "target": {
+            "default": "any",
+            "enum": [
+              "self",
+              "other",
+              "any"
+            ],
+            "title": "Target",
+            "type": "string"
           }
         },
         "required": [

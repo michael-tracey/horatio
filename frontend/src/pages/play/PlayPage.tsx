@@ -163,7 +163,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   return (
     <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
-      <PowersBanner powers={shown.powers} tap={tap} />
+      <PowersBanner powers={shown.powers} forms={shown.forms} tap={tap} />
       <OnOthers view={shown} online={sync.online} onChange={accept} />
       {!tab && <p className="py-8 text-center text-mist">{shown.character_name}'s troupe has switched off every tab it has here.</p>}
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}

@@ -174,13 +174,25 @@ def start(
     if switch is None or switch.target == "self" or not switch.kept:
         raise conflict(f"{source.name} can't use that on another character.")
     picks = switch.picks
-    names = [o.name for o in picks.options] if picks is not None else []
+    # What can be picked for another: not an option for yourself only (issue #813).
+    offered = {o.name: o for o in picks.options if o.target != "self"} if picks else {}
     options = list(dict.fromkeys(use.options))
-    if any(o not in names for o in options):
+    if any(o not in offered for o in options):
         raise conflict("That can't be picked for it.")
-    if picks is not None and names and not 1 <= len(options) <= picks.count:
+    if picks is not None and offered and not 1 <= len(options) <= picks.count:
         many = "one" if picks.count == 1 else f"up to {picks.count}"
         raise conflict(f"Pick {many} of what it does.")
+    # Two amounts of one option are one modification picked twice, which the
+    # Manipulation focus doesn't allow (core p. 169).
+    bases = [offered[o].base or o for o in options]
+    if len(set(bases)) < len(bases):
+        raise conflict("The same modification can't be picked twice.")
+    # The target's own traits can rule an option out: Tzimisce: Scar Tissue's body
+    # takes no beneficial Bonecraft alteration (Vol. 2 p. 278).
+    takes = {s.key for s in reference.switch_for(switch.key, play.sheet_of(db, target))}
+    barred = [o for o in options if offered[o].key not in takes]
+    if barred:
+        raise conflict(f"{target.name}'s body can't take {', '.join(barred)}.")
     last = play_effects.active(db, target.id, switch.key)
     if last is not None:
         play_effects.end(db, last, actor, "replaced", switch.name, event=event)

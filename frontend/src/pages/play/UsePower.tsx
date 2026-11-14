@@ -164,7 +164,7 @@ export function UseButtons({
           characterId={view.character_id}
           open
           title={`${picking.name}: on whom?`}
-          options={(picking.picks?.options ?? []).map((o) => ({ name: o.name, play: o.note }))}
+          options={(picking.picks?.options ?? []).filter((o) => o.target !== "self").map((o) => ({ name: o.name, play: o.note, base: o.base }))}
           count={picking.picks?.count ?? 0}
           confirm={`Use · ${cost.amount} ${what}`}
           online={online}
