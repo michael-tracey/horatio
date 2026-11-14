@@ -16,6 +16,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Change the house rules and troupe settings (Customise) | Yes | Yes | No (can read them) | No |
 | Write the setting: its teaser, scope, themes, moods and storyteller notes (Troupe settings) | Yes | Yes | Yes | No |
 | Show the setting on the troupe's profile | Yes | Yes | No | No |
+| Read and keep the story bible | Yes | Yes | Yes | No |
 | Set up connectors (Discord, email) and choose the Discord channels for news, announcements and news agencies | Yes | Yes | No (can read them) | No |
 | Edit the troupe's profile, add games to the schedule | Yes | Yes | No | No |
 | See character sheets, the Characters list and the Players list | Yes | Yes | Yes | No |
@@ -95,7 +96,7 @@ A troupe's page has its tabs in groups, one for each job. Which tabs you see dep
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | Overview, Setting, Who's Who, News, Announcements, Nominations, House rules (players and narrators), Staff, Log |
+| Troupe | Overview, Setting, Story bible (storytellers and assistant storytellers), Who's Who, News, Announcements, Nominations, House rules (players and narrators), Staff, Log |
 | Characters | Approvals, Being built, Characters, Players, Lines and veils |
 | Games | At game, Scenes, Award XP |
 | Court | Titles, Court, Chronicle, Boons, Bonds, Web of obligation |
@@ -523,6 +524,19 @@ The rest of the document is built from the troupe's own settings, so it's never 
 - **Setting-specific mechanics**: what a new character starts with, your changes to starting points, the checks that limit creation (your own and the book's you play differently), the game XP chart and monthly cap, and your other house rules. **Graduated XP cap** says **Yes** when the game XP chart gives less as a character earns more (p. 349).
 
 Every member reads the whole document on the troupe's **Setting** tab, beside **Overview**; running staff see an edit link beside each built part. **Print it** opens it black on white for the Storyteller table. Under **Where players read it**, storytellers can tick **Show it on the troupe's profile**, as written rules can be; a public profile then shows it to anyone. A character built to the troupe's rules shows its themes, moods and teaser on the wizard's Concept step, with a link to the whole document.
+
+When you change the document, the troupe's players hear of it in the bell, with what changed ("The setting changed: the theme Betrayal added; the teaser rewritten."), and the notice opens the **Setting** tab. A sitting's changes make one notice: each change within half an hour of the last joins the player's unread notice rather than making another. The parts you write count, as do the chronicle's name and city on the profile, the sects that may join, clan rarity and the New Character Incentive. Prices, house merits, checks and the other house rules don't: players read those on the **House rules** tab. Whoever makes a change isn't told of it, and showing the document on the profile tells no one.
+
+#### The story bible
+
+The **Story bible** tab, beside **Setting**, is its staff-only companion (MET: VTM p. 336). Storytellers and assistant storytellers read and keep it; players and narrators never see it, and it's never on the Setting tab, the profile, the wizard or the setting's print. It gathers what Horatio already holds, so nothing is typed twice:
+
+- **Staff notes**: the one part you write here, each with a title and Markdown: plots, secrets, what the players don't know. **Add a note**, **Edit**, **Remove**, and ↑ ↓ to put them in order. Each change goes in the troupe log, and nobody is told of it.
+- **Chronology**: the events of the chronicle timeline (**Court › Chronicle**), in in-game order where they have an in-game date, then the rest as Horatio recorded them.
+- **Important NPCs**: the troupe's NPCs, those in play and then those retired, each linking to its sheet.
+- **Recurring locales**: the troupe's [locations](#locations), without Havens, with who holds them, their address, description and notes.
+
+**Print it** prints the bible on its own, black on white, for staff.
 
 ### A feature's own settings
 

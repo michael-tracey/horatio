@@ -20,6 +20,7 @@ import { LinesVeilsTab } from "./LinesVeilsTab";
 import { LocationsTab } from "./LocationsTab";
 import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
+import { StoryBibleTab } from "./StoryBible";
 import { OldWorkLink, WorkTab } from "./WorkTab";
 import { AgenciesTab } from "../news/AgenciesTab";
 import { PostsSection } from "../news/PostsSection";
@@ -124,6 +125,7 @@ export function TroupePage() {
         {/* One House rules tab (#782): players read it; running staff also find each kind of rule in its own part. */}
         <Route path="house-rules/*" element={can.running ? <RulesTab troupe={t} canEdit={can.storyteller} /> : <HouseRulesTab troupe={t} staff={false} />} />
         <Route path="setting" element={<SettingTab troupeId={t.id} staff={can.running} />} />
+        {can.running && !t.archived && <Route path="story-bible" element={<StoryBibleTab troupeId={t.id} />} />}
         {/* The status reference moved into the Rulebook, with this troupe chosen (#787). */}
         <Route path="status" element={<Navigate to={statusLink(t.id)} replace />} />
         {t.whos_who && !t.archived && <Route path="news/*" element={<PostsSection troupeId={t.id} kind="news" writes={can.running} proposes={can.staff && !can.running} />} />}
