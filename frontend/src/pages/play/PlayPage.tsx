@@ -274,7 +274,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
             </div>
           </div>
           {reference && <RetainerPools retainers={reference.retainers} tracks={shown.retainers} tap={record} />}
-          <Allies summons={shown.summons ?? []} tap={record} />
+          <Allies summons={shown.summons ?? []} tap={record} dismiss={(key) => tap({ kind: "change", tracker: key, amount: -1 })} />
           <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={setQuickNotes} online={sync.online} onChange={accept} />
           {/* Its Undo is the header's, on every tab. */}
           <GameLog view={shown} onDetails={sync.online ? setDetailing : undefined} />

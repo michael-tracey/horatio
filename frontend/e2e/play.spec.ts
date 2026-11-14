@@ -655,6 +655,8 @@ test("allies a power calls up: Arms of the Abyss rise together for 1 Blood, each
   const card = p.getByRole("article", { name: "Allies: Arm of the Abyss" });
   await expect(card).toContainText("3 of 3 out");
   await card.getByRole("button", { name: "Spend Arm of the Abyss 1: health" }).click();
+  // A spend asks what it was for, as a Retainer's does.
+  await p.getByRole("dialog", { name: "Note for this spend" }).getByRole("button", { name: "Skip the note" }).click();
   await expect(card.getByLabel("Arm of the Abyss 1: health: 3 of 4")).toBeVisible();
   await card.getByRole("button", { name: "Dismiss Arm of the Abyss 2" }).click();
   await expect(card).toContainText("2 of 3 out");

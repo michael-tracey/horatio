@@ -6,21 +6,21 @@ type Tap = (change: { tracker: string; amount: number; label: string }) => void;
 /**
  * The allies the character's powers have called up at this game (issue #827): Arms
  * of the Abyss, zombies, a bound wraith. Each has its own health levels to tap, as a
- * Retainer's are, and a Dismiss; all are gone when the game ends. They are called up
+ * Retainer's are, and a Dismiss, which spends nothing and asks for no note; all are gone when the game ends. They are called up
  * by the power's use on the Pools tab, which pays for them.
  */
-export function Allies({ summons, tap }: { summons: SummonOut[]; tap: Tap }) {
+export function Allies({ summons, tap, dismiss }: { summons: SummonOut[]; tap: Tap; dismiss: (key: string) => void }) {
   if (summons.length === 0) return null;
   return (
     <section aria-label="Allies" className="grid gap-3 md:grid-cols-2">
       {summons.map((s) => (
-        <SummonBlock key={s.key} summon={s} tap={tap} />
+        <SummonBlock key={s.key} summon={s} tap={tap} dismiss={dismiss} />
       ))}
     </section>
   );
 }
 
-function SummonBlock({ summon: s, tap }: { summon: SummonOut; tap: Tap }) {
+function SummonBlock({ summon: s, tap, dismiss }: { summon: SummonOut; tap: Tap; dismiss: (key: string) => void }) {
   const out = s.allies.filter((a) => a.out).sort((a, b) => a.order - b.order);
   return (
     <article aria-label={`Allies: ${s.name}`} className="rounded-lg border border-ash bg-dusk p-3">
@@ -49,7 +49,8 @@ function SummonBlock({ summon: s, tap }: { summon: SummonOut; tap: Tap }) {
                 <button
                   type="button"
                   aria-label={`Dismiss ${a.name}`}
-                  onClick={() => tap({ tracker: a.key, amount: -1, label: a.name })}
+                  // Dismissing spends nothing, so it asks for no note.
+                  onClick={() => dismiss(a.key)}
                   className="min-h-9 rounded-full border border-line bg-night px-3 text-sm text-parchment hover:border-mist tap-off"
                 >
                   Dismiss
