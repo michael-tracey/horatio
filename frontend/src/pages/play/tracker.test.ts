@@ -44,6 +44,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     game: null,
     log: [],
     effects: [],
+    effects_made: [],
     ...overrides,
   };
 }
@@ -326,6 +327,8 @@ describe("a power's Use (#370)", () => {
     disciplines: [],
     waives: [],
     paused: false,
+    foreign: false,
+    target: "self" as const,
   };
   const blood = { tracker: "blood" as const, amount: 1 };
   const made = (whats: ReturnType<typeof usingTaps>) => whats.map((w, i) => makeTap(w, "g1", at(i + 1)));
@@ -430,6 +433,8 @@ describe("an elder power's Use (#588)", () => {
     disciplines: [],
     waives: [],
     paused: false,
+    foreign: false,
+    target: "self" as const,
   };
   const blood = { tracker: "blood" as const, amount: 1 };
   const made = (whats: ReturnType<typeof usingTaps>, from: number) => whats.map((w, i) => makeTap(w, "g1", at(from + i)));

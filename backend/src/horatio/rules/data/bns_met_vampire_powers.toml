@@ -67,8 +67,7 @@
 #     it (Bonecraft Prodigy's options), `hidden_by` one that rules it out (Tzimisce:
 #     Scar Tissue), and `focus`, `unless_focus` and `choice` hold as elsewhere. An
 #     option is a switch of its own, "<key>/<name>", on while picked: a `when` in a
-#     `pools`, `damage` or `test` entry may name it. `target` is "self", or "any"
-#     for a power that can be used on another character too (issue #823);
+#     `pools`, `damage` or `test` entry may name it;
 #   - `qualities = [{ kind, name, focus? }]`: equipment qualities it gives every
 #     time it is on, without picking (#820: Armor of Terra's Hardened and Ballistic),
 #     counted as picked ones are;
@@ -79,6 +78,10 @@
 #     their notes are added to it;
 #   - `waives = [Name]`: using the named disciplines or powers costs nothing while
 #     it is on (issue #849: Quickened Blood's Celerity, core p. 230).
+#   `target` is who it can be used on (issue #823): "self" (the default), "other"
+#   for one used only on another character of the home troupe (Fleshcraft reshaping
+#   a willing person), or "any" for either. Used on another, it is an effect on
+#   them, kept until undone, so a switch with another `target` is `kept`.
 #   `hidden_by` on a switch rules the whole switch out for a character with that
 #   trait, as on an option (Tzimisce: Scar Tissue on Malleable Visage, #812).
 #   `kept = true` makes it last until undone rather than until the game ends (issue
@@ -112,7 +115,9 @@
 # `use` (on a power or [[others]] entry): uses that change the trackers besides
 #   spending (issue #825), each a button of its own on the Pools tab, made of
 #   ordinary taps with one Undo: [{ label, cost?, heal?, convert?, mend?, gain?,
-#   beast?, retainer?, when?, once?, focus?, unless_focus?, note?, page, book? }].
+#   beast?, retainer?, when?, once?, focus?, unless_focus?, target?, note?, page,
+#   book? }]. `target = "other"` makes it a use on another character of the home
+#   troupe (issue #823), whose own trackers it changes (healing only, for now).
 #   `cost` is as above, spent on each press. `heal = { damage, amount? }` heals
 #   `amount` of "normal" or "aggravated" damage, of the "worst" first
 #   (aggravated, then normal), "all" of it, or as much as the player says
@@ -614,10 +619,12 @@ level = 3
 name = "Corpore Sano"
 note = "1 Blood, standard action, a willing target within a step (you too): heal 1 normal damage, once a turn."
 focus = { Wits = "Spend 1 more Blood to heal aggravated damage instead." }
-# Core p. 143 (#825): on yourself here; on someone else with #823.
+# Core p. 143 (#825): on yourself, or a willing target within a step (#823).
 use = [
   { label = "Heal 1 normal", cost = { blood = 1 }, heal = { damage = "normal", amount = 1 }, once = "Once a turn", note = "On yourself.", page = 143 },
   { label = "Heal 1 aggravated", cost = { blood = 1 }, heal = { damage = "aggravated", amount = 1 }, once = "Once a turn", focus = "Wits", note = "On yourself.", page = 143 },
+  { label = "Heal 1 normal", target = "other", cost = { blood = 1 }, heal = { damage = "normal", amount = 1 }, once = "Once a turn", note = "On a willing character within a step.", page = 143 },
+  { label = "Heal 1 aggravated", target = "other", cost = { blood = 1 }, heal = { damage = "aggravated", amount = 1 }, once = "Once a turn", focus = "Wits", note = "On a willing character within a step.", page = 143 },
 ]
 
 [[powers]]
@@ -633,9 +640,10 @@ level = 5
 name = "King's Blessing"
 note = "3 Blood, a minute's touch: cure any physical malady, regrow limbs, heal wounds."
 focus = { Perception = "Can also heal the mind, even curing derangements." }
-# Core p. 144 (#825): a willing target; here, yourself.
+# Core p. 144 (#825): a willing target, yourself or someone else (#823).
 use = [
   { label = "Heal all damage", cost = { blood = 3 }, heal = { damage = "all" }, note = "A minute's touch; on yourself.", page = 144 },
+  { label = "Heal all damage", target = "other", cost = { blood = 3 }, heal = { damage = "all" }, note = "A minute's touch, on a willing character.", page = 144 },
 ]
 
 [[disciplines]]
@@ -1152,7 +1160,16 @@ focus = { Manipulation = "Three actions on the willing; harder-hitting attacks."
 # Core p. 168 (#820): 1 Blood and a standard action for a Brawl attack doing 1 normal
 # damage that nothing reduces or raises (2 on an exceptional success); with the
 # Manipulation focus, 2 (3 on an exceptional success).
-active = { key = "Fleshcraft", page = 168, notes = ["1 Blood and a standard action for each attack; Potence, Feral Claws and other powers don't change its damage.", "Reshaping a willing person's looks changes their sheet, not yours."] }
+# Reshaping a willing person (#823) is used on them: their looks change exactly as
+# Malleable Visage changes one's own, kept until it is sculpted again, in their
+# normal form only.
+active = [
+  { key = "Fleshcraft", page = 168, notes = ["1 Blood and a standard action for each attack; Potence, Feral Claws and other powers don't change its damage."] },
+  { key = "Reshaped by Fleshcraft", name = "Fleshcraft: reshaped", target = "other", kept = true, normal_form_only = true, page = 168, notes = ["A willing person's looks, changed as Malleable Visage changes one's own.", "Not in a transformed shape: it comes back when the form ends."], picks = { count = 1, options = [
+    { name = "Ordinary change", note = "A new face, build or voice within human range: nothing on the sheet changes." },
+    { name = "Alien beauty", note = "Beautiful, if slightly alien.", attributes = [{ attribute = "Social", amount = -2 }], focuses = ["Appearance"] },
+  ] } },
+]
 test = [
   { when = "Fleshcraft", name = "Fleshcraft attack", pool = "Physical + Brawl", versus = "Physical + Dodge", damage = 1, exceptional = 1, unreducible = true, unless_focus = "Manipulation", page = 168 },
   { when = "Fleshcraft", name = "Fleshcraft attack", pool = "Physical + Brawl", versus = "Physical + Dodge", damage = 2, exceptional = 1, unreducible = true, focus = "Manipulation", page = 168 },

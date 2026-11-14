@@ -94,6 +94,11 @@ class PlayEvent(Record):
     # Retainer upkeep the server took as the night began (horatio.retainer_upkeep):
     # the period and the Retainers paid for, or, on a note, those left neglected.
     upkeep: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # A power used on another character in the troupe (issue #823,
+    # horatio.play_on_others): whom, what it did there (the effect started, or the
+    # taps made on their game), so Undo takes it back; or why it was refused. On an
+    # undo, why it couldn't be taken back, if it couldn't.
+    on_other: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class PlayCounter(Record):

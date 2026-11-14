@@ -33,6 +33,8 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   disciplines: [],
   waives: [],
   paused: false,
+  foreign: false,
+  target: "self" as const,
   ...over,
 });
 
@@ -113,5 +115,20 @@ describe("a power kept until undone (#822)", () => {
     render(<PowersBanner powers={[{ ...heart, on: true }]} tap={vi.fn()} />);
     const banner = screen.getByRole("region", { name: "Switched on now" });
     expect(banner.textContent).toContain("Kept: Heart of Darkness: heart removed");
+  });
+});
+
+describe("powers used on others (#823)", () => {
+  it("leaves out a switch used only on others, and another's effect on this one", () => {
+    const tap = vi.fn();
+    const reshape = power({ key: "Reshaped by Fleshcraft", name: "Fleshcraft: reshaped", target: "other", kept: true });
+    const theirs = power({ key: "Heart removed", name: "Heart of Darkness: heart removed", foreign: true, kept: true, on: true });
+    render(<PowersList powers={[power({}), reshape, theirs]} tap={tap} />);
+    expect(screen.getByLabelText("Celerity on")).toBeTruthy();
+    expect(screen.queryByLabelText("Fleshcraft: reshaped on")).toBeNull();
+    expect(screen.queryByLabelText("Heart of Darkness: heart removed on")).toBeNull();
+    cleanup();
+    render(<PowersBanner powers={[theirs]} tap={tap} />);
+    expect(screen.queryByRole("region", { name: "Switched on now" })).toBeNull();
   });
 });

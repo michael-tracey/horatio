@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { api, unwrap } from "../../api/client";
 
 /**
@@ -18,4 +19,20 @@ export function useReference(characterId: string) {
     retry: 2,
   });
   return { reference: query.data, error: query.error, loading: query.isPending };
+}
+
+/**
+ * Ask the reference again when another character's power starts or ends an effect
+ * on this one (#823): what it does to the pools comes with the reference, which is
+ * otherwise loaded once. `foreign` names those effects' switches, as the Play View has them.
+ */
+export function useForeignReference(characterId: string, foreign: string | undefined) {
+  const client = useQueryClient();
+  const last = useRef(foreign);
+  useEffect(() => {
+    if (foreign === undefined || last.current === foreign) return;
+    const first = last.current === undefined;
+    last.current = foreign;
+    if (!first) void client.invalidateQueries({ queryKey: ["play-reference", characterId] });
+  }, [client, characterId, foreign]);
 }

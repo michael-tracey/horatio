@@ -352,7 +352,7 @@ function OtherTests({
 }
 
 /** Using a power from the Pools tab: the Play View as it stands, and the taps (issue #370). */
-export type Using = { view: Parameters<typeof UseEffects>[0]["view"]; use: UseTaps };
+export type Using = { view: Parameters<typeof UseEffects>[0]["view"]; use: UseTaps; online?: boolean };
 
 function Discipline({ discipline, using }: { discipline: DisciplinePowers; using?: Using }) {
   return (
@@ -362,7 +362,7 @@ function Discipline({ discipline, using }: { discipline: DisciplinePowers; using
       </p>
       {using && discipline.cost && (
         <div className="mb-2 flex justify-end">
-          <UseButtons costed={discipline} view={using.view} use={using.use} />
+          <UseButtons costed={discipline} view={using.view} use={using.use} online={using.online} />
         </div>
       )}
       {discipline.focus && <p className="mb-2 text-xs text-gold">Your focus: {discipline.focus}</p>}
@@ -373,11 +373,11 @@ function Discipline({ discipline, using }: { discipline: DisciplinePowers; using
               <p>
                 <Rating value={p.level} of={p.level} className="min-w-5 text-gold" /> <strong className="font-semibold">{p.name}</strong>
               </p>
-              {using && plainUse(p) && <UseButtons costed={p} view={using.view} use={using.use} />}
+              {using && plainUse(p) && <UseButtons costed={p} view={using.view} use={using.use} online={using.online} />}
             </div>
             <p className="text-mist">{p.note}</p>
             {p.focus && <p className="text-xs text-gold">Your focus: {p.focus}</p>}
-            {using && <UseEffects costed={p} view={using.view} use={using.use} />}
+            {using && <UseEffects costed={p} view={using.view} use={using.use} online={using.online} />}
           </li>
         ))}
       </ol>
@@ -468,7 +468,7 @@ export function PoolsTab({
                   <p>
                     <strong className="font-semibold">{named(o.name)}</strong> <span className="text-xs text-mist">{o.category_name}</span>
                   </p>
-                  {using && plainUse(o) && <UseButtons costed={o} view={using.view} use={using.use} />}
+                  {using && plainUse(o) && <UseButtons costed={o} view={using.view} use={using.use} online={using.online} />}
                 </div>
                 {o.note && (
                   <p className="text-mist">
@@ -481,7 +481,7 @@ export function PoolsTab({
                     )}
                   </p>
                 )}
-                {using && <UseEffects costed={o} view={using.view} use={using.use} />}
+                {using && <UseEffects costed={o} view={using.view} use={using.use} online={using.online} />}
               </li>
             ))}
           </ul>
