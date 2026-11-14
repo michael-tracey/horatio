@@ -25599,6 +25599,212 @@
         "title": "ImportSummaryOut",
         "type": "object"
       },
+      "InCharacterChannelIn": {
+        "properties": {
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          }
+        },
+        "required": [
+          "channel"
+        ],
+        "title": "InCharacterChannelIn",
+        "type": "object"
+      },
+      "InCharacterChannelOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/ChannelOut"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "server": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server"
+          },
+          "unavailable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable"
+          }
+        },
+        "required": [
+          "server",
+          "unavailable",
+          "channels",
+          "channel",
+          "can_change"
+        ],
+        "title": "InCharacterChannelOut",
+        "type": "object"
+      },
+      "InCharacterMessageOut": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "edited_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited At"
+          },
+          "edited_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited By"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          },
+          "sent_by": {
+            "title": "Sent By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "sent_at",
+          "sent_by",
+          "edited_at",
+          "edited_by",
+          "link"
+        ],
+        "title": "InCharacterMessageOut",
+        "type": "object"
+      },
+      "InCharacterOut": {
+        "description": "An NPC's in-character messages, newest first, and whether it can post now.",
+        "properties": {
+          "can_choose_channel": {
+            "title": "Can Choose Channel",
+            "type": "boolean"
+          },
+          "channel_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Link"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/InCharacterMessageOut"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "needs_channel": {
+            "title": "Needs Channel",
+            "type": "boolean"
+          },
+          "older": {
+            "title": "Older",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "unavailable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "unavailable",
+          "needs_channel",
+          "channel_link",
+          "can_choose_channel",
+          "messages",
+          "older"
+        ],
+        "title": "InCharacterOut",
+        "type": "object"
+      },
       "IncentiveOut": {
         "description": "The New Character Incentive in figures (p. 349): the starting XP, the most XP a\ncharacter could have earned here, a quarter of it, and the two together.",
         "properties": {
@@ -37786,6 +37992,33 @@
       },
       "PlayerCharacter": {
         "properties": {
+          "asking_troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asking Troupe"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "creation_complete": {
+            "default": true,
+            "title": "Creation Complete",
+            "type": "boolean"
+          },
           "home_troupe": {
             "anyOf": [
               {
@@ -37802,20 +38035,102 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "default": "pc",
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
           "name": {
             "title": "Name",
             "type": "string"
           },
+          "npc_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
+          "npc_kind_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind Name"
+          },
+          "owner_troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe"
+          },
+          "owner_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe Id"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "retired": {
             "title": "Retired",
             "type": "boolean"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "name",
           "home_troupe",
-          "retired"
+          "retired",
+          "status"
         ],
         "title": "PlayerCharacter",
         "type": "object"
@@ -53753,6 +54068,21 @@
         "title": "TestPool",
         "type": "object"
       },
+      "TextIn": {
+        "properties": {
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "TextIn",
+        "type": "object"
+      },
       "TextNeed": {
         "properties": {
           "kind": {
@@ -67133,6 +67463,102 @@
         ]
       }
     },
+    "/api/characters/{character_id}/in-character": {
+      "get": {
+        "description": "The NPC's recent in-character messages, with who sent each, for its troupe's\nstorytellers and assistant storytellers; and whether it can post now.",
+        "operationId": "npc_in_character_api_characters__character_id__in_character_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InCharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Npc In Character",
+        "tags": [
+          "in character"
+        ]
+      },
+      "post": {
+        "description": "Post in the In-Character channel as the NPC, under its name and picture.",
+        "operationId": "post_in_character_api_characters__character_id__in_character_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InCharacterMessageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post In Character",
+        "tags": [
+          "in character"
+        ]
+      }
+    },
     "/api/characters/{character_id}/influence": {
       "get": {
         "description": "The character's own influence actions, newest first, from every troupe it\nhas acted in. Never another character's, nor blocks others placed.",
@@ -76315,6 +76741,95 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/in-character-messages/{message_id}": {
+      "delete": {
+        "description": "Delete a message from Discord, and from the NPC's list.",
+        "operationId": "delete_in_character_api_in_character_messages__message_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete In Character",
+        "tags": [
+          "in character"
+        ]
+      },
+      "put": {
+        "description": "Change a message, here and on Discord.",
+        "operationId": "edit_in_character_api_in_character_messages__message_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InCharacterMessageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit In Character",
+        "tags": [
+          "in character"
+        ]
       }
     },
     "/api/influence-blocks/{block_id}": {
@@ -92570,6 +93085,102 @@
         "summary": "House Trait Holders",
         "tags": [
           "house traits"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/in-character-channel": {
+      "get": {
+        "description": "The troupe's In-Character channel on Discord, and those to choose from.",
+        "operationId": "in_character_channel_api_troupes__troupe_id__in_character_channel_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InCharacterChannelOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "In Character Channel",
+        "tags": [
+          "in character"
+        ]
+      },
+      "put": {
+        "description": "Choose the In-Character channel, or none.",
+        "operationId": "choose_in_character_channel_api_troupes__troupe_id__in_character_channel_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InCharacterChannelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InCharacterChannelOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choose In Character Channel",
+        "tags": [
+          "in character"
         ]
       }
     },

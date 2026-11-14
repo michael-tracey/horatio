@@ -961,6 +961,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "feeding_territories": "who holds which territory is play",
     "held_statuses": PLAY,
     "home_troupe_changes": PLAY,
+    "in_character_messages": "what NPCs said on the troupe's Discord is its own",
     "influence_effects": PLAY,
     "influence_entries": "the influence log is the troupe's own",
     "locations": "its locations are its world, not settings",

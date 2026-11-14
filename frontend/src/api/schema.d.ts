@@ -2326,6 +2326,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/in-character": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Npc In Character
+         * @description The NPC's recent in-character messages, with who sent each, for its troupe's
+         *     storytellers and assistant storytellers; and whether it can post now.
+         */
+        get: operations["npc_in_character_api_characters__character_id__in_character_get"];
+        put?: never;
+        /**
+         * Post In Character
+         * @description Post in the In-Character channel as the NPC, under its name and picture.
+         */
+        post: operations["post_in_character_api_characters__character_id__in_character_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/influence": {
         parameters: {
             query?: never;
@@ -5453,6 +5478,30 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/in-character-messages/{message_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Edit In Character
+         * @description Change a message, here and on Discord.
+         */
+        put: operations["edit_in_character_api_in_character_messages__message_id__put"];
+        post?: never;
+        /**
+         * Delete In Character
+         * @description Delete a message from Discord, and from the NPC's list.
+         */
+        delete: operations["delete_in_character_api_in_character_messages__message_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -10718,6 +10767,30 @@ export interface paths {
          */
         get: operations["house_trait_holders_api_troupes__troupe_id__house_traits__house_trait_id__holders_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/in-character-channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * In Character Channel
+         * @description The troupe's In-Character channel on Discord, and those to choose from.
+         */
+        get: operations["in_character_channel_api_troupes__troupe_id__in_character_channel_get"];
+        /**
+         * Choose In Character Channel
+         * @description Choose the In-Character channel, or none.
+         */
+        put: operations["choose_in_character_channel_api_troupes__troupe_id__in_character_channel_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -23343,6 +23416,70 @@ export interface components {
             /** Troupe Name */
             troupe_name: string;
         };
+        /** InCharacterChannelIn */
+        InCharacterChannelIn: {
+            /** Channel */
+            channel: string | null;
+        };
+        /** InCharacterChannelOut */
+        InCharacterChannelOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Channel */
+            channel: string | null;
+            /** Channels */
+            channels: components["schemas"]["ChannelOut"][];
+            /** Server */
+            server: string | null;
+            /** Unavailable */
+            unavailable: string | null;
+        };
+        /** InCharacterMessageOut */
+        InCharacterMessageOut: {
+            /** Body */
+            body: string;
+            /** Edited At */
+            edited_at: string | null;
+            /** Edited By */
+            edited_by: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Link */
+            link: string | null;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /** Sent By */
+            sent_by: string;
+        };
+        /**
+         * InCharacterOut
+         * @description An NPC's in-character messages, newest first, and whether it can post now.
+         */
+        InCharacterOut: {
+            /** Can Choose Channel */
+            can_choose_channel: boolean;
+            /** Channel Link */
+            channel_link: string | null;
+            /** Messages */
+            messages: components["schemas"]["InCharacterMessageOut"][];
+            /** Needs Channel */
+            needs_channel: boolean;
+            /** Older */
+            older: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Unavailable */
+            unavailable: string | null;
+        };
         /**
          * IncentiveOut
          * @description The New Character Incentive in figures (p. 349): the starting XP, the most XP a
@@ -28241,6 +28378,15 @@ export interface components {
         };
         /** PlayerCharacter */
         PlayerCharacter: {
+            /** Asking Troupe */
+            asking_troupe?: string | null;
+            /** Clan */
+            clan?: string | null;
+            /**
+             * Creation Complete
+             * @default true
+             */
+            creation_complete: boolean;
             /** Home Troupe */
             home_troupe: string | null;
             /**
@@ -28248,10 +28394,34 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Kind
+             * @default pc
+             */
+            kind: string;
+            /** Left Reason */
+            left_reason?: string | null;
             /** Name */
             name: string;
+            /** Npc Form */
+            npc_form?: string | null;
+            /** Npc Kind Name */
+            npc_kind_name?: string | null;
+            /** Owner Troupe */
+            owner_troupe?: string | null;
+            /** Owner Troupe Id */
+            owner_troupe_id?: string | null;
+            /** Picture */
+            picture?: string | null;
             /** Retired */
             retired: boolean;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Status */
+            status: string;
         };
         /** PlayerMeetingIn */
         PlayerMeetingIn: {
@@ -34555,6 +34725,11 @@ export interface components {
              * @default 0
              */
             willpower_floor: number;
+        };
+        /** TextIn */
+        TextIn: {
+            /** Text */
+            text: string;
         };
         /** TextNeed */
         TextNeed: {
@@ -41533,6 +41708,72 @@ export interface operations {
             };
         };
     };
+    npc_in_character_api_characters__character_id__in_character_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InCharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_in_character_api_characters__character_id__in_character_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TextIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InCharacterMessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_history_api_characters__character_id__influence_get: {
         parameters: {
             query?: never;
@@ -47368,6 +47609,70 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    edit_in_character_api_in_character_messages__message_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TextIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InCharacterMessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_in_character_api_in_character_messages__message_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -57741,6 +58046,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HolderOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    in_character_channel_api_troupes__troupe_id__in_character_channel_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InCharacterChannelOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    choose_in_character_channel_api_troupes__troupe_id__in_character_channel_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InCharacterChannelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InCharacterChannelOut"];
                 };
             };
             /** @description Validation Error */

@@ -47,3 +47,24 @@ class NpcClaim(Record):
     # Unspent XP the player had banked elsewhere, given as its own entry on claiming.
     carried_xp: Mapped[int] = mapped_column(default=0, server_default="0")
     carried_reason: Mapped[str] = mapped_column(default="", server_default="")
+
+
+class InCharacterMessage(Record):
+    """A message staff posted as an NPC in the troupe's In-Character channel on Discord
+    (horatio.in_character): who sent it, as which NPC, what it says and where it is.
+    Deleting it deletes the row, and the audit log keeps what happened. Only the
+    troupe's storytellers and assistant storytellers ever see who sent it."""
+
+    __tablename__ = "in_character_messages"
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), index=True
+    )
+    sent_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # The Discord channel it went to, and its message there.
+    channel: Mapped[str]
+    message_id: Mapped[str]
+    body: Mapped[str]
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    edited_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))

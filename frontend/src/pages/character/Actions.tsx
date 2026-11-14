@@ -13,6 +13,7 @@ import { MoveCharacter } from "../custodian/MoveCharacter";
 import { ClaimLink, GiveToPlayer } from "../troupe/GiveNpc";
 import { MakeNpc } from "../troupe/MakeNpc";
 import { ExportBackup } from "./Backup";
+import { PostAsNpc } from "./InCharacter";
 import { DiablerieForm, diablerieAction, useDiablerie } from "./Diablerie";
 import { RetireCharacter } from "./Leaving";
 
@@ -22,7 +23,8 @@ import { RetireCharacter } from "./Leaving";
  * player and Claim link (an NPC's storytellers', for one they can give); diablerie
  * (staff record it, the player asks them to); Export (backup), for its player or an
  * NPC's staff, retired or not; Make an NPC of a retired PC, for its home troupe's
- * staff (#764); Retire and Delete. `renameOn` is the
+ * staff (#764); Post in IC chat as NPC, for an NPC's storytellers and assistants while it
+ * isn't retired (#884); Retire and Delete. `renameOn` is the
  * first day a player who renamed lately can again; the item says so instead of
  * renaming. `canDelete` is for those who may delete it at all: a PC's player, an
  * NPC's staff. A PC still in a troupe can't be deleted yet, and Delete says why.
@@ -40,6 +42,7 @@ export function CharacterMenu({
   canGive = false,
   canExport = false,
   canMakeNpc = false,
+  canPostInCharacter = false,
 }: {
   character: CharacterOut;
   canRename: boolean;
@@ -58,6 +61,8 @@ export function CharacterMenu({
   canExport?: boolean;
   /** Copy a retired PC as an NPC of its home troupe (#764). */
   canMakeNpc?: boolean;
+  /** Post in the troupe's In-Character channel on Discord as the NPC (#884). */
+  canPostInCharacter?: boolean;
 }) {
   const [retiring, setRetiring] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -66,10 +71,11 @@ export function CharacterMenu({
   const [diablerie, setDiablerie] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [makingNpc, setMakingNpc] = useState(false);
+  const [postingIc, setPostingIc] = useState(false);
   const dates = useDates();
   const diablerieList = useDiablerie(character);
   const diablerieItem = diablerieAction(diablerieList.data);
-  if (!canRename && !renameOn && !onPronouns && !onSire && !canRetire && !canDelete && !canMove && !canGive && !canExport && !canMakeNpc && !diablerieItem) return null;
+  if (!canRename && !renameOn && !onPronouns && !onSire && !canRetire && !canDelete && !canMove && !canGive && !canExport && !canMakeNpc && !canPostInCharacter && !diablerieItem) return null;
 
   return (
     <div>
@@ -93,7 +99,10 @@ export function CharacterMenu({
         </MenuGroup>
         <MenuGroup label="Diablerie">{diablerieItem && <MenuItem onSelect={() => setDiablerie(true)}>{diablerieItem}</MenuItem>}</MenuGroup>
         <MenuGroup label="Backup">{canExport && <MenuItem onSelect={() => setExporting(true)}>Export (backup)…</MenuItem>}</MenuGroup>
-        <MenuGroup label="NPC">{canMakeNpc && <MenuItem onSelect={() => setMakingNpc(true)}>Make an NPC…</MenuItem>}</MenuGroup>
+        <MenuGroup label="NPC">
+          {canMakeNpc && <MenuItem onSelect={() => setMakingNpc(true)}>Make an NPC…</MenuItem>}
+          {canPostInCharacter && <MenuItem onSelect={() => setPostingIc(true)}>Post in IC chat as NPC…</MenuItem>}
+        </MenuGroup>
         <MenuGroup label="Leaving">
           {canRetire && <MenuItem onSelect={() => setRetiring(true)}>Retire…</MenuItem>}
           {canDelete && <DeleteItem character={character} onDelete={() => setDeleting(true)} />}
@@ -128,6 +137,11 @@ export function CharacterMenu({
       {canMakeNpc && (
         <Dialog title={`Make an NPC of ${character.name}`} open={makingNpc} onClose={() => setMakingNpc(false)}>
           {makingNpc && <MakeNpc characterId={character.id} name={character.name} onDone={() => setMakingNpc(false)} />}
+        </Dialog>
+      )}
+      {canPostInCharacter && (
+        <Dialog title={`Post in IC chat as ${character.name}`} open={postingIc} onClose={() => setPostingIc(false)}>
+          {postingIc && <PostAsNpc character={character} onDone={() => setPostingIc(false)} />}
         </Dialog>
       )}
       <Dialog title={`Retire ${character.name}`} open={retiring} onClose={() => setRetiring(false)}>

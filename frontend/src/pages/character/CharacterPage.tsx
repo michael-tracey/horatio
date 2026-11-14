@@ -13,6 +13,7 @@ import { abilities, roleLabel } from "../troupe/roles";
 import { DowntimeTab } from "./DowntimeTab";
 import { EquipmentTab } from "./EquipmentTab";
 import { GiveEquipment } from "./GiveEquipment";
+import { InCharacterTab } from "./InCharacter";
 import { InfluenceTab } from "./InfluenceTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
@@ -151,6 +152,7 @@ export function CharacterPage() {
                   canDelete
                   canExport
                   canGive={!!npcTroupe.data && abilities(npcTroupe.data.my_role, custodian).storyteller && !npcTroupe.data.archived && givable(c)}
+                  canPostInCharacter={c.status === "active" && !!npcTroupe.data && abilities(npcTroupe.data.my_role, custodian).running && !npcTroupe.data.archived}
                 />
               </div>
             }
@@ -170,6 +172,7 @@ export function CharacterPage() {
             { to: `${base}/status`, label: "Status & Titles" },
             { to: `${base}/equipment`, label: "Equipment" },
             { to: `${base}/influence`, label: "Influence" },
+            { to: `${base}/ic-chat`, label: "IC chat" },
             ...(backstory.data?.read ? [{ to: `${base}/backstory`, label: "Backstory" }] : []),
             { to: `${base}/log`, label: "Log" },
           ]}
@@ -181,6 +184,7 @@ export function CharacterPage() {
           <Route path="status" element={<StatusTitlesTab character={c} />} />
           <Route path="equipment" element={<EquipmentTab character={c} />} />
           <Route path="influence" element={<InfluenceTab character={c} mine={false} />} />
+          <Route path="ic-chat" element={<InCharacterTab character={c} />} />
           <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
           {!c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         </Routes>

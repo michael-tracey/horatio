@@ -3,11 +3,13 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
+import { Avatar } from "../../components/Avatar";
 import { Dialog } from "../../components/Dialog";
 import { AtHandle, PersonPicker } from "../../components/PersonPicker";
-import { Button, Empty, ErrorText, Field, Loading, Textarea } from "../../components/ui";
+import { Badge, Button, Empty, ErrorText, Field, Loading, Textarea } from "../../components/ui";
 import { useRulesAction } from "../../hooks";
 import { roleLabel } from "../troupe/roles";
+import { characterLink, characterNotes, characterTroupe } from "./personCharacters";
 
 type MovePreview = components["schemas"]["MovePreview"];
 
@@ -167,7 +169,12 @@ function Confirm({
   );
 }
 
-/** A person's characters on the People tab, each with Move to another player. */
+/**
+ * A player's characters, in the accordion on their row of the People tab (#890):
+ * every one, whatever its standing, with its picture, where it stands and its
+ * troupe, each with Move to another player (an NPC belongs to its troupe, so it
+ * has none). Loads when the row is first opened.
+ */
 export function PersonCharacters({ playerId }: { playerId: string }) {
   const [moving, setMoving] = useState<{ id: string; name: string } | null>(null);
   const player = useQuery({
@@ -181,17 +188,34 @@ export function PersonCharacters({ playerId }: { playerId: string }) {
       {player.data.characters.length ? (
         <ul className="divide-y divide-ash/50 text-sm">
           {player.data.characters.map((c) => (
-            <li key={c.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-1.5">
-              <Link to={`/characters/${c.id}`} className="hover:text-gold">
-                {c.name}{" "}
-                <span className="text-xs text-mist">
-                  {c.home_troupe ?? "no home troupe"}
-                  {c.retired && " · retired"}
+            <li key={c.id} className="flex items-center gap-3 py-1.5">
+              <Avatar name={c.name} picture={c.picture} clan={c.clan} />
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="flex flex-wrap items-baseline gap-x-2">
+                  <Link to={characterLink(c)} className="break-words hover:text-gold">
+                    {c.name}
+                  </Link>
+                  <span className="text-xs text-mist">{characterTroupe(c)}</span>
                 </span>
-              </Link>
-              <Button type="button" variant="ghost" className="min-h-8 px-2 text-xs" aria-label={`Move ${c.name} to another player`} onClick={() => setMoving(c)}>
-                Move…
-              </Button>
+                <span className="flex flex-wrap gap-1">
+                  {characterNotes(c).map((n) => (
+                    <Badge key={n.label} tone={n.tone}>
+                      {n.label}
+                    </Badge>
+                  ))}
+                </span>
+              </span>
+              {c.kind === "pc" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-8 shrink-0 px-2 text-xs"
+                  aria-label={`Move ${c.name} to another player`}
+                  onClick={() => setMoving(c)}
+                >
+                  Move…
+                </Button>
+              )}
             </li>
           ))}
         </ul>

@@ -113,6 +113,10 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   });
   const asked = await send(idris.page, "POST", `/api/characters/${corvin}/home-troupe`, { troupe_id: approved.troupe_id });
   await send(c, "POST", `/api/approvals/${asked.id}/approve`, {});
+  // An older one of his, retired, and a new one he is still making, for his row's list of characters.
+  const maud = await send(idris.page, "POST", "/api/characters", { name: "Maud Hollis", splat: "vampire" });
+  await send(idris.page, "POST", `/api/characters/${maud.id}/retire`, { reason: "off_field", note: "", listed: false });
+  await send(idris.page, "POST", "/api/characters", { name: "Wren Calder", splat: "ghoul" });
 
   // People with something going on: a reset link out, and a new email waiting.
   await send(c, "POST", `/api/players/${jonah.id}/password-reset`, { email: false });
@@ -167,9 +171,11 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   await shoot(reset, "reset-password");
   await reset.getByRole("button", { name: "Close" }).click();
 
-  // Move Idris's character to Ruth, up to the confirmation.
-  await choose("Idris Kerr", "Characters");
-  const characters = c.getByRole("dialog", { name: "Idris Kerr's characters" });
+  // Idris's characters, under the chevron on his row; then move one to Ruth, up to the confirmation.
+  await row("Idris Kerr").getByRole("button", { name: "Idris Kerr's characters" }).click();
+  const characters = main.getByRole("region", { name: "Idris Kerr's characters" });
+  await expect(characters.getByRole("link", { name: "Corvin Ashe" })).toBeVisible();
+  await shootAround(c, [row("Idris Kerr"), characters], "people-characters");
   await characters.getByRole("button", { name: "Move Corvin Ashe to another player" }).click();
   const move = c.getByRole("dialog", { name: "Move Corvin Ashe to another player" });
   await move.getByLabel("New player").fill(ruth.handle);
@@ -180,7 +186,7 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   await shoot(move, "move-character");
   await move.getByRole("button", { name: "Back" }).click();
   await move.getByRole("button", { name: "Cancel" }).click();
-  await characters.getByRole("button", { name: "Close" }).click();
+  await row("Idris Kerr").getByRole("button", { name: "Idris Kerr's characters" }).click();
 
   // The cards under the table: suspended, password resets and email changes.
   const card = (title: string) => main.locator("section", { has: c.getByRole("heading", { name: title, exact: true }) });
