@@ -18,6 +18,7 @@ import { DiscordEmoji } from "./DiscordEmoji";
 import { DiscordPostChannels } from "./DiscordPostChannels";
 import { InCharacterChannel } from "./InCharacterChannel";
 import { ManagedCharacterRow, ManagedChannels } from "./ManagedChannels";
+import { UpdateBotPermissions } from "./UpdateBotPermissions";
 
 type Settings = Record<string, unknown>;
 
@@ -122,8 +123,8 @@ export function DiscordSettings({
       <div className="flex flex-col gap-2 text-sm">
         <p>
           No Discord server is connected. Add the Horatio bot to the troupe's
-          server. It asks to see channels and send messages, and for news and
-          announcements, to embed links and attach files.
+          server. It asks for every permission Horatio's features use; you can
+          untick any you'd rather not give.
         </p>
         {canEdit && (
           <div>
@@ -171,6 +172,11 @@ export function DiscordSettings({
           </Button>
         )}
       </div>
+      <UpdateBotPermissions
+        troupeId={troupeId}
+        lacks={setup.data.lacks}
+        canEdit={canEdit}
+      />
       <DiscordPostChannels troupeId={troupeId} />
       <Notice>
         Each character's channel should be private: visible only to that player,

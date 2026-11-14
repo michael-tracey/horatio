@@ -454,6 +454,8 @@ MESSAGES: dict[str, str] = {
     "connector.changed": "{actor} turned the {connector} connector {state}.",
     "connector.discord_connected": "{actor} connected the Discord server {server}.",
     "connector.discord_disconnected": "{actor} disconnected the Discord server {server}.",
+    "connector.discord_permissions": "{actor} updated the Horatio bot's permissions on the"
+    " Discord server {server}.",
     "connector.discord_managed": "{actor} turned Horatio making the troupe's Discord character"
     " channels {state}.",
     "connector.discord_staff_roles": "{actor} chose the Discord roles let into every character"

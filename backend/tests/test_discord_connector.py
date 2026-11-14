@@ -255,7 +255,7 @@ def connect_server(ready: Scene, code: str = "good-code") -> httpx2.Response:
     invite = troupe.storyteller.client.post(f"/troupes/{troupe.id}/discord/invite")
     assert invite.status_code == 200, invite.text
     query = parse_qs(urlparse(invite.json()["url"]).query)
-    assert query["permissions"] == [str(discord.PERMISSIONS)]
+    assert query["permissions"] == [str(discord.FOR_INVITE)]
     assert query["redirect_uri"] == ["http://localhost:5173/api/discord/callback"]
     return troupe.storyteller.client.get(
         "/discord/callback",
@@ -502,12 +502,114 @@ def test_connecting_a_server_and_choosing_channels(
     assert "storyteller connected the Discord server Court of Ash." in log
 
 
-def test_the_invite_asks_for_what_posts_need() -> None:
+def test_posts_need_four_permissions() -> None:
     names = discord.missing(0, discord.PERMISSIONS)
 
     assert discord.PERMISSIONS == 52224
     assert names == ["View Channels", "Send Messages", "Embed Links", "Attach Files"]
     assert discord.missing(0, discord.FOR_WEBHOOKS) == ["Manage Webhooks"]
+
+
+def test_the_invite_asks_for_every_permission_a_feature_uses() -> None:
+    features = {
+        name: bits
+        for name, bits in vars(discord).items()
+        if name.startswith("FOR_") and name != "FOR_INVITE"
+    }
+
+    assert set(features) >= {"FOR_MANAGED", "FOR_EMOJI", "FOR_WEBHOOKS", "FOR_POSTS"}
+    for name, bits in features.items():
+        assert bits & ~discord.FOR_INVITE == 0, f"the invite leaves out some of {name}"
+    assert discord.FOR_INVITE == (
+        discord.PERMISSIONS | discord.FOR_MANAGED | discord.FOR_EMOJI | discord.FOR_WEBHOOKS
+    )
+    # Nothing more: never Administrator or Manage Expressions; Create Invite is optional.
+    manage_expressions = 1 << 30
+    for never in (discord.ADMINISTRATOR, manage_expressions, discord.CREATE_INSTANT_INVITE):
+        assert not discord.FOR_INVITE & never
+    # Each by name, so the screen and Horatio agree on what the bot lacks.
+    named = sum(bit for bit in discord.PERMISSION_NAMES if discord.FOR_INVITE & bit)
+    assert named == discord.FOR_INVITE
+    assert discord.missing(0, discord.FOR_INVITE) == [
+        "View Channels",
+        "Send Messages",
+        "Embed Links",
+        "Attach Files",
+        "Manage Webhooks",
+        "Read Message History",
+        "Manage Channels",
+        "Manage Roles",
+        "Create Expressions",
+    ]
+    assert discord.FOR_INVITE == 8796898446352
+
+
+def test_adding_the_bot_again_to_the_same_server_updates_its_permissions(
+    scene: Scene,  # noqa: F811
+    fake_discord: FakeDiscord,
+) -> None:
+    troupe = scene.troupe
+    connect_server(scene)
+    set_up(scene, channels={scene.agnes: AGNES_CHANNEL}, test_channel=TEST_CHANNEL)
+    # A server that added the bot when Horatio asked only for what posts need.
+    fake_discord.bot_role = discord.PERMISSIONS
+    setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
+    assert setup["lacks"] == [
+        "Manage Webhooks",
+        "Read Message History",
+        "Manage Channels",
+        "Manage Roles",
+        "Create Expressions",
+    ]
+
+    # Discord's screen again, for that server only.
+    invite = troupe.storyteller.client.post(f"/troupes/{troupe.id}/discord/invite").json()
+    query = parse_qs(urlparse(invite["url"]).query)
+    assert query["permissions"] == [str(discord.FOR_INVITE)]
+    assert (query["guild_id"], query["disable_guild_select"]) == ([GUILD], ["true"])
+    fake_discord.bot_role = discord.FOR_INVITE
+    back = troupe.storyteller.client.get(
+        "/discord/callback",
+        params={"state": query["state"][0], "code": "good-code", "guild_id": GUILD},
+        follow_redirects=False,
+    )
+
+    # An update: the same server, with everything chosen there kept.
+    assert back.status_code == 303
+    assert back.headers["location"] == f"/troupes/{troupe.id}/connectors?discord=updated"
+    listed = next(
+        c
+        for c in troupe.storyteller.client.get(f"/troupes/{troupe.id}/connectors").json()
+        if c["kind"] == "discord"
+    )
+    assert listed["settings"]["guild_id"] == GUILD
+    assert listed["settings"]["channels"] == {scene.agnes: AGNES_CHANNEL}
+    assert listed["settings"]["test_channel"] == TEST_CHANNEL
+    assert "pending_state" not in listed["settings"]
+    setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
+    assert setup["lacks"] == []
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert (
+        "storyteller updated the Horatio bot's permissions on the Discord server Court of Ash."
+        in log
+    )
+    assert sum("connected the Discord server" in m for m in log) == 1
+
+    # When Discord won't say, nothing is claimed missing.
+    fake_discord.answers_about_bot = False
+    setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
+    assert setup["lacks"] is None
+
+
+def test_a_first_invite_lets_staff_pick_any_server(
+    scene: Scene,  # noqa: F811
+    fake_discord: FakeDiscord,
+) -> None:
+    troupe = scene.troupe
+    invite = troupe.storyteller.client.post(f"/troupes/{troupe.id}/discord/invite").json()
+    query = parse_qs(urlparse(invite["url"]).query)
+
+    assert "guild_id" not in query and "disable_guild_select" not in query
 
 
 def test_staff_see_which_permissions_the_bot_lacks_in_each_channel(

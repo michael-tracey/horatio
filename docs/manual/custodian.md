@@ -316,7 +316,7 @@ Leave a box as it was to keep Horatio's own: its name, night and gold. **Put bac
 The **Discord** card says whether the Horatio bot can work, and if not, which of the three settings are missing (see [Discord: the Horatio app and its bot](#discord-the-horatio-app-and-its-bot)).
 
 - **What it uses:** the client ID. The client secret and bot token only show as **Set** or **Not set**, never their values.
-- **For Discord's developer portal:** the **OAuth2 redirect** to register, made from `HORATIO_PUBLIC_URL`, and an **Invite link for the bot**, each with **Copy**. The invite adds the bot to a server by hand, asking for the [four permissions the bot uses](#discord-the-horatio-app-and-its-bot); troupes connect their own servers from **Customise › Connectors**, which tells Horatio which server is theirs.
+- **For Discord's developer portal:** the **OAuth2 redirect** to register, made from `HORATIO_PUBLIC_URL`, and an **Invite link for the bot**, each with **Copy**. The invite adds the bot to a server by hand, asking for [every permission the bot uses](#discord-the-horatio-app-and-its-bot) (opened again for a server the bot is in already, it updates the bot's permissions there); troupes connect their own servers from **Customise › Connectors**, which tells Horatio which server is theirs.
 - **Check the bot:** asks Discord who the bot is, with the server's token, and shows its name and how many servers it's in. A refused token says so, naming the setting.
 - **Troupes connected:** each troupe that has connected a Discord server, its server's name, how many characters have a channel for their results, whether it has a test channel, and which posts have a channel.
 - **Discord posts that failed lately:** results, quests' news and posts to Discord that failed or are being tried again, each with when and why, and **Retry** for one Horatio gave up on.
@@ -538,7 +538,7 @@ The server has one Discord bot, which every troupe adds to its own Discord serve
 3. Open **OAuth2**. Copy the client ID, and the client secret (you may have to reset it to see it; copy it straight away).
 4. Still under **OAuth2**, add a redirect: `https://<your site>/api/discord/callback`, for example `https://horatio.example.org/api/discord/callback`. It must start with `HORATIO_PUBLIC_URL` exactly, `https` and all. Save the change.
 
-You don't need to make an invite link in the portal: Horatio makes its own, asking for the four permissions the bot uses, and nothing more:
+You don't need to make an invite link in the portal: Horatio makes its own, asking for every permission the bot uses, and nothing more:
 
 | Permission | Why |
 |---|---|
@@ -546,8 +546,17 @@ You don't need to make an invite link in the portal: Horatio makes its own, aski
 | Send Messages | To post results, news and announcements |
 | Embed Links | News and announcements are embeds: a headline, the agency's masthead or the byline, and the story |
 | Attach Files | A story's picture and an agency's masthead go with the post as files |
+| Manage Webhooks | So a news story can post as its agency, under its name and portrait, not as the bot |
+| Manage Channels | To make each character's private channel, if the troupe lets Horatio make them |
+| Manage Roles | To set who can see each of those channels |
+| Read Message History | So a player can read back their own channel; Discord lets the bot give that only if it has it too |
+| Create Expressions | To add the clan and discipline symbols to the server as emoji, if the troupe asks |
 
-If you set **Installation** in the portal too, choose **Guild Install** only, with the `bot` scope and these four permissions.
+Discord's screen lets whoever adds the bot untick any of them. Horatio then says, where a feature needs one, that the bot lacks it. It never asks for Administrator or Manage Expressions (which would let it change anyone's emoji, not just its own). **Create Invite**, which lets Horatio invite a player who isn't on a server yet, isn't asked for; a troupe can give it to the bot's role if it wants.
+
+A server that added the bot before Horatio asked for all of these can update it: **Update the bot's permissions** under Discord on the troupe's **Customise › Connectors** goes through Discord's screen again for that server (see [Adding the Horatio bot](running-a-troupe.md#adding-the-horatio-bot)).
+
+If you set **Installation** in the portal too, choose **Guild Install** only, with the `bot` scope and these permissions.
 
 Then fill in the three settings. All three are needed:
 

@@ -9993,8 +9993,9 @@ export interface paths {
         put?: never;
         /**
          * Discord Invite
-         * @description Discord's page for adding the Horatio bot to the troupe's server. Discord
-         *     sends the storyteller back to `/api/discord/callback`.
+         * @description Discord's page for adding the Horatio bot to the troupe's server, or, with a
+         *     server connected, for updating the bot's permissions there (#891). Discord sends
+         *     the storyteller back to `/api/discord/callback`.
          */
         post: operations["discord_invite_api_troupes__troupe_id__discord_invite_post"];
         delete?: never;
@@ -19981,6 +19982,8 @@ export interface components {
             guild_id: string | null;
             /** Guild Name */
             guild_name: string | null;
+            /** Lacks */
+            lacks?: string[] | null;
             managed?: components["schemas"]["ManagedOut"] | null;
             /** Suggestions */
             suggestions: {

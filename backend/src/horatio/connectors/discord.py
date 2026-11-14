@@ -37,9 +37,9 @@ LIMIT = 2000
 # An embed's text. Discord allows 4,096, and 6,000 across a message's embeds with
 # their titles, so this leaves room for the headline and the agency's name.
 EMBED_LIMIT = 4000
-# What the bot asks for when a server adds it (#839): to see channels and send
-# messages there, and, for the troupe's news and announcements, which are embeds
-# with their pictures attached, Embed Links and Attach Files. No privileged intents.
+# What the bot needs to post (#839): to see channels and send messages there, and,
+# for the troupe's news and announcements, which are embeds with their pictures
+# attached, Embed Links and Attach Files. No privileged intents.
 CREATE_INSTANT_INVITE = 1 << 0
 ADMINISTRATOR = 1 << 3
 MANAGE_CHANNELS = 1 << 4
@@ -68,6 +68,11 @@ FOR_EMOJI = CREATE_EXPRESSIONS
 # What the bot needs as well in a channel where a story posts as its agency (#883,
 # horatio.discord_webhooks); without it, stories there post as the bot.
 FOR_WEBHOOKS = MANAGE_WEBHOOKS
+# What adding the bot asks for (#891): every permission a feature of Horatio uses, so
+# a troupe needn't give them by hand later. Discord's screen lets whoever adds the bot
+# untick any, and each feature says what it lacks. Never Administrator or Manage
+# Expressions; Create Invite stays optional. A new feature's set joins it here.
+FOR_INVITE = PERMISSIONS | FOR_MANAGED | FOR_EMOJI | FOR_WEBHOOKS
 # What each channel's list says the bot lacks: what it needs to post, and Manage
 # Webhooks; each place that shows it picks those that matter there.
 CHECKED = PERMISSIONS | FOR_WEBHOOKS
@@ -121,16 +126,20 @@ def redirect_uri() -> str:
     return f"{get_settings().public_url.rstrip('/')}/api/discord/callback"
 
 
-def invite_url(state: str) -> str:
-    """Discord's page for adding the Horatio bot to a server."""
+def invite_url(state: str, guild_id: str | None = None) -> str:
+    """Discord's page for adding the Horatio bot to a server. With `guild_id`, a
+    server the bot is in already, and no other: going through it again gives the
+    bot's role what the invite asks for now (#891)."""
     query = {
         "client_id": get_settings().discord_client_id,
         "scope": "bot",
-        "permissions": str(PERMISSIONS),
+        "permissions": str(FOR_INVITE),
         "response_type": "code",
         "redirect_uri": redirect_uri(),
         "state": state,
     }
+    if guild_id:
+        query |= {"guild_id": guild_id, "disable_guild_select": "true"}
     return f"{AUTHORIZE}?{urlencode(query)}"
 
 
@@ -196,7 +205,7 @@ def bot_invite_url() -> str:
     query = {
         "client_id": get_settings().discord_client_id,
         "scope": "bot",
-        "permissions": str(PERMISSIONS),
+        "permissions": str(FOR_INVITE),
     }
     return f"{AUTHORIZE}?{urlencode(query)}"
 

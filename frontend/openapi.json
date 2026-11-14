@@ -16973,6 +16973,20 @@
             ],
             "title": "Guild Name"
           },
+          "lacks": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lacks"
+          },
           "managed": {
             "anyOf": [
               {
@@ -90137,7 +90151,7 @@
     },
     "/api/troupes/{troupe_id}/discord/invite": {
       "post": {
-        "description": "Discord's page for adding the Horatio bot to the troupe's server. Discord\nsends the storyteller back to `/api/discord/callback`.",
+        "description": "Discord's page for adding the Horatio bot to the troupe's server, or, with a\nserver connected, for updating the bot's permissions there (#891). Discord sends\nthe storyteller back to `/api/discord/callback`.",
         "operationId": "discord_invite_api_troupes__troupe_id__discord_invite_post",
         "parameters": [
           {
