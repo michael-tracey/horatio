@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AgencyOut, PostOut } from "../../api/types";
 import { PostForm } from "./PostForm";
-import { Banners } from "./Story";
+import { Banners, StoryCard } from "./Story";
 
 afterEach(cleanup);
 
@@ -205,5 +205,34 @@ describe("Banners", () => {
     expect(screen.getByRole("link", { name: "New venue parking" }).getAttribute("href")).toBe("/troupes/t/announcements/a1");
     fireEvent.click(button("Dismiss “New venue parking”"));
     expect(onDismiss).toHaveBeenCalledWith(pinned);
+  });
+});
+
+describe("announcement pictures as thumbnails (#832)", () => {
+  const announcement = post({ id: "a2", kind: "announcement", agency_id: null, title: "Feast night", byline: "Mara Quinn, Lead storyteller", pinned: true, picture: "/api/troupes/t/post-pictures/pic" });
+  const thumbs = (root: HTMLElement) => [...root.querySelectorAll("img")].map((img) => [img.getAttribute("src"), img.getAttribute("alt"), img.className.includes("rounded-md")]);
+
+  it("puts the picture beside a pinned banner, and nothing when there is none", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Banners troupeId="t" banners={[announcement, { ...announcement, id: "a3", title: "Plain", picture: null }]} busy={false} onDismiss={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(thumbs(container)).toEqual([["/api/troupes/t/post-pictures/pic/600.webp", "", true]]);
+  });
+
+  it("puts an announcement's picture beside its byline in the list, but never a news story's", () => {
+    const story = post({ id: "n1", status: "published", picture: "/api/troupes/t/post-pictures/news" });
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <ul>
+            <StoryCard post={announcement} agency={undefined} to="/a2" />
+            <StoryCard post={story} agency={HERALD} to="/n1" />
+          </ul>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(thumbs(container)).toEqual([["/api/troupes/t/post-pictures/pic/600.webp", "", true]]);
   });
 });

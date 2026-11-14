@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, closeContextsAfterEach, makeCustodian, person, run, shots } from "./support";
 
@@ -164,4 +165,49 @@ test("announcements: a storyteller pins one, a player sees its banner, dismisses
   await troupeTab(p, /^Overview$/).click();
   await expect(p.getByRole("heading", { name: "Who may join" })).toBeVisible();
   await expect(p.getByRole("list", { name: "Pinned announcements" })).toHaveCount(0);
+});
+
+test("an announcement's picture shows as a thumbnail on its pinned banner, in the list and in the bell (#832)", async ({ browser }) => {
+  const custodian = await person(browser, "thumbs-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "thumbs-lead");
+  const player = await person(browser, "thumbs-reader");
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Thumbnail Court ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const id = await builtVampire(player.page, "Odalys", "Brujah", NEONATE);
+  const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+
+  // A pinned announcement with a picture, and one without.
+  const pinnedUntil = new Date(Date.now() + 2 * 86_400_000).toISOString();
+  const pictured = await send(lead.page, "POST", `/api/troupes/${troupe.id}/posts`, { kind: "announcement", title: "Masquerade ball", body: "Masks at the door.", pinned_until: pinnedUntil });
+  const picture = await lead.page.request.post(`/api/posts/${pictured.id}/picture`, {
+    headers: { "X-Horatio": "1" },
+    multipart: { file: { name: "ball.jpg", mimeType: "image/jpeg", buffer: readFileSync("e2e/portrait.jpg") } },
+  });
+  expect(picture.status(), await picture.text()).toBe(200);
+  await send(lead.page, "POST", `/api/posts/${pictured.id}/publish`, {});
+  const plain = await send(lead.page, "POST", `/api/troupes/${troupe.id}/posts`, { kind: "announcement", title: "Bring a chair", body: "Seats are short.", pinned_until: pinnedUntil });
+  await send(lead.page, "POST", `/api/posts/${plain.id}/publish`, {});
+
+  // On the front page's banners: a thumbnail beside the one with a picture only.
+  const p = player.page;
+  await p.goto(`/troupes/${troupe.id}`);
+  const banners = p.getByRole("list", { name: "Pinned announcements" });
+  await expect(banners.getByRole("link", { name: "Bring a chair" })).toBeVisible();
+  const ball = banners.getByRole("listitem").filter({ hasText: "Masquerade ball" });
+  await expect(ball.locator("img")).toHaveAttribute("src", /\/post-pictures\/.+\/600\.webp$/);
+  await expect(ball.locator("img")).toHaveJSProperty("complete", true);
+  await expect(banners.getByRole("listitem").filter({ hasText: "Bring a chair" }).locator("img")).toHaveCount(0);
+
+  // In the list, beside its byline.
+  await troupeTab(p, /^Announcements/).click();
+  await expect(p.getByRole("link", { name: /Masquerade ball/ }).locator("img")).toHaveCount(1);
+  await expect(p.getByRole("link", { name: /Bring a chair/ }).locator("img")).toHaveCount(0);
+
+  // And in the bell.
+  await p.getByRole("button", { name: /^Notifications/ }).click();
+  const bell = p.getByRole("dialog", { name: "Notifications" });
+  await expect(bell.getByRole("button", { name: /Announcement: Masquerade ball/ }).locator("img")).toHaveAttribute("src", /\/600\.webp$/);
+  await expect(bell.getByRole("button", { name: /Announcement: Bring a chair/ }).locator("img")).toHaveCount(0);
 });

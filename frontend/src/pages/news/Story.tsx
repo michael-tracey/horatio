@@ -3,6 +3,7 @@ import type { AgencyOut, PostOut } from "../../api/types";
 import { Markdown } from "../../components/Markdown";
 import { useDates } from "../../dates";
 import { Badge, Button } from "../../components/ui";
+import { PostThumb } from "../../components/PostThumb";
 import { ANNOUNCEMENT_COLOUR, discordParts, excerpt, inkOn } from "./posts";
 
 /** An agency's masthead: its picture, or its name on its colour. */
@@ -33,7 +34,14 @@ export function StoryCard({ post, agency, to }: { post: PostOut; agency: AgencyO
         aria-label={`${post.unread ? "Unread: " : ""}${post.pinned ? "Pinned: " : ""}${post.title}${from}`}
       >
         <span className="flex flex-wrap items-center justify-between gap-2">
-          {agency ? <Masthead agency={agency} small /> : <span className="text-xs text-mist">{post.byline}</span>}
+          {agency ? (
+            <Masthead agency={agency} small />
+          ) : (
+            <span className="flex min-w-0 items-center gap-3">
+              {post.picture && <PostThumb picture={post.picture} />}
+              <span className="text-xs text-mist">{post.byline}</span>
+            </span>
+          )}
           <span className="flex items-center gap-2 text-xs text-mist">
             {post.pinned && <Badge tone="gold">Pinned</Badge>}
             {post.published_at && dates.due(post.published_at)}
@@ -90,8 +98,8 @@ export function DiscordPreview({ post, agency }: { post: Pick<PostOut, "kind" | 
 }
 
 /**
- * Pinned announcements (#511) as banners on the troupe's About tab: the title, who
- * it's from and its opening, with the way to read it, until the person dismisses it
+ * Pinned announcements (#511) as banners on the troupe's Overview: its picture as a
+ * thumbnail if it has one (#832), the title, who it's from and its opening, with the way to read it, until the person dismisses it
  * (for themselves only) or it unpins itself.
  */
 export function Banners({ troupeId, banners, onDismiss, busy }: { troupeId: string; banners: PostOut[]; onDismiss: (post: PostOut) => void; busy: boolean }) {
@@ -100,7 +108,8 @@ export function Banners({ troupeId, banners, onDismiss, busy }: { troupeId: stri
     <ul className="flex flex-col gap-3 md:col-span-2" aria-label="Pinned announcements">
       {banners.map((b) => (
         <li key={b.id} className="flex items-start justify-between gap-3 rounded-lg border border-gold/60 bg-gold/10 p-4">
-          <div className="flex min-w-0 flex-col gap-1">
+          {b.picture && <PostThumb picture={b.picture} />}
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="text-xs text-gold">Announcement · {b.byline}</span>
             <Link to={`/troupes/${troupeId}/announcements/${b.id}`} className="font-display text-lg leading-snug text-parchment hover:text-gold">
               {b.title}
