@@ -16312,6 +16312,41 @@
         "title": "DisciplinePowers",
         "type": "object"
       },
+      "DiscordAccount": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "can_unlink": {
+            "title": "Can Unlink",
+            "type": "boolean"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          },
+          "linked": {
+            "title": "Linked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available",
+          "linked",
+          "handle",
+          "can_unlink"
+        ],
+        "title": "DiscordAccount",
+        "type": "object"
+      },
       "DiscordOut": {
         "description": "How a post stands on Discord, for its staff.",
         "properties": {
@@ -27144,6 +27179,19 @@
         "title": "LinkOut",
         "type": "object"
       },
+      "LinkStart": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "LinkStart",
+        "type": "object"
+      },
       "LinkedRetainer": {
         "properties": {
           "character_name": {
@@ -36330,6 +36378,11 @@
               }
             ],
             "title": "Discord Handle"
+          },
+          "discord_linked": {
+            "default": false,
+            "title": "Discord Linked",
+            "type": "boolean"
           },
           "display_name": {
             "title": "Display Name",
@@ -57901,6 +57954,70 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/account/discord": {
+      "delete": {
+        "description": "Forget the person's Discord account. Their Discord username stays, as typed.",
+        "operationId": "unlink_api_account_discord_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordAccount"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Unlink",
+        "tags": [
+          "players"
+        ]
+      },
+      "get": {
+        "description": "The signed-in person's Discord account, linked or not.",
+        "operationId": "discord_account_api_account_discord_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordAccount"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Discord Account",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/account/discord/link": {
+      "post": {
+        "description": "Discord's page for linking. Its other half of the state goes in a cookie.",
+        "operationId": "start_link_api_account_discord_link_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkStart"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Start Link",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/api/account/viewed-as": {
       "get": {
         "description": "The times the custodian viewed Horatio as the signed-in person, newest first.",

@@ -96,6 +96,61 @@ def invite_url(state: str) -> str:
     return f"{AUTHORIZE}?{urlencode(query)}"
 
 
+# A `state` for Discord's shared callback that begins with this belongs to a player
+# linking their own Discord account (#857), not to a troupe adding the bot.
+LINK_STATE = "link."
+
+
+def link_url(state: str) -> str:
+    """Discord's page for a player to link their own Discord account (#857): the
+    `identify` scope only, which tells Horatio who they are and nothing else. It
+    comes back to the same callback as the bot's invite, told apart by `state`."""
+    query = {
+        "client_id": get_settings().discord_client_id,
+        "scope": "identify",
+        "response_type": "code",
+        "redirect_uri": redirect_uri(),
+        "state": f"{LINK_STATE}{state}",
+        "prompt": "consent",
+    }
+    return f"{AUTHORIZE}?{urlencode(query)}"
+
+
+@dataclass(frozen=True)
+class Account:
+    """A Discord account, as Discord itself says: its id and username."""
+
+    id: str
+    username: str
+
+
+def account_from_code(code: str) -> Account:
+    """The Discord account a player just linked, from the code Discord sent back.
+    Raises SendError when Discord will not say."""
+    settings = get_settings()
+    with httpx.Client(transport=transport, timeout=15) as http:
+        try:
+            token = http.post(
+                f"{API}/oauth2/token",
+                data={
+                    "grant_type": "authorization_code",
+                    "code": code,
+                    "redirect_uri": redirect_uri(),
+                },
+                auth=(settings.discord_client_id or "", settings.discord_client_secret or ""),
+            )
+            access = None if token.is_error else token.json().get("access_token")
+            if not access:
+                raise SendError("Discord did not confirm your account.", retry=False)
+            me = http.get(f"{API}/users/@me", headers={"Authorization": f"Bearer {access}"})
+        except httpx.TransportError as error:
+            raise SendError(f"Could not reach Discord: {error}", retry=True) from error
+    if me.is_error or "id" not in me.json():
+        raise SendError("Discord did not say which account is yours.", retry=False)
+    body = me.json()
+    return Account(id=str(body["id"]), username=str(body.get("username") or "").lower())
+
+
 def bot_invite_url() -> str:
     """Discord's page for adding the bot to a server by hand, asking for the
     permissions Horatio needs. A troupe connects its own server from its Connectors

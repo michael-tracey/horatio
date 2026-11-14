@@ -696,6 +696,10 @@ MESSAGES: dict[str, str] = {
     "account.suspension_email_failed": "Horatio could not email {member} about their "
     "suspension: {error}",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
+    "account.discord_linked": "{actor} linked their Discord account, @{discord}.",
+    "account.discord_unlinked": "{actor} unlinked their Discord account.",
+    "account.discord_link_refused": "{actor} tried to link a Discord account already linked to"
+    " another Horatio account.",
     "account.view_as": "{actor} viewed Horatio as {member}, read-only{because}.",
     "account.view_as_ended": "{actor} stopped viewing as {member}.",
     "account.view_as_ended.signed_out": "{actor} signed out, which ended viewing as {member}.",

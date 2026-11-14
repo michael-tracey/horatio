@@ -4,6 +4,50 @@
  */
 
 export interface paths {
+    "/api/account/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discord Account
+         * @description The signed-in person's Discord account, linked or not.
+         */
+        get: operations["discord_account_api_account_discord_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Unlink
+         * @description Forget the person's Discord account. Their Discord username stays, as typed.
+         */
+        delete: operations["unlink_api_account_discord_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/discord/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Link
+         * @description Discord's page for linking. Its other half of the state goes in a cookie.
+         */
+        post: operations["start_link_api_account_discord_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/account/viewed-as": {
         parameters: {
             query?: never;
@@ -19062,6 +19106,17 @@ export interface components {
             /** Versus */
             versus: string | null;
         };
+        /** DiscordAccount */
+        DiscordAccount: {
+            /** Available */
+            available: boolean;
+            /** Can Unlink */
+            can_unlink: boolean;
+            /** Handle */
+            handle: string | null;
+            /** Linked */
+            linked: boolean;
+        };
         /**
          * DiscordOut
          * @description How a post stands on Discord, for its staff.
@@ -23366,6 +23421,11 @@ export interface components {
             /** Skipped */
             skipped: number;
         };
+        /** LinkStart */
+        LinkStart: {
+            /** Url */
+            url: string;
+        };
         /** LinkedRetainer */
         LinkedRetainer: {
             /** Character Name */
@@ -27050,6 +27110,11 @@ export interface components {
             characters: components["schemas"]["PlayerCharacter"][];
             /** Discord Handle */
             discord_handle: string | null;
+            /**
+             * Discord Linked
+             * @default false
+             */
+            discord_linked: boolean;
             /** Display Name */
             display_name: string;
             /** Email */
@@ -35429,6 +35494,66 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    discord_account_api_account_discord_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordAccount"];
+                };
+            };
+        };
+    };
+    unlink_api_account_discord_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordAccount"];
+                };
+            };
+        };
+    };
+    start_link_api_account_discord_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkStart"];
+                };
+            };
+        };
+    };
     viewed_as_api_account_viewed_as_get: {
         parameters: {
             query?: never;

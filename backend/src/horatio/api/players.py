@@ -65,6 +65,9 @@ class PlayerOut(BaseModel):
     bio: str | None
     links: list[Link]
     discord_handle: str | None
+    # Whether that username is their Discord account as Discord confirmed it (#857),
+    # rather than only what they typed.
+    discord_linked: bool = False
     is_custodian: bool
     # Only for the player themself and the custodian.
     email: str | None
@@ -191,6 +194,7 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
         bio=user.bio,
         links=[Link(**link) for link in user.links],
         discord_handle=user.discord_handle,
+        discord_linked=user.discord_user_id is not None,
         is_custodian=user.is_custodian,
         email=user.email if viewer.is_custodian or viewer.id == user.id else None,
         characters=[
@@ -374,7 +378,9 @@ def edit_profile(body: ProfileIn, db: DbSession, user: CurrentUser) -> PlayerOut
     user.pronouns = said
     user.bio = bio or None
     user.links = [clean_link(link).model_dump() for link in links]
-    user.discord_handle = clean_handle(body.discord_handle)
+    # A linked Discord account keeps the username Discord gave it (#857).
+    if user.discord_user_id is None:
+        user.discord_handle = clean_handle(body.discord_handle)
     db.commit()
     return profile(db, user, user)
 

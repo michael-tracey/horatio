@@ -127,6 +127,7 @@ export type AllowancesOut = Schemas["AllowancesOut"];
 export type HouseRulesOut = Schemas["HouseRulesOut"];
 export type SplatHouseRulesOut = Schemas["SplatHouseRulesOut"];
 export type PlayerOut = Schemas["PlayerOut"];
+export type DiscordAccount = Schemas["DiscordAccount"];
 export type LinesVeils = Schemas["LinesVeils"];
 export type TroupeLinesVeils = Schemas["TroupeLinesVeils"];
 export type PlayerSummary = Schemas["PlayerSummary"];
