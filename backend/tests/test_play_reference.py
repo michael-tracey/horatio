@@ -1431,7 +1431,7 @@ def test_every_use_says_what_it_changes_and_where() -> None:
         assert any(k in u for k in CHANGES), name
         if "heal" in u:
             assert u["heal"]["damage"] in {"normal", "aggravated", "worst", "all", "asked"}, name
-        assert set(u.get("gain", {})) <= {"blood", "willpower"}, name
+        assert set(u.get("gain", {})) <= {"blood", "willpower", "over"}, name
         assert set(u.get("cost", {})) <= {"blood", "willpower"}, name
         if "when" in u:
             assert u["when"] in book.switch_keys, name

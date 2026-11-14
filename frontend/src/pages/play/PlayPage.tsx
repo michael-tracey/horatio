@@ -679,15 +679,22 @@ export function BoxTracker({
         </span>
       }
     >
-      {/* The count beside the title says the same for a screen reader. */}
+      {/* The count beside the title says the same for a screen reader. Blood kept past
+          the pool (#854: Mantle of Sutekh) shows as boxes beyond it, outlined, until it goes. */}
       <div className="flex flex-wrap gap-1.5" aria-hidden="true">
-        {Array.from({ length: most }, (_, i) => (
+        {Array.from({ length: Math.max(most, value) }, (_, i) => (
           <span
             key={i}
             className={cx(
               "rounded-md border transition-colors",
               small ? "h-9 w-9" : "h-10 w-10",
-              i < value ? (tracker === "blood" ? "border-blood bg-blood" : "border-gold/70 bg-gold/70") : "border-line bg-night",
+              i >= most
+                ? "border-dashed border-blood bg-blood/40"
+                : i < value
+                  ? tracker === "blood"
+                    ? "border-blood bg-blood"
+                    : "border-gold/70 bg-gold/70"
+                  : "border-line bg-night",
             )}
           />
         ))}

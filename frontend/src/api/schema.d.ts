@@ -27977,6 +27977,11 @@ export interface components {
              */
             blood_half: boolean;
             /**
+             * Blood Over
+             * @default false
+             */
+            blood_over: boolean;
+            /**
              * Blood Per Turn
              * @default 0
              */
@@ -28116,6 +28121,11 @@ export interface components {
             note?: string | null;
             /** Once */
             once?: string | null;
+            /**
+             * Over
+             * @default false
+             */
+            over: boolean;
             /** Page */
             page?: string | null;
             /**

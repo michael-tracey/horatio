@@ -1,4 +1,5 @@
 import type { PlayView, PowerUse } from "../../api/types";
+import { bloodOver } from "./powers";
 import type { makeTap } from "./tracker";
 
 type TapWhat = Parameters<typeof makeTap>[0];
@@ -61,7 +62,9 @@ function effects(view: UseView, use: PowerUse, asked?: { normal: number; aggrava
   if (use.mend) found.push(...(aggravated > 0 ? convert(Math.min(use.mend, aggravated)) : heal("normal", Math.min(use.mend, normal))));
   for (const g of use.gains) {
     const t = g.tracker === "blood" ? view.blood : view.willpower;
-    if (t.value < t.most) found.push({ kind: "change", tracker: g.tracker, amount: Math.min(g.amount, t.most - t.value) });
+    // Mantle of Sutekh's tithes are kept even past the pool while it lasts (#854).
+    if (g.tracker === "blood" && use.over && bloodOver(view)) found.push({ kind: "change", tracker: g.tracker, amount: g.amount });
+    else if (t.value < t.most) found.push({ kind: "change", tracker: g.tracker, amount: Math.min(g.amount, t.most - t.value) });
   }
   return found;
 }

@@ -28,7 +28,7 @@ function view(marks: Mark[] = [], overrides: Partial<UseView> = {}): UseView {
 }
 
 function use(overrides: Partial<PowerUse>): PowerUse {
-  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], beast: 0, retainer: 0, when: null, once: null, note: null, page: null, ...overrides };
+  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], over: false, beast: 0, retainer: 0, when: null, once: null, note: null, page: null, ...overrides };
 }
 
 const blood = (amount: number) => ({ tracker: "blood" as const, amount });
@@ -94,6 +94,20 @@ describe("a use's taps (issue #825)", () => {
       { kind: "change", tracker: "blood", amount: 1 },
     ]);
     expect(effectTaps(view([], { blood: { value: 10, most: 10, start: 10 }, willpower: { value: 6, most: 6, start: 6 } }), harvest, "Harvest Despair")).toEqual([]);
+  });
+
+  it("keeps Mantle of Sutekh's tithes past the pool while it lasts, and only those (#854)", () => {
+    const tithe = use({ gains: [blood(1)], over: true, when: "Mantle of Sutekh" });
+    const harvest = use({ gains: [blood(2)] });
+    const mantle = (on: boolean) => ({ key: "Mantle of Sutekh", on, blood_over: true }) as UseView["powers"][number];
+    const full = view([], { blood: { value: 10, most: 10, start: 10 }, powers: [mantle(true)] });
+    const taps = effectTaps(full, tithe, "Serpentis: Mantle of Sutekh");
+    expect(taps).toEqual([{ kind: "change", tracker: "blood", amount: 1 }]);
+    expect(after(full, taps).blood).toBe(11);
+    // Other Blood gained still stops at the pool.
+    expect(effectTaps(full, harvest, "Harvest Despair")).toEqual([]);
+    // With the Mantle off, a tithe at a full pool changes nothing.
+    expect(effectTaps(view([], { blood: { value: 10, most: 10, start: 10 }, powers: [mantle(false)] }), tithe, "Serpentis: Mantle of Sutekh")).toEqual([]);
   });
 
   it("takes a Beast trait for a retest (Feed the Blighted Wolf)", () => {

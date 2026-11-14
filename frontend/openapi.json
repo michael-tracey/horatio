@@ -38152,6 +38152,11 @@
             "title": "Blood Half",
             "type": "boolean"
           },
+          "blood_over": {
+            "default": false,
+            "title": "Blood Over",
+            "type": "boolean"
+          },
           "blood_per_turn": {
             "default": 0,
             "title": "Blood Per Turn",
@@ -38404,6 +38409,11 @@
               }
             ],
             "title": "Once"
+          },
+          "over": {
+            "default": false,
+            "title": "Over",
+            "type": "boolean"
           },
           "page": {
             "anyOf": [

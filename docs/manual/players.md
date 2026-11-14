@@ -514,7 +514,7 @@ Some powers do more than spend. Each of those has buttons of its own under its n
 
 - **Healing:** Corpore Sano's **Heal 1 normal · 1 Blood**, Mens Sana, Repair the Undead Flesh, King's Blessing (all your damage), Moment of Reflection (the worst first on its third use), and Will to Survive's free healing.
 - **Damage turned to normal:** Second Wind turns every aggravated box to normal; each minute in a Cocoon turns one, or heals one normal if there's none.
-- **Blood and Willpower gained:** Theft of Vitae's Blood on a win, Harvest Despair's, a spirit's Gnosis with Umbral Huntress, Retain the Quick Blood, and Mantle of Sutekh's tithes. Never past your pool: if a power lets you hold more, keep count of the rest yourself.
+- **Blood and Willpower gained:** Theft of Vitae's Blood on a win, Harvest Despair's, a spirit's Gnosis with Umbral Huntress, Retain the Quick Blood, and Mantle of Sutekh's tithes. Never past your pool, except Mantle of Sutekh's: while it lasts, Blood tithed through it is kept even over your pool, shown as "14 / 12" with the extra boxes outlined. When it ends, the Blood over your pool goes, unspent (Vol. 2 p. 240).
 - **Indestructible** asks how much damage you took this turn, and undoes it for half your Blood.
 - **Beast traits:** Feed the Blighted Wolf takes one in place of Willpower for a retest; Beast's Vigor moves up to 3 damage onto a ghoul Retainer for one.
 

@@ -234,6 +234,9 @@ class PowerUse(BaseModel):
     mend: int = 0
     # Blood or Willpower gained, never past the pool.
     gains: list[Cost] = []
+    # Blood gained may go past the pool while a switch whose Blood may go over it
+    # is on (issue #854: Mantle of Sutekh's tithes, Vol. 2 p. 240).
+    over: bool = False
     # Beast traits taken (Feed the Blighted Wolf, Beast's Vigor).
     beast: int = 0
     # Damage moved onto one of the character's ghoul Retainers, up to this much a use.
@@ -417,6 +420,9 @@ class Switch(BaseModel):
     blood_half: bool = False
     # More Blood at most while it is on (issue #824).
     blood_extra: int = 0
+    # While it is on, Blood a use gains `over` may go past the pool; when it ends,
+    # the Blood over the pool goes (issue #854: Mantle of Sutekh, Vol. 2 p. 240).
+    blood_over: bool = False
     picks: Picks | None = None
     # Kept until undone, not until the game ends (issue #822): it lasts through Reset
     # until the player turns it off (horatio.play_effects). Using it again while it
@@ -1284,6 +1290,8 @@ def _changes(
         lines.append("Blood pool half again as big")
     if switch.blood_extra:
         lines.append(f"{_signed(switch.blood_extra)} most Blood")
+    if switch.blood_over:
+        lines.append("Blood past the pool until it ends")
     return lines
 
 
@@ -1319,6 +1327,7 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
         blood_per_turn=blood.get("per_turn", 0),
         blood_half=blood.get("most") == "half",
         blood_extra=blood.get("extra", 0),
+        blood_over=blood.get("over", False),
         picks=_picks(owner, active, sheet),
         kept=active.get("kept", False),
         normal_form_only=active.get("normal_form_only", False),
@@ -1601,6 +1610,7 @@ def uses(entry: Mapping[str, Any], sheet: Sheet) -> list[PowerUse]:
                 convert_all=u.get("convert") == "all",
                 mend=u.get("mend", 0),
                 gains=[Cost(tracker=t, amount=gain[t]) for t in TRACKER_COSTS if t in gain],
+                over=gain.get("over", False),
                 beast=u.get("beast", 0),
                 retainer=u.get("retainer", 0),
                 when=u.get("when"),
