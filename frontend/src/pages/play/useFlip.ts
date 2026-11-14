@@ -4,6 +4,18 @@ import { askToFlip, loadAsked, loadFlipping, needsAsking, saveAsked, saveFlippin
 /** With no reading this long, the phone either has no sensor or (iOS) must be asked first. */
 const SILENT_MS = 1500;
 
+/**
+ * Whether the sensor has sent a reading while this page has been open. The Play View
+ * remakes the Throws tab when the sheet arrives (#837), and the new tab offers the
+ * switch at once rather than waiting for the next reading.
+ */
+let sensorSeen = false;
+
+/** For tests: as if the sensor had never sent a reading. */
+export function forgetSensor(): void {
+  sensorSeen = false;
+}
+
 type Host = OrientationHost & Pick<Window, "addEventListener" | "removeEventListener">;
 type Visible = Pick<Document, "visibilityState" | "addEventListener" | "removeEventListener">;
 
@@ -32,7 +44,7 @@ export function useFlip(onFlip: () => void, host: Host = window, doc: Visible = 
   const [on, setOnState] = useState(loadFlipping);
   const [asked, setAsked] = useState(loadAsked);
   const [askedNow, setAskedNow] = useState(false);
-  const [sensed, setSensed] = useState(false);
+  const [sensed, setSensed] = useState(() => sensorSeen);
   const [silent, setSilent] = useState(false);
   const [visible, setVisible] = useState(doc.visibilityState === "visible");
   const flip = useRef(onFlip);
@@ -56,6 +68,7 @@ export function useFlip(onFlip: () => void, host: Host = window, doc: Visible = 
     const read = (e: Event) => {
       const { beta, gamma } = e as DeviceOrientationEvent;
       if (tilt(beta, gamma) === null) return;
+      sensorSeen = true;
       setSensed(true);
       if (!flipping.current) return;
       const out = step(state, { beta, gamma, at: performance.now() });
