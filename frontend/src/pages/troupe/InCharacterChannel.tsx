@@ -5,7 +5,7 @@ import { useToast } from "../../components/Toast";
 import { ErrorText, Field, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
-import { BotLacks, FOR_RESULTS } from "./botPermissions";
+import { FOR_RESULTS, lacking } from "./botPermissions";
 
 /** What the bot needs in the In-Character channel: to post as an NPC through its webhook. */
 export const FOR_IN_CHARACTER = [...FOR_RESULTS, "Manage Webhooks"];
@@ -63,8 +63,21 @@ export function InCharacterChannel({ troupeId, canEdit }: { troupeId: string; ca
           ))}
         </Select>
       </Field>
-      <BotLacks channel={channels.find((c) => c.id === channel)} needs={FOR_IN_CHARACTER} what="NPCs' messages" />
+      <Lacks channel={channels.find((c) => c.id === channel)} />
       <ErrorText error={choose.error} />
     </div>
+  );
+}
+
+/** What the bot lacks in the chosen channel, if anything: without any of it, NPCs can't post there at all. */
+function Lacks({ channel }: { channel: { name: string; missing?: string[] | null } | undefined }) {
+  const names = lacking(channel?.missing, FOR_IN_CHARACTER);
+  if (!channel || !names.length) return null;
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  return (
+    <p className="text-xs text-blood-bright" role="status">
+      The Horatio bot lacks {list} in #{channel.name}, so NPCs can't post there. Give it {names.length === 1 ? "that permission" : "those permissions"} in the
+      channel's settings on Discord.
+    </p>
   );
 }
