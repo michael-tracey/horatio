@@ -77,11 +77,20 @@ type Holding = { id: string; modifiers: EquipmentModifier[] };
 
 const bonus = (m: EquipmentModifier) => [m.quality, m.pools, m.when, m.situational].join("|");
 
-/** The qualities picked for the powers on (issue #599), each as an item held: Flesh of Marble's Ballistic. */
-function picked(powers: Pick<PowerSwitch, "key" | "on" | "picked" | "options">[]): Holding[] {
+/**
+ * The qualities picked for the powers on (issue #599), each as an item held: Flesh of
+ * Marble's Ballistic; and those a power gives every time it is on (#820): Armor of
+ * Terra's Hardened and Ballistic. A Play View kept on the phone from before has no `fixed`.
+ */
+type Powered = Pick<PowerSwitch, "key" | "on" | "picked" | "options"> & Partial<Pick<PowerSwitch, "fixed">>;
+
+function picked(powers: Powered[]): Holding[] {
   return powers
     .filter((p) => p.on)
-    .flatMap((p) => (p.picked ?? []).map((name) => ({ id: pickKey(p.key, name), modifiers: p.options?.find((o) => o.name === name)?.modifiers ?? [] })));
+    .flatMap((p) => [
+      ...(p.picked ?? []).map((name) => ({ id: pickKey(p.key, name), modifiers: p.options?.find((o) => o.name === name)?.modifiers ?? [] })),
+      ...(p.fixed ?? []).map((o) => ({ id: pickKey(p.key, o.name), modifiers: o.modifiers })),
+    ]);
 }
 
 /**
@@ -91,7 +100,7 @@ function picked(powers: Pick<PowerSwitch, "key" | "on" | "picked" | "options">[]
  * Ambidextrous merit, p. 248), and so does a quality the worn gear has and Flesh of
  * Marble too (Vol. 2 p. 232).
  */
-export function equipmentModifiers(items: Holding[], equipped: string[], powers: Pick<PowerSwitch, "key" | "on" | "picked" | "options">[] = []): Modifier[] {
+export function equipmentModifiers(items: Holding[], equipped: string[], powers: Powered[] = []): Modifier[] {
   const seen = new Set<string>();
   const found: Modifier[] = [];
   const held = [...equipped.map((id) => items.find((i) => i.id === id)).filter((i): i is Holding => !!i), ...picked(powers)];

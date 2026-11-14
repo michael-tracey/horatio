@@ -316,6 +316,8 @@ describe("a power's Use (#370)", () => {
     on: false,
     options: [],
     picked: [],
+    qualities: [],
+    fixed: [],
     turned_on: 0,
   };
   const blood = { tracker: "blood" as const, amount: 1 };
@@ -378,6 +380,8 @@ describe("an elder power's Use (#588)", () => {
     on: false,
     options: [],
     picked: [],
+    qualities: [],
+    fixed: [],
     turned_on: 0,
   };
   const blood = { tracker: "blood" as const, amount: 1 };

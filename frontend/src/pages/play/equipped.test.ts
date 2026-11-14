@@ -130,6 +130,20 @@ describe("equipment modifiers", () => {
     expect(equipmentModifiers([vest], [], [{ ...marble[0]!, on: false }])).toEqual([]);
   });
 
+  it("count the qualities a power gives every time it is on, beside those picked (#820)", () => {
+    const hardened = [
+      mod({ quality: "Hardened", label: "Armor of Terra: Hardened", amount: 3, pools: "pool:dodge", when: "against Brawl, Melee and thrown weapons", situational: true }),
+      mod({ quality: "Hardened", label: "Armor of Terra: Hardened", amount: 1, pools: "pool:dodge", when: "against firearms", situational: true }),
+    ];
+    const terra: (Pick<PowerSwitch, "key" | "on" | "picked" | "options"> & Pick<PowerSwitch, "fixed">)[] = [{ key: "Armor of Terra", on: true, picked: [], options: [], fixed: [{ name: "Hardened", play: "", page: null, modifiers: hardened }] }];
+    const found = equipmentModifiers([], [], terra);
+    expect(found.map((m) => m.id)).toEqual(["pick:Armor of Terra/Hardened/0", "pick:Armor of Terra/Hardened/1"]);
+    expect(situations(dodge, found).map((s) => s.when)).toEqual(["against Brawl, Melee and thrown weapons", "against firearms"]);
+    // Off, they don't count; a Play View kept from before has no `fixed`.
+    expect(equipmentModifiers([], [], [{ ...terra[0]!, on: false }])).toEqual([]);
+    expect(equipmentModifiers([], [], [{ key: "Armor of Terra", on: true, picked: [], options: [] }])).toEqual([]);
+  });
+
   it("say what a piece of miscellaneous gear's bonus is for", () => {
     expect(describeModifier({ amount: 1, pools: "purpose", when: "for its purpose, with the skill" }, [])).toBe("+1 for its purpose, with the skill");
   });

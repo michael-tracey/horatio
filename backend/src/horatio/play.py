@@ -262,6 +262,10 @@ class Limits:
     options: Mapping[str, tuple[PickOption, ...]] = field(
         default_factory=dict[str, tuple[PickOption, ...]]
     )
+    # The qualities each switch with `qualities` gives while it is on, by its key (#820).
+    fixed: Mapping[str, tuple[PickOption, ...]] = field(
+        default_factory=dict[str, tuple[PickOption, ...]]
+    )
     # How many forms it can be in at once: two with Ravenous Conglomeration.
     forms: int = 1
     # Each Retainer's health and Blood.
@@ -646,6 +650,29 @@ def pick_options(
     }
 
 
+def fixed_qualities(
+    rules: EquipmentRules, switches: Iterable[reference.Switch]
+) -> dict[str, tuple[PickOption, ...]]:
+    """The qualities each switch gives every time it is on (#820), such as Armor of
+    Terra's Hardened and Ballistic, with what they do to the pools, as a picked
+    quality's do. One the character's rules don't have is left out."""
+    found: dict[str, tuple[PickOption, ...]] = {}
+    for s in switches:
+        given = tuple(
+            PickOption(
+                name=known.name,
+                play=known.play,
+                page=known.page,
+                modifiers=tuple(equipment.picked_modifiers(rules, q.kind, q.name, s.key)),
+            )
+            for q in s.qualities
+            if (known := rules.qualities.get((q.kind, q.name))) is not None
+        )
+        if given:
+            found[s.key] = given
+    return found
+
+
 def carried_equipped(
     db: Session, character: Character, game: PlayGame | None, limits: Limits
 ) -> tuple[tuple[str, str], ...]:
@@ -837,6 +864,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         held=held,
         switches=switches,
         options=pick_options(rule_set.equipment, switches),
+        fixed=fixed_qualities(rule_set.equipment, switches),
         forms=reference.forms_at_once(reference.Sheet.read(rows, rule_set)),
         blood_name=blood_name,
         trackers=trackers_for(panels),
