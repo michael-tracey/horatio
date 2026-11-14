@@ -1,15 +1,18 @@
-"""Every list ordered by a time the database stamps ends on the row's id (#733, #736).
+"""Every list ordered by a time the database stamps ends on the row's id (#733, #736),
+in the app and in the tests that read rows back (#819).
 
 Postgres gives every row written in one transaction the same now(), so two rows a
 request (or a test) writes together tie on created_at, and come back in whatever
-order the table holds them. Ids are UUID v7 (horatio.models.base.Record), which rise
-in the order rows are made, so the id breaks the tie as they were recorded.
+order the table holds them. A test runs in one transaction, so every row it makes
+ties. Ids are UUID v7 (horatio.models.base.Record), which rise in the order rows are
+made, so the id breaks the tie as they were recorded.
 """
 
 import ast
 from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parents[1] / "src" / "horatio"
+TESTS = Path(__file__).resolve().parent
 
 # Columns the database fills with now(): they tie within a transaction. Times set in
 # Python (datetime.now(UTC)) differ on every call, and times people enter are theirs.
@@ -30,7 +33,7 @@ def _column(node: ast.expr) -> ast.Attribute | None:
 
 def _untied() -> list[str]:
     found: list[str] = []
-    for path in sorted(SOURCE.rglob("*.py")):
+    for path in sorted([*SOURCE.rglob("*.py"), *TESTS.rglob("*.py")]):
         for node in ast.walk(ast.parse(path.read_text(), str(path))):
             if not (
                 isinstance(node, ast.Call)
@@ -45,7 +48,7 @@ def _untied() -> list[str]:
             assert isinstance(last.value, ast.Name)
             full = f"{last.value.id}.{last.attr}"
             if last.attr in STAMPED or full in STAMPED_ON:
-                where = path.relative_to(SOURCE.parent)
+                where = path.relative_to(SOURCE.parents[1])
                 found.append(f"{where}:{node.lineno}: order_by(... {ast.unparse(node.args[-1])})")
     return found
 
