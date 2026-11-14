@@ -121,6 +121,9 @@ class DiscordSetup(BaseModel):
     suggestions: dict[str, str]
     # Character channels Horatio makes; None with no server connected.
     managed: ManagedOut | None = None
+    # Of every permission adding the bot asks for, those it lacks on the server
+    # (#891), or None when Discord wouldn't say.
+    lacks: list[str] | None = None
 
 
 def discord_row(db: DbSession, troupe_id: uuid.UUID) -> TroupeConnector:
@@ -139,15 +142,17 @@ def available() -> None:
 
 @router.post("/troupes/{troupe_id}/discord/invite")
 def discord_invite(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Invite:
-    """Discord's page for adding the Horatio bot to the troupe's server. Discord
-    sends the storyteller back to `/api/discord/callback`."""
+    """Discord's page for adding the Horatio bot to the troupe's server, or, with a
+    server connected, for updating the bot's permissions there (#891). Discord sends
+    the storyteller back to `/api/discord/callback`."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_CONNECTORS)
     available()
     row = discord_row(db, troupe.id)
     token = secrets.token_urlsafe(24)
     row.settings = {**row.settings, "pending_state": token}
     db.commit()
-    return Invite(url=discord.invite_url(f"{troupe.id}.{token}"))
+    guild_id = row.settings.get("guild_id")
+    return Invite(url=discord.invite_url(f"{troupe.id}.{token}", guild_id=guild_id))
 
 
 @router.get("/discord/callback", include_in_schema=False)
@@ -190,13 +195,21 @@ def discord_callback(
         row.settings = settings
         db.commit()
         return back(failure.reason)
-    if guild_id != settings.get("guild_id"):
-        # A different server: channels picked in the old one mean nothing here,
-        # including those for the troupe's news (horatio.posts).
-        settings = {"channels": {}, "test_channel": None}
-        db.execute(
-            update(NewsAgency).where(NewsAgency.troupe_id == troupe.id).values(discord_channel=None)
+    if guild_id == settings.get("guild_id"):
+        # The server already connected: Discord has given the bot's role what the
+        # invite asked for (#891), and everything chosen there stays.
+        row.settings = {**settings, "guild_name": guild_name}
+        audit.record(
+            db, user, "connector.discord_permissions", troupe_id=troupe.id, server=guild_name
         )
+        db.commit()
+        return back("updated")
+    # A different server: channels picked in the old one mean nothing here,
+    # including those for the troupe's news (horatio.posts).
+    settings = {"channels": {}, "test_channel": None}
+    db.execute(
+        update(NewsAgency).where(NewsAgency.troupe_id == troupe.id).values(discord_channel=None)
+    )
     row.settings = {**settings, "guild_id": guild_id, "guild_name": guild_name}
     audit.record(db, user, "connector.discord_connected", troupe_id=troupe.id, server=guild_name)
     db.commit()
@@ -247,6 +260,9 @@ def discord_setup(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Dis
         characters=characters,
         suggestions=discord.suggested_channels([(c.id, c.name) for c in characters], found),
         managed=managed_out(db, row, listed, access) if row is not None and guild_id else None,
+        lacks=discord.missing(access.server_permissions(), discord.FOR_INVITE)
+        if access is not None
+        else None,
     )
 
 

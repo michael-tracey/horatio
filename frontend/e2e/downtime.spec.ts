@@ -1113,6 +1113,47 @@ test("staff add the clan and discipline symbols to the troupe's Discord server a
   await expect.poll(() => pushed).toEqual([{ symbols: ["clan/tremere", "disc/sup/aus"], remove_others: false }]);
 });
 
+/**
+ * Updating the bot's permissions on a server it's in already (#891). As above, the
+ * browser is shown Horatio's answers, and Discord's add-bot screen is skipped: it
+ * sends the storyteller straight back, as Discord does once they accept.
+ */
+test("staff update the Horatio bot's permissions on a server it's in already (#891)", async ({ browser }) => {
+  const custodian = await person(browser, "mperm-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mperm-lead");
+  await custodian.page.reload();
+  const created = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Bot Permissions ${run}`, lead_handle: lead.handle } });
+  expect(created.status(), await created.text()).toBeLessThan(300);
+  const troupe = await created.json();
+  const l = lead.page;
+  const settings = { guild_id: "111", guild_name: "Court of Ash", channels: {}, test_channel: null };
+  await l.route(`**/api/troupes/${troupe.id}/connectors`, (route) =>
+    route.fulfill({ json: [{ kind: "discord", name: "Discord", unavailable: null, needs: [], enabled: true, mode: "alert", test_mode: false, settings }] }),
+  );
+  // A server that added the bot before Horatio asked for webhooks and emoji.
+  let lacks = ["Manage Webhooks", "Create Expressions"];
+  await l.route(`**/api/troupes/${troupe.id}/discord`, (route) =>
+    route.fulfill({ json: { guild_id: "111", guild_name: "Court of Ash", channels: [], characters: [], suggestions: {}, managed: null, lacks } }),
+  );
+  let invited = 0;
+  await l.route(`**/api/troupes/${troupe.id}/discord/invite`, async (route) => {
+    invited += 1;
+    lacks = [];
+    await route.fulfill({ json: { url: `/troupes/${troupe.id}/connectors?discord=updated` } });
+  });
+
+  await l.goto(`/troupes/${troupe.id}/connectors`);
+  await expect(l.getByText("The Horatio bot lacks Manage Webhooks and Create Expressions on this server", { exact: false })).toBeVisible();
+  await expect(l.getByRole("link", { name: "What each is for" })).toHaveAttribute("href", /adding-the-horatio-bot/);
+  await l.getByRole("button", { name: "Update the bot's permissions" }).click();
+
+  await expect(l.getByText("Discord has updated the Horatio bot's permissions on the server.")).toBeVisible();
+  await expect(l.getByText("Connected to Court of Ash.")).toBeVisible();
+  await expect(l.getByRole("button", { name: "Update the bot's permissions" })).toHaveCount(0);
+  expect(invited).toBe(1);
+});
+
 test("staff share out a cycle's responses by character, and assign several in one go", async ({ browser }) => {
   const custodian = await person(browser, "bulkassign-cust");
   makeCustodian(custodian.email);

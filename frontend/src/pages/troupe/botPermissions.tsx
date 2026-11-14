@@ -11,7 +11,7 @@ export function lacking(missing: readonly string[] | null | undefined, needs: re
   return (missing ?? []).filter((name) => needs.includes(name));
 }
 
-function listed(names: string[]): string {
+export function listed(names: readonly string[]): string {
   return names.length === 1 ? names[0]! : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 

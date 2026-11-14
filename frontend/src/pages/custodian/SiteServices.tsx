@@ -175,7 +175,7 @@ function DiscordShown({ discord }: { discord: DiscordOut }) {
           {discord.invite && (
             <Copyable
               label="Invite link for the bot"
-              hint="Adds the bot to a server by hand, asking for the four permissions Horatio uses (see Setting up Discord in the manual). A troupe connects its own server from its Connectors tab instead."
+              hint="Adds the bot to a server by hand, asking for every permission Horatio uses (see Setting up Discord in the manual). Opened again for a server the bot is in already, it updates the bot's permissions there. A troupe connects its own server from its Connectors tab instead."
               value={discord.invite}
             />
           )}

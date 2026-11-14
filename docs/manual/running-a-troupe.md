@@ -776,7 +776,21 @@ Discord results are posted by the Horatio bot, which the troupe adds to its own 
 2. Discord asks which server to add the bot to, and shows what it may do. Pick the troupe's server and accept.
 3. Discord sends you back to Connectors, which says the server is connected and names it.
 
-The bot may see channels and send messages in them, and, for news and announcements, embed links and attach pictures; nothing else. Horatio doesn't read what people write there, the bot can't manage the server, it never mentions (pings) anyone, and it posts only where you choose. **Disconnect** makes Horatio forget the server and its channels; the bot stays in the server until someone there removes it.
+Discord's screen lists what the bot asks for: every permission Horatio's features use, so you needn't give any by hand later. You can untick any you'd rather not give; Horatio says, where a feature needs one, that the bot lacks it.
+
+| Permission | What it's for |
+| --- | --- |
+| **View Channels**, **Send Messages** | Posting results, news and announcements |
+| **Embed Links**, **Attach Files** | News and announcements, with their pictures |
+| **Manage Webhooks** | News stories posting under their agency's name |
+| **Manage Channels**, **Manage Roles**, **Read Message History** | Making each character's private channel, if you let Horatio (see [Letting Horatio make the channels](#letting-horatio-make-the-channels)) |
+| **Create Expressions** | Adding the clan and discipline symbols as emoji, if you ask (see [Clan and discipline emoji](#clan-and-discipline-emoji)) |
+
+It never asks for Administrator. Horatio doesn't read what people write there, it never mentions (pings) anyone, and it posts only where you choose. **Disconnect** makes Horatio forget the server and its channels; the bot stays in the server until someone there removes it.
+
+#### Updating the bot's permissions
+
+A server that added the bot before Horatio asked for all of these, or where someone unticked some, can give them later. When the bot lacks any of them, Connectors names them under Discord, with **Update the bot's permissions**. It takes you through Discord's screen again, for the connected server only: accept, and Discord gives the bot's role what Horatio asks for now. Back on Connectors, everything you chose stays as it was. You can also give a permission by hand, on the bot's role in Discord's Server Settings › Roles.
 
 #### Making a channel for each character
 
@@ -786,7 +800,7 @@ Each character's results go to a private text channel of its own. You can make t
 2. Make it private, so everyone in the server is kept out of it.
 3. Let in the character's player, the staff (a staff role is easiest), and the Horatio bot (by its own role, named after the bot, or by name). The bot must be able to see the channel and send messages there.
 
-Where the bot lacks a permission it needs in a channel you've chosen, Horatio says so beside it: **View Channels** and **Send Messages** for results, and also **Embed Links** and **Attach Files** for news and announcements. A server that added the bot before Horatio asked for the last two needs them given to the bot's role (Server Settings › Roles), or in the channels' own settings. If Discord refuses a post anyway, the delivery's error names the permission that's missing.
+Where the bot lacks a permission it needs in a channel you've chosen, Horatio says so beside it: **View Channels** and **Send Messages** for results, and also **Embed Links** and **Attach Files** for news and announcements. A server that added the bot before Horatio asked for the last two can [update the bot's permissions](#updating-the-bots-permissions), or give them in the channels' own settings. If Discord refuses a post anyway, the delivery's error names the permission that's missing.
 
 Make a **test channel** that only staff can see, with the bot let in, too. Putting the characters' channels in one category whose permissions they share saves setting each one up.
 
@@ -800,7 +814,7 @@ Instead of making each channel by hand, a storyteller can tick **Let Horatio mak
 
 The channel is named after the character (`#agnes-wren`, or `#agnes-wren-2` if that name is taken) and becomes its results channel at once, as one you chose would. Its player gets a notification with a link to it. A category holds 50 channels at most, so Horatio starts **Horatio · Characters 2** when the first is full.
 
-To make channels, the bot needs more on the server than results do, so the troupe switches this on itself. Give its role (Server Settings › Roles) these permissions too, and Horatio says beside the switch if any is missing:
+To make channels, the bot needs more on the server than results do, so the troupe switches this on itself. Adding the bot asks for these; if it lacks any, Horatio says so beside the switch, and you can [update the bot's permissions](#updating-the-bots-permissions):
 
 | Permission | Why |
 | --- | --- |
@@ -843,7 +857,7 @@ The troupe's storytellers hear of each new problem once in their notifications, 
 
 #### Clan and discipline emoji
 
-Horatio can add the clan, discipline and path symbols the Jyhad card uses to the troupe's server as custom emoji, so players can write `:brujah:` or `:aus_sup:` in their own messages. They're KRCG's symbols, which the custodian fetches (Custodian › Tools); until they have, there's nothing to add. Under Discord on **Customise › Connectors**, tick **Let Horatio add the clan and discipline symbols to the server as emoji**. The bot then needs **Create Expressions** on the server too (Server Settings › Roles, on its role); Horatio says beside the switch if it's missing.
+Horatio can add the clan, discipline and path symbols the Jyhad card uses to the troupe's server as custom emoji, so players can write `:brujah:` or `:aus_sup:` in their own messages. They're KRCG's symbols, which the custodian fetches (Custodian › Tools); until they have, there's nothing to add. Under Discord on **Customise › Connectors**, tick **Let Horatio add the clan and discipline symbols to the server as emoji**. The bot then needs **Create Expressions** on the server too, which adding it asks for; Horatio says beside the switch if it's missing, and you can [update the bot's permissions](#updating-the-bots-permissions).
 
 - **Style:** **White-bordered, as on the cards** (they read well on Discord's dark theme) or **Plain**.
 - **Names:** a clan by its name (`:brujah:`, `:banuhaqim:`), an inferior discipline by its three letters (`:aus:`), a superior one with `_sup` (`:aus_sup:`), a path with `path_` (`:path_caine:`). If the server already has an emoji of that name that Horatio didn't add, Horatio leaves it alone and skips that symbol.

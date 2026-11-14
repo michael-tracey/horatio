@@ -254,7 +254,7 @@ def test_the_discord_card_shows_what_to_copy_and_never_the_secrets(
     invite = httpx.URL(found["invite"])
     assert invite.params["client_id"] == "1234567890"
     assert invite.params["scope"] == "bot"
-    assert invite.params["permissions"] == str(discord.PERMISSIONS)
+    assert invite.params["permissions"] == str(discord.FOR_INVITE)
 
 
 def fake_discord(monkeypatch: pytest.MonkeyPatch, handle: Callable[[httpx.Request], Any]) -> None:

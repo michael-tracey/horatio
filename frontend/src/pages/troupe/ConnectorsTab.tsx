@@ -42,9 +42,11 @@ export function ConnectorsTab({ troupeId, canEdit }: { troupeId: string; canEdit
         <Notice>
           {discordOutcome === "connected"
             ? "The Discord server is connected. Now choose each character's channel and switch Discord on."
-            : discordOutcome === "cancelled"
-              ? "Adding Horatio to Discord was cancelled."
-              : `Discord could not be connected: ${discordOutcome}`}
+            : discordOutcome === "updated"
+              ? "Discord has updated the Horatio bot's permissions on the server."
+              : discordOutcome === "cancelled"
+                ? "Adding Horatio to Discord was cancelled."
+                : `Discord could not be connected: ${discordOutcome}`}
         </Notice>
       )}
       <Card title="In Horatio" actions={<Badge tone="gold">Always on</Badge>}>
