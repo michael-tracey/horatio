@@ -773,6 +773,11 @@ MESSAGES: dict[str, str] = {
     " {reply_to}.",
     "mail.test_sent": "{actor} sent a test email to {to}.",
     "mail.test_failed": "{actor}'s test email failed: {error}",
+    "mail.design_set": "{actor} changed how Horatio's emails look: {changed}.",
+    "mail.header_uploaded": "{actor} put a picture ({size}) at the top of Horatio's emails.",
+    "mail.header_removed": "{actor} took the picture off the top of Horatio's emails.",
+    "mail.design_test_sent": "{actor} sent a test email in the email design to {to}.",
+    "mail.design_test_failed": "{actor}'s test email in the email design failed: {error}",
     "mail.gave_up": "Horatio gave up emailing {count} notifications to {member}: {error}",
     "audit.exported": "{actor} exported {count} events from the audit log.",
     "dark_pack.fetched": "{actor} fetched the Dark Pack resources from {address}: {clans} clan"
@@ -804,6 +809,8 @@ MESSAGES: dict[str, str] = {
     "yorick_import.decided": "{actor} chose what to do with {name}, imported from Yorick under a"
     " name already here: {choice}.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
+    "play.effect_started": "{actor} used {power} on {character}, kept until undone.",
+    "play.effect_ended": "{actor} ended {power} on {character} ({how}).",
     "play.checkin_opened": "{actor} opened check-in for the game on {game}, with a new code.",
     "play.checkin_closed": "{actor} closed check-in for the game on {game}.",
     "play.checked_in": "{actor} checked {character} in to the game on {game}.",

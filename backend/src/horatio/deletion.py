@@ -46,6 +46,7 @@ from horatio.models import (
     Nomination,
     PlayCounter,
     PlayDerangement,
+    PlayEffect,
     PlayEvent,
     PlayGame,
     PoolModifier,
@@ -170,6 +171,14 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     # The scheduled games it checked in to, then its games on the Play View, with
     # their taps, and what the player kept there.
     db.execute(delete(GameAttendance).where(GameAttendance.character_id == cid))
+    # Its effects that last until undone go with it; one it used on another character
+    # stays on that character, with its name (horatio.play_effects).
+    db.execute(delete(PlayEffect).where(PlayEffect.character_id == cid))
+    db.execute(
+        update(PlayEffect)
+        .where(PlayEffect.source_character_id == cid)
+        .values(source_character_id=None, source_name=character.name)
+    )
     games = select(PlayGame.id).where(PlayGame.character_id == cid)
     db.execute(delete(PlayEvent).where(PlayEvent.game_id.in_(games)))
     db.execute(delete(PlayGame).where(PlayGame.character_id == cid))

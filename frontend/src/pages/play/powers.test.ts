@@ -24,6 +24,10 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   qualities: [],
   fixed: [],
   turned_on: 0,
+  kept: false,
+  normal_form_only: false,
+  counts_as_form: false,
+  paused: false,
   ...over,
 });
 
@@ -71,6 +75,7 @@ function view(powers: PowerSwitch[], marks: string[] = [], forms = 1): PlayView 
     forms,
     game: null,
     log: [],
+    effects: [],
   };
 }
 
@@ -232,5 +237,33 @@ describe("qualities picked each use (#599)", () => {
     expect(v.powers[0]!.picked).toEqual(["Ballistic", "Hardened"]);
     const undone = withPending(v, [tap, makeTap({ kind: "undo", undoes: tap.id }, "g1")]);
     expect(undone.powers[0]!.picked).toEqual(["Ballistic", "Hardened"]);
+  });
+});
+
+describe("a power kept until undone (#822)", () => {
+  const visage = power({ key: "Alien beauty", name: "Malleable Visage: alien beauty", form: false, kept: true, normal_form_only: true, health: [{ level: "Healthy", boxes: 1 }], blood_per_turn: 1 });
+  const heart = power({ key: "Heart removed", name: "Heart of Darkness: heart removed", form: false, kept: true });
+
+  it("is paused while a form is on when it changes the normal form only, and counts again after", () => {
+    const v = view([{ ...visage, on: true }, { ...heart, on: true }, fight]);
+    expect(onKeys(v)).toEqual(["Alien beauty", "Heart removed"]);
+    expect(healthMost(v)).toBe(10);
+    expect(bloodPerTurn(v)).toBe(2);
+    applySwitch(v, "fight form", 1);
+    // In the form: the visage's level and Blood go, the form's come; the heart stays out.
+    expect(onKeys(v)).toEqual(["Heart removed", "fight form"]);
+    expect(healthMost(v)).toBe(11);
+    expect(bloodPerTurn(v)).toBe(1);
+    applySwitch(v, "fight form", -1);
+    expect(onKeys(v)).toEqual(["Alien beauty", "Heart removed"]);
+  });
+
+  it("used again while on, replaces the one on and stays on", () => {
+    const v = view([{ ...heart, on: true, turned_on: 1 }]);
+    const said: string[] = [];
+    expect(applySwitch(v, "Heart removed", 1, said)).toEqual([1, 1]);
+    expect(said).toEqual(["replaces the one on before"]);
+    expect(describeSwitch(v, "Heart removed", 1, said)).toBe("Heart of Darkness: heart removed on: replaces the one on before");
+    expect(applySwitch(v, "Heart removed", -1)).toEqual([1, 0]);
   });
 });

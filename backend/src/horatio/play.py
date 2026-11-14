@@ -26,7 +26,8 @@ follow the sheet's own in each category, and when it ends they go with the damag
 marked in them, as Vol. 2 has it for levels that are lost (p. 55); damage in the
 sheet's own levels stays, since injuries carry between forms (core p. 114). Blood
 over the usual most goes when Blood of Potency ends (core p. 188). Each game
-starts with everything off.
+starts with everything off, but for a power whose effect lasts until it is undone
+(issue #822): its switch is kept through Reset (horatio.play_effects).
 
 A power whose qualities are picked each use (issue #599), such as Flesh of Marble's
 two Protective Gear qualities (Vol. 2 p. 232), has a tap for each:
@@ -87,6 +88,7 @@ from horatio import (
     equipment,
     influence_effects,
     npcs,
+    play_effects,
     play_influence,
     play_status,
     reference,
@@ -268,6 +270,9 @@ class Limits:
     )
     # How many forms it can be in at once: two with Ravenous Conglomeration.
     forms: int = 1
+    # The effects that last until undone, on the character as the game stands
+    # (issue #822, horatio.play_effects): their switches are on from its start.
+    kept: tuple[play_effects.Kept, ...] = ()
     # Each Retainer's health and Blood.
     retainers: tuple[RetainerTrack, ...] = ()
     # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
@@ -347,22 +352,41 @@ class Limits:
         """The switches on, in the order they were switched on."""
         return [s for key in keys if (s := self.switch(key)) is not None]
 
+    def counting(self, on: Sequence[str]) -> list[reference.Switch]:
+        """The switches on whose effects count now: one that changes the normal form
+        only (issue #822) is paused while a form is on (core pp. 168-169)."""
+        found = self.on(on)
+        if any(s.form for s in found):
+            return [s for s in found if not s.normal_form_only]
+        return found
+
+    def paused(self, on: Sequence[str]) -> set[str]:
+        """The switches on that a form pauses."""
+        counting = {s.key for s in self.counting(on)}
+        return {s.key for s in self.on(on) if s.key not in counting}
+
+    def forms_now(self, on: Sequence[str]) -> int:
+        """How many forms it can be in at once, less one for a kept effect that
+        counts as one with Ravenous Conglomeration (Vol. 2 p. 249)."""
+        taken = self.forms > 1 and any(s.counts_as_form and s.kept for s in self.on(on))
+        return self.forms - 1 if taken else self.forms
+
     def boxes(self, on: Sequence[str] = ()) -> list[str | None]:
         """Every wound box, in the order damage fills them: in each category the
         sheet's own (None), then those of the forms on, by their keys."""
         found: list[str | None] = []
         for level, count in self.health:
             found += [None] * count
-            for switch in self.on(on):
+            for switch in self.counting(on):
                 found += [switch.key] * sum(h.boxes for h in switch.health if h.level == level)
         return found
 
     def blood_most(self, on: Sequence[str] = ()) -> int:
         """The most Blood, half again with Blood of Potency on (rounded up)."""
-        return self.blood + sum(-(-self.blood // 2) for s in self.on(on) if s.blood_half)
+        return self.blood + sum(-(-self.blood // 2) for s in self.counting(on) if s.blood_half)
 
     def blood_per_turn_now(self, on: Sequence[str] = ()) -> int:
-        return self.blood_per_turn + sum(s.blood_per_turn for s in self.on(on))
+        return self.blood_per_turn + sum(s.blood_per_turn for s in self.counting(on))
 
     def most(self, tracker: str, on: Sequence[str] = ()) -> int | None:
         """The highest a tracker goes with the switches `on`, or None for one the
@@ -420,8 +444,9 @@ class Limits:
             "derangements": self.derangements,
             "held": {t.key: self.held.get(t.key, 0) for t in self.temporary},
             "uses": {e.key: e.uses for e in self.expendables} | self.retainer_trackers(),
-            # Forms and powers switched on: none, as a game starts.
-            "on": [],
+            # Forms and powers switched on: none, as a game starts, but for the
+            # effects kept until undone (issue #822).
+            "on": list(dict.fromkeys(k.key for k in self.kept if self.switch(k.key))),
             # The qualities picked for each power on, by its key.
             "picked": {},
             # Items equipped: as the last game left them.
@@ -864,6 +889,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         held=held,
         switches=switches,
         options=pick_options(rule_set.equipment, switches),
+        kept=play_effects.held(db, character, game),
         fixed=fixed_qualities(rule_set.equipment, switches),
         forms=reference.forms_at_once(reference.Sheet.read(rows, rule_set)),
         blood_name=blood_name,
@@ -945,7 +971,7 @@ def forms_displaced(
     ]
     others = [s for s in clash if s.origin != form.origin]
     gone = {s.key for s in clash if s.origin == form.origin}
-    gone |= {s.key for s in others[: max(0, len(others) - (limits.forms - 1))]}
+    gone |= {s.key for s in others[: max(0, len(others) - (limits.forms_now(on) - 1))]}
     return [s for s in clash if s.key in gone]
 
 
@@ -959,6 +985,10 @@ def switch(
     on: list[str] = state.setdefault("on", [])
     before = int(key in on)
     found = limits.switch(key)
+    if found is not None and found.kept:
+        # A kept switch is on while its effect is (horatio.play_effects): what is on
+        # comes from the effects, which the tap started or ended as it arrived.
+        return (0, 1) if amount > 0 else (1, 0)
     if amount > 0 and not before and found is not None:
         if found.form:
             for other in forms_displaced(limits, on, found):
@@ -1366,6 +1396,19 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
     # The earliest game whose Derangement traits (or a ghoul's vitae) these taps change.
     carried: int | None = None
     latest = datetime.now(UTC) + CLOCK_SLACK
+    own: Limits | None = None
+
+    def kept_switch(tracker: str) -> reference.Switch | None:
+        """The kept switch a tap is on (issue #822), if the sheet has it."""
+        nonlocal own
+        key = tracker.removeprefix(SWITCH)
+        if not tracker.startswith(SWITCH) or key not in reference.catalogue().kept_keys:
+            return None
+        if own is None:
+            own = limits(db, character)
+        found = own.switch(key)
+        return found if found is not None and found.kept else None
+
     for tap in taps:
         if tap.id in existing:
             continue
@@ -1410,6 +1453,8 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
                 play_status.give_back(db, character, actor, target.held_status)
             if target.equipment is not None:
                 event.equipment = equipment.undo_tap(db, actor, target.equipment)
+            if (kept := kept_switch(target.tracker)) is not None:
+                play_effects.on_undo(db, actor, target, kept.name)
         elif event.kind == "change":
             play_influence.spend(db, character, actor, event, tap.influence)
             if event.amount < 0 and event.tracker.startswith(play_status.HELD):
@@ -1421,6 +1466,8 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
                 event.equipment = equipment.by_tap(
                     db, character, actor, event.tracker, tap.given_to, event.note
                 )
+            if (kept := kept_switch(event.tracker)) is not None:
+                play_effects.on_tap(db, character, actor, event, kept.key, kept.name)
         existing[tap.id] = (event, character.id)
         touched[game.id] = game
         if carries((target or event).tracker, vitae):

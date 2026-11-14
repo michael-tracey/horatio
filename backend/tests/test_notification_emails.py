@@ -19,7 +19,7 @@ from horatio.connectors import email
 from horatio.models import EmailNotice
 from horatio.preferences import Preferences
 from tests.api_helpers import Person, Troupe, new_character, sign_up
-from tests.test_email_connector import FakeSMTP
+from tests.test_email_connector import FakeSMTP, text_of
 
 # A Tuesday morning, before 8 o'clock in New York.
 START = datetime(2026, 10, 20, 9, 0, tzinfo=UTC)
@@ -68,8 +68,8 @@ def waiting(session: Session) -> list[EmailNotice]:
 
 
 def unsubscribe_token(message: EmailMessage) -> str:
-    found = re.search(r"http://localhost:5173/unsubscribe/(\S+)", message.get_content())
-    assert found, message.get_content()
+    found = re.search(r"http://localhost:5173/unsubscribe/(\S+)", text_of(message))
+    assert found, text_of(message)
     return found.group(1)
 
 
@@ -124,7 +124,7 @@ def test_a_chosen_kind_comes_by_email_at_once(
     [message] = mail.sent
     assert message["To"] == "custodian <custodian@example.com>"
     assert message["Subject"] == "asker asks for a new troupe, Nights of Boston"
-    text = message.get_content()
+    text = text_of(message)
     assert "http://localhost:5173/custodian/troupe-management#requests" in text
     assert "You asked Horatio to email you about troupe requests." in text
     assert (
@@ -181,7 +181,7 @@ def test_approvers_hear_of_requests_but_not_the_asker(
     assert mail.sent[0]["Subject"] == (
         "Lords of the Night: Agnes asks to make Lords of the Night its home"
     )
-    assert f"http://localhost:5173/troupes/{troupe.id}/approvals" in mail.sent[0].get_content()
+    assert f"http://localhost:5173/troupes/{troupe.id}/approvals" in text_of(mail.sent[0])
 
 
 def test_a_daily_digest_gathers_them_into_one(
@@ -202,7 +202,7 @@ def test_a_daily_digest_gathers_them_into_one(
     assert send(session, datetime(2026, 10, 20, 12, 0, tzinfo=UTC)) == 1
     [digest] = mail.sent
     assert digest["Subject"] == "Horatio: 2 notifications today"
-    text = digest.get_content()
+    text = text_of(digest)
     assert "- asker asks for a new troupe, Nights of Boston" in text
     assert "- asker asks for a new troupe, Salem After Dark" in text
     assert "Stop emails about troupe requests: http://localhost:5173/unsubscribe/" in text

@@ -15,7 +15,7 @@ import { equipmentModifiers } from "./equipped";
 import { ModifiersPanel } from "./Modifiers";
 import { attackGlance, bloodNote, defenceGlance, fightFirst, grouped, showing, topAttacks, total, trackersOf, type Modifier } from "./pools";
 import { PowersList } from "./Powers";
-import { formsOn, healthMost } from "./powers";
+import { formsOn, healthMost, onKeys } from "./powers";
 import { PoolRow } from "./ReferenceTabs";
 import { byInitiative, findPins, loadOpen, loadSorted, saveOpen, saveSorted, toggleOpen, unpin, type Rank, type Section } from "./scene";
 import { RenameScene, SCENE_REFRESH, useSceneChanges } from "./ScenesPage";
@@ -517,7 +517,7 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
 function rankOf(reference: PlayReference, shown: Shown, own: Modifier[]): Rank | undefined {
   const initiative = reference.pools.find((p) => p.key === "initiative");
   if (!initiative) return undefined;
-  const on = shown.powers.filter((p) => p.on).map((p) => p.key);
+  const on = onKeys(shown);
   const counting = [...own, ...equipmentModifiers(shown.equipment, shown.equipped, shown.powers)];
   const rating = (name: string) => reference.traits.find((t) => t.category === "attributes" && t.name === name)?.rating ?? 0;
   return { initiative: total(initiative, shown.willpower.value, counting, on), mental: rating("Mental"), physical: rating("Physical"), social: rating("Social") };
@@ -577,7 +577,7 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
   const change = (tracker: string, amount: number, damage?: Damage) => tap({ kind: "change", tracker, amount, damage: damage ?? null });
   const last = latestUndoable(shown.log);
   const name = shown.character_name;
-  const on = shown.powers.filter((p) => p.on).map((p) => p.key);
+  const on = onKeys(shown);
   const willpower = shown.willpower.value;
   // The player's own modifiers, then what the items equipped make (issue #306) and the qualities picked for the powers on (#599).
   const counting = [...modifiers.modifiers, ...equipmentModifiers(shown.equipment, shown.equipped, shown.powers)];

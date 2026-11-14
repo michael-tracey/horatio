@@ -563,6 +563,56 @@ test("uses that heal: Mens Sana heals 1 normal for 1 Blood, and Second Wind turn
   await expect.poll(async () => (await play()).blood.value).toBe(blood.value - 1);
 });
 
+test("a power kept until undone: Heart of Darkness's heart stays out through Reset until it is turned off, and Use again asks first (#822)", async ({ browser }) => {
+  const { page: p } = await person(browser, "heart-keeper");
+  // A Follower of Set with Serpentis 5: Heart of Darkness (core p. 161).
+  const id = await builtVampire(
+    p,
+    "Nebet",
+    "Followers of Set",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Obfuscate", 2], ["Presence", 1], ["Serpentis", 1]] },
+    [["disciplines", "Serpentis", 5]],
+  );
+  const headers = { "X-Horatio": "1" };
+  const reset = async () => {
+    const response = await p.request.post(`/api/characters/${id}/play/reset`, { headers, data: {} });
+    expect(response.status(), await response.text()).toBe(200);
+    await p.reload();
+  };
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await p.getByRole("button", { name: /^Use Heart of Darkness: heart removed, 1 Blood/ }).click();
+  await expect(p.getByText(/Heart of Darkness: heart removed switched on/)).toBeVisible();
+  const banner = p.getByRole("region", { name: "Switched on now" });
+  await expect(banner).toContainText("Kept: Heart of Darkness: heart removed");
+
+  // Reset ends the game, but the heart stays out.
+  await reset();
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(banner).toContainText("Kept: Heart of Darkness: heart removed");
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await switches.click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  await expect(drawer.getByLabel("Heart of Darkness: heart removed on")).toBeChecked();
+  await expect(drawer).toContainText("Kept through Reset until you turn it off.");
+  await expect(drawer).toContainText("Frenzy resisted as if with 1 Beast trait fewer");
+  await drawer.getByRole("button", { name: "Close" }).first().click();
+
+  // Using it again replaces it, so it asks first.
+  await p.getByRole("button", { name: /^Use Heart of Darkness: heart removed, 1 Blood/ }).click();
+  const again = p.getByRole("dialog", { name: "Use it again?" });
+  await expect(again).toContainText("Using it again replaces it: a character carries one at a time.");
+  await again.getByRole("button", { name: "Cancel" }).click();
+  await expect(again).toBeHidden();
+
+  // Turned off, it stays off through the next Reset.
+  await banner.getByRole("button", { name: "Switch Heart of Darkness: heart removed off" }).click();
+  await expect(banner).toHaveCount(0);
+  await reset();
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(banner).toHaveCount(0);
+});
+
 test("defences that aren't a flat bonus: Rampart of Faith follows Morality and Beast traits, Rockheart resists with Physical + Survival (#602)", async ({ browser }) => {
   const { page: p } = await person(browser, "rampart-keeper");
   const pool = (name: string) => p.getByRole("listitem").filter({ hasText: new RegExp(`^${name}`) });

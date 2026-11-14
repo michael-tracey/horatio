@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Cost, PlayView, PowerUse } from "../../api/types";
+import { Dialog } from "../../components/Dialog";
 import { Button } from "../../components/ui";
 import { switchKey } from "./powers";
 import type { makeTap } from "./tracker";
@@ -27,7 +28,8 @@ export type UseTaps = (whats: TapWhat[]) => unknown;
  */
 export function usingTaps(view: Pick<PlayView, "powers">, cost: Cost, name: string, switchKeyOn?: string): TapWhat[] {
   const power = switchKeyOn ? view.powers.find((p) => p.key === switchKeyOn) : undefined;
-  const switching = power && !power.on;
+  // A kept power used again replaces the one on (#822), so its switch is tapped again.
+  const switching = power && (!power.on || power.kept);
   return [
     { kind: "change", tracker: cost.tracker, amount: -cost.amount, note: switching ? "" : name },
     ...(switching ? [{ kind: "change" as const, tracker: switchKey(power.key), amount: 1 }] : []),
@@ -51,6 +53,8 @@ function shortName(name: string, power: string): string {
  * (Shape of the Beast's forms) has a button for each.
  */
 export function UseButtons({ costed, view, use }: { costed: Costed; view: Pick<PlayView, "powers" | "blood" | "willpower" | "blood_name">; use: UseTaps }) {
+  // A kept power on (#822): using it again replaces it, so it asks first.
+  const [again, setAgain] = useState<string | null>(null);
   const cost = costed.cost;
   if (!cost) return null;
   const what = cost.tracker === "blood" ? view.blood_name : "Willpower";
@@ -70,12 +74,34 @@ export function UseButtons({ costed, view, use }: { costed: Costed; view: Pick<P
             disabled={left < cost.amount}
             title={left < cost.amount ? `Not enough ${what}` : undefined}
             aria-label={`Use ${name}, ${cost.amount} ${what}`}
-            onClick={() => use(usingTaps(view, cost, costed.name, key))}
+            onClick={() => {
+              const power = key ? view.powers.find((p) => p.key === key) : undefined;
+              if (power?.kept && power.on) setAgain(key ?? null);
+              else use(usingTaps(view, cost, costed.name, key));
+            }}
           >
             {shown} · {cost.amount} {what}
           </Button>
         );
       })}
+      <Dialog title="Use it again?" open={again !== null} onClose={() => setAgain(null)}>
+        <p className="text-sm">{view.powers.find((p) => p.key === again)?.name} is on, kept until you turn it off. Using it again replaces it: a character carries one at a time.</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={() => setAgain(null)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => {
+              use(usingTaps(view, cost, costed.name, again ?? undefined));
+              setAgain(null);
+            }}
+          >
+            Use again · {cost.amount} {what}
+          </Button>
+        </div>
+      </Dialog>
     </span>
   );
 }

@@ -11,6 +11,7 @@ import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
 import { placeRetainers } from "../character/retainers";
 import { equipmentModifiers } from "./equipped";
+import { onKeys } from "./powers";
 import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, qualityText, showing, situations, switchedDamage, total, variantNow, variantsOn, variantText, withAttribute, type Modifier, type Trackers, type VariantNow } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
@@ -422,7 +423,7 @@ export function PoolsTab({
 }) {
   const modifiers = useModifiers(characterId);
   const named = useClanName();
-  const on = powers.filter((p) => p.on).map((p) => p.key);
+  const on = onKeys({ powers });
   // The player's own, then what the items equipped make (issue #306) and the qualities picked for the powers on (#599).
   const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped, powers)];
   return (

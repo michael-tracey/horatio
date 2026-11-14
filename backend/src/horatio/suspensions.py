@@ -26,10 +26,11 @@ from fastapi import HTTPException, status
 from sqlalchemy import ColumnElement, and_, delete, exists, func, or_, select
 from sqlalchemy.orm import Session
 
-from horatio import mail_sender, preferences
+from horatio import email_design, mail_sender, preferences
 from horatio.audit import record
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
+from horatio.email_design import Body, compose
 from horatio.models import Character, Suspension, User
 from horatio.models import Session as SignInSession
 
@@ -117,7 +118,7 @@ def notify(db: Session, user: User, by: User | None, subject: str, text: str) ->
     mail = email.new_message(
         formataddr((user.display_name, user.email)), subject, mail_sender.sender(db)
     )
-    mail.set_content(f"Hello {user.display_name},\n\n{text}\n\n-- \nSent by Horatio, {site()}\n")
+    compose(mail, Body(text=f"Hello {user.display_name},\n\n{text}"), email_design.current(db))
     try:
         email.deliver(mail)
     except SendError as error:
