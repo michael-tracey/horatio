@@ -83,6 +83,12 @@ def switched(p: dict[str, Any]) -> list[tuple[str, str, int]]:
     return [(s["switch"], s["label"], s["value"]) for s in p["switched"]]
 
 
+def horrid(p: dict[str, Any]) -> list[tuple[str, str, int]]:
+    """What Horrid Form adds to a pool, without Bonecraft's alterations (#813), whose
+    Physical given up also shows as a switched part."""
+    return [s for s in switched(p) if not s[0].startswith("Bonecraft/")]
+
+
 @pytest.fixture
 def swift(troupe: Troupe) -> str:
     """Physical 6, Mental 4, Dexterity focus, Celerity 4 with a Celerity elder
@@ -1137,7 +1143,7 @@ def test_focuses_azhi_dahaka_gives_count_and_say_where_they_are_from(troupe: Tro
     them as the character's own, and says what gives them."""
     character_id = luminary_tzimisce(troupe)
     before = reference(troupe, character_id)
-    assert switched(pool(before, "attack:Brawl")) == [("Horrid Form", "Horrid Form", 3)]
+    assert horrid(pool(before, "attack:Brawl")) == [("Horrid Form", "Horrid Form", 3)]
 
     taken = troupe.player.client.put(
         f"/characters/{character_id}/traits",
@@ -1147,7 +1153,7 @@ def test_focuses_azhi_dahaka_gives_count_and_say_where_they_are_from(troupe: Tro
 
     found = reference(troupe, character_id)
     # The Charisma focus: Horrid Form's +5 to Brawl in place of +3 (core p. 169).
-    assert switched(pool(found, "attack:Brawl")) == [("Horrid Form", "Horrid Form", 5)]
+    assert horrid(pool(found, "attack:Brawl")) == [("Horrid Form", "Horrid Form", 5)]
     vicissitude = next(d for d in found["disciplines"] if d["name"] == "Vicissitude")
     visage = vicissitude["powers"][0]
     assert (visage["name"], visage["focus"]) == (
@@ -1200,10 +1206,12 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
             for o in picks.get("options", []):
                 assert o["name"] and "/" not in o["name"], e["name"]
                 assert o.get("page", a["page"]) > 0, (e["name"], o["name"])
-                # An amount chosen each use runs from at least 1 (issue #824).
+                # An amount chosen each use runs from at least 1 (issue #824), or from
+                # none for one whose amount is optional (#813: Deformed's "up to 3"
+                # Social, Vol. 2 Issue 1 p. 61).
                 if "amount" in o:
                     least = o["amount"].get("least", 1)
-                    assert 1 <= least <= o["amount"]["most"], (e["name"], o["name"])
+                    assert 0 <= least <= o["amount"]["most"], (e["name"], o["name"])
                 for q in o.get("qualities", []):
                     assert (q["kind"], q["name"]) in rule_set.equipment.qualities, (e["name"], q)
     for category, name in book.others:

@@ -47,12 +47,21 @@ export function withPicks(power: Pick<PowerSwitch, "name" | "picked">): string {
  * Bonecraft, core pp. 168-169): while a form is on, what it does is paused, and it
  * comes back when the form ends. True for one on that a form pauses now.
  */
-export function isPaused(view: Pick<PlayView, "powers">, power: Pick<PowerSwitch, "on" | "normal_form_only">): boolean {
-  return Boolean(power.on && power.normal_form_only && view.powers.some((p) => p.on && p.form));
+export function isPaused(view: Pick<PlayView, "powers"> & Partial<Pick<PlayView, "forms">>, power: Pick<PowerSwitch, "on" | "normal_form_only"> & Partial<Pick<PowerSwitch, "key">>): boolean {
+  return Boolean(power.on && power.normal_form_only && view.powers.some((p) => p.on && p.form) && !keptWithForm(view, power.key));
+}
+
+/**
+ * With Ravenous Conglomeration (two forms at once), a kept power that counts as a
+ * form (#813: Bonecraft, Vol. 2 p. 249) is kept with a form rather than paused by it.
+ */
+function keptWithForm(view: Pick<PlayView, "powers"> & Partial<Pick<PlayView, "forms">>, key: string | undefined): boolean {
+  if (!key || (view.forms ?? 1) < 2) return false;
+  return view.powers.some((p) => p.key === key && p.on && p.kept && p.counts_as_form);
 }
 
 /** The forms and powers on whose effects count now: on, and not paused by a form. */
-export function counted(view: Pick<PlayView, "powers">): PowerSwitch[] {
+export function counted(view: Pick<PlayView, "powers"> & Partial<Pick<PlayView, "forms">>): PowerSwitch[] {
   return view.powers.filter((p) => p.on && !isPaused(view, p));
 }
 
@@ -63,7 +72,7 @@ export function counted(view: Pick<PlayView, "powers">): PowerSwitch[] {
 export type PickedOption = { key: string; name: string; power: PowerSwitch; health: PowerSwitch["health"]; blood_half: boolean; blood_per_turn: number; blood_extra?: number };
 
 /** A power's own options picked, those of every power on, after the powers themselves, whose effects count now. */
-export function countedOptions(view: Pick<PlayView, "powers">): PickedOption[] {
+export function countedOptions(view: Pick<PlayView, "powers"> & Partial<Pick<PlayView, "forms">>): PickedOption[] {
   const formOn = view.powers.some((p) => p.on && p.form);
   const found: PickedOption[] = [];
   for (const power of view.powers) {
@@ -72,7 +81,7 @@ export function countedOptions(view: Pick<PlayView, "powers">): PickedOption[] {
       const option = power.picks?.options?.find((o) => o.name === name);
       if (!option) continue;
       const pausedByForm = option.normal_form_only ?? power.normal_form_only;
-      if (formOn && pausedByForm) continue;
+      if (formOn && pausedByForm && !keptWithForm(view, power.key)) continue;
       found.push({ key: option.key, name, power, health: option.health, blood_half: option.blood_half, blood_per_turn: option.blood_per_turn, blood_extra: option.blood_extra ?? 0 });
     }
   }
@@ -80,7 +89,7 @@ export function countedOptions(view: Pick<PlayView, "powers">): PickedOption[] {
 }
 
 /** The keys of the forms and powers on now whose effects count, and of the options picked for them (#821). */
-export function onKeys(view: Pick<PlayView, "powers">): string[] {
+export function onKeys(view: Pick<PlayView, "powers"> & Partial<Pick<PlayView, "forms">>): string[] {
   return [...counted(view).map((p) => p.key), ...countedOptions(view).map((o) => o.key)];
 }
 
@@ -166,7 +175,10 @@ export function formsDisplaced(view: Pick<PlayView, "powers" | "forms">, power: 
     .filter((p) => p.on && p.form && p.key !== power.key && !power.combines.includes(p.key) && !p.combines.includes(power.key))
     .sort((a, b) => (a.turned_on ?? 0) - (b.turned_on ?? 0));
   const others = clash.filter((p) => p.origin !== power.origin);
-  const gone = new Set([...clash.filter((p) => p.origin === power.origin), ...others.slice(0, Math.max(0, others.length - ((view.forms ?? 1) - 1)))]);
+  // A kept power counted as a form with Ravenous Conglomeration takes one (#813, Vol. 2 p. 249).
+  const forms = view.forms ?? 1;
+  const allowed = forms > 1 && view.powers.some((p) => p.on && p.kept && p.counts_as_form) ? forms - 1 : forms;
+  const gone = new Set([...clash.filter((p) => p.origin === power.origin), ...others.slice(0, Math.max(0, others.length - (allowed - 1)))]);
   return clash.filter((p) => gone.has(p));
 }
 

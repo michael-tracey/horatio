@@ -367,7 +367,16 @@ class Limits:
             s for s in found if s.option_of is not None
         ]
         if any(s.form for s in found):
-            return [s for s in found if not s.normal_form_only]
+            # With Ravenous Conglomeration, kept Bonecraft alterations are kept with a
+            # form, as one of the forms it allows (Vol. 2 p. 249: `forms_now`).
+            with_form = (
+                {s.key for s in found if s.counts_as_form and s.kept} if self.forms > 1 else set()
+            )
+            return [
+                s
+                for s in found
+                if not s.normal_form_only or s.key in with_form or s.option_of in with_form
+            ]
         return found
 
     def paused(self, on: Sequence[str]) -> set[str]:
@@ -686,13 +695,23 @@ def held_items(db: Session, character: Character) -> tuple[HeldItem, ...]:
     )
 
 
+def sheet_of(db: Session, character: Character) -> reference.Sheet:
+    """The character's sheet as the powers file reads it (horatio.reference)."""
+    rule_set = sheets.rules_for(db, character).rule_set
+    return reference.Sheet.read(sheets.sheet_rows(db, character), rule_set)
+
+
 def pick_options(
-    rules: EquipmentRules, switches: Iterable[reference.Switch]
+    rules: EquipmentRules,
+    switches: Iterable[reference.Switch],
+    foreign: frozenset[str] = frozenset(),
 ) -> dict[str, tuple[PickOption, ...]]:
     """What can be picked for each switch with `picks`: every quality of its kinds in
     the character's rules, in their order (issue #599), or only those it names; or
     the power's own options (issue #821), each saying what it does. A quality picked
-    to be guarded against (Perfect Stance) changes no pool."""
+    to be guarded against (Perfect Stance) changes no pool. On the character's own
+    switches, an option for others only (issue #813: Bonecraft's Crippled) can't be
+    picked; another's effect on it (`foreign`) keeps what was picked for it."""
     switches = list(switches)
     changes = {s.key: s.changes for s in switches}
     found: dict[str, tuple[PickOption, ...]] = {}
@@ -717,6 +736,8 @@ def pick_options(
                     )
                 )
         for o in picks.options:
+            if o.target == "other" and s.key not in foreign:
+                continue
             words = [*changes.get(o.key, []), *([o.note] if o.note else [])]
             options.append(
                 PickOption(
@@ -931,15 +952,29 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     traits, held = carried(db, character, game, least)
     switches = tuple(reference.switches(rows, rule_set))
     kept = play_effects.held(db, character, game)
+    sheet = reference.Sheet.read(rows, rule_set)
     # An effect another character's power left on this one counts as its switch does,
-    # though this sheet hasn't the power (issue #823).
+    # though this sheet hasn't the power (issue #823), less what its own traits rule
+    # out (issue #813: Scar Tissue takes no beneficial Bonecraft alteration).
     own = {s.key for s in switches}
     foreign = tuple(
         f
         for key in dict.fromkeys(k.key for k in kept if k.key not in own)
-        for f in reference.switch_for(key)
+        for f in reference.switch_for(key, sheet)
     )
     switches += foreign
+    # Another's effect of a power this sheet has too (issue #813: Bonecraft used on a
+    # Tzimisce) counts with every option it was picked with, whichever trait of the
+    # user's added it, though this sheet couldn't pick it.
+    known = {s.key for s in switches}
+    switches += tuple(
+        f
+        for key in dict.fromkeys(
+            k.key for k in kept if k.key in own and k.source_character_id != character.id
+        )
+        for f in reference.switch_for(key, sheet)[1:]
+        if f.key not in known
+    )
     found = Limits(
         generation=generation,
         blood=blood,
@@ -961,11 +996,13 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         temporary=temporary_derangements(db, character),
         held=held,
         switches=switches,
-        options=pick_options(rule_set.equipment, switches),
+        options=pick_options(
+            rule_set.equipment, switches, frozenset(f.key for f in foreign if not f.option_of)
+        ),
         kept=kept,
         foreign=frozenset(f.key for f in foreign),
         fixed=fixed_qualities(rule_set.equipment, switches),
-        forms=reference.forms_at_once(reference.Sheet.read(rows, rule_set)),
+        forms=reference.forms_at_once(sheet),
         blood_name=blood_name,
         trackers=trackers_for(panels),
         panels=panels,
