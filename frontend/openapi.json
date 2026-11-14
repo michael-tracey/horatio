@@ -16395,6 +16395,16 @@
             ],
             "title": "Guild Name"
           },
+          "managed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ManagedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "suggestions": {
             "additionalProperties": {
               "type": "string"
@@ -29716,6 +29726,192 @@
         "title": "MailTestOut",
         "type": "object"
       },
+      "ManagedChange": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "staff_roles": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Staff Roles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "ManagedChange",
+        "type": "object"
+      },
+      "ManagedCharacter": {
+        "properties": {
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "discord": {
+            "enum": [
+              "verified",
+              "confirmed",
+              "typed",
+              "none"
+            ],
+            "title": "Discord",
+            "type": "string"
+          },
+          "made": {
+            "title": "Made",
+            "type": "boolean"
+          },
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/horatio__api__discord__MatchOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          }
+        },
+        "required": [
+          "status",
+          "note",
+          "made",
+          "discord",
+          "username",
+          "match"
+        ],
+        "title": "ManagedCharacter",
+        "type": "object"
+      },
+      "ManagedOut": {
+        "description": "Character channels Horatio makes on the server (#855).",
+        "properties": {
+          "can_invite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Invite"
+          },
+          "characters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ManagedCharacter"
+            },
+            "title": "Characters",
+            "type": "object"
+          },
+          "lacks": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lacks"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleOut"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "staff_roles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Staff Roles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "on",
+          "staff_roles",
+          "roles",
+          "lacks",
+          "can_invite",
+          "queued",
+          "characters"
+        ],
+        "title": "ManagedOut",
+        "type": "object"
+      },
+      "MatchAnswer": {
+        "properties": {
+          "its_them": {
+            "title": "Its Them",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "its_them"
+        ],
+        "title": "MatchAnswer",
+        "type": "object"
+      },
       "MatchIn": {
         "properties": {
           "location_id": {
@@ -29742,34 +29938,6 @@
           }
         },
         "title": "MatchIn",
-        "type": "object"
-      },
-      "MatchOut": {
-        "properties": {
-          "character_id": {
-            "title": "Character Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "overwritable": {
-            "title": "Overwritable",
-            "type": "boolean"
-          },
-          "whose": {
-            "title": "Whose",
-            "type": "string"
-          }
-        },
-        "required": [
-          "character_id",
-          "name",
-          "whose",
-          "overwritable"
-        ],
-        "title": "MatchOut",
         "type": "object"
       },
       "Matched": {
@@ -33025,6 +33193,36 @@
           "troupe_id"
         ],
         "title": "OtherStatusOut",
+        "type": "object"
+      },
+      "OutcomeOut": {
+        "properties": {
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "note",
+          "channel"
+        ],
+        "title": "OutcomeOut",
         "type": "object"
       },
       "OverOut": {
@@ -40493,6 +40691,19 @@
         "title": "QuestionOut",
         "type": "object"
       },
+      "Queued": {
+        "properties": {
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "queued"
+        ],
+        "title": "Queued",
+        "type": "object"
+      },
       "QueuedApproval": {
         "properties": {
           "age": {
@@ -41523,7 +41734,7 @@
           },
           "matches": {
             "items": {
-              "$ref": "#/components/schemas/MatchOut"
+              "$ref": "#/components/schemas/horatio__api__yorick_imports__MatchOut"
             },
             "title": "Matches",
             "type": "array"
@@ -43500,6 +43711,24 @@
         ],
         "title": "Role",
         "type": "string"
+      },
+      "RoleOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RoleOut",
+        "type": "object"
       },
       "Roll": {
         "properties": {
@@ -57498,6 +57727,37 @@
         "title": "ChangeOut",
         "type": "object"
       },
+      "horatio__api__discord__MatchOut": {
+        "description": "The member a player's typed Discord username found, for a storyteller to\nconfirm is them.",
+        "properties": {
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "display_name",
+          "avatar"
+        ],
+        "title": "MatchOut",
+        "type": "object"
+      },
       "horatio__api__downtime_effects__AppliedOut": {
         "properties": {
           "character_name": {
@@ -57891,6 +58151,34 @@
           "reason"
         ],
         "title": "GiveIn",
+        "type": "object"
+      },
+      "horatio__api__yorick_imports__MatchOut": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "overwritable": {
+            "title": "Overwritable",
+            "type": "boolean"
+          },
+          "whose": {
+            "title": "Whose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "whose",
+          "overwritable"
+        ],
+        "title": "MatchOut",
         "type": "object"
       }
     }
@@ -86093,6 +86381,168 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/discord/channels": {
+      "post": {
+        "description": "Queue every character without a channel; the worker makes them, a few at a\ntime, as Discord allows.",
+        "operationId": "make_every_channel_api_troupes__troupe_id__discord_channels_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Queued"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Every Channel",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/discord/characters/{character_id}/channel": {
+      "post": {
+        "description": "Make the character's private channel now, or say what stands in the way.",
+        "operationId": "make_channel_api_troupes__troupe_id__discord_characters__character_id__channel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutcomeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Channel",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/discord/characters/{character_id}/match": {
+      "post": {
+        "description": "Say whether the member a player's typed Discord username found is them;\nyes makes the channel.",
+        "operationId": "answer_match_api_troupes__troupe_id__discord_characters__character_id__match_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchAnswer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutcomeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Match",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/discord/invite": {
       "post": {
         "description": "Discord's page for adding the Horatio bot to the troupe's server. Discord\nsends the storyteller back to `/api/discord/callback`.",
@@ -86132,6 +86582,53 @@
           }
         },
         "summary": "Discord Invite",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/discord/managed": {
+      "put": {
+        "description": "Switch Horatio making the troupe's character channels on or off, and choose\nthe server's roles let into each (#855).",
+        "operationId": "change_managed_api_troupes__troupe_id__discord_managed_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagedChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Managed",
         "tags": [
           "connectors"
         ]

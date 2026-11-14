@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Badge, Button, ErrorText, Field, Loading, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
 import { BotLacks, FOR_RESULTS, lacking } from "./botPermissions";
+import { ManagedCharacterRow, ManagedChannels } from "./ManagedChannels";
 
 type Settings = Record<string, unknown>;
 
@@ -28,15 +30,27 @@ export function DiscordSettings({
   const setup = useQuery({
     queryKey: ["discord", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/discord", { params: { path: { troupe_id: troupeId } } })),
+    // While Horatio makes queued channels (#855), see them arrive.
+    refetchInterval: (q) => (q.state.data?.managed?.queued ? 5000 : false),
   });
   const invite = useAction(async () => {
     const { url } = await unwrap(api.POST("/api/troupes/{troupe_id}/discord/invite", { params: { path: { troupe_id: troupeId } } }));
     window.location.assign(url);
   });
   const disconnect = useAction(() => unwrap(api.DELETE("/api/troupes/{troupe_id}/discord", { params: { path: { troupe_id: troupeId } } })));
+  // A channel Horatio made is saved already; it joins the choices here once, so a
+  // later Save keeps it (and choosing "No channel" afterwards sticks).
+  const joined = useRef(new Set<string>());
+  const made = Object.entries(setup.data?.managed?.characters ?? {}).filter(([, c]) => c.made && c.channel);
+  useEffect(() => {
+    const current = (settings.channels ?? {}) as Record<string, string>;
+    const fresh = made.filter(([id, c]) => !joined.current.has(`${id}:${c.channel}`) && current[id] !== c.channel);
+    made.forEach(([id, c]) => joined.current.add(`${id}:${c.channel}`));
+    if (fresh.length) onChange({ ...settings, channels: { ...current, ...Object.fromEntries(fresh.map(([id, c]) => [id, c.channel!])) } });
+  });
   if (setup.isPending) return <Loading />;
   if (setup.error) return <ErrorText error={setup.error} />;
-  const { guild_name, guild_id, channels, characters, suggestions } = setup.data;
+  const { guild_name, guild_id, channels, characters, suggestions, managed } = setup.data;
   const chosen = (settings.channels ?? {}) as Record<string, string>;
   const testChannel = (settings.test_channel as string | null) ?? "";
   const missing = characters.filter((c) => !chosen[c.id]);
@@ -101,6 +115,7 @@ export function DiscordSettings({
         </Select>
       </Field>
       <BotLacks channel={channels.find((c) => c.id === testChannel)} needs={FOR_RESULTS} what="test results" />
+      {managed && <ManagedChannels troupeId={troupeId} managed={managed} canEdit={canEdit} without={missing.length} />}
       <div>
         <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">Each character's channel</h3>
         {missing.length > 0 && (
@@ -143,6 +158,17 @@ export function DiscordSettings({
                   </option>
                 ))}
               </Select>
+              {managed?.on && (
+                <ManagedCharacterRow
+                  troupeId={troupeId}
+                  characterId={c.id}
+                  name={c.name}
+                  state={managed.characters[c.id]}
+                  hasChannel={!!chosen[c.id]}
+                  canEdit={canEdit}
+                  onMade={(channel) => choose(c.id, channel)}
+                />
+              )}
             </li>
           ))}
         </ul>

@@ -450,6 +450,20 @@ MESSAGES: dict[str, str] = {
     "connector.changed": "{actor} turned the {connector} connector {state}.",
     "connector.discord_connected": "{actor} connected the Discord server {server}.",
     "connector.discord_disconnected": "{actor} disconnected the Discord server {server}.",
+    "connector.discord_managed": "{actor} turned Horatio making the troupe's Discord character"
+    " channels {state}.",
+    "connector.discord_staff_roles": "{actor} chose the Discord roles let into every character"
+    " channel Horatio makes: {roles}.",
+    "connector.discord_channel_made": "{actor} had Horatio make {character}'s Discord channel"
+    " #{channel}.",
+    "connector.discord_channels_queued": "{actor} asked Horatio to make Discord channels for"
+    " {count} characters.",
+    "connector.discord_invited": "{actor} had Horatio invite {character}'s player to the troupe's"
+    " Discord server.",
+    "connector.discord_match_confirmed": "{actor} confirmed that the Discord user @{username} is"
+    " {character}'s player.",
+    "connector.discord_match_rejected": "{actor} said the Discord user @{username} isn't"
+    " {character}'s player.",
     "delivery.retried": "{actor} retried {character}'s {channel} delivery.",
     "delivery.marked_sent": "{actor} marked {character}'s {channel} delivery as sent by hand.",
     "post.published": "{actor} published {what} “{title}”.",

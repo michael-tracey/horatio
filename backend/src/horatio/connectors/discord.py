@@ -21,7 +21,7 @@ import unicodedata
 import uuid
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlencode
 
@@ -39,18 +39,32 @@ EMBED_LIMIT = 4000
 # What the bot asks for when a server adds it (#839): to see channels and send
 # messages there, and, for the troupe's news and announcements, which are embeds
 # with their pictures attached, Embed Links and Attach Files. No privileged intents.
+CREATE_INSTANT_INVITE = 1 << 0
 ADMINISTRATOR = 1 << 3
+MANAGE_CHANNELS = 1 << 4
 VIEW_CHANNEL = 1 << 10
 SEND_MESSAGES = 1 << 11
 EMBED_LINKS = 1 << 14
 ATTACH_FILES = 1 << 15
+READ_MESSAGE_HISTORY = 1 << 16
+MANAGE_ROLES = 1 << 28
 PERMISSIONS = VIEW_CHANNEL | SEND_MESSAGES | EMBED_LINKS | ATTACH_FILES
-# Each of them by the name Discord shows in a channel's settings, in that order.
+# What a troupe that lets Horatio make its characters' channels grants the bot as
+# well (#855, horatio.discord_channels): Manage Channels to make them, Manage Roles
+# to set who sees each, and Read Message History, since the bot may only let a player
+# read a channel's history if it may itself. Create Invite is optional.
+FOR_MANAGED = PERMISSIONS | MANAGE_CHANNELS | MANAGE_ROLES | READ_MESSAGE_HISTORY
+# Each of them by the name Discord shows in a server's or channel's settings, in
+# that order.
 PERMISSION_NAMES = {
     VIEW_CHANNEL: "View Channels",
     SEND_MESSAGES: "Send Messages",
     EMBED_LINKS: "Embed Links",
     ATTACH_FILES: "Attach Files",
+    READ_MESSAGE_HISTORY: "Read Message History",
+    MANAGE_CHANNELS: "Manage Channels",
+    MANAGE_ROLES: "Manage Roles",
+    CREATE_INSTANT_INVITE: "Create Invite",
 }
 # Downtime results are plain text; posts are embeds with pictures.
 FOR_RESULTS = VIEW_CHANNEL | SEND_MESSAGES
@@ -308,18 +322,27 @@ class Channel:
     missing: tuple[str, ...] | None = None
 
 
-def text_channels(guild_id: str, permissions: bool = False) -> list[Channel]:
+def guild_channels(guild_id: str) -> list[dict[str, Any]]:
+    """Every channel in the server, as Discord gives them. Raises SendError."""
+    return list(request("GET", f"/guilds/{guild_id}/channels").json())
+
+
+def text_channels(
+    guild_id: str, permissions: bool = False, access: "BotAccess | None" = None
+) -> list[Channel]:
     """The server's text channels, in Discord's order, with whether each is private,
     and with `permissions`, which of the permissions Horatio needs the bot lacks in
-    each. A failure to check them leaves them unchecked rather than failing."""
-    found = request("GET", f"/guilds/{guild_id}/channels").json()
+    each (from `access`, when the caller has it already). A failure to check them
+    leaves them unchecked rather than failing."""
+    found = guild_channels(guild_id)
     categories = {c["id"]: c["name"] for c in found if c.get("type") == 4}
-    access: BotAccess | None = None
-    if permissions:
+    if permissions and access is None:
         try:
             access = bot_access(guild_id)
         except SendError:
             access = None
+    elif not permissions:
+        access = None
 
     def private(channel: Mapping[str, Any]) -> bool:
         return any(
@@ -354,15 +377,31 @@ def overwrite(permissions: int, rule: Mapping[str, Any] | None) -> int:
 
 
 @dataclass(frozen=True)
+class Role:
+    """One of a server's roles, as staff pick them (#855): never @everyone, nor a
+    role a bot or integration manages."""
+
+    id: str
+    name: str
+
+
+@dataclass(frozen=True)
 class BotAccess:
     """What decides the bot's permissions in a server's channels: the server, its
-    owner and roles (role id to permissions), and the bot's id and roles."""
+    owner and roles (role id to permissions), and the bot's id and roles. With them,
+    the server's roles by name and its system channel, for horatio.discord_channels."""
 
     guild_id: str
     owner_id: str
     roles: Mapping[str, int]
     bot_id: str
     bot_roles: Sequence[str]
+    named_roles: Sequence[Role] = field(default_factory=tuple)
+    system_channel: str | None = None
+
+    def server_permissions(self) -> int:
+        """The bot's permissions across the server, before any channel's overwrites."""
+        return self.permissions([])
 
     def permissions(self, overwrites: Sequence[Mapping[str, Any]]) -> int:
         """The bot's permissions in a channel with these overwrites, as Discord works
@@ -400,12 +439,21 @@ def bot_access(guild_id: str) -> BotAccess:
         bot_id = str(request("GET", "/users/@me").json()["id"])
         guild = request("GET", f"/guilds/{guild_id}").json()
         member = request("GET", f"/guilds/{guild_id}/members/{bot_id}").json()
+        roles = guild.get("roles", [])
         return BotAccess(
             guild_id=guild_id,
             owner_id=str(guild.get("owner_id", "")),
-            roles={str(r["id"]): int(r.get("permissions", 0)) for r in guild.get("roles", [])},
+            roles={str(r["id"]): int(r.get("permissions", 0)) for r in roles},
             bot_id=bot_id,
             bot_roles=[str(r) for r in member.get("roles", [])],
+            named_roles=tuple(
+                Role(id=str(r["id"]), name=str(r.get("name", "")))
+                for r in sorted(roles, key=lambda r: (-int(r.get("position", 0)), str(r["id"])))
+                if str(r["id"]) != guild_id and not r.get("managed")
+            ),
+            system_channel=str(guild["system_channel_id"])
+            if guild.get("system_channel_id")
+            else None,
         )
     except (KeyError, TypeError, ValueError) as error:
         raise SendError(
@@ -444,6 +492,97 @@ def explained(error: SendError, channel: str, needs: int) -> SendError:
                 f"Give it {them} in the channel's settings on Discord."
             )
     return error
+
+
+# --- members and channels, for the channels Horatio makes (#855) -----------------------------
+
+
+@dataclass(frozen=True)
+class Member:
+    """Someone in a server: their Discord id and username, the name the server shows
+    for them, and their picture."""
+
+    id: str
+    username: str
+    display_name: str
+    avatar: str | None
+
+
+def member_from(found: Mapping[str, Any]) -> Member:
+    user = found.get("user") or {}
+    user_id = str(user["id"])
+    avatar = user.get("avatar")
+    return Member(
+        id=user_id,
+        username=str(user.get("username") or ""),
+        display_name=str(
+            found.get("nick") or user.get("global_name") or user.get("username") or ""
+        ),
+        avatar=f"https://cdn.discordapp.com/avatars/{user_id}/{avatar}.png?size=64"
+        if avatar
+        else None,
+    )
+
+
+def find_member(guild_id: str, user_id: str) -> Member | None:
+    """The server's member with this Discord id, or None when they aren't in it.
+    Needs no privileged intent. Raises SendError."""
+    try:
+        found = request("GET", f"/guilds/{guild_id}/members/{user_id}").json()
+    except SendError as error:
+        if error.status == 404:
+            return None
+        raise
+    try:
+        return member_from(found)
+    except (KeyError, TypeError) as error:
+        raise SendError(
+            "Discord's answer about a member was not as expected.", retry=False
+        ) from error
+
+
+def member_by_username(guild_id: str, username: str) -> Member | None:
+    """The server's member whose Discord username is exactly this one, from Discord's
+    member search (which matches the start of usernames and nicknames, and, unlike
+    listing every member, needs no privileged intent). Raises SendError."""
+    wanted = username.strip().lstrip("@").casefold()
+    if not wanted:
+        return None
+    found = request(
+        "GET", f"/guilds/{guild_id}/members/search", params={"query": wanted, "limit": 100}
+    ).json()
+    for each in found:
+        try:
+            member = member_from(each)
+        except (KeyError, TypeError):
+            continue
+        if member.username.casefold() == wanted:
+            return member
+    return None
+
+
+def create_channel(guild_id: str, body: Mapping[str, Any]) -> dict[str, Any]:
+    """Make a channel or category in the server; returns it. Raises SendError."""
+    return dict(request("POST", f"/guilds/{guild_id}/channels", json=dict(body)).json())
+
+
+def create_invite(channel_id: str, max_age: int = 7 * 24 * 3600) -> str:
+    """A single-use invite to the server, through a channel; returns its link.
+    Raises SendError."""
+    found = request(
+        "POST",
+        f"/channels/{channel_id}/invites",
+        json={"max_age": max_age, "max_uses": 1, "unique": True},
+    ).json()
+    return f"https://discord.gg/{found['code']}"
+
+
+def channel_slug(name: str) -> str:
+    """A name as Discord writes a text channel's: lower case, words joined by dashes,
+    no accents or punctuation. "Agnès Wren" is "agnes-wren"."""
+    decomposed = unicodedata.normalize("NFKD", name)
+    words = "".join(c if c.isalnum() else " " for c in decomposed if not unicodedata.combining(c))
+    return "-".join(words.casefold().split())[:90] or "character"
 
 
 def plain_name(name: str) -> str:
@@ -534,7 +673,8 @@ class DiscordConnector(Connector):
     ) -> dict[str, Any]:
         """The server stays as Horatio connected it; channels must be its text channels.
         The channels for the troupe's posts are chosen apart from these
-        (horatio.api.posts), and kept."""
+        (horatio.api.posts), and kept, as is what Horatio does with the server's
+        character channels (horatio.discord_channels)."""
         guild_id = current.get("guild_id")
         channels = {
             str(uuid.UUID(str(character))): snowflake(channel, "A character's channel")
@@ -559,6 +699,9 @@ class DiscordConnector(Connector):
             "channels": channels,
             "test_channel": test_channel,
             **({"post_channels": current["post_channels"]} if current.get("post_channels") else {}),
+            # What Horatio does with the server's character channels (#855) is
+            # changed only through horatio.discord_channels.
+            **({"managed": current["managed"]} if current.get("managed") else {}),
         }
 
     def unreachable(
