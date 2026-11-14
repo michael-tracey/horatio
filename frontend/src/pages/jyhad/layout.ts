@@ -154,16 +154,22 @@ const GAP = 0.7;
  * whose lines beside the capacity keep clear of it. `y` is each line's baseline.
  * At the smallest size, lines that still don't fit are left off.
  */
-export function layoutText(sectLine: string | null, text: string, flavour: string, measure: Measure): TextLayout {
-  const left = TEXT.x + TEXT_PAD;
-  const full = TEXT.w - 2 * TEXT_PAD;
-  const beside = CAPACITY.x - left - 0.75;
-  const bottom = TEXT.y + TEXT.h - TEXT_PAD;
+export function layoutText(
+  sectLine: string | null,
+  text: string,
+  flavour: string,
+  measure: Measure,
+  { box = TEXT, capacity = CAPACITY, pad = TEXT_PAD, sizes = TEXT_SIZES }: { box?: Box; capacity?: Box; pad?: number; sizes?: number[] } = {},
+): TextLayout {
+  const left = box.x + pad;
+  const full = box.w - 2 * pad;
+  const beside = capacity.x - left - 0.75;
+  const bottom = box.y + box.h - pad;
   let laid: TextLayout | null = null;
-  for (const size of TEXT_SIZES) {
+  for (const size of sizes) {
     const lineHeight = size * LEADING;
     const lines: TextLine[] = [];
-    let y = TEXT.y + TEXT_PAD + size * 0.8;
+    let y = box.y + pad + size * 0.8;
     let rule: number | null = null;
     const add = (block: string, style: TextStyle, width: number) => {
       if (!block.trim()) return;
@@ -175,7 +181,7 @@ export function layoutText(sectLine: string | null, text: string, flavour: strin
         } else y += GAP;
       }
       const start = y;
-      const widthOf = (n: number) => (start + n * lineHeight + size * 0.3 < CAPACITY.y - 0.6 ? full : width);
+      const widthOf = (n: number) => (start + n * lineHeight + size * 0.3 < capacity.y - 0.6 ? full : width);
       for (const t of wrap(block, widthOf, size, style, measure)) {
         lines.push({ text: t, style, x: left, y });
         y += lineHeight;
@@ -198,11 +204,11 @@ export const NAME_WIDTH = NAME_TEXT.w - 1.5;
 
 /** The name's size in mm, as large as fits its plate from about 10pt down to 7pt;
  * and its width if even that is too wide, to squeeze it to (else null). */
-export function nameFit(name: string, measure: Measure): { size: number; squeeze: number | null } {
-  let size = 3.6;
-  for (; size > 2.45; size -= 0.1) if (measure(name, size, "bold") <= NAME_WIDTH) return { size: +size.toFixed(2), squeeze: null };
+export function nameFit(name: string, measure: Measure, width = NAME_WIDTH, largest = 3.6): { size: number; squeeze: number | null } {
+  let size = largest;
+  for (; size > 2.45; size -= 0.1) if (measure(name, size, "bold") <= width) return { size: +size.toFixed(2), squeeze: null };
   size = 2.4;
-  return { size, squeeze: measure(name, size, "bold") > NAME_WIDTH ? NAME_WIDTH : null };
+  return { size, squeeze: measure(name, size, "bold") > width ? width : null };
 }
 
 /** A canvas's measure, for the fonts above. */
@@ -229,4 +235,76 @@ export function canvasNameMeasure(ctx: CanvasRenderingContext2D): Measure {
 /** Three letters for a clan with no symbol here: "Tre", "Ven". */
 export function clanLetters(clan: string | null): string {
   return (clan ?? "?").replace(/^.*: /, "").slice(0, 3);
+}
+
+// --- the clan crypt card templates (#850) ---------------------------------------------------
+
+/**
+ * A clan's 2020 crypt card template, which the custodian uploads (the backend's
+ * horatio.crypt_templates): 819 × 1114 px, a card of VTES's size inside a 1/8"
+ * (3.175 mm) bleed. Where things are on it, in its pixels, as the backend's
+ * `detect` found them on the Tzimisce template (the oval, the text box, the drop),
+ * with the name's band above the oval and the sidebar's top under the printed clan
+ * symbol chosen from the same image. The card is drawn on it: the portrait under its
+ * transparent oval, the rest over it.
+ */
+export const BLEED = 3.175;
+export const TEMPLATE_PX = {
+  width: 819,
+  height: 1114,
+  oval: { x: 194, y: 153, w: 531, h: 689 },
+  text: { x: 188, y: 858, w: 546, h: 146 },
+  drop: { x: 675, y: 956, w: 66, h: 66 },
+  sidebar: { x: 67, y: 300, w: 99, h: 744 },
+  name: { x: 78, y: 76, w: 640, h: 64 },
+} as const;
+/** The template's pixels to the millimetre. */
+export const TEMPLATE_SCALE = TEMPLATE_PX.height / (CARD.height + 2 * BLEED);
+
+/** A box in the template's pixels, in the card's millimetres. */
+export function fromTemplate(b: Box): Box {
+  return { x: b.x / TEMPLATE_SCALE - BLEED, y: b.y / TEMPLATE_SCALE - BLEED, w: b.w / TEMPLATE_SCALE, h: b.h / TEMPLATE_SCALE };
+}
+
+/** Where the template goes: past the card's edges, which cut its bleed off. */
+export const TEMPLATE_IMAGE = fromTemplate({ x: 0, y: 0, w: TEMPLATE_PX.width, h: TEMPLATE_PX.height });
+export const T_OVAL = fromTemplate(TEMPLATE_PX.oval);
+export const T_TEXT = fromTemplate(TEMPLATE_PX.text);
+/** The printed drop the capacity goes on. */
+export const T_DROP = fromTemplate(TEMPLATE_PX.drop);
+export const T_SIDEBAR = fromTemplate(TEMPLATE_PX.sidebar);
+export const T_NAME = fromTemplate(TEMPLATE_PX.name);
+export const T_TEXT_PAD = 1;
+/** Smaller than on Horatio's frame: the template's box is smaller. */
+export const T_TEXT_SIZES = [2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4];
+/** The disciplines, highest first, down the sidebar. */
+export const T_DISCIPLINES = { size: 6.4, step: 7.4, top: T_SIDEBAR.y + 0.6 };
+export const T_CAPACITY_SIZE = 3.6;
+/** The name's largest size on the template, left on its band. */
+export const T_NAME_LARGEST = 4.2;
+/** The one line on the black edge below the template's frame, which already says
+ * it isn't for play and gives Paradox's notice: Horatio's, and KRCG's credit. */
+export const T_FOOTER = { y: 87.05, size: 1.15 };
+export const T_UNOFFICIAL = "Unofficial · made with Horatio · symbols by KRCG";
+/** The name's and the symbols' colours on the template's dark sidebar and frame. */
+export const T_COLOURS = { name: "#f6efe0", outline: "#120a0c", symbol: "#f1e4c4", rule: "#5b4a3a" };
+
+/** Where the nth discipline sits on the template's sidebar. */
+export function templateDisciplineBox(n: number): Box {
+  return {
+    x: T_SIDEBAR.x + (T_SIDEBAR.w - T_DISCIPLINES.size) / 2,
+    y: T_DISCIPLINES.top + n * T_DISCIPLINES.step,
+    w: T_DISCIPLINES.size,
+    h: T_DISCIPLINES.size,
+  };
+}
+
+/** The text on a template: in its box, keeping clear of the drop. */
+export function layoutTemplateText(sectLine: string | null, text: string, flavour: string, measure: Measure): TextLayout {
+  return layoutText(sectLine, text, flavour, measure, { box: T_TEXT, capacity: T_DROP, pad: T_TEXT_PAD, sizes: T_TEXT_SIZES });
+}
+
+/** The name's size on the template's band. */
+export function templateNameFit(name: string, measure: Measure) {
+  return nameFit(name, measure, T_NAME.w, T_NAME_LARGEST);
 }

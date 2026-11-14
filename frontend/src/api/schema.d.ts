@@ -2338,6 +2338,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/jyhad-card/template.webp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Card Template
+         * @description The crypt card template the character's card is drawn on: only for whoever
+         *     can see the character, as the templates are the Dark Pack's, not Horatio's.
+         */
+        get: operations["card_template_api_characters__character_id__jyhad_card_template_webp_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/jyhad-card/text": {
         parameters: {
             query?: never;
@@ -7408,6 +7429,34 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/crypt-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Crypt Templates Status
+         * @description The clan crypt card templates on the server, for Jyhad cards.
+         */
+        get: operations["crypt_templates_status_api_tools_crypt_templates_get"];
+        put?: never;
+        /**
+         * Upload Crypt Templates
+         * @description Add the templates uploaded, replacing any of the same clan; the rest stay.
+         */
+        post: operations["upload_crypt_templates_api_tools_crypt_templates_post"];
+        /**
+         * Remove Crypt Templates
+         * @description Take the templates off the server: Jyhad cards go back to Horatio's frame.
+         */
+        delete: operations["remove_crypt_templates_api_tools_crypt_templates_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -14982,6 +15031,19 @@ export interface components {
              */
             file: string;
         };
+        /** Body_upload_crypt_templates_api_tools_crypt_templates_post */
+        Body_upload_crypt_templates_api_tools_crypt_templates_post: {
+            /**
+             * Accept Licence
+             * @default false
+             */
+            accept_licence: boolean;
+            /**
+             * Files
+             * @description 2020_Crypt_<Clan>.png templates, or a zip of them.
+             */
+            files: string[];
+        };
         /** Body_upload_dark_pack_api_tools_dark_pack_upload_post */
         Body_upload_dark_pack_api_tools_dark_pack_upload_post: {
             /**
@@ -18314,6 +18376,40 @@ export interface components {
             x: number;
             /** Y */
             y: number;
+        };
+        /** CryptTemplate */
+        CryptTemplate: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Uploaded From */
+            uploaded_from: string;
+        };
+        /** CryptTemplatesTool */
+        CryptTemplatesTool: {
+            /** Agreement */
+            agreement: string;
+            /** Clans */
+            clans: components["schemas"]["Matched"][];
+            /** Configured */
+            configured: boolean;
+            /** Missing */
+            missing: string[];
+            /** Templates */
+            templates: components["schemas"]["CryptTemplate"][];
+            /** Uploaded At */
+            uploaded_at: string | null;
+            /** Writable */
+            writable: boolean;
+        };
+        /** CryptTemplatesUpload */
+        CryptTemplatesUpload: {
+            /** Added */
+            added: string[];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedFile"][];
+            tool: components["schemas"]["CryptTemplatesTool"];
         };
         /**
          * CustomKind
@@ -21660,6 +21756,23 @@ export interface components {
             /** Width */
             width: number;
         };
+        /**
+         * Heal
+         * @description Damage a use heals: of one kind, the worst first (aggravated, then normal),
+         *     every box, or as much as the player says (issue #825).
+         */
+        Heal: {
+            /**
+             * Amount
+             * @default 0
+             */
+            amount: number;
+            /**
+             * Damage
+             * @enum {string}
+             */
+            damage: "normal" | "aggravated" | "worst" | "all" | "asked";
+        };
         /** Health */
         Health: {
             /** Levels */
@@ -22940,6 +23053,8 @@ export interface components {
             sect: string | null;
             /** Sect Line */
             sect_line: string | null;
+            /** Template */
+            template: string | null;
             /** Text */
             text: string;
         };
@@ -25719,6 +25834,11 @@ export interface components {
              * @default []
              */
             switches: string[];
+            /**
+             * Uses
+             * @default []
+             */
+            uses: components["schemas"]["PowerUse"][];
         };
         /** OtherStatusOut */
         OtherStatusOut: {
@@ -27566,6 +27686,11 @@ export interface components {
              * @default []
              */
             switches: string[];
+            /**
+             * Uses
+             * @default []
+             */
+            uses: components["schemas"]["PowerUse"][];
         };
         /**
          * PowerOut
@@ -27680,6 +27805,60 @@ export interface components {
              * @default 0
              */
             turned_on: number;
+        };
+        /**
+         * PowerUse
+         * @description A use of a power that changes the trackers besides spending its cost (issue
+         *     #825): a button of its own on the Pools tab, made of ordinary taps with Undo.
+         */
+        PowerUse: {
+            /**
+             * Beast
+             * @default 0
+             */
+            beast: number;
+            /**
+             * Convert
+             * @default 0
+             */
+            convert: number;
+            /**
+             * Convert All
+             * @default false
+             */
+            convert_all: boolean;
+            cost?: components["schemas"]["Cost"] | null;
+            /**
+             * Gains
+             * @default []
+             */
+            gains: components["schemas"]["Cost"][];
+            /**
+             * Half
+             * @default false
+             */
+            half: boolean;
+            heal?: components["schemas"]["Heal"] | null;
+            /** Label */
+            label: string;
+            /**
+             * Mend
+             * @default 0
+             */
+            mend: number;
+            /** Note */
+            note?: string | null;
+            /** Once */
+            once?: string | null;
+            /** Page */
+            page?: string | null;
+            /**
+             * Retainer
+             * @default 0
+             */
+            retainer: number;
+            /** When */
+            when?: string | null;
         };
         /** PraisedClaimsOut */
         PraisedClaimsOut: {
@@ -31507,6 +31686,13 @@ export interface components {
             name: string;
             /** Pool */
             pool: number;
+        };
+        /** SkippedFile */
+        SkippedFile: {
+            /** Name */
+            name: string;
+            /** Why */
+            why: string;
         };
         /** SkippedNpc */
         SkippedNpc: {
@@ -39943,6 +40129,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["JyhadCardOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    card_template_api_characters__character_id__jyhad_card_template_webp_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -49529,6 +49744,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyThrowImagesOut"];
+                };
+            };
+        };
+    };
+    crypt_templates_status_api_tools_crypt_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CryptTemplatesTool"];
+                };
+            };
+        };
+    };
+    upload_crypt_templates_api_tools_crypt_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_crypt_templates_api_tools_crypt_templates_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CryptTemplatesUpload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_crypt_templates_api_tools_crypt_templates_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CryptTemplatesTool"];
                 };
             };
         };

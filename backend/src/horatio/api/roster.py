@@ -796,6 +796,8 @@ MESSAGES: dict[str, str] = {
     "vtes_symbols.fetch_failed": "{actor}'s fetch of the VTES symbols failed, so what was here"
     " stays: {error}",
     "vtes_symbols.removed": "{actor} removed the VTES symbols from the server.",
+    "crypt_templates.uploaded": "{actor} uploaded {count} Jyhad card templates: {templates}.",
+    "crypt_templates.removed": "{actor} removed the Jyhad card templates from the server.",
     "yorick_import.uploaded": "{actor} uploaded a Print Characters page from Yorick for import"
     " ({characters} characters, {portraits} portraits).",
     "yorick_import.deleted": "{actor} deleted the Yorick page uploaded for import, and its report.",

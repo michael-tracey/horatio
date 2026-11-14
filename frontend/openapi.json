@@ -5074,6 +5074,29 @@
         "title": "Body_upload_banner_api_troupes__troupe_id__banner_post",
         "type": "object"
       },
+      "Body_upload_crypt_templates_api_tools_crypt_templates_post": {
+        "properties": {
+          "accept_licence": {
+            "default": false,
+            "title": "Accept Licence",
+            "type": "boolean"
+          },
+          "files": {
+            "description": "2020_Crypt_<Clan>.png templates, or a zip of them.",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_upload_crypt_templates_api_tools_crypt_templates_post",
+        "type": "object"
+      },
       "Body_upload_dark_pack_api_tools_dark_pack_upload_post": {
         "properties": {
           "accept_licence": {
@@ -14233,6 +14256,117 @@
         "title": "CropIn",
         "type": "object"
       },
+      "CryptTemplate": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "uploaded_from": {
+            "title": "Uploaded From",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "uploaded_from"
+        ],
+        "title": "CryptTemplate",
+        "type": "object"
+      },
+      "CryptTemplatesTool": {
+        "properties": {
+          "agreement": {
+            "title": "Agreement",
+            "type": "string"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/Matched"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/CryptTemplate"
+            },
+            "title": "Templates",
+            "type": "array"
+          },
+          "uploaded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded At"
+          },
+          "writable": {
+            "title": "Writable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "configured",
+          "writable",
+          "agreement",
+          "uploaded_at",
+          "templates",
+          "clans",
+          "missing"
+        ],
+        "title": "CryptTemplatesTool",
+        "type": "object"
+      },
+      "CryptTemplatesUpload": {
+        "properties": {
+          "added": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Added",
+            "type": "array"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedFile"
+            },
+            "title": "Skipped",
+            "type": "array"
+          },
+          "tool": {
+            "$ref": "#/components/schemas/CryptTemplatesTool"
+          }
+        },
+        "required": [
+          "tool",
+          "added",
+          "skipped"
+        ],
+        "title": "CryptTemplatesUpload",
+        "type": "object"
+      },
       "CustomKind": {
         "description": "A custom kind, for one the book does not cover: its name, whether it is\nmortal or supernatural, and its resource.",
         "properties": {
@@ -22845,6 +22979,32 @@
         "title": "HeaderImageOut",
         "type": "object"
       },
+      "Heal": {
+        "description": "Damage a use heals: of one kind, the worst first (aggravated, then normal),\nevery box, or as much as the player says (issue #825).",
+        "properties": {
+          "amount": {
+            "default": 0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "damage": {
+            "enum": [
+              "normal",
+              "aggravated",
+              "worst",
+              "all",
+              "asked"
+            ],
+            "title": "Damage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "damage"
+        ],
+        "title": "Heal",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "levels": {
@@ -26100,6 +26260,17 @@
             ],
             "title": "Sect Line"
           },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template"
+          },
           "text": {
             "title": "Text",
             "type": "string"
@@ -26119,6 +26290,7 @@
           "picture",
           "text",
           "flavour",
+          "template",
           "can_write"
         ],
         "title": "JyhadCardOut",
@@ -33025,6 +33197,14 @@
             },
             "title": "Switches",
             "type": "array"
+          },
+          "uses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PowerUse"
+            },
+            "title": "Uses",
+            "type": "array"
           }
         },
         "required": [
@@ -37555,6 +37735,14 @@
             },
             "title": "Switches",
             "type": "array"
+          },
+          "uses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PowerUse"
+            },
+            "title": "Uses",
+            "type": "array"
           }
         },
         "required": [
@@ -37747,6 +37935,122 @@
           "on"
         ],
         "title": "PowerOut",
+        "type": "object"
+      },
+      "PowerUse": {
+        "description": "A use of a power that changes the trackers besides spending its cost (issue\n#825): a button of its own on the Pools tab, made of ordinary taps with Undo.",
+        "properties": {
+          "beast": {
+            "default": 0,
+            "title": "Beast",
+            "type": "integer"
+          },
+          "convert": {
+            "default": 0,
+            "title": "Convert",
+            "type": "integer"
+          },
+          "convert_all": {
+            "default": false,
+            "title": "Convert All",
+            "type": "boolean"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gains": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Cost"
+            },
+            "title": "Gains",
+            "type": "array"
+          },
+          "half": {
+            "default": false,
+            "title": "Half",
+            "type": "boolean"
+          },
+          "heal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Heal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mend": {
+            "default": 0,
+            "title": "Mend",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "once": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Once"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "retainer": {
+            "default": 0,
+            "title": "Retainer",
+            "type": "integer"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "PowerUse",
         "type": "object"
       },
       "PraisedClaimsOut": {
@@ -47830,6 +48134,24 @@
           "pool"
         ],
         "title": "SkillPool",
+        "type": "object"
+      },
+      "SkippedFile": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "why"
+        ],
+        "title": "SkippedFile",
         "type": "object"
       },
       "SkippedNpc": {
@@ -64772,6 +65094,43 @@
         ]
       }
     },
+    "/api/characters/{character_id}/jyhad-card/template.webp": {
+      "get": {
+        "description": "The crypt card template the character's card is drawn on: only for whoever\ncan see the character, as the templates are the Dark Pack's, not Horatio's.",
+        "operationId": "card_template_api_characters__character_id__jyhad_card_template_webp_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Card Template",
+        "tags": [
+          "jyhad card"
+        ]
+      }
+    },
     "/api/characters/{character_id}/jyhad-card/text": {
       "put": {
         "description": "The card's text and italic flavour line: its player's to write, or staff's\nfor an NPC. Nothing is suggested; empty leaves the box empty.",
@@ -79370,6 +79729,88 @@
         "summary": "My Images",
         "tags": [
           "throw images"
+        ]
+      }
+    },
+    "/api/tools/crypt-templates": {
+      "delete": {
+        "description": "Take the templates off the server: Jyhad cards go back to Horatio's frame.",
+        "operationId": "remove_crypt_templates_api_tools_crypt_templates_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptTemplatesTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Remove Crypt Templates",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "get": {
+        "description": "The clan crypt card templates on the server, for Jyhad cards.",
+        "operationId": "crypt_templates_status_api_tools_crypt_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptTemplatesTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Crypt Templates Status",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "post": {
+        "description": "Add the templates uploaded, replacing any of the same clan; the rest stay.",
+        "operationId": "upload_crypt_templates_api_tools_crypt_templates_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_crypt_templates_api_tools_crypt_templates_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CryptTemplatesUpload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Crypt Templates",
+        "tags": [
+          "custodian"
         ]
       }
     },

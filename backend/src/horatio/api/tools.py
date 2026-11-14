@@ -11,7 +11,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from horatio import audit, dark_pack, fetching, troupe_fit, vtes_symbols
+from horatio import audit, crypt_templates, dark_pack, fetching, troupe_fit, vtes_symbols
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import RuleSet, TraitCategory, TraitDefinition, Troupe, User
 from horatio.permissions import require_custodian
@@ -368,3 +368,118 @@ def remove_vtes_symbols(db: DbSession, user: CurrentUser) -> VtesSymbolsTool:
     audit.record(db, user, "vtes_symbols.removed")
     db.commit()
     return vtes_symbols_tool(db)
+
+
+# --- crypt card templates (#850) ----------------------------------------------------------------
+
+
+class CryptTemplate(BaseModel):
+    # Its key, as "brujahantitribu", and its name, as "Brujah antitribu".
+    key: str
+    name: str
+    # The file it came from.
+    uploaded_from: str
+
+
+class SkippedFile(BaseModel):
+    name: str
+    why: str
+
+
+class CryptTemplatesTool(BaseModel):
+    configured: bool
+    writable: bool
+    agreement: str
+    uploaded_at: datetime | None
+    templates: list[CryptTemplate]
+    # Each of Horatio's clans and bloodlines, with the template its card uses (the
+    # antitribu's for the Sabbat is listed with it), or None for Horatio's frame.
+    clans: list[Matched]
+    # The templates there are that the server doesn't have yet.
+    missing: list[str]
+
+
+class CryptTemplatesUpload(BaseModel):
+    tool: CryptTemplatesTool
+    # The templates the upload added or replaced, by name.
+    added: list[str]
+    # Files left out, and why.
+    skipped: list[SkippedFile]
+
+
+def crypt_templates_tool(db: DbSession) -> CryptTemplatesTool:
+    record = crypt_templates.manifest()
+    have = crypt_templates.present(record)
+    uploaded_at = record.get("uploaded_at")
+    entries: dict[str, dict[str, str]] = record.get("templates", {})
+
+    def shown(clan: str) -> str | None:
+        found = crypt_templates.chosen(clan, None, have)
+        if found is None:
+            return None
+        sabbat = crypt_templates.chosen(clan, crypt_templates.SABBAT, have)
+        name = crypt_templates.TEMPLATES[found]
+        if sabbat in (None, found):
+            return name
+        return f"{name}; Sabbat: {crypt_templates.TEMPLATES[sabbat]}"
+
+    return CryptTemplatesTool(
+        configured=dark_pack.root() is not None,
+        writable=can_write(),
+        agreement=dark_pack.AGREEMENT,
+        uploaded_at=datetime.fromisoformat(uploaded_at) if uploaded_at else None,
+        templates=[
+            CryptTemplate(
+                key=key,
+                name=crypt_templates.TEMPLATES[key],
+                uploaded_from=entries.get(key, {}).get("from", ""),
+            )
+            for key in sorted(have, key=lambda k: crypt_templates.TEMPLATES[k])
+        ],
+        clans=[Matched(name=n, symbol=shown(n)) for n in sorted(vampire_names(db, "clan"))],
+        missing=sorted(crypt_templates.TEMPLATES[k] for k in set(crypt_templates.TEMPLATES) - have),
+    )
+
+
+@router.get("/crypt-templates")
+def crypt_templates_status(db: DbSession, user: CurrentUser) -> CryptTemplatesTool:
+    """The clan crypt card templates on the server, for Jyhad cards."""
+    require_custodian(user)
+    return crypt_templates_tool(db)
+
+
+@router.post("/crypt-templates")
+def upload_crypt_templates(
+    db: DbSession,
+    user: CurrentUser,
+    files: Annotated[
+        list[UploadFile],
+        File(description="2020_Crypt_<Clan>.png templates, or a zip of them."),
+    ],
+    accept_licence: Annotated[bool, Form()] = False,
+) -> CryptTemplatesUpload:
+    """Add the templates uploaded, replacing any of the same clan; the rest stay."""
+    require_custodian(user)
+    accepted(accept_licence)
+    uploads = [(f.filename or "", f.file.read(crypt_templates.MAX_UPLOAD + 1)) for f in files]
+    result: dict[str, tuple[list[str], list[crypt_templates.Skipped]]] = {}
+    started(lambda: result.update(done=crypt_templates.install(user, uploads)))
+    added, skipped = result["done"]
+    names = [crypt_templates.TEMPLATES[k] for k in added]
+    audit.record(db, user, "crypt_templates.uploaded", count=len(added), templates=", ".join(names))
+    db.commit()
+    return CryptTemplatesUpload(
+        tool=crypt_templates_tool(db),
+        added=names,
+        skipped=[SkippedFile(name=s.name, why=s.why) for s in skipped],
+    )
+
+
+@router.delete("/crypt-templates")
+def remove_crypt_templates(db: DbSession, user: CurrentUser) -> CryptTemplatesTool:
+    """Take the templates off the server: Jyhad cards go back to Horatio's frame."""
+    require_custodian(user)
+    started(lambda: crypt_templates.remove(user))
+    audit.record(db, user, "crypt_templates.removed")
+    db.commit()
+    return crypt_templates_tool(db)
