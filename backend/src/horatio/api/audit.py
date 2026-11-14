@@ -119,6 +119,7 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
             "yorick_import.",
             "dark_pack.",
             "vtes_symbols.",
+            "crypt_templates.",
             "appearance.",
             "mail.",
         ),

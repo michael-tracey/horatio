@@ -4,9 +4,10 @@ its text written by whoever can edit it (its player, or staff for an NPC)."""
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from horatio import jyhad_card
+from horatio import crypt_templates, jyhad_card
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.permissions import can_edit_character, visible_character
 
@@ -45,6 +46,9 @@ class JyhadCardOut(BaseModel):
     picture: str | None
     text: str
     flavour: str
+    # The clan's crypt card template (#850), if the custodian uploaded one; else the
+    # card is drawn on Horatio's own frame.
+    template: str | None
     # Whether the viewer may write the text.
     can_write: bool
 
@@ -72,7 +76,22 @@ def read_card(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Jyha
         picture=card.picture,
         text=card.text,
         flavour=card.flavour,
+        template=card.template,
         can_write=can_edit_character(db, user, character),
+    )
+
+
+@router.get("/characters/{character_id}/jyhad-card/template.webp", response_class=FileResponse)
+def card_template(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> FileResponse:
+    """The crypt card template the character's card is drawn on: only for whoever
+    can see the character, as the templates are the Dark Pack's, not Horatio's."""
+    character = visible_character(db, user, character_id)
+    card = jyhad_card.card(db, character)
+    path = crypt_templates.template_file(card.template_key) if card.template_key else None
+    if card.missing or path is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "This card has no template.")
+    return FileResponse(
+        path, media_type="image/webp", headers={"Cache-Control": "private, max-age=86400"}
     )
 
 
