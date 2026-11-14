@@ -379,6 +379,11 @@ class SwitchOption(BaseModel):
     base: str | None = None
     amount: int | None = None
     amount_label: str | None = None
+    # Who it can be picked for, when its switch can be used on another (issue #813):
+    # "self" only, "other" only (Bonecraft's Crippled, core p. 169), or "any". A trait
+    # that rules it out (`hidden_by`: Tzimisce: Scar Tissue) rules it out on yourself
+    # only, so it is left for others.
+    target: Literal["self", "other", "any"] = "any"
 
 
 class Picks(BaseModel):
@@ -1331,7 +1336,7 @@ def _changes(
     return lines
 
 
-def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
+def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet, every: bool = False) -> Switch:
     holds = lambda e: not isinstance(e, Mapping) or _holds(e, sheet, owner.chosen)  # noqa: E731
     name = active.get("name") or owner.entry["name"]
     chosen = [owner.chosen[k] for k in active.get("label", []) if owner.chosen.get(k)]
@@ -1364,7 +1369,7 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
         blood_half=blood.get("most") == "half",
         blood_extra=blood.get("extra", 0),
         blood_over=blood.get("over", False),
-        picks=_picks(owner, active, sheet),
+        picks=_picks(owner, active, sheet, every),
         kept=active.get("kept", False),
         normal_form_only=active.get("normal_form_only", False),
         counts_as_form=active.get("counts_as_form", False),
@@ -1414,7 +1419,7 @@ def _option(
     (`amount = { least, most, label }`, issue #824) the option at that amount: what
     its entries marked `scale` give is that many times theirs (Tough's 2 Physical for
     2 Healthy levels), and it is named with the amount ("Tough: 2")."""
-    times = amount or 1
+    times = 1 if amount is None else amount
 
     def scaled(entry: Mapping[str, Any], value: int) -> int:
         return value * times if entry.get("scale") else value
@@ -1458,6 +1463,7 @@ def _option(
         base=o["name"] if amount is not None else None,
         amount=amount,
         amount_label=spec.get("label") if amount is not None else None,
+        target=o.get("target", "any"),
     )
 
 
@@ -1471,12 +1477,20 @@ def _options(
     return [_option(active, o, holds, n) for n in range(spec.get("least", 1), spec["most"] + 1)]
 
 
-def _picks(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Picks | None:
+def _picks(
+    owner: Owner, active: Mapping[str, Any], sheet: Sheet, every: bool = False
+) -> Picks | None:
     """What the player picks each time a switch goes on (issues #599, #821): how many,
     raised by a focus (`focus_count`: Bonecraft's two with Manipulation), and the
     power's own options this sheet can pick: those its focus and purchase choices
     allow, those another trait adds (`from`: Bonecraft Prodigy's), less those a trait
-    it has rules out (`hidden_by`: Tzimisce: Scar Tissue, Vol. 2 p. 278)."""
+    it has rules out (`hidden_by`: Tzimisce: Scar Tissue, Vol. 2 p. 278).
+
+    A trait that rules an option out does so on yourself: for a switch that can be
+    used on another (issue #813), the option is left for others. With `every`, for an
+    effect another's power left on this sheet (`switch_for`), every option counts
+    whatever adds it, but those this sheet's traits rule out don't: its body can't
+    take them (Scar Tissue on a Bonecraft alteration)."""
     spec = active.get("picks")
     if spec is None:
         return None
@@ -1485,20 +1499,27 @@ def _picks(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Picks | Non
     for focus, more in spec.get("focus_count", {}).items():
         if focus in sheet.focuses:
             count = max(count, more)
+    on_others = (active.get("target") or spec.get("target", "self")) != "self"
+    options: list[SwitchOption] = []
+    for o in spec.get("options", []):
+        if not every and not (holds(o) and all(_has(sheet, n) for n in _names(o.get("from")))):
+            continue
+        target = o.get("target", "any")
+        if any(_has(sheet, n) for n in _names(o.get("hidden_by"))):
+            if every or not on_others or target == "self":
+                continue
+            target = "other"
+        options += [
+            option.model_copy(update={"target": target})
+            for option in _options(active, o, lambda e: every or holds(e))
+        ]
     return Picks(
         kind=spec.get("kind"),
         count=count,
         kinds=list(spec.get("kinds", [])),
         only=list(spec.get("only", [])),
         immune=spec.get("immune", False),
-        options=[
-            option
-            for o in spec.get("options", [])
-            if holds(o)
-            and all(_has(sheet, n) for n in _names(o.get("from")))
-            and not any(_has(sheet, n) for n in _names(o.get("hidden_by")))
-            for option in _options(active, o, holds)
-        ],
+        options=options,
         target=spec.get("target", "self"),
     )
 
@@ -1655,11 +1676,14 @@ def switches(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Switch]:
     return work_out(Sheet.read(rows, rule_set), technique_bases(rule_set)).switches
 
 
-def switch_for(key: str) -> list[Switch]:
+def switch_for(key: str, sheet: Sheet | None = None) -> list[Switch]:
     """A switch by its key, with its own options, as the powers file has it for any
     character (issue #823): what an effect another character's power left on this
     one does, though this one hasn't the power. No sheet's focus or purchase choice
-    narrows it, so what a choice or focus gives is left out."""
+    narrows it, so what a choice or focus gives is left out, and every option counts,
+    whichever trait of the user's added it (Bonecraft Prodigy's, issue #813). With the
+    sheet it is on, an option that sheet's traits rule out doesn't count: Tzimisce:
+    Scar Tissue's body takes no beneficial Bonecraft alteration (Vol. 2 p. 278)."""
     for entry in [
         *catalogue().disciplines.values(),
         *(p for powers in catalogue().powers.values() for p in powers),
@@ -1667,7 +1691,8 @@ def switch_for(key: str) -> list[Switch]:
     ]:
         for active in actives(entry):
             if active["key"] == key:
-                found = _switch(Owner(entry, entry["name"], entry["name"]), active, Sheet())
+                owner = Owner(entry, entry["name"], entry["name"])
+                found = _switch(owner, active, sheet or Sheet(), every=True)
                 return [found, *option_switches(found)]
     return []
 

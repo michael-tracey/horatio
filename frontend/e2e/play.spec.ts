@@ -900,6 +900,45 @@ test("Malleable Visage's alien beauty: -2 Social and the Appearance focus, kept 
   await expect(social.locator("strong").first()).toHaveText(String(before - 2));
 });
 
+test("Bonecraft on yourself: Tough gives Physical for Healthy levels, kept through Reset, Crippled only for others (#813)", async ({ browser }) => {
+  const { page: p } = await person(browser, "bone-sculptor");
+  // A Tzimisce with Vicissitude 3: Bonecraft (core pp. 168-169).
+  const id = await builtVampire(
+    p,
+    "Dragomir",
+    "Tzimisce",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]] },
+    [["disciplines", "Vicissitude", 3]],
+  );
+  const headers = { "X-Horatio": "1" };
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const physical = p.getByRole("main").getByRole("listitem").filter({ hasText: /^Resisting Physical powers/ }).first();
+  await expect(physical).toBeVisible();
+  const before = Number(await physical.locator("strong").first().textContent());
+
+  // Used on yourself, it turns on and asks which modification; Tough gives up Physical.
+  await p.getByRole("button", { name: /^Use Bonecraft: remade, 1 Blood/ }).click();
+  await expect(p.getByText(/Bonecraft: remade switched on/)).toBeVisible();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  const options = drawer.getByRole("group", { name: "Bonecraft: remade: qualities" });
+  // Crippled is for someone else only (core p. 169).
+  await expect(options.getByRole("button", { name: "Crippled" })).toHaveCount(0);
+  await options.getByRole("button", { name: "Tough: 2" }).click();
+  await expect(options).toContainText("Tough: 2: -2 Physical; +2 Healthy");
+  await drawer.getByRole("button", { name: "Close" }).first().click();
+  await expect(physical.locator("strong").first()).toHaveText(String(before - 2));
+  const banner = p.getByRole("region", { name: "Switched on now" });
+  await expect(banner).toContainText("Kept: Bonecraft: remade (Tough: 2)");
+
+  // Reset keeps it: what it gave up comes back only when it's undone.
+  const response = await p.request.post(`/api/characters/${id}/play/reset`, { headers, data: {} });
+  expect(response.status(), await response.text()).toBe(200);
+  await p.reload();
+  await expect(banner).toContainText("Kept: Bonecraft: remade (Tough: 2)");
+  await expect(physical.locator("strong").first()).toHaveText(String(before - 2));
+});
+
 test("a power used on another of the home troupe: Fleshcraft's alien beauty reaches their Play View, they dispute it, and whoever used it ends it (#823)", async ({ browser }) => {
   const custodian = await person(browser, "onothers-cust");
   makeCustodian(custodian.email);

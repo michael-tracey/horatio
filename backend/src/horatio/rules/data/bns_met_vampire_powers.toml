@@ -1186,6 +1186,36 @@ level = 3
 name = "Bonecraft"
 note = "1 Blood, five standard actions: radically remake a body's bones and organs, such as bone spurs or armour."
 focus = { Manipulation = "Two modifications at once." }
+# Core pp. 168-169 (#813): each use picks one modification, two different ones with
+# the Manipulation focus, on yourself or on a willing or helpless character of the
+# home troupe (#823). A character carries one application at a time; what it gives
+# up (health levels, Physical) comes back only when it is undone, which keeps it
+# through Reset; it counts in the normal form only, but for Second Stomach (Vol. 2
+# Issue 1 p. 62). With Ravenous Conglomeration it is kept with a form, as one of the
+# two forms it allows (Vol. 2 p. 249). Levels given up are Healthy ones: the book
+# doesn't say which, and Tough's are Healthy. Bonecraft Prodigy (Vol. 2 Issue 1
+# p. 61) and Virtuoso del Corpo (Vol. 2 p. 248) add options; Tzimisce: Scar Tissue
+# (Vol. 2 p. 278) rules the beneficial ones out on the flawed character's own body,
+# by them or by another. Body Weaponry's weapon is built by the weapon rules; it
+# isn't an item on the Play View yet.
+active = { key = "Bonecraft", name = "Bonecraft: remade", target = "any", kept = true, normal_form_only = true, counts_as_form = true, page = 168, notes = ["Not in a transformed shape: it comes back when the form ends.", "Health levels and Physical given up come back only when it's undone."], picks = { count = 1, focus_count = { Manipulation = 2 }, options = [
+  { name = "Extra Limbs", hidden_by = "Tzimisce: Scar Tissue", health = [{ level = "Healthy", boxes = -2 }], note = "Once a turn, a simple action: the limbs attack with your usual attack pool, no discipline added, never in Celerity rounds." },
+  { name = "Tough", hidden_by = "Tzimisce: Scar Tissue", amount = { least = 1, most = 3, label = "Physical given up" }, attributes = [{ attribute = "Physical", amount = -1, scale = true }], health = [{ level = "Healthy", boxes = 1, scale = true }], note = "Physical given up for as many Healthy levels." },
+  { name = "Transformed Biology", page = 169, hidden_by = "Tzimisce: Scar Tissue", note = "Heart and organs moved: can't be staked, though parting brain from heart is still Final Death." },
+  { name = "Crippled", page = 169, target = "other", note = "Shaped unable to fight or move: they lose their simple action, their standard action, or both." },
+  { name = "Body Weaponry", page = 169, hidden_by = "Tzimisce: Scar Tissue", health = [{ level = "Healthy", boxes = -1 }], note = "Part of the body becomes a weapon, built by the weapon rules: it can't be disarmed, and a broken one is reformed for 1 Blood." },
+  { name = "Defensive Quills", from = "Bonecraft Prodigy", book = "Vol. 2 Issue 1", page = 61, hidden_by = "Tzimisce: Scar Tissue", health = [{ level = "Healthy", boxes = -2 }], note = "Quills out for a simple action: anyone who wins a Brawl challenge against you, or whom you grapple, takes 2 normal damage." },
+  { name = "Deformed", from = "Bonecraft Prodigy", book = "Vol. 2 Issue 1", page = 61, target = "other", amount = { least = 0, most = 3, label = "Social taken" }, attributes = [{ attribute = "Social", amount = -1, scale = true }], note = "Made hideous: the Appearance focus can go too; how they move is untouched." },
+  { name = "Elongated Gait", from = "Bonecraft Prodigy", book = "Vol. 2 Issue 1", page = 61, hidden_by = "Tzimisce: Scar Tissue", health = [{ level = "Healthy", boxes = -1 }], note = "One step more for each action spent moving." },
+  { name = "Second Stomach", from = "Bonecraft Prodigy", book = "Vol. 2 Issue 1", page = 61, hidden_by = "Tzimisce: Scar Tissue", normal_form_only = false, amount = { least = 1, most = 3, label = "levels given up" }, health = [{ level = "Healthy", boxes = -1, scale = true }], blood = { extra = 2, scale = true }, note = "2 more Blood at most for each level given up, kept in any form." },
+  { name = "Bauble", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, target = "other", note = "An incapacitated subject made an object at least half their size: no moving, speech, Blood, Physical or Social disciplines unless you shape them the means; Fortitude still works." },
+  { name = "Chiropteran Marauder", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, hidden_by = "Tzimisce: Scar Tissue", note = "Glide safely down from a height, and fly 3 steps a turn for a simple and a standard action." },
+  { name = "Kraken's Kiss", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, hidden_by = "Tzimisce: Scar Tissue", note = "Once a grapple holds, drain 2 Blood as a simple action, or force a Blood trait into the victim." },
+  { name = "Living Weapon", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, target = "self", hidden_by = "Tzimisce: Scar Tissue", note = "Horns and spurs: Brawl attacks gain Reach and one other Melee weapon quality, chosen when it is applied." },
+  { name = "Simplified", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, target = "other", note = "An incapacitated subject shaped for one non-combat task: +2 Physical while doing it, -5 Physical otherwise." },
+  { name = "Skin Trap", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, hidden_by = "Tzimisce: Scar Tissue", note = "Sticky skin: grapple without spending Willpower, and +2 to grapple." },
+  { name = "Skittering Legs", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, hidden_by = "Tzimisce: Scar Tissue", note = "Up to 5 steps more each action spent moving, in a straight line only." },
+] } }
 
 [[powers]]
 discipline = "Vicissitude"

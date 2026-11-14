@@ -164,7 +164,7 @@ export function PowersList({ powers: all, forms: atOnce = 1, tap }: { powers: Po
       {others.length > 0 && (
         <ul className="divide-y divide-ash/60 border-t border-ash/60" aria-label="Powers">
           {others.map((p) => (
-            <Row key={p.key} power={p} tap={tap} paused={isPaused({ powers }, p)} />
+            <Row key={p.key} power={p} tap={tap} paused={isPaused({ powers, forms: atOnce }, p)} />
           ))}
         </ul>
       )}
@@ -179,7 +179,7 @@ const BRIEF_AFTER = 3;
  * A short banner while a form or power is on: which, with its notes and what other
  * powers add to it, and a way back: Turn back for a form, Off for a power (#697).
  */
-export function PowersBanner({ powers: all, tap }: { powers: PowerSwitch[]; tap: Tap }) {
+export function PowersBanner({ powers: all, forms: atOnce = 1, tap }: { powers: PowerSwitch[]; forms?: number; tap: Tap }) {
   // Another's effect on this one shows with the powers used on others, not here (#823).
   const powers = ownSwitches(all);
   const forms = formsOn({ powers });
@@ -217,7 +217,7 @@ export function PowersBanner({ powers: all, tap }: { powers: PowerSwitch[]; tap:
                 <p>
                   <span className="text-mist">{p.kept ? "Kept: " : "On: "}</span>
                   {withPicks(p)}
-                  {isPaused({ powers }, p) && <span className="text-xs text-gold"> (paused while in a form)</span>}
+                  {isPaused({ powers, forms: atOnce }, p) && <span className="text-xs text-gold"> (paused while in a form)</span>}
                 </p>
                 {!brief && p.notes.length > 0 && <p className="text-xs text-mist">{p.notes.join(" ")}</p>}
                 {!brief &&
