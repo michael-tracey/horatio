@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select, update
 
-from horatio import audit, discord_channels
+from horatio import audit, discord_channels, discord_emoji
 from horatio.api import discord_account
 from horatio.api.connectors import connector_row
 from horatio.api.downtimes import staff_troupe
@@ -504,3 +504,192 @@ def fix_channel(
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, failure.reason) from None
     db.commit()
     return outcome_out(outcome)
+
+
+# --- the clan and discipline symbols as the server's emoji (#870) ------------------------------
+
+
+class EmojiSymbolOut(BaseModel):
+    """A symbol Horatio can add as an emoji: `clan/brujah`, `disc/sup/aus`."""
+
+    key: str
+    group: Literal["clan", "disc/sup", "disc/inf", "path"]
+    label: str
+    # Its emoji's name, as players write it between colons.
+    name: str
+    # Where Horatio added it: on the server, as one of its own emoji, or not at all.
+    added: Literal["server", "own"] | None
+    # Whether it was added in another style than the one chosen now.
+    other_style: bool
+    status: str | None
+    note: str | None
+
+
+class EmojiRoomOut(BaseModel):
+    # The server's Server Boost level, how many static emoji it may have, and has.
+    boost: int
+    room: int
+    used: int
+
+
+class EmojiOut(BaseModel):
+    on: bool
+    style: Literal["png_wb", "png"]
+    # Whether Horatio uses its own emoji for what doesn't fit on the server.
+    own: bool
+    # Whether the custodian fetched the symbols in the chosen style.
+    fetched: bool
+    # What the bot lacks on the server to add emoji, or None when Discord wouldn't say.
+    lacks: list[str] | None
+    # The server's emoji room, or None when Discord wouldn't say.
+    room: EmojiRoomOut | None
+    symbols: list[EmojiSymbolOut]
+    # The symbols of the troupe's characters' clans, and of the disciplines they hold.
+    clans: list[str]
+    disciplines: list[str]
+    queued: int
+
+
+class EmojiChange(BaseModel):
+    on: bool
+    style: Literal["png_wb", "png"] = "png_wb"
+    own: bool = False
+
+
+class EmojiPush(BaseModel):
+    # The symbols to have as emoji, most wanted first.
+    symbols: list[str]
+    # Remove the emoji Horatio added earlier that aren't chosen now.
+    remove_others: bool = False
+
+
+class EmojiPushed(BaseModel):
+    adding: int
+    removing: int
+    # How many of those added fit on the server now, or None when Discord wouldn't say.
+    fits: int | None
+
+
+@router.get("/troupes/{troupe_id}/discord/emoji")
+def emoji_setup(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> EmojiOut:
+    """The symbols Horatio can add to the troupe's server as emoji, which it added,
+    the server's room for them, and what the bot lacks. Five calls to Discord."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.DELIVER_RESPONSES)
+    row = connector_row(db, troupe.id, "discord")
+    guild_id = row.settings.get("guild_id") if row else None
+    if row is None or not guild_id:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Connect a Discord server first.")
+    parts = discord_emoji.emoji(row.settings)
+    style = parts["style"]
+    symbols = discord_emoji.available(style)
+    lacks: list[str] | None = None
+    found_room: EmojiRoomOut | None = None
+    if discord.configured():
+        try:
+            access = discord.bot_access(guild_id)
+            lacks = discord.missing(access.server_permissions(), discord.FOR_EMOJI)
+        except SendError:
+            lacks = None
+        try:
+            server = discord.emoji_room(guild_id)
+            found_room = EmojiRoomOut(
+                boost=server.premium_tier,
+                room=discord_emoji.room(server),
+                used=discord_emoji.used(server),
+            )
+        except SendError:
+            found_room = None
+    wanted = discord_emoji.shortcuts(db, troupe, symbols)
+    made = parts["made"]
+    return EmojiOut(
+        on=parts["on"],
+        style=style,
+        own=parts["own"],
+        fetched=bool(symbols),
+        lacks=lacks,
+        room=found_room,
+        symbols=[
+            EmojiSymbolOut(
+                key=s.key,
+                group=s.group,  # type: ignore[arg-type]  # one of the four
+                label=s.label,
+                name=s.name,
+                added=("own" if made[s.key].get("where") == "app" else "server")
+                if s.key in made
+                else None,
+                other_style=s.key in made and made[s.key].get("style") != style,
+                status=(parts["state"].get(s.key) or {}).get("status"),
+                note=(parts["state"].get(s.key) or {}).get("note"),
+            )
+            for s in symbols
+        ],
+        clans=wanted["clans"],
+        disciplines=wanted["disciplines"],
+        queued=len(parts["queue"]),
+    )
+
+
+@router.put("/troupes/{troupe_id}/discord/emoji", status_code=status.HTTP_204_NO_CONTENT)
+def change_emoji(troupe_id: uuid.UUID, body: EmojiChange, db: DbSession, user: CurrentUser) -> None:
+    """Switch Horatio adding the symbols as emoji on or off, and choose their style
+    and whether Horatio uses its own emoji for what doesn't fit."""
+    troupe, _ = managing_troupe(db, user, troupe_id)
+    row = discord_emoji.locked(db, troupe.id)
+    assert row is not None
+    parts = discord_emoji.emoji(row.settings)
+    if (parts["on"], parts["style"], parts["own"]) != (body.on, body.style, body.own):
+        audit.record(
+            db,
+            user,
+            "connector.discord_emoji",
+            troupe_id=troupe.id,
+            state="on" if body.on else "off",
+            style="white-bordered" if body.style == "png_wb" else "plain",
+        )
+    parts["on"], parts["style"], parts["own"] = body.on, body.style, body.own
+    if not body.on:
+        parts["queue"] = []
+    discord_emoji.save(row, parts)
+    db.commit()
+
+
+@router.post("/troupes/{troupe_id}/discord/emoji/push")
+def push_emoji(
+    troupe_id: uuid.UUID, body: EmojiPush, db: DbSession, user: CurrentUser
+) -> EmojiPushed:
+    """Queue adding the chosen symbols as emoji, in the order given, and removing what
+    Horatio added that no longer fits the choice; the worker does it, a few at a time,
+    as Discord allows."""
+    troupe, row = managing_troupe(db, user, troupe_id)
+    parts = discord_emoji.emoji(row.settings)
+    if not parts["on"]:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Horatio doesn't add this troupe's emoji: switch it on first.",
+        )
+    symbols = discord_emoji.available(parts["style"])
+    unknown = [k for k in body.symbols if k not in {s.key for s in symbols}]
+    if unknown:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Choose from the symbols the custodian fetched in this style.",
+        )
+    free: int | None = None
+    try:
+        server = discord.emoji_room(str(row.settings["guild_id"]))
+        free = max(discord_emoji.room(server) - discord_emoji.used(server), 0)
+    except SendError:
+        free = None
+    locked = discord_emoji.locked(db, troupe.id)
+    assert locked is not None
+    planned = discord_emoji.queue(
+        db,
+        troupe,
+        locked,
+        discord_emoji.chosen_symbols(body.symbols, symbols),
+        body.remove_others,
+        free,
+        user,
+    )
+    db.commit()
+    return EmojiPushed(adding=len(planned.add), removing=len(planned.remove), fits=planned.fits)

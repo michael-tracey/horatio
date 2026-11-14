@@ -15,6 +15,7 @@ rate limits are honoured: a short wait happens here, a longer one is left to the
 delivery worker.
 """
 
+import base64
 import json
 import time
 import unicodedata
@@ -48,12 +49,19 @@ EMBED_LINKS = 1 << 14
 ATTACH_FILES = 1 << 15
 READ_MESSAGE_HISTORY = 1 << 16
 MANAGE_ROLES = 1 << 28
+# To add emoji to a server, and edit or delete the ones the bot added itself (#870);
+# Manage Expressions (1 << 30) would be needed only for anyone else's, which Horatio
+# never touches.
+CREATE_EXPRESSIONS = 1 << 43
 PERMISSIONS = VIEW_CHANNEL | SEND_MESSAGES | EMBED_LINKS | ATTACH_FILES
 # What a troupe that lets Horatio make its characters' channels grants the bot as
 # well (#855, horatio.discord_channels): Manage Channels to make them, Manage Roles
 # to set who sees each, and Read Message History, since the bot may only let a player
 # read a channel's history if it may itself. Create Invite is optional.
 FOR_MANAGED = PERMISSIONS | MANAGE_CHANNELS | MANAGE_ROLES | READ_MESSAGE_HISTORY
+# What a troupe that lets Horatio add the clan and discipline symbols to its server
+# as emoji grants the bot as well (#870, horatio.discord_emoji).
+FOR_EMOJI = CREATE_EXPRESSIONS
 # Each of them by the name Discord shows in a server's or channel's settings, in
 # that order.
 PERMISSION_NAMES = {
@@ -65,6 +73,7 @@ PERMISSION_NAMES = {
     MANAGE_CHANNELS: "Manage Channels",
     MANAGE_ROLES: "Manage Roles",
     CREATE_INSTANT_INVITE: "Create Invite",
+    CREATE_EXPRESSIONS: "Create Expressions",
 }
 # Downtime results are plain text; posts are embeds with pictures.
 FOR_RESULTS = VIEW_CHANNEL | SEND_MESSAGES
@@ -73,6 +82,11 @@ FOR_POSTS = PERMISSIONS
 ALL_PERMISSIONS = (1 << 64) - 1
 # Discord's error code for a request the bot lacks a permission for.
 MISSING_PERMISSIONS = 50013
+# Discord's error codes for a server with as many emoji as it may have (static and
+# animated), and for an image too big for an emoji.
+MAX_EMOJI = 30008
+MAX_ANIMATED_EMOJI = 30018
+FILE_TOO_BIG = 50045
 # Text and announcement channels.
 TEXT_CHANNEL_TYPES = (0, 5)
 # A wait Discord asks for that is short enough to sit out here, in seconds.
@@ -237,12 +251,20 @@ def request(method: str, path: str, **kwargs: Any) -> httpx.Response:
                     if error_code(response) == MISSING_PERMISSIONS
                     else "The Horatio bot cannot see or post in that channel."
                 )
-                raise SendError(reason, retry=False, status=403)
+                raise SendError(reason, retry=False, status=403, code=error_code(response))
             if response.status_code == 404:
-                raise SendError("That channel or server no longer exists.", retry=False, status=404)
+                raise SendError(
+                    "That channel or server no longer exists.",
+                    retry=False,
+                    status=404,
+                    code=error_code(response),
+                )
             if response.is_error:
                 raise SendError(
-                    f"Discord refused the message ({response.status_code}).", retry=False
+                    f"Discord refused the message ({response.status_code}).",
+                    retry=False,
+                    status=response.status_code,
+                    code=error_code(response),
                 )
             return response
         raise SendError("Discord kept asking Horatio to slow down.", retry=True, retry_after=60)
@@ -657,6 +679,95 @@ def create_invite(channel_id: str, max_age: int = 7 * 24 * 3600) -> str:
     return f"https://discord.gg/{found['code']}"
 
 
+# --- emoji, for the clan and discipline symbols Horatio adds to a server (#870) ----------------
+
+
+@dataclass(frozen=True)
+class Emoji:
+    """One of a server's (or the bot's own) custom emoji."""
+
+    id: str
+    name: str
+    animated: bool
+
+
+@dataclass(frozen=True)
+class EmojiRoom:
+    """A server's custom emoji and its Server Boost level, which says how many it may
+    have."""
+
+    premium_tier: int
+    features: Sequence[str]
+    emoji: Sequence[Emoji]
+
+
+def emoji_of(found: Iterable[Mapping[str, Any]]) -> list[Emoji]:
+    return [
+        Emoji(id=str(e["id"]), name=str(e.get("name") or ""), animated=bool(e.get("animated")))
+        for e in found
+        if e.get("id")
+    ]
+
+
+def emoji_room(guild_id: str) -> EmojiRoom:
+    """The server's emoji and boost level, from Discord: two calls. Raises SendError."""
+    try:
+        guild = request("GET", f"/guilds/{guild_id}").json()
+        listed = request("GET", f"/guilds/{guild_id}/emojis").json()
+        return EmojiRoom(
+            premium_tier=int(guild.get("premium_tier") or 0),
+            features=[str(f) for f in guild.get("features") or []],
+            emoji=emoji_of(listed),
+        )
+    except (KeyError, TypeError, ValueError) as error:
+        raise SendError(
+            "Discord's answer about the server's emoji was not as expected.", retry=False
+        ) from error
+
+
+def image_data(png: bytes) -> str:
+    """A PNG as the data URI Discord takes for an emoji's image."""
+    return "data:image/png;base64," + base64.b64encode(png).decode()
+
+
+def create_emoji(guild_id: str, name: str, png: bytes) -> Emoji:
+    """Add an emoji to the server. Needs Create Expressions. Raises SendError: a
+    server with no room left is `code` MAX_EMOJI."""
+    made = request(
+        "POST",
+        f"/guilds/{guild_id}/emojis",
+        json={"name": name, "image": image_data(png)},
+        headers={"X-Audit-Log-Reason": "Horatio: the troupe's clan and discipline symbols"},
+    ).json()
+    return emoji_of([made])[0]
+
+
+def delete_emoji(guild_id: str, emoji_id: str) -> None:
+    """Delete an emoji the bot added; one already gone is fine. Raises SendError."""
+    try:
+        request("DELETE", f"/guilds/{guild_id}/emojis/{emoji_id}")
+    except SendError as error:
+        if error.status != 404:
+            raise
+
+
+def app_emoji() -> list[Emoji]:
+    """The bot's own emoji (its application's), which only it can use. Raises
+    SendError."""
+    found = request("GET", f"/applications/{get_settings().discord_client_id}/emojis").json()
+    return emoji_of(found.get("items") or [])
+
+
+def create_app_emoji(name: str, png: bytes) -> Emoji:
+    """Add one of the bot's own emoji. Raises SendError."""
+    made = request(
+        "POST",
+        f"/applications/{get_settings().discord_client_id}/emojis",
+        json={"name": name, "image": image_data(png)},
+    ).json()
+    return emoji_of([made])[0]
+
+
 def channel_slug(name: str) -> str:
     """A name as Discord writes a text channel's: lower case, words joined by dashes,
     no accents or punctuation. "Agnès Wren" is "agnes-wren"."""
@@ -782,6 +893,9 @@ class DiscordConnector(Connector):
             # What Horatio does with the server's character channels (#855) is
             # changed only through horatio.discord_channels.
             **({"managed": current["managed"]} if current.get("managed") else {}),
+            # And so is what it does with the server's emoji (#870), through
+            # horatio.discord_emoji.
+            **({"emoji": current["emoji"]} if current.get("emoji") else {}),
         }
 
     def unreachable(
