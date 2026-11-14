@@ -70,7 +70,14 @@
 #     `pools`, `damage` or `test` entry may name it;
 #   - `qualities = [{ kind, name, focus? }]`: equipment qualities it gives every
 #     time it is on, without picking (#820: Armor of Terra's Hardened and Ballistic),
-#     counted as picked ones are.
+#     counted as picked ones are;
+#   - `disciplines = [{ discipline, amount }]`: the character counts that many dots
+#     more of a discipline it has, never past 5 (issue #849: Mercurial Vitality's
+#     Potence and Fortitude, core p. 229). The powers gained by them hold while it
+#     is on: their `pools` and `damage` with no `when` count as this switch's, and
+#     their notes are added to it;
+#   - `waives = [Name]`: using the named disciplines or powers costs nothing while
+#     it is on (issue #849: Quickened Blood's Celerity, core p. 230).
 #   `target` is who it can be used on (issue #823): "self" (the default), "other"
 #   for one used only on another character of the home troupe (Fleshcraft reshaping
 #   a willing person), or "any" for either. Used on another, it is an effect on
@@ -2915,18 +2922,21 @@ name = "Unnatural Grace"
 cost = { blood = 1 }
 active = { key = "Unnatural Grace", page = 232, notes = ["An hour: stick to surfaces up to upright (walls, tightropes, not ceilings).", "Land silently and unhurt from any fall up to a mile."] }
 
-# Core p. 229 (#820): for the turn, Potence and Fortitude each a dot higher.
+# Core p. 229 (#820, #849): 1 Blood and a simple action, and for the rest of the
+# turn Potence and Fortitude each count a dot higher, never past the 5th.
 [[others]]
 category = "techniques"
 name = "Mercurial Vitality"
 cost = { blood = 1 }
-active = { key = "Mercurial Vitality", page = 229, notes = ["This turn: your Potence and Fortitude each count a dot higher, never past 5."] }
+active = { key = "Mercurial Vitality", page = 229, disciplines = [{ discipline = "Potence", amount = 1 }, { discipline = "Fortitude", amount = 1 }], notes = ["For the rest of the turn: your Potence and Fortitude each count a dot higher, never past 5."] }
 
-# Core p. 230 (#820): pay for Celerity two turns running, and it's free for five minutes.
+# Core p. 230 (#820, #849): after paying for Celerity two turns running, its first
+# five dots cost no Blood for five minutes. The player switches it on then; Celerity's
+# Use spends nothing while it is on. Elder powers of Celerity aren't among those dots.
 [[others]]
 category = "techniques"
 name = "Quickened Blood"
-active = { key = "Quickened Blood", page = 230, notes = ["After paying for Celerity two turns running: five minutes in which its first five dots cost no Blood."] }
+active = { key = "Quickened Blood", page = 230, waives = ["Celerity"], notes = ["Turn it on after paying for Celerity two turns running: for five minutes, Celerity's first five dots cost no Blood.", "Elder powers of Celerity (Projectile and the like) still cost what they do."] }
 
 # Vol. 2 Issue 1 p. 71 (#820): always on: with Celerity active, initiative gains your
 # current Derangement traits, which the Play View counts; and a Derangement trait can

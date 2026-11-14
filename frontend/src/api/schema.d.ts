@@ -19435,6 +19435,23 @@ export interface components {
             /** Versus */
             versus: string | null;
         };
+        /**
+         * DisciplineRaise
+         * @description Dots a switch adds to a discipline the character has, never past 5 (issue #849:
+         *     Mercurial Vitality's Potence and Fortitude, core p. 229). The powers gained hold
+         *     while it is on: their pool and damage changes count as the switch's.
+         */
+        DisciplineRaise: {
+            /** Amount */
+            amount: number;
+            /** Discipline */
+            discipline: string;
+            /**
+             * To
+             * @default 0
+             */
+            to: number;
+        };
         /** DiscordAccount */
         DiscordAccount: {
             /** Available */
@@ -28186,6 +28203,11 @@ export interface components {
              */
             counts_as_form: boolean;
             /**
+             * Disciplines
+             * @default []
+             */
+            disciplines: components["schemas"]["DisciplineRaise"][];
+            /**
              * Fixed
              * @default []
              */
@@ -28271,6 +28293,11 @@ export interface components {
              * @default 0
              */
             turned_on: number;
+            /**
+             * Waives
+             * @default []
+             */
+            waives: string[];
         };
         /**
          * PowerUse

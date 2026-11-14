@@ -312,6 +312,17 @@ class AttributeChange(BaseModel):
     pools: str | None = None
 
 
+class DisciplineRaise(BaseModel):
+    """Dots a switch adds to a discipline the character has, never past 5 (issue #849:
+    Mercurial Vitality's Potence and Fortitude, core p. 229). The powers gained hold
+    while it is on: their pool and damage changes count as the switch's."""
+
+    discipline: str
+    amount: int
+    # The dots it counts as while on, for this sheet: its own plus `amount`, at most 5.
+    to: int = 0
+
+
 class AddedNote(BaseModel):
     """What another power the character has adds to a switch, that can't be worked
     out (issue #601): Quickness's extra round on Celerity's."""
@@ -446,6 +457,11 @@ class Switch(BaseModel):
     # or either ("any"). One used on another is an effect on them, kept until undone
     # (horatio.play_on_others).
     target: Literal["self", "other", "any"] = "self"
+    # Dots it adds to disciplines while on (issue #849).
+    disciplines: list[DisciplineRaise] = []
+    # What using costs nothing while it is on, by the name of the discipline or power
+    # its Use button is on (issue #849: Quickened Blood's Celerity, core p. 230).
+    waives: list[str] = []
 
 
 class Frenzy(BaseModel):
@@ -788,67 +804,77 @@ def owners(sheet: Sheet) -> Iterable[Owner]:
         yield Owner(entry, entry["name"], entry["name"])
 
 
+def _effects(
+    entries: Iterable[Mapping[str, Any]],
+    source: str,
+    chosen: Mapping[str, str],
+    sheet: Sheet,
+    bases: Mapping[str, set[str]],
+) -> list[Effect]:
+    """The pool changes of some `pools` entries, resolved to numbers."""
+    found: list[Effect] = []
+    for e in entries:
+        if not _holds(e, sheet, chosen):
+            continue
+        found.append(
+            Effect(
+                pool=e["pool"],
+                source=source,
+                amount=_amount(e.get("amount", 0), sheet, bases),
+                when=e.get("when"),
+                note=e.get("note"),
+                attribute=e.get("attribute"),
+                willpower_floor=e.get("willpower_floor", 0),
+                instead_of=tuple(e.get("instead_of", ())),
+                focus=e.get("focus"),
+                beast=e.get("beast", 0),
+                tracks=e.get("amount") if e.get("amount") in TRACKED else None,
+                alternative=_alternative(e.get("alternative"), sheet),
+                against=e.get("against"),
+                label=e.get("label"),
+                qualities=tuple(
+                    VariantQuality(name=q["name"], play=q["play"], page=_page(q))
+                    for q in e.get("qualities", [])
+                ),
+            )
+        )
+    return found
+
+
 def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
     """Every pool change the character has, from its disciplines, powers,
     merits and flaws, resolved to numbers."""
     found: list[Effect] = []
-
-    def add(entries: Iterable[Mapping[str, Any]], source: str, chosen: Mapping[str, str]) -> None:
-        for e in entries:
-            if not _holds(e, sheet, chosen):
-                continue
-            found.append(
-                Effect(
-                    pool=e["pool"],
-                    source=source,
-                    amount=_amount(e.get("amount", 0), sheet, bases),
-                    when=e.get("when"),
-                    note=e.get("note"),
-                    attribute=e.get("attribute"),
-                    willpower_floor=e.get("willpower_floor", 0),
-                    instead_of=tuple(e.get("instead_of", ())),
-                    focus=e.get("focus"),
-                    beast=e.get("beast", 0),
-                    tracks=e.get("amount") if e.get("amount") in TRACKED else None,
-                    alternative=_alternative(e.get("alternative"), sheet),
-                    against=e.get("against"),
-                    label=e.get("label"),
-                    qualities=tuple(
-                        VariantQuality(name=q["name"], play=q["play"], page=_page(q))
-                        for q in e.get("qualities", [])
-                    ),
-                )
-            )
-
     for owner in owners(sheet):
-        add(owner.entry.get("pools", []), owner.source, owner.chosen)
+        found += _effects(owner.entry.get("pools", []), owner.source, owner.chosen, sheet, bases)
     for category, name, properties in sheet.traits:
         if category in ("merits", "flaws"):
-            add(properties.get("pools", []), name, {})
+            found += _effects(properties.get("pools", []), name, {}, sheet, bases)
     return found
+
+
+def _damage_effects(owner: Owner, sheet: Sheet) -> list[DamageEffect]:
+    """The changes to attack damage of one entry the character has."""
+    return [
+        DamageEffect(
+            attacks=tuple(e["attacks"]),
+            source=owner.source,
+            amount=e.get("amount", 0),
+            exceptional=e.get("exceptional", 0),
+            type=e.get("type", "normal"),
+            when=e.get("when"),
+            note=e.get("note"),
+            focus=e.get("focus"),
+        )
+        for e in owner.entry.get("damage", [])
+        if _holds(e, sheet, owner.chosen)
+    ]
 
 
 def damage_effects(sheet: Sheet) -> list[DamageEffect]:
     """Every change to attack damage the character has, from its disciplines, the
     powers it has reached and its other powers."""
-    found: list[DamageEffect] = []
-    for owner in owners(sheet):
-        for e in owner.entry.get("damage", []):
-            if not _holds(e, sheet, owner.chosen):
-                continue
-            found.append(
-                DamageEffect(
-                    attacks=tuple(e["attacks"]),
-                    source=owner.source,
-                    amount=e.get("amount", 0),
-                    exceptional=e.get("exceptional", 0),
-                    type=e.get("type", "normal"),
-                    when=e.get("when"),
-                    note=e.get("note"),
-                    focus=e.get("focus"),
-                )
-            )
-    return found
+    return [d for owner in owners(sheet) for d in _damage_effects(owner, sheet)]
 
 
 def damage(
@@ -1341,6 +1367,16 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet, every: bool =
             for q in active.get("qualities", [])
             if holds(q)
         ],
+        disciplines=[
+            DisciplineRaise(
+                discipline=d["discipline"],
+                amount=d["amount"],
+                to=min(5, sheet.disciplines.get(d["discipline"], 0) + d["amount"]),
+            )
+            for d in active.get("disciplines", [])
+            if sheet.disciplines.get(d["discipline"], 0) > 0
+        ],
+        waives=list(active.get("waives", [])),
         target=active.get("target") or active.get("picks", {}).get("target", "self"),
     )
 
@@ -1532,6 +1568,58 @@ def focus_effects(
     return pools, hurts
 
 
+def raised_effects(
+    sheet: Sheet, bases: Mapping[str, set[str]], found: Sequence[Switch]
+) -> tuple[list[Effect], list[DamageEffect]]:
+    """What a switch's extra discipline dots give (issue #849: Mercurial Vitality's
+    Potence and Fortitude, core p. 229): the powers gained by them, as effects that
+    hold while it is on, and their notes added to the switch. A gained power's
+    entries that hold only with another switch on, and its own switches, are left
+    out: the Play View has no way to need two switches at once, and none of the
+    powers raised so far has any."""
+    pools: list[Effect] = []
+    hurts: list[DamageEffect] = []
+    book = catalogue()
+    for switch in found:
+        for raise_ in switch.disciplines:
+            have = sheet.disciplines.get(raise_.discipline, 0)
+            for power in book.powers.get(raise_.discipline, []):
+                if not have < power["level"] <= raise_.to:
+                    continue
+                owner = Owner(
+                    power,
+                    power["name"],
+                    f"{raise_.discipline} {power['level']}",
+                    sheet.chosen(raise_.discipline, power),
+                )
+                pools += [
+                    replace(e, when=switch.key)
+                    for e in _effects(
+                        power.get("pools", []), owner.source, owner.chosen, sheet, bases
+                    )
+                    if e.when is None
+                ]
+                hurts += [
+                    replace(d, when=switch.key)
+                    for d in _damage_effects(owner, sheet)
+                    if d.when is None
+                ]
+                switch.notes.append(f"{owner.origin}, {power['name']}: {power['note']}")
+    return pools, hurts
+
+
+def _raised(switch: Switch, sheet: Sheet) -> list[str]:
+    """A switch's extra discipline dots, in words: "Potence counts as 3"."""
+    lines: list[str] = []
+    for raise_ in switch.disciplines:
+        have = sheet.disciplines.get(raise_.discipline, 0)
+        if raise_.to > have:
+            lines.append(f"{raise_.discipline} counts as {raise_.to}")
+        else:
+            lines.append(f"{raise_.discipline} is already at {have}, the most")
+    return lines
+
+
 def added_notes(sheet: Sheet, found: Sequence[Switch]) -> None:
     """Give each switch the `notes` other entries the character has add to it, by
     their `when` (issue #601): Quickness's on Celerity, Earth Control's on Earth Meld."""
@@ -1563,10 +1651,11 @@ def work_out(sheet: Sheet, bases: Mapping[str, set[str]]) -> Worked:
     found += [option for s in list(found) for option in option_switches(s)]
     pools, hurts = effects(sheet, bases), damage_effects(sheet)
     more_pools, more_hurts = focus_effects(sheet, bases, found)
-    pools, hurts = pools + more_pools, hurts + more_hurts
+    raised_pools, raised_hurts = raised_effects(sheet, bases, found)
+    pools, hurts = pools + more_pools + raised_pools, hurts + more_hurts + raised_hurts
     tested = power_tests(sheet)
     for switch in found:
-        switch.changes = _changes(switch, pools, hurts, tested)
+        switch.changes = _raised(switch, sheet) + _changes(switch, pools, hurts, tested)
     added_notes(sheet, found)
     return Worked(pools, hurts, found)
 
