@@ -68,6 +68,7 @@ function view(powers: PowerSwitch[], marks: string[] = [], forms = 1): PlayView 
     herd: 0,
     blood: { value: 10, most: 10, start: 10 },
     retainers: [],
+    summons: [],
     blood_usual: 10,
     half_blood: false,
     willpower: { value: 6, most: 6, start: 6 },

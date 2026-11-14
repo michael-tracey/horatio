@@ -985,6 +985,57 @@
         "title": "AllowancesOut",
         "type": "object"
       },
+      "AllyOut": {
+        "description": "One ally a power can call up at this game (issue #827), out or not: tapped as\n\"<key>\" to call it up or dismiss it, \"<key>/health\" and \"<key>/blood\" while out.",
+        "properties": {
+          "blood": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tracker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tracker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "order": {
+            "default": 0,
+            "title": "Order",
+            "type": "integer"
+          },
+          "out": {
+            "title": "Out",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "out",
+          "health",
+          "blood"
+        ],
+        "title": "AllyOut",
+        "type": "object"
+      },
       "AnswerIn": {
         "properties": {
           "body": {
@@ -37164,6 +37215,14 @@
               }
             ]
           },
+          "summons": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SummonOut"
+            },
+            "title": "Summons",
+            "type": "array"
+          },
           "tabs": {
             "default": [
               "sheet",
@@ -38916,6 +38975,22 @@
             "default": 0,
             "title": "Retainer",
             "type": "integer"
+          },
+          "summon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summon"
+          },
+          "summon_all": {
+            "default": false,
+            "title": "Summon All",
+            "type": "boolean"
           },
           "target": {
             "default": "self",
@@ -50863,6 +50938,53 @@
           "label"
         ],
         "title": "SuggestedRequirementOut",
+        "type": "object"
+      },
+      "SummonOut": {
+        "description": "What a power can call up (issue #827), and the allies it can have out at once.",
+        "properties": {
+          "allies": {
+            "items": {
+              "$ref": "#/components/schemas/AllyOut"
+            },
+            "title": "Allies",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "origin",
+          "page",
+          "note",
+          "most",
+          "allies"
+        ],
+        "title": "SummonOut",
         "type": "object"
       },
       "SuppressIn": {
