@@ -9,6 +9,7 @@ from collections.abc import Callable, Iterator
 from datetime import timedelta
 from types import SimpleNamespace
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
@@ -58,6 +59,11 @@ class FakeServer(FakeDiscord):
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path.removeprefix("/api/v10")
+        # A player linking their own Discord account (#857): an `identify` grant.
+        if path == "/oauth2/token" and b"code=link-code" in request.content:
+            return httpx.Response(200, json={"access_token": "user-token", "scope": "identify"})
+        if path == "/users/@me" and request.headers["Authorization"] == "Bearer user-token":
+            return httpx.Response(200, json={"id": PLAYER, "username": "nightowl"})
         if path == f"/guilds/{GUILD}" and request.method == "GET":
             return httpx.Response(
                 200,
@@ -460,3 +466,30 @@ def test_a_linked_discord_account_takes_over_a_match(court: Court, fake: FakeSer
 )
 def test_channel_names(name: str, slug: str) -> None:
     assert discord.channel_slug(name) == slug
+
+
+def test_linking_their_discord_account_resolves_a_match(court: Court, fake: FakeServer) -> None:
+    """A player linking their Discord account (#857) settles a match a storyteller
+    was still to confirm: the verified account takes over, and their character is
+    ready to have its channel made."""
+    court.player.discord_handle = "nightowl"
+    court.session.flush()
+    fake.add_member(PLAYER, "nightowl")
+    court.manage()
+    assert court.make()["status"] == "confirm"
+    player = court.troupe.player.client
+
+    started = player.post("/account/discord/link")
+    assert started.status_code == 200, started.text
+    state = parse_qs(urlparse(started.json()["url"]).query)["state"][0]
+    back = player.get(
+        "/discord/callback", params={"state": state, "code": "link-code"}, follow_redirects=False
+    )
+
+    assert back.status_code == 303, back.text
+    managed = court.settings()["managed"]
+    assert managed["pending"] == {}
+    assert managed["state"][court.agnes]["status"] == "ready"
+    shown = court.setup()["managed"]["characters"][court.agnes]
+    assert (shown["discord"], shown["match"]) == ("verified", None)
+    assert court.make()["status"] == "made"

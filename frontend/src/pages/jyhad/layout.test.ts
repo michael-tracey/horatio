@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ART, CAPACITY, CARD, FOOTER, FRAME, NAME, TEXT, TEXT_SIZES, clanLetters, disciplineBox, layoutText, lookOf, nameFit, NAME_WIDTH, ribbonEnd, wrap, type Measure } from "./layout";
+import { ART, CAPACITY, CARD, FOOTER, FRAME, NAME, TEMPLATE_IMAGE, TEMPLATE_PX, TEXT, TEXT_SIZES, T_DROP, T_NAME, T_OVAL, T_SIDEBAR, T_TEXT, clanLetters, disciplineBox, layoutTemplateText, layoutText, lookOf, nameFit, NAME_WIDTH, ribbonEnd, templateDisciplineBox, templateNameFit, wrap, type Measure } from "./layout";
 
 /** Every letter half its size wide: near enough a serif's average. */
 const measure: Measure = (text, size) => text.length * size * 0.5;
@@ -86,5 +86,50 @@ describe("the Jyhad card's frame", () => {
     expect(lookOf(null)).toBe("night");
     expect(lookOf("Sabbat")).toBe("bone");
     expect(lookOf("Anarch")).toBe("bone");
+  });
+});
+
+describe("the Jyhad card on a clan's crypt card template (#850)", () => {
+  it("keeps where things are as the backend's detect found them on the 2020 templates", () => {
+    // horatio.crypt_templates.LAYOUT, in the template's pixels.
+    expect(TEMPLATE_PX).toMatchObject({
+      width: 819,
+      height: 1114,
+      oval: { x: 194, y: 153, w: 531, h: 689 },
+      text: { x: 188, y: 858, w: 546, h: 146 },
+      drop: { x: 675, y: 956, w: 66, h: 66 },
+      sidebar: { x: 67, y: 300, w: 99, h: 744 },
+      name: { x: 78, y: 76, w: 640, h: 64 },
+    });
+    // The same in millimetres as `python -m horatio.crypt_templates` prints.
+    const round = (b: { x: number; y: number; w: number; h: number }) => [b.x, b.y, b.w, b.h].map((n) => +n.toFixed(2));
+    expect(round(T_OVAL)).toEqual([13.26, 9.78, 44.97, 58.35]);
+    expect(round(T_TEXT)).toEqual([12.75, 69.49, 46.24, 12.37]);
+    expect(round(T_DROP)).toEqual([53.99, 77.79, 5.59, 5.59]);
+    // The template's bleed goes past the card's edges, as much on each side.
+    expect(round(TEMPLATE_IMAGE)).toEqual([-3.17, -3.17, 69.37, 94.35]);
+  });
+
+  it("puts six disciplines down the sidebar, under the clan symbol and above the card's foot", () => {
+    for (let n = 0; n < 6; n++) {
+      const b = templateDisciplineBox(n);
+      expect(b.x).toBeGreaterThanOrEqual(T_SIDEBAR.x);
+      expect(b.x + b.w).toBeLessThanOrEqual(T_SIDEBAR.x + T_SIDEBAR.w + 0.01);
+      expect(b.y + b.h).toBeLessThanOrEqual(T_TEXT.y + T_TEXT.h);
+    }
+    // The name's band is above the oval.
+    expect(T_NAME.y + T_NAME.h).toBeLessThan(T_OVAL.y);
+  });
+
+  it("fits the text in the template's box, clear of the drop", () => {
+    const laid = layoutTemplateText("Camarilla Prince of Asheville: 2 votes", "Once each turn, Varga may burn a blood to untap. ".repeat(2), "A lie well told.", measure);
+    expect(laid.lines[0]).toMatchObject({ style: "bold" });
+    for (const line of laid.lines) {
+      expect(line.x).toBeGreaterThanOrEqual(T_TEXT.x);
+      expect(line.y).toBeLessThanOrEqual(T_TEXT.y + T_TEXT.h);
+      // A line level with the drop ends before it.
+      if (line.y > T_DROP.y) expect(line.x + measure(line.text, laid.size, line.style)).toBeLessThanOrEqual(T_DROP.x);
+    }
+    expect(templateNameFit("Varga", measure).size).toBeLessThanOrEqual(4.2);
   });
 });

@@ -24,6 +24,7 @@ from horatio.reference import (
     other_powers,
     own_tests,
     pools,
+    uses,
     work_out,
 )
 from horatio.rules.files import DATA_DIR, all_rule_set_files, load_rule_set
@@ -1366,3 +1367,130 @@ def test_manic_episode_adds_derangement_traits_to_initiative_with_celerity() -> 
     )
     celerity = by_key(worked.switches)["Celerity"]
     assert [a.source for a in celerity.added] == ["Manic Episode"]
+
+
+USE_KEYS = {
+    "label",
+    "cost",
+    "heal",
+    "convert",
+    "mend",
+    "gain",
+    "beast",
+    "retainer",
+    "when",
+    "once",
+    "focus",
+    "unless_focus",
+    "note",
+    "page",
+    "book",
+}
+CHANGES = ("heal", "convert", "mend", "gain", "beast", "retainer")
+
+
+def test_every_use_says_what_it_changes_and_where() -> None:
+    """Issue #825: a use heals, converts, gains or takes something, from a page,
+    and one that waits on a switch names one the file has."""
+    book = catalogue()
+    entries = [*(p for ps in book.powers.values() for p in ps), *book.others.values()]
+    found = [(e["name"], u) for e in entries for u in e.get("use", [])]
+    assert len(found) >= 20
+    for name, u in found:
+        assert set(u) <= USE_KEYS, (name, set(u) - USE_KEYS)
+        assert u["label"] and u.get("page"), name
+        assert any(k in u for k in CHANGES), name
+        if "heal" in u:
+            assert u["heal"]["damage"] in {"normal", "aggravated", "worst", "all", "asked"}, name
+        assert set(u.get("gain", {})) <= {"blood", "willpower"}, name
+        assert set(u.get("cost", {})) <= {"blood", "willpower"}, name
+        if "when" in u:
+            assert u["when"] in book.switch_keys, name
+
+
+def test_healing_powers_heal_as_the_book_says() -> None:
+    """Corpore Sano (core p. 143), Mens Sana (p. 166), Repair the Undead Flesh
+    (p. 216), Second Wind (p. 231) and the rest, with what a focus adds."""
+    book = catalogue()
+    plain, wits = Sheet(), Sheet(focuses={"Wits"})
+
+    def summary(found: list[Any]) -> list[tuple[Any, ...]]:
+        return [
+            (
+                u.label,
+                u.cost.amount if u.cost else 0,
+                (u.heal.damage, u.heal.amount) if u.heal else None,
+                u.once,
+            )
+            for u in found
+        ]
+
+    corpore = book.power("Obeah", "Corpore Sano")
+    assert corpore is not None
+    assert summary(uses(corpore, plain)) == [("Heal 1 normal", 1, ("normal", 1), "Once a turn")]
+    assert [u.label for u in uses(corpore, wits)] == ["Heal 1 normal", "Heal 1 aggravated"]
+    mens = book.power("Valeren", "Mens Sana")
+    assert mens is not None
+    assert [u.once for u in uses(mens, plain)] == ["Once a turn"]
+    assert [u.once for u in uses(mens, wits)] == ["Twice a turn"]
+    repair = book.others[("elder_disciplines", "Fortitude: Repair the Undead Flesh")]
+    assert summary(uses(repair, plain)) == [("Heal 1 aggravated", 2, ("aggravated", 1), None)]
+    wind = uses(book.others[("techniques", "Second Wind")], plain)
+    assert [(u.convert_all, u.cost and u.cost.amount) for u in wind] == [(True, 1)]
+    # Reflection of Endurance is Mens Sana, Reflection of Mercy Corpore Sano (pp. 230-231).
+    endurance = uses(book.others[("techniques", "Reflection of Endurance")], wits)
+    assert summary(endurance) == summary(uses(mens, wits))
+    mercy = uses(book.others[("techniques", "Reflection of Mercy")], wits)
+    assert [s[:3] for s in summary(mercy)] == [s[:3] for s in summary(uses(corpore, wits))]
+    # The third Moment of Reflection gives back 2 Willpower with Intelligence (Vol. 2 p. 160).
+    moment = book.power("Thaumaturgy: Path of Neptune's Might", "Moment of Reflection")
+    assert moment is not None
+    third = [u for u in uses(moment, Sheet(focuses={"Intelligence"})) if u.once == "Once a night"]
+    assert [(g.tracker, g.amount) for g in third[0].gains] == [("willpower", 2)]
+    assert not uses(moment, plain)[1].gains
+
+
+def test_uses_that_gain_spend_half_or_move_damage() -> None:
+    """Theft of Vitae's 3 Blood, 4 on an exceptional success (core p. 189);
+    Indestructible's half the Blood held (Vol. 2 p. 214); Beast's Vigor's damage
+    moved to a ghoul Retainer for a Beast trait (Vol. 2 Issue 1 pp. 58-59)."""
+    book = catalogue()
+    theft = book.power("Thaumaturgy: Path of Blood", "Theft of Vitae")
+    assert theft is not None
+    assert [[(g.tracker, g.amount) for g in u.gains] for u in uses(theft, Sheet())] == [
+        [("blood", 3)],
+        [("blood", 4)],
+    ]
+    # Theft's uses spend nothing, so its plain Use button stays for the 1 Blood.
+    assert cost(theft, Sheet()) == Cost(tracker="blood", amount=1)
+    indestructible = uses(
+        book.others[("luminary_disciplines", "Fortitude: Indestructible")], Sheet()
+    )
+    said = [(u.half, u.cost and u.cost.tracker, u.heal and u.heal.damage) for u in indestructible]
+    assert said == [(True, "blood", "asked")]
+    vigor = book.others[("techniques", "Beast's Vigor")]
+    assert [a["key"] for a in actives(vigor)] == ["Beast's Vigor"]
+    assert [(u.retainer, u.beast, u.when) for u in uses(vigor, Sheet())] == [
+        (3, 1, "Beast's Vigor")
+    ]
+    wolf = uses(book.others[("techniques", "Feed the Blighted Wolf")], Sheet())
+    assert [(u.beast, u.cost) for u in wolf] == [(1, None)]
+
+
+def test_the_reference_sends_a_powers_uses(troupe: Troupe) -> None:
+    """The Pools tab gets each power's uses, as its focus allows (issue #825)."""
+    character_id = created(
+        troupe,
+        "Mender",
+        ("disciplines", "Obeah", 3),
+        ("techniques", "Second Wind", None),
+    )
+    found = reference(troupe, character_id)
+    obeah = next(d for d in found["disciplines"] if d["name"] == "Obeah")
+    corpore = next(p for p in obeah["powers"] if p["name"] == "Corpore Sano")
+    assert [(u["label"], u["cost"], u["heal"]) for u in corpore["uses"]] == [
+        ("Heal 1 normal", {"tracker": "blood", "amount": 1}, {"damage": "normal", "amount": 1})
+    ]
+    wind = next(o for o in found["other_powers"] if o["name"] == "Second Wind")
+    said = [(u["label"], u["convert_all"]) for u in wind["uses"]]
+    assert said == [("Aggravated to normal", True)]

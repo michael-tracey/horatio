@@ -710,6 +710,10 @@ MESSAGES: dict[str, str] = {
     "account.suspension_email_failed": "Horatio could not email {member} about their "
     "suspension: {error}",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
+    "account.discord_linked": "{actor} linked their Discord account, @{discord}.",
+    "account.discord_unlinked": "{actor} unlinked their Discord account.",
+    "account.discord_link_refused": "{actor} tried to link a Discord account already linked to"
+    " another Horatio account.",
     "account.view_as": "{actor} viewed Horatio as {member}, read-only{because}.",
     "account.view_as_ended": "{actor} stopped viewing as {member}.",
     "account.view_as_ended.signed_out": "{actor} signed out, which ended viewing as {member}.",
@@ -806,6 +810,8 @@ MESSAGES: dict[str, str] = {
     "vtes_symbols.fetch_failed": "{actor}'s fetch of the VTES symbols failed, so what was here"
     " stays: {error}",
     "vtes_symbols.removed": "{actor} removed the VTES symbols from the server.",
+    "crypt_templates.uploaded": "{actor} uploaded {count} Jyhad card templates: {templates}.",
+    "crypt_templates.removed": "{actor} removed the Jyhad card templates from the server.",
     "yorick_import.uploaded": "{actor} uploaded a Print Characters page from Yorick for import"
     " ({characters} characters, {portraits} portraits).",
     "yorick_import.deleted": "{actor} deleted the Yorick page uploaded for import, and its report.",

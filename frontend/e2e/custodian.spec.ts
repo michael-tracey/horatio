@@ -75,6 +75,8 @@ test("a player fills in their profile, and the custodian resets their password",
   await expect(c.getByText(new RegExp(`^@${player.handle} · Member since .+\\(new this month\\)$`))).toBeVisible();
   await expect(c.getByText("Playing since the Masquerade was young.")).toBeVisible();
   await expect(c.getByText("@carbuncle_fan")).toBeVisible();
+  // A username they typed, not one Discord confirmed (#857): no Discord in this suite to link.
+  await expect(c.getByText("· typed, not checked")).toBeVisible();
   await expect(c.getByRole("link", { name: "bsky.app/profile/carbuncle.example" })).toBeVisible();
   await c.screenshot(shots("profile"));
 

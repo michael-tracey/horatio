@@ -377,6 +377,27 @@ The **VTES symbols** card fetches the symbols of *Vampire: The Eternal Struggle*
 
 The card then says when they were fetched, how many there are of each kind (SVG, WebP and PNG), which fonts came, and which of Horatio's clans, bloodlines and disciplines have a symbol and which don't. It lists any PNG over 256 KB, the most Discord allows for an emoji. **Fetch again** replaces them all, keeping the last set if it fails; **Remove** takes them off the server, once you've confirmed.
 
+### Jyhad card templates
+
+The **Jyhad card templates** card takes the clans' 2020 crypt card templates: the Dark Pack's "Community Created Card" frames, one for each clan and antitribu, named `2020_Crypt_<Clan>.png`. A character's Jyhad card is then drawn on its clan's template instead of Horatio's own frame:
+- **The portrait** sits in the template's oval.
+- **The disciplines** go down the sidebar on the left, under the clan symbol the template prints.
+- **The name** goes across the top.
+- **The text** goes in the pale box at the bottom.
+- **The capacity** goes on the printed blood drop.
+
+Which template a card uses:
+- **A bloodline with its own template** (True Brujah, Ahrimanes, Samedi, Kiasyd, Ishtarri) uses that one; any other bloodline uses its clan's.
+- **A Sabbat character** uses the antitribu's template where there is one, and a Sabbat Caitiff the Panders'.
+- **A clan with no template** (or a server with none) keeps Horatio's frame.
+
+The templates are Paradox's, under the Dark Pack Agreement, so Horatio never ships them: you upload them here, and only people who can see a character are sent its card's template.
+
+1. Tick **I accept Paradox's Dark Pack Agreement for this server**.
+2. Choose **Upload templates**, and pick the PNGs, or a zip of them. All of them come to about 47 MB.
+
+Horatio checks each one: its file name must name a clan, and it must be a PNG of the 2020 templates' size (819 × 1114) with its oval where theirs is. It keeps them as WebP beside the Dark Pack resources. The card then says what the upload added, what it left out and why (a second copy of a clan, a file of another size), which templates are here, and which of Horatio's clans and bloodlines have one. An upload adds to those already here; one of a clan already here replaces it. **Remove** takes them all off the server, once you've confirmed.
+
 ## Clan logos and the Dark Pack import
 
 Game badges show a character's clan logo beside its picture, or in its place when it has none. The official clan symbols belong to the game's publisher, so Horatio ships none. There are two ways to give the clans logos:
