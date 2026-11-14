@@ -5094,6 +5094,21 @@
         "title": "Body_upload_dark_pack_api_tools_dark_pack_upload_post",
         "type": "object"
       },
+      "Body_upload_header_api_site_email_design_header_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_header_api_site_email_design_header_post",
+        "type": "object"
+      },
       "Body_upload_image_api_troupes__troupe_id__throw_images__which__post": {
         "properties": {
           "file": {
@@ -17096,6 +17111,174 @@
         "title": "EmailChanges",
         "type": "object"
       },
+      "EmailDesignDefaults": {
+        "properties": {
+          "accent": {
+            "title": "Accent",
+            "type": "string"
+          },
+          "header_colour": {
+            "title": "Header Colour",
+            "type": "string"
+          },
+          "header_text_colour": {
+            "title": "Header Text Colour",
+            "type": "string"
+          },
+          "site_name": {
+            "title": "Site Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "site_name",
+          "header_colour",
+          "header_text_colour",
+          "accent"
+        ],
+        "title": "EmailDesignDefaults",
+        "type": "object"
+      },
+      "EmailDesignIn": {
+        "properties": {
+          "accent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accent"
+          },
+          "footer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Footer"
+          },
+          "header_colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Header Colour"
+          },
+          "header_text_colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Header Text Colour"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          }
+        },
+        "title": "EmailDesignIn",
+        "type": "object"
+      },
+      "EmailDesignOut": {
+        "properties": {
+          "accent": {
+            "title": "Accent",
+            "type": "string"
+          },
+          "chosen": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Chosen",
+            "type": "array"
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/EmailDesignDefaults"
+          },
+          "footer": {
+            "title": "Footer",
+            "type": "string"
+          },
+          "footer_max": {
+            "title": "Footer Max",
+            "type": "integer"
+          },
+          "header_colour": {
+            "title": "Header Colour",
+            "type": "string"
+          },
+          "header_image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HeaderImageOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "header_text_colour": {
+            "title": "Header Text Colour",
+            "type": "string"
+          },
+          "site_name": {
+            "title": "Site Name",
+            "type": "string"
+          },
+          "site_name_max": {
+            "title": "Site Name Max",
+            "type": "integer"
+          },
+          "uploads": {
+            "title": "Uploads",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "site_name",
+          "header_colour",
+          "header_text_colour",
+          "accent",
+          "footer",
+          "chosen",
+          "defaults",
+          "header_image",
+          "uploads",
+          "warnings",
+          "site_name_max",
+          "footer_max"
+        ],
+        "title": "EmailDesignOut",
+        "type": "object"
+      },
       "EmailHelp": {
         "properties": {
           "available": {
@@ -17107,6 +17290,29 @@
           "available"
         ],
         "title": "EmailHelp",
+        "type": "object"
+      },
+      "EmailPreviewOut": {
+        "properties": {
+          "html": {
+            "title": "Html",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject",
+          "html",
+          "text"
+        ],
+        "title": "EmailPreviewOut",
         "type": "object"
       },
       "Emailed": {
@@ -22566,6 +22772,34 @@
           "drafting"
         ],
         "title": "HavenOut",
+        "type": "object"
+      },
+      "HeaderImageOut": {
+        "properties": {
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "url",
+          "width",
+          "height",
+          "size"
+        ],
+        "title": "HeaderImageOut",
         "type": "object"
       },
       "Health": {
@@ -78320,6 +78554,245 @@
           }
         },
         "summary": "Check Bot",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/email-design": {
+      "get": {
+        "operationId": "get_design_api_site_email_design_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailDesignOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Design",
+        "tags": [
+          "site"
+        ]
+      },
+      "put": {
+        "description": "The site's name, the header's colours, the accent and the footer. Blank parts\nput back Horatio's own.",
+        "operationId": "set_design_api_site_email_design_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailDesignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailDesignOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Design",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/email-design/header": {
+      "delete": {
+        "description": "Emails go back to the site's name, as text, in the header.",
+        "operationId": "remove_header_api_site_email_design_header_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailDesignOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Remove Header",
+        "tags": [
+          "site"
+        ]
+      },
+      "post": {
+        "description": "A picture for the top of every email, replacing any there was. It's kept as a\nPNG or JPEG made small enough to go in every email.",
+        "operationId": "upload_header_api_site_email_design_header_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_header_api_site_email_design_header_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailDesignOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Header",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/email-design/header/{image_id}/{name}": {
+      "get": {
+        "description": "The header picture, as emails carry it, for the custodian's card.",
+        "operationId": "header_file_api_site_email_design_header__image_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "image_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Image Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Header File",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/email-design/preview": {
+      "get": {
+        "description": "A sample email in the design, as a mail client in light or dark shows it.",
+        "operationId": "preview_api_site_email_design_preview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scheme",
+            "required": false,
+            "schema": {
+              "default": "light",
+              "enum": [
+                "light",
+                "dark"
+              ],
+              "title": "Scheme",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview",
+        "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/email-design/test": {
+      "post": {
+        "description": "Send the sample email, in the design, to the custodian's own address now.",
+        "operationId": "test_design_api_site_email_design_test_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailTestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Test Design",
         "tags": [
           "site"
         ]

@@ -25,7 +25,7 @@ from tests.api_helpers import PASSWORD, Person, Troupe, new_character, sign_up
 from tests.test_api_email_changes import token_of
 from tests.test_api_play import send, tap
 from tests.test_api_renames import at_home, other_troupe, summaries, troupe_log, visit
-from tests.test_email_connector import FakeSMTP
+from tests.test_email_connector import FakeSMTP, text_of
 
 
 @pytest.fixture
@@ -358,7 +358,7 @@ def test_a_suspension_on_the_merged_account_carries_to_the_one_that_stays(
     ]
     # The person is told, though not why.
     merge_mail = [m for m in mail.sent if m["Subject"] == "Your Horatio accounts are now one"]
-    text = merge_mail[0].get_content()
+    text = text_of(merge_mail[0])
     assert f"{keep} is suspended in its place until 1 Mar 2099" in text
     assert "Harassing" not in text
 
@@ -489,7 +489,7 @@ def test_it_is_logged_and_the_people_it_affects_are_told(
     assert sorted(m["To"].addresses[0].addr_spec for m in mail.sent) == sorted(
         [troupe.player.email, twin.email]
     )
-    text = mail.sent[0].get_content()
+    text = text_of(mail.sent[0])
     assert f"sign in as @{troupe.player.handle}" in text
     assert "Agnes Moreau" in text
 

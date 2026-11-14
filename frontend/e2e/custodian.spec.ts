@@ -784,6 +784,59 @@ test("the custodian sees whether mail and Discord are set up, never their secret
   await expect(mail.getByRole("textbox", { name: "From address" })).toHaveValue("");
 });
 
+test("the custodian designs Horatio's emails: a header, colours and a footer, previewed light and dark, as HTML and plain text (#830)", async ({ browser }) => {
+  const custodian = await person(browser, "emaildesign-cu");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  await c.goto("/custodian/site");
+
+  const card = c.locator("section").filter({ has: c.getByRole("heading", { name: "Email design", exact: true }) });
+  await expect(card.getByRole("textbox", { name: "Site's name" })).toBeVisible();
+  const preview = card.frameLocator("iframe[title='Preview of an email in the design']");
+  await expect(preview.getByText("This is how Horatio's emails look", { exact: false })).toBeVisible();
+  await expect(preview.getByText("Sent by Horatio", { exact: false })).toBeVisible();
+
+  // Dark, and the plain-text part, which starts with the site's name and keeps the fixed lines.
+  await card.getByRole("radio", { name: "Dark" }).click();
+  await expect(preview.getByText("This is how Horatio's emails look", { exact: false })).toBeVisible();
+  await card.getByRole("radio", { name: "Plain text" }).click();
+  const plain = card.getByLabel("The email as plain text");
+  await expect(plain).toContainText("Choose which emails you get.");
+  await expect(plain).toContainText("Sent by Horatio,");
+  await card.getByRole("radio", { name: "Formatted" }).click();
+  // Mail is off on the e2e server, so there is nothing to send a test with.
+  await expect(card.getByRole("button", { name: "Send me this email" })).toHaveCount(0);
+
+  // The design is the whole site's: only one project's run changes it, and puts it back.
+  if (test.info().project.name === "phone") return;
+  const name = `Night Desk ${run}`;
+  await card.getByRole("textbox", { name: "Site's name" }).fill(name);
+  await card.getByRole("textbox", { name: "Footer" }).fill("Run by the **Night Desk** of the city.");
+  await card.getByRole("button", { name: "Save the design" }).click();
+  await expect(c.getByText("Saved. Every email from now on looks like this.")).toBeVisible();
+  await expect(preview.getByText(name)).toBeVisible();
+  await expect(preview.getByText("Night Desk", { exact: true })).toBeVisible();
+
+  // A header picture goes in place of the name; the name is its alt text.
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAPAAAAA8CAIAAADXHaAKAAAAwElEQVR4nO3SQQ3AIADAwDF5yMQNrjBBQtLcKeijY6/5QcX/OgBuMjQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphiblAMqFAi20AaA8AAAAAElFTkSuQmCC",
+    "base64",
+  );
+  await card.getByLabel("Choose a header picture").setInputFiles({ name: "header.png", mimeType: "image/png", buffer: png });
+  await expect(card.getByRole("img", { name: "The emails' header picture" })).toBeVisible();
+  await expect(card.getByText(/KB in every email/)).toBeVisible();
+  await expect(preview.getByRole("img", { name })).toBeVisible();
+  await card.getByRole("button", { name: "Remove the header picture" }).click();
+  await expect(card.getByRole("img", { name: "The emails' header picture" })).toHaveCount(0);
+
+  // Back to Horatio's own.
+  await card.getByRole("textbox", { name: "Site's name" }).fill("");
+  await card.getByRole("textbox", { name: "Footer" }).fill("");
+  await card.getByRole("button", { name: "Save the design" }).click();
+  await expect(preview.getByText(name)).toHaveCount(0);
+  await expect(card.getByRole("textbox", { name: "Site's name" })).toHaveValue("Horatio");
+});
+
 test("the custodian previews fitting a troupe's NPC creation picks, then fits them", async ({ browser }) => {
   const custodian = await person(browser, "fitpicks-cust");
   makeCustodian(custodian.email);

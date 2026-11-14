@@ -24,6 +24,7 @@ account (`users.unsubscribe_key`), good for that and nothing else.
 import base64
 import hashlib
 import hmac
+import html
 import logging
 import uuid
 from collections.abc import Iterable
@@ -36,9 +37,10 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, delivery, mail_sender, preferences, suspensions
+from horatio import audit, delivery, email_design, mail_sender, preferences, suspensions
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
+from horatio.email_design import Body, Design, Line, compose, text_html
 from horatio.mail_sender import Sender
 from horatio.models import EmailNotice, Troupe, User
 from horatio.preferences import Preferences
@@ -195,40 +197,61 @@ def line(notice: EmailNotice) -> str:
     return f"{notice.troupe}: {notice.summary}" if notice.troupe else notice.summary
 
 
-def footer(user: User, topic: str) -> str:
-    return (
-        f"-- \nYou asked Horatio to email you about {about(topic)}. "
-        f"To stop: {unsubscribe_url(user, topic)}\n"
-        f"Choose which notifications come by email: {absolute('/account/settings')}\n"
-    )
+def footer(user: User, topic: str) -> list[Line]:
+    """Why the email came and how to stop it, under the email design's footer."""
+    return [
+        Line(
+            f"You asked Horatio to email you about {about(topic)}.",
+            unsubscribe_url(user, topic),
+            "Stop these emails",
+        ),
+        Line(
+            "Choose which notifications come by email.",
+            absolute("/account/settings"),
+            "Settings",
+        ),
+    ]
 
 
 def to(user: User) -> str:
     return formataddr((user.display_name, user.email))
 
 
-def one_email(user: User, notice: EmailNotice, sender: Sender | None = None) -> EmailMessage:
+IMPORTANT = "Its staff marked this important, so it comes to everyone in the troupe."
+
+
+def one_email(
+    user: User, notice: EmailNotice, sender: Sender | None = None, design: Design | None = None
+) -> EmailMessage:
     """One notification, as it happened."""
     mail = email.new_message(to(user), line(notice).removesuffix("."), sender)
-    why = (
-        "Its staff marked this important, so it comes to everyone in the troupe.\n"
-        if notice.forced
-        else ""
-    )
-    mail.set_content(
-        f"Hello {user.display_name},\n\n{line(notice)}\n\n{absolute(notice.link)}\n\n"
-        + why
-        + footer(user, notice.topic)
+    why = [Line(IMPORTANT)] if notice.forced else []
+    compose(
+        mail,
+        Body(
+            text=f"Hello {user.display_name},\n\n{line(notice)}\n\n{absolute(notice.link)}",
+            html=text_html(
+                f"Hello {user.display_name},\n\n{line(notice)}", None, "margin: 0 0 16px 0"
+            ),
+            action=("Open it in Horatio", absolute(notice.link)),
+            lines=[*why, *footer(user, notice.topic)],
+            preheader=line(notice),
+        ),
+        design,
     )
     mail["List-Unsubscribe"] = f"<{unsubscribe_url(user, notice.topic)}>"
     return mail
 
 
 def digest_email(
-    user: User, notices: list[EmailNotice], sender: Sender | None = None
+    user: User,
+    notices: list[EmailNotice],
+    sender: Sender | None = None,
+    design: Design | None = None,
 ) -> EmailMessage:
     """Every notification waiting, by kind, each kind with its own way to stop it."""
     sections: list[str] = []
+    pieces: list[str] = []
     for topic in TOPICS:
         these = [n for n in notices if n.topic == topic.name]
         if not these:
@@ -236,12 +259,29 @@ def digest_email(
         lines = "\n".join(f"- {line(n)}\n  {absolute(n.link)}" for n in these)
         stop = f"Stop emails about {about(topic.name)}: {unsubscribe_url(user, topic.name)}"
         sections.append(f"{topic.title}\n\n{lines}\n\n{stop}")
+        items = "".join(
+            f'<li style="margin: 0 0 6px 0"><a href="{html.escape(absolute(n.link), quote=True)}">'
+            f"{html.escape(line(n))}</a></li>"
+            for n in these
+        )
+        pieces.append(
+            f'<h2 style="margin: 20px 0 8px 0; font-size: 18px">{html.escape(topic.title)}</h2>'
+            f'<ul style="margin: 0 0 8px 0; padding-left: 20px">{items}</ul>'
+            f'<p style="margin: 0 0 8px 0; font-size: 13px">'
+            f'<a href="{html.escape(unsubscribe_url(user, topic.name), quote=True)}">'
+            f"Stop emails about {html.escape(about(topic.name))}</a></p>"
+        )
+    greeting = f"Hello {user.display_name},\n\nHere is the day's news from Horatio."
     mail = email.new_message(to(user), f"Horatio: {len(notices)} notifications today", sender)
-    mail.set_content(
-        f"Hello {user.display_name},\n\nHere is the day's news from Horatio.\n\n"
-        + "\n\n\n".join(sections)
-        + "\n\n"
-        + footer(user, ALL)
+    compose(
+        mail,
+        Body(
+            text=greeting + "\n\n" + "\n\n\n".join(sections),
+            html=text_html(greeting, None, "margin: 0 0 16px 0") + "".join(pieces),
+            lines=footer(user, ALL),
+            preheader=f"{len(notices)} notifications from Horatio today.",
+        ),
+        design,
     )
     mail["List-Unsubscribe"] = f"<{unsubscribe_url(user, ALL)}>"
     return mail
@@ -268,11 +308,12 @@ def send_to(db: Session, user: User, notices: list[EmailNotice], at: datetime) -
     else:
         batches = [[n] for n in due]
     sender = mail_sender.sender(db)
+    design = email_design.current(db)
     for batch in batches:
         mail = (
-            one_email(user, batch[0], sender)
+            one_email(user, batch[0], sender, design)
             if len(batch) == 1
-            else digest_email(user, batch, sender)
+            else digest_email(user, batch, sender, design)
         )
         try:
             email.deliver(mail)

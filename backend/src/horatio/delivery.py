@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 
 import horatio.connectors.discord
 import horatio.connectors.email
-from horatio import mail_sender, suspensions
+from horatio import email_design, mail_sender, suspensions
 from horatio.config import get_settings
 from horatio.connectors import CONNECTORS, Message, Recipient, SendError
 from horatio.models import (
@@ -284,6 +284,7 @@ def send_message(db: Session, delivery: Delivery) -> dict[str, object]:
         text=delivery.message,
         link=link,
         sender=mail_sender.sender(db),
+        design=email_design.current(db),
     )
     return {**connector.send(config.settings, target, message), "target": target}
 

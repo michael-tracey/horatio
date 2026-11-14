@@ -40,10 +40,18 @@ from email.utils import formataddr
 from sqlalchemy import ColumnElement, delete, func, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit, character_moves, email_changes, mail_sender, preferences, suspensions
+from horatio import (
+    audit,
+    character_moves,
+    email_changes,
+    email_design,
+    mail_sender,
+    preferences,
+    suspensions,
+)
 from horatio.auth import viewing
-from horatio.config import get_settings
 from horatio.connectors import SendError, email
+from horatio.email_design import Body, compose
 from horatio.models import (
     AuthIdentity,
     Character,
@@ -630,8 +638,7 @@ def email_text(actor: User, keep: User, found: Preview, merged_email: str, reaso
         f" anyone looking for @{merged} finds @{keep.handle}.\n\n"
         f"Moved to @{keep.handle}: {found.summary()}.\n\n"
         f"{suspended}"
-        f"-- \nSent by Horatio, {get_settings().public_url.rstrip('/')}\n"
-    )
+    ).rstrip()
 
 
 def _email(
@@ -642,13 +649,14 @@ def _email(
     if not email.configured():
         return
     text = email_text(actor, keep, found, merged_email, reason)
+    design = email_design.current(db)
     for address in dict.fromkeys([keep.email, merged_email], None):
         mail = email.new_message(
             formataddr((keep.display_name, address)),
             "Your Horatio accounts are now one",
             mail_sender.sender(db),
         )
-        mail.set_content(text)
+        compose(mail, Body(text=text), design)
         try:
             email.deliver(mail)
         except SendError as error:
