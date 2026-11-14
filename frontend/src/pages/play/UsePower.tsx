@@ -32,9 +32,19 @@ export function usingTaps(view: Pick<PlayView, "powers">, cost: Cost, name: stri
   // A kept power used again replaces the one on (#822), so its switch is tapped again.
   const switching = power && (!power.on || power.kept);
   return [
-    { kind: "change", tracker: cost.tracker, amount: -cost.amount, note: switching ? "" : name },
+    // Free while another switch waives it (#849): nothing is spent.
+    ...(cost.amount > 0 ? [{ kind: "change" as const, tracker: cost.tracker, amount: -cost.amount, note: switching ? "" : name }] : []),
     ...(switching ? [{ kind: "change" as const, tracker: switchKey(power.key), amount: 1 }] : []),
   ];
+}
+
+/**
+ * The switch on that makes using a power cost nothing, if any (#849: Quickened
+ * Blood's five minutes of Celerity without Blood, core p. 230). One paused while a
+ * form is on doesn't count.
+ */
+export function waivedBy(view: Pick<PlayView, "powers">, name: string): string | undefined {
+  return view.powers.find((p) => p.on && !p.paused && p.waives.includes(name))?.name;
 }
 
 /** The switches a power can turn on that this character has: one Use button for each, or one for the spend alone. One used only on others has none here (#823). */
@@ -102,7 +112,9 @@ export function UseButtons({
   const keys = choices(view, costed);
   const others = view.character_id ? forOthers(view, costed) : [];
   const picking = others.find((p) => p.key === onOther);
-  const amounts = amountsOf(cost);
+  const free = waivedBy(view, costed.name);
+  // Waived, it costs nothing: one button for each switch, spending none (#849).
+  const amounts = free ? [0] : amountsOf(cost);
   const spending = (amount: number): Cost => ({ ...cost, amount });
   return (
     <span className="flex flex-wrap justify-end gap-2">
@@ -110,22 +122,25 @@ export function UseButtons({
         amounts.map((amount) => {
           const name = key ? (view.powers.find((p) => p.key === key)?.name ?? costed.name) : costed.name;
           const shown = keys.length > 1 ? shortName(name, costed.name) : "Use";
+          const taps = usingTaps(view, spending(amount), costed.name, key);
+          // Free and on already: there is nothing to do.
+          const nothing = free !== undefined && taps.length === 0;
           return (
             <Button
               key={`${key ?? ""}/${amount}`}
               type="button"
               variant="danger"
               className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
-              disabled={left < amount}
-              title={left < amount ? `Not enough ${what}` : undefined}
-              aria-label={`Use ${name}, ${amount} ${what}`}
+              disabled={left < amount || nothing}
+              title={left < amount ? `Not enough ${what}` : free ? `Free while ${free} is on` : undefined}
+              aria-label={free ? `Use ${name}, free while ${free} is on` : `Use ${name}, ${amount} ${what}`}
               onClick={() => {
                 const power = key ? view.powers.find((p) => p.key === key) : undefined;
                 if (power?.kept && power.on && key) setAgain({ key, amount });
-                else use(usingTaps(view, spending(amount), costed.name, key));
+                else use(taps);
               }}
             >
-              {shown} · {amount} {what}
+              {shown} · {free ? (nothing ? "on, free" : "free") : `${amount} ${what}`}
             </Button>
           );
         }),

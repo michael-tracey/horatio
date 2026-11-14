@@ -977,6 +977,52 @@ test("timed powers as switches: Armor of Terra's own qualities under Dodge, and 
   await expect(flesh).toHaveCount(0);
 });
 
+test("Mercurial Vitality counts Potence a dot higher while on, and Quickened Blood makes Celerity's Use free (#849)", async ({ browser }) => {
+  const { page: p } = await person(browser, "vital-quickener");
+  // A Tzimisce with Vicissitude 2, Potence 1, Fortitude 1 and Celerity 2, and the techniques
+  // Mercurial Vitality (core p. 229) and Quickened Blood (core p. 230).
+  const id = await builtVampire(
+    p,
+    "Dobromila",
+    "Tzimisce",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]] },
+    [
+      ["disciplines", "Potence", 1],
+      ["disciplines", "Fortitude", 1],
+      ["disciplines", "Celerity", 2],
+      ["techniques", "Mercurial Vitality", 1],
+      ["techniques", "Quickened Blood", 1],
+    ],
+  );
+  const play = async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { blood: { value: number; most: number } };
+  const { blood } = await play();
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const unarmed = p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ });
+  await expect(unarmed.getByText("Damage 1 (unarmed) · exceptional 2")).toBeVisible();
+
+  // Mercurial Vitality: Potence counts as 2 for the turn, so Might's point is in the damage.
+  await p.getByRole("button", { name: "Use Mercurial Vitality, 1 Blood" }).click();
+  await expect(p.getByText(/Mercurial Vitality switched on$/)).toBeVisible();
+  await expect(unarmed.getByText("Damage 2 (1 unarmed + 1 Might) · exceptional 3")).toBeVisible();
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await switches.click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  await expect(drawer).toContainText("Potence counts as 2");
+  await expect(drawer).toContainText("Fortitude counts as 2");
+  await expect(drawer).toContainText("Fortitude 2, Mettle:");
+  await p.getByLabel("Mercurial Vitality on").uncheck();
+  await expect(unarmed.getByText("Damage 1 (unarmed) · exceptional 2")).toBeVisible();
+
+  // Quickened Blood on: Celerity's Use spends nothing, and switches Celerity on.
+  await p.getByLabel("Quickened Blood on").check();
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await p.getByRole("button", { name: "Use Celerity, free while Quickened Blood is on" }).click();
+  await expect(p.getByText(/Celerity switched on$/)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Use Celerity, free while Quickened Blood is on" })).toBeDisabled();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.value - 1);
+});
+
 test("Azhi Dahaka gives every attribute focus: on the sheet and the Play View, from the power, and counted in its powers (#598)", async ({ browser }) => {
   const { page: p } = await person(browser, "azhi-seeker");
   // A Tzimisce Luminary Elder (Generation 5) with Vicissitude 5, whose own Social focus is Manipulation.
