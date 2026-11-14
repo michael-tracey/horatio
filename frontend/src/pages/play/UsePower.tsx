@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Cost, PlayView, PowerUse } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { Button } from "../../components/ui";
+import { OnOtherPicker, type Picked } from "./OnOthers";
 import { switchKey } from "./powers";
 import type { makeTap } from "./tracker";
 import { canPay, costText, ghouls, marked, offered, effectTaps, type UseView } from "./uses";
@@ -36,10 +37,30 @@ export function usingTaps(view: Pick<PlayView, "powers">, cost: Cost, name: stri
   ];
 }
 
-/** The switches a power can turn on that this character has: one Use button for each, or one for the spend alone. */
+/** The switches a power can turn on that this character has: one Use button for each, or one for the spend alone. One used only on others has none here (#823). */
 function choices(view: Pick<PlayView, "powers">, costed: Costed): (string | undefined)[] {
-  const keys = (costed.switches ?? []).filter((k) => view.powers.some((p) => p.key === k));
+  const keys = (costed.switches ?? []).filter((k) => view.powers.some((p) => p.key === k && p.target !== "other" && !p.foreign));
   return keys.length > 0 ? keys : [undefined];
+}
+
+/** The switches of a power that can be used on another character (#823): Fleshcraft's reshaping. */
+function forOthers(view: Pick<PlayView, "powers">, costed: Costed) {
+  return (costed.switches ?? []).map((k) => view.powers.find((p) => p.key === k && !p.foreign)).filter((p) => p && p.target && p.target !== "self") as PlayView["powers"];
+}
+
+/**
+ * The taps for using a power on another character (#823): its cost spent, naming the
+ * power, and a note saying whom and what, which the server carries to them.
+ */
+export function onOtherTaps(cost: Cost | null | undefined, power: string, target: Picked, what: { switch?: string; use?: string; options?: string[] }): TapWhat[] {
+  return [
+    ...(cost && cost.amount > 0 ? [{ kind: "change" as const, tracker: cost.tracker, amount: -cost.amount, note: `${power} on ${target.name}` }] : []),
+    {
+      kind: "note" as const,
+      note: `${power} on ${target.name}`,
+      on_other: { character_id: target.id, character_name: target.name, power, switch: what.switch ?? null, use: what.use ?? null, options: what.options ?? [] },
+    },
+  ];
 }
 
 /** A switch's name without the power's: "flight form (bat)" for "Shape of the Beast: flight form (bat)". */
@@ -59,14 +80,28 @@ export function amountsOf(cost: Cost): number[] {
  * (Shape of the Beast's forms) has a button for each, and one whose player
  * chooses how much to spend (#824) a button for each amount.
  */
-export function UseButtons({ costed, view, use }: { costed: Costed; view: Pick<PlayView, "powers" | "blood" | "willpower" | "blood_name">; use: UseTaps }) {
+export function UseButtons({
+  costed,
+  view,
+  use,
+  online = true,
+}: {
+  costed: Costed;
+  view: Pick<PlayView, "powers" | "blood" | "willpower" | "blood_name"> & Partial<Pick<PlayView, "character_id">>;
+  use: UseTaps;
+  online?: boolean;
+}) {
   // A kept power on (#822): using it again replaces it, so it asks first.
   const [again, setAgain] = useState<{ key: string; amount: number } | null>(null);
+  // Used on someone else (#823): the switch, while its picker is open.
+  const [onOther, setOnOther] = useState<string | null>(null);
   const cost = costed.cost;
   if (!cost) return null;
   const what = cost.tracker === "blood" ? view.blood_name : "Willpower";
   const left = cost.tracker === "blood" ? view.blood.value : view.willpower.value;
   const keys = choices(view, costed);
+  const others = view.character_id ? forOthers(view, costed) : [];
+  const picking = others.find((p) => p.key === onOther);
   const amounts = amountsOf(cost);
   const spending = (amount: number): Cost => ({ ...cost, amount });
   return (
@@ -94,6 +129,36 @@ export function UseButtons({ costed, view, use }: { costed: Costed; view: Pick<P
             </Button>
           );
         }),
+      )}
+      {others.map((p) => (
+        <Button
+          key={`other-${p.key}`}
+          type="button"
+          variant="secondary"
+          className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
+          disabled={left < cost.amount}
+          title={left < cost.amount ? `Not enough ${what}` : undefined}
+          aria-label={`Use ${p.name} on someone else, ${cost.amount} ${what}`}
+          onClick={() => setOnOther(p.key)}
+        >
+          {others.length > 1 ? shortName(p.name, costed.name) : "On someone else"} · {cost.amount} {what}
+        </Button>
+      ))}
+      {picking && view.character_id && (
+        <OnOtherPicker
+          characterId={view.character_id}
+          open
+          title={`${picking.name}: on whom?`}
+          options={(picking.picks?.options ?? []).map((o) => ({ name: o.name, play: o.note }))}
+          count={picking.picks?.count ?? 0}
+          confirm={`Use · ${cost.amount} ${what}`}
+          online={online}
+          onClose={() => setOnOther(null)}
+          onPick={(target, options) => {
+            use(onOtherTaps(cost, costed.name, target, { switch: picking.key, options }));
+            setOnOther(null);
+          }}
+        />
       )}
       <Dialog title="Use it again?" open={again !== null} onClose={() => setAgain(null)}>
         <p className="text-sm">{view.powers.find((p) => p.key === again?.key)?.name} is on, kept until you turn it off. Using it again replaces it: a character carries one at a time.</p>
@@ -124,17 +189,62 @@ export function UseButtons({ costed, view, use }: { costed: Costed; view: Pick<P
  * one whose switch is off isn't shown. "Once a turn" and the like are said, for
  * the player to keep to: the Play View counts no turns.
  */
-export function UseEffects({ costed, view, use }: { costed: Costed; view: UseView; use: UseTaps }) {
-  const shown = (costed.uses ?? []).filter((u) => offered(view, u));
+export function UseEffects({ costed, view, use, online = true }: { costed: Costed; view: UseView; use: UseTaps; online?: boolean }) {
+  const shown = (costed.uses ?? []).filter((u) => (u.target === "other" ? !!view.character_id && (!u.when || offered(view, u)) : offered(view, u)));
   if (shown.length === 0) return null;
   return (
     <ul className="mt-1 flex flex-col gap-1.5" aria-label={`Uses of ${costed.name}`}>
       {shown.map((u, i) => (
-        <li key={`${u.label}-${i}`}>
-          <UseEffect power={costed.name} u={u} view={view} use={use} />
-        </li>
+        <li key={`${u.label}-${u.target ?? "self"}-${i}`}>{u.target === "other" ? <UseOnOther power={costed.name} u={u} view={view} use={use} online={online} /> : <UseEffect power={costed.name} u={u} view={view} use={use} />}</li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * A use on another character (#823): Corpore Sano healing someone else. Whom is
+ * picked; what it heals there is worked out on their game, by the server.
+ */
+function UseOnOther({ power, u, view, use, online }: { power: string; u: PowerUse; view: UseView; use: UseTaps; online: boolean }) {
+  const [picking, setPicking] = useState(false);
+  const suffix = u.cost ? ` · ${costText(view, u)}` : "";
+  const said = [u.once ? `${u.once}.` : null, u.note].filter(Boolean).join(" ");
+  const label = `${u.label} on someone else`;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        type="button"
+        variant="secondary"
+        className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
+        disabled={!canPay(view, u)}
+        title={!canPay(view, u) ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}` : undefined}
+        aria-label={`${power}: ${label}${suffix}`}
+        onClick={() => setPicking(true)}
+      >
+        {label}
+        {suffix}
+      </Button>
+      {(said || u.page) && (
+        <span className="text-xs text-mist">
+          {said}
+          {u.page && <span className="whitespace-nowrap">{said ? " " : ""}({u.page})</span>}
+        </span>
+      )}
+      {picking && view.character_id && (
+        <OnOtherPicker
+          characterId={view.character_id}
+          open
+          title={`${power}: ${u.label}, on whom?`}
+          confirm={`${u.label}${suffix}`}
+          online={online}
+          onClose={() => setPicking(false)}
+          onPick={(target) => {
+            use(onOtherTaps(u.cost, power, target, { use: u.label }));
+            setPicking(false);
+          }}
+        />
+      )}
+    </div>
   );
 }
 
