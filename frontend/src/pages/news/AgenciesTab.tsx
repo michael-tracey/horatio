@@ -7,22 +7,19 @@ import { ActionMenu, MenuGroup, MenuItem } from "../../components/ActionMenu";
 import { Avatar } from "../../components/Avatar";
 import { Dialog } from "../../components/Dialog";
 import { useToast } from "../../components/Toast";
-import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
-import { BotLacks, FOR_NEWS, FOR_POSTS } from "../troupe/botPermissions";
 import { AgencyPortrait } from "./AgencyPortrait";
-import type { Kind } from "./posts";
 import { ACCEPT, MAX_BYTES } from "./PostForm";
 import { useAgencies } from "./queries";
 import { Masthead } from "./Story";
 
 /**
- * Customise › News agencies (#510, #782): the troupe's news agencies, each with its masthead and
- * perhaps a Discord channel of its own, the troupe's news channel for the rest, and
- * its announcements channel (#511), chosen apart so the two never mix.
- * Storytellers and assistant storytellers keep the agencies; only storytellers
- * choose channels, as they do the connectors.
+ * Customise › News agencies (#510, #782): the troupe's news agencies, each with its
+ * masthead. Storytellers and assistant storytellers keep them. Their Discord
+ * channels, and the troupe's news and announcements channels, are chosen under
+ * Connectors › Discord (#882); here an agency shows the channel it has of its own.
  */
 export function AgenciesTab({ troupeId, archived }: { troupeId: string; archived: boolean }) {
   const agencies = useAgencies(troupeId);
@@ -49,6 +46,13 @@ export function AgenciesTab({ troupeId, archived }: { troupeId: string; archived
             More about news
           </Link>
         </p>
+        <p className="mb-3 text-sm text-mist">
+          Their Discord channels, and the troupe's news and announcements channels, are chosen under{" "}
+          <Link to={`/troupes/${troupeId}/connectors`} className="underline hover:text-parchment">
+            Connectors › Discord
+          </Link>
+          .
+        </p>
         {agencies.isPending ? (
           <Loading />
         ) : agencies.error ? (
@@ -69,16 +73,14 @@ export function AgenciesTab({ troupeId, archived }: { troupeId: string; archived
             </thead>
             <tbody className="divide-y divide-ash">
               {agencies.data.map((a) => (
-                <AgencyRow key={a.id} agency={a} channels={channels.data} archived={archived} />
+                <AgencyRow key={a.id} troupeId={troupeId} agency={a} channels={channels.data} archived={archived} />
               ))}
             </tbody>
           </table>
         )}
       </Card>
-      <PostChannel kind="news" troupeId={troupeId} channels={channels.data} error={channels.error} archived={archived} />
-      <PostChannel kind="announcement" troupeId={troupeId} channels={channels.data} error={channels.error} archived={archived} />
       <Dialog title="Add an agency" open={adding} onClose={() => setAdding(false)}>
-        <AgencyForm troupeId={troupeId} channels={channels.data} onDone={() => setAdding(false)} />
+        <AgencyForm troupeId={troupeId} onDone={() => setAdding(false)} />
       </Dialog>
     </div>
   );
@@ -92,9 +94,22 @@ function channelName(channels: ChannelsOut | undefined, id: string | null): stri
   return found ? `#${found.name}` : "A channel no longer on the server";
 }
 
+/** Where an agency's stories go on Discord: the troupe's news channel, or its own, with a link to change it in Connectors. */
+function AgencyChannel({ troupeId, agency, channels }: { troupeId: string; agency: AgencyOut; channels: ChannelsOut | undefined }) {
+  if (!agency.discord_channel) return <>{channelName(channels, null)}</>;
+  return (
+    <>
+      {channelName(channels, agency.discord_channel)}{" "}
+      <Link to={`/troupes/${troupeId}/connectors`} className="underline hover:text-parchment">
+        Change in Connectors
+      </Link>
+    </>
+  );
+}
+
 type Opened = "edit" | "masthead" | "portrait";
 
-function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels: ChannelsOut | undefined; archived: boolean }) {
+function AgencyRow({ troupeId, agency, channels, archived }: { troupeId: string; agency: AgencyOut; channels: ChannelsOut | undefined; archived: boolean }) {
   const [open, setOpen] = useState<Opened | null>(null);
   const toast = useToast();
   const path = { params: { path: { agency_id: agency.id } } };
@@ -110,13 +125,12 @@ function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels
         </span>
         <span className="mt-1 block text-xs text-mist lg:hidden">
           {agency.description && `${agency.description} · `}
-          {channelName(channels, agency.discord_channel)}
+          <AgencyChannel troupeId={troupeId} agency={agency} channels={channels} />
         </span>
       </td>
       <td className={`${WIDE} py-2.5 pr-3 align-top`}>{about}</td>
       <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>
-        {channelName(channels, agency.discord_channel)}
-        <BotLacks channel={channels?.channels.find((c) => c.id === agency.discord_channel)} needs={FOR_NEWS} what="its stories" />
+        <AgencyChannel troupeId={troupeId} agency={agency} channels={channels} />
       </td>
       <td className="w-px py-1 text-right align-top">
         {!archived && (
@@ -134,7 +148,7 @@ function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels
           </ActionMenu>
         )}
         <Dialog title={`Edit ${agency.name}`} open={open === "edit"} onClose={() => setOpen(null)}>
-          <AgencyForm troupeId="" agency={agency} channels={channels} onDone={() => setOpen(null)} />
+          <AgencyForm troupeId="" agency={agency} onDone={() => setOpen(null)} />
         </Dialog>
         <Dialog title={`${agency.name}'s masthead`} open={open === "masthead"} onClose={() => setOpen(null)}>
           <MastheadPicture agency={agency} />
@@ -148,21 +162,22 @@ function AgencyRow({ agency, channels, archived }: { agency: AgencyOut; channels
   );
 }
 
-/** An agency's name, description, colour and Discord channel: new, or changed. */
-function AgencyForm({ troupeId, agency, channels, onDone }: { troupeId: string; agency?: AgencyOut; channels: ChannelsOut | undefined; onDone: () => void }) {
+/**
+ * An agency's name, description and colour: new, or changed. Its Discord channel is
+ * left out, and so kept: it is chosen under Connectors › Discord.
+ */
+function AgencyForm({ troupeId, agency, onDone }: { troupeId: string; agency?: AgencyOut; onDone: () => void }) {
   const [name, setName] = useState(agency?.name ?? "");
   const [description, setDescription] = useState(agency?.description ?? "");
   const [colour, setColour] = useState(agency?.colour ?? "#8b1e1e");
-  const [channel, setChannel] = useState(agency?.discord_channel ?? "");
   const save = useAction(() => {
-    const body = { name, description, colour: colour.toLowerCase(), discord_channel: channel || null };
+    const body = { name, description, colour: colour.toLowerCase() };
     return unwrap(
       agency
         ? api.PUT("/api/agencies/{agency_id}", { params: { path: { agency_id: agency.id } }, body })
         : api.POST("/api/troupes/{troupe_id}/agencies", { params: { path: { troupe_id: troupeId } }, body }),
     );
   });
-  const choosing = !!channels?.can_change && !channels.unavailable;
   return (
     <form
       className="flex flex-col gap-3"
@@ -179,21 +194,6 @@ function AgencyForm({ troupeId, agency, channels, onDone }: { troupeId: string; 
       </Field>
       <Field label="Masthead colour" hint="Behind its name, beside its stories, and down the side of its Discord posts.">
         <Input type="color" className="h-10 w-20 p-1" value={colour} onChange={(e) => setColour(e.target.value)} />
-      </Field>
-      <Field
-        label="Discord channel"
-        hint={choosing ? "Its stories go here; otherwise to the troupe's news channel." : (channels?.unavailable ?? "Only storytellers choose channels.")}
-      >
-        <Select value={channel} disabled={!choosing} onChange={(e) => setChannel(e.target.value)}>
-          <option value="">The troupe's news channel</option>
-          {channels?.channels.map((c) => (
-            <option key={c.id} value={c.id}>
-              #{c.name}
-              {c.category ? ` (${c.category})` : ""}
-            </option>
-          ))}
-          {channel && !channels?.channels.some((c) => c.id === channel) && <option value={channel}>A channel no longer on the server</option>}
-        </Select>
       </Field>
       <div className="flex items-center gap-3 text-sm">
         <span className="text-mist">Masthead:</span>
@@ -249,70 +249,5 @@ function MastheadPicture({ agency }: { agency: AgencyOut }) {
       {tooBig && <ErrorText error="That picture is over 10 MB. Try a smaller one." />}
       <ErrorText error={upload.error ?? remove.error} />
     </div>
-  );
-}
-
-/** What each kind's channel card says. */
-const CHANNEL_WORDS = {
-  news: {
-    title: "News on Discord",
-    label: "The troupe's news channel",
-    hint: "Stories from agencies without a channel of their own go here, as embeds. With none, news is in the app only.",
-    what: "News",
-  },
-  announcement: {
-    title: "Announcements on Discord",
-    label: "The troupe's announcements channel",
-    hint: "Announcements go here, as embeds, never in the news channel. With none, they're in the app only.",
-    what: "Announcements",
-  },
-} as const;
-
-/** The troupe's Discord channel for a kind of post: for news, where every agency without its own posts; for announcements (#511), where they all go. */
-function PostChannel({ kind, troupeId, channels, error, archived }: { kind: Kind; troupeId: string; channels: ChannelsOut | undefined; error: unknown; archived: boolean }) {
-  const toast = useToast();
-  const words = CHANNEL_WORDS[kind];
-  const chosen = kind === "news" ? channels?.news : channels?.announcements;
-  const choose = useAction((channel: string | null) =>
-    unwrap(api.PUT("/api/troupes/{troupe_id}/post-channels", { params: { path: { troupe_id: troupeId } }, body: { kind, channel } })),
-  );
-  return (
-    <Card title={words.title}>
-      {error ? (
-        <ErrorText error={error} />
-      ) : !channels ? (
-        <Loading />
-      ) : channels.unavailable ? (
-        <Notice>
-          {channels.unavailable} {words.what} {kind === "news" ? "is" : "are"} in the app only until a Discord server is connected, under{" "}
-          <Link to={`/troupes/${troupeId}/connectors`} className="underline">
-            Connectors
-          </Link>
-          .
-        </Notice>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <Field label={`${words.label}, on ${channels.server ?? "its server"}`} hint={words.hint}>
-            <Select
-              value={chosen ?? ""}
-              disabled={!channels.can_change || archived || choose.isPending}
-              onChange={(e) => choose.mutate(e.target.value || null, { onSuccess: () => toast({ message: e.target.value ? "Channel chosen." : `${words.what} ${kind === "news" ? "is" : "are"} in the app only.` }) })}
-            >
-              <option value="">None: in the app only</option>
-              {channels.channels.map((c) => (
-                <option key={c.id} value={c.id}>
-                  #{c.name}
-                  {c.category ? ` (${c.category})` : ""}
-                  {c.private ? ", private" : ""}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <BotLacks channel={channels.channels.find((c) => c.id === chosen)} needs={FOR_POSTS} what={words.what.toLowerCase()} />
-          {!channels.can_change && <p className="text-xs text-mist">Only storytellers choose channels.</p>}
-          <ErrorText error={choose.error} />
-        </div>
-      )}
-    </Card>
   );
 }
