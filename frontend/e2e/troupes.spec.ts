@@ -687,6 +687,52 @@ test("players read the whole setting on its tab, in print, on the profile when s
   await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/setting$`));
 });
 
+test("a burst of changes to the setting rings one bell for the troupe's players, saying what changed and leading to the Setting tab (#881)", async ({ browser }) => {
+  const custodian = await person(browser, "setbell-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "setbell-lead");
+  const player = await person(browser, "setbell-player");
+  await custodian.page.reload();
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: unknown) => {
+    const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.ok(), await response.text()).toBe(true);
+    return response.json();
+  };
+  const troupeName = `Court of Bells ${run}`;
+  const troupeId: string = (await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle })).id;
+  await backstoryOptional(custodian.page, troupeId);
+  const id = await builtVampire(player.page, "Ysolde", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });
+  const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+
+  // The lead adds a theme under Troupe settings, then rewrites the teaser: one notice, naming both.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const setting = l.getByRole("group", { name: "The setting" });
+  const themes = setting.locator("section").filter({ has: l.getByRole("heading", { name: "Themes", exact: true }) });
+  await themes.getByRole("button", { name: "Add a theme" }).click();
+  const dialog = l.getByRole("dialog", { name: "Add a theme" });
+  await dialog.getByLabel("Name").fill("Masks");
+  await dialog.getByRole("button", { name: "Add it" }).click();
+  await expect(dialog).toBeHidden();
+  await send(l, "PUT", `/api/troupes/${troupeId}/setting`, { subtitle: "", teaser: "The *river* rose.", power: "", agency: "" });
+  // The lead made the changes, so their own bell stays quiet.
+  await l.getByRole("button", { name: /^Notifications/ }).click();
+  await expect(l.getByRole("dialog", { name: "Notifications" }).getByText(/The setting changed/)).toHaveCount(0);
+
+  const p = player.page;
+  await p.goto("/");
+  await p.getByRole("button", { name: /^Notifications/ }).click();
+  const bell = p.getByRole("dialog", { name: "Notifications" });
+  const notice = bell.getByRole("button", { name: /The setting changed/ });
+  await expect(notice).toHaveCount(1);
+  await expect(notice).toContainText("The setting changed: the theme Masks added; the teaser rewritten.");
+  await expect(notice).toContainText(troupeName);
+  await notice.click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/setting$`));
+  await expect(p.getByRole("article", { name: "Setting Style Document" }).getByText("Masks")).toBeVisible();
+});
+
 test("staff keep a story bible beside the setting: their notes with the chronicle, NPCs and locations, printed apart, and players never see it (#879)", async ({ browser }) => {
   const custodian = await person(browser, "bible-custodian");
   makeCustodian(custodian.email);

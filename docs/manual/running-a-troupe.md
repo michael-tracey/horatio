@@ -524,6 +524,8 @@ The rest of the document is built from the troupe's own settings, so it's never 
 
 Every member reads the whole document on the troupe's **Setting** tab, beside **Overview**; running staff see an edit link beside each built part. **Print it** opens it black on white for the Storyteller table. Under **Where players read it**, storytellers can tick **Show it on the troupe's profile**, as written rules can be; a public profile then shows it to anyone. A character built to the troupe's rules shows its themes, moods and teaser on the wizard's Concept step, with a link to the whole document.
 
+When you change the document, the troupe's players hear of it in the bell, with what changed ("The setting changed: the theme Betrayal added; the teaser rewritten."), and the notice opens the **Setting** tab. A sitting's changes make one notice: each change within half an hour of the last joins the player's unread notice rather than making another. The parts you write count, as do the chronicle's name and city on the profile, the sects that may join, clan rarity and the New Character Incentive. Prices, house merits, checks and the other house rules don't: players read those on the **House rules** tab. Whoever makes a change isn't told of it, and showing the document on the profile tells no one.
+
 #### The story bible
 
 The **Story bible** tab, beside **Setting**, is its staff-only companion (MET: VTM p. 336). Storytellers and assistant storytellers read and keep it; players and narrators never see it, and it's never on the Setting tab, the profile, the wizard or the setting's print. It gathers what Horatio already holds, so nothing is typed twice:
