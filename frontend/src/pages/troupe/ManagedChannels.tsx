@@ -2,11 +2,22 @@ import { useEffect, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Badge, Button, ErrorText } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 type Managed = components["schemas"]["ManagedOut"];
 type ManagedCharacter = components["schemas"]["ManagedCharacter"];
 type Outcome = components["schemas"]["OutcomeOut"];
+type Problem = components["schemas"]["ChannelProblemOut"];
+type Fix = NonNullable<Problem["fix"]>;
+
+/** What each of Horatio's fixes (#856) says on its button. */
+export const FIX_LABELS: Record<Fix, string> = {
+  fix: "Fix",
+  remake: "Make it again",
+  invite: "Send an invite",
+  relink: "Link it again",
+};
 
 function listed(names: string[]): string {
   return names.length === 1 ? names[0]! : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
@@ -98,8 +109,87 @@ export function ManagedChannels({
           Making {managed.queued} {managed.queued === 1 ? "channel" : "channels"}: Horatio makes a few at a time, as Discord allows.
         </p>
       )}
+      {managed.on && <Keeping troupeId={troupeId} managed={managed} canEdit={canEdit} />}
       <ErrorText error={change.error ?? every.error} />
     </section>
+  );
+}
+
+/**
+ * Keeping Horatio's channels in step and checking them (#856): when they were last
+ * checked, a check on request, what is being brought into step, and each problem
+ * found, with Horatio's fix where it has one.
+ */
+function Keeping({ troupeId, managed, canEdit }: { troupeId: string; managed: Managed; canEdit: boolean }) {
+  const dates = useDates();
+  const check = useAction(() => unwrap(api.POST("/api/troupes/{troupe_id}/discord/check", { params: { path: { troupe_id: troupeId } } })));
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-3">
+        {canEdit && (
+          <Button
+            type="button"
+            variant="secondary"
+            className="min-h-8 px-3 text-xs"
+            onClick={() => check.mutate(undefined)}
+            disabled={check.isPending || managed.checking}
+          >
+            Check channels
+          </Button>
+        )}
+        <span className="text-xs text-mist" role="status">
+          {managed.checking
+            ? "Checking Horatio's channels…"
+            : managed.checked_at
+              ? `Last checked ${dates.dateTime(managed.checked_at)}. Horatio checks once a day too.`
+              : "Not checked yet. Horatio checks once a day."}
+        </span>
+      </div>
+      {managed.syncing > 0 && (
+        <p className="text-xs text-mist" role="status">
+          Bringing {managed.syncing} {managed.syncing === 1 ? "channel" : "channels"} into step with Horatio, as Discord allows.
+        </p>
+      )}
+      {managed.problems.length > 0 && (
+        <ul aria-label="Problems with Horatio's channels" className="flex flex-col gap-1">
+          {managed.problems.map((p) => (
+            <ProblemRow key={p.key} troupeId={troupeId} problem={p} canEdit={canEdit} />
+          ))}
+        </ul>
+      )}
+      <ErrorText error={check.error} />
+    </div>
+  );
+}
+
+function ProblemRow({ troupeId, problem, canEdit }: { troupeId: string; problem: Problem; canEdit: boolean }) {
+  const fix = useAction((how: Fix) =>
+    unwrap(
+      api.POST("/api/troupes/{troupe_id}/discord/characters/{character_id}/fix", {
+        params: { path: { troupe_id: troupeId, character_id: problem.character_id ?? "" } },
+        body: { how },
+      }),
+    ),
+  );
+  const what = problem.name ? `${problem.name}: ${problem.note}` : problem.note;
+  return (
+    <li className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-blood-bright">{what}</span>
+      {canEdit && problem.fix && problem.character_id && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-8 px-2 text-xs"
+          aria-label={`${FIX_LABELS[problem.fix]}: ${what}`}
+          onClick={() => fix.mutate(problem.fix!)}
+          disabled={fix.isPending}
+        >
+          {FIX_LABELS[problem.fix]}
+        </Button>
+      )}
+      {fix.data && <span className="text-mist">{fix.data.note}</span>}
+      <ErrorText error={fix.error} />
+    </li>
   );
 }
 

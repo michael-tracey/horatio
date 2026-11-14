@@ -818,6 +818,29 @@ Beside each character with no channel, **Make a channel** makes one now. **Make 
 
 A channel Horatio made is marked **Made by Horatio**. Horatio never changes a channel someone made by hand. A retired, inactive or dead character's channel is left as it is. Every channel made, invite sent and match confirmed or turned down is in the troupe's log.
 
+#### Keeping Horatio's channels in step
+
+Horatio keeps the channels it made matching the troupe, a few at a time as Discord allows; the Discord settings say how many are still being brought into step:
+
+- **A character is renamed:** its channel is renamed.
+- **A character passes to another player:** the new player is let in and the old one taken out. If the new player only typed a Discord username, a storyteller confirms it's them first, as above.
+- **A character leaves the troupe:** its player is taken out.
+- **The staff roles change:** every channel lets the new roles in and the old ones out.
+
+Horatio only changes what it set itself. A role or person you let into a channel by hand on Discord stays, and so does a name you changed there, until the character itself is renamed. A retired, inactive or dead character's channel is left as it is.
+
+**Check channels** asks Horatio to look at every channel it made, and it also checks once a day by itself. It lists what it finds, each with a way to put it right where it has one:
+
+| What it found | What to do |
+| --- | --- |
+| The channel was deleted on Discord | **Make it again** |
+| The channel was renamed, or someone it lets in was taken out, on Discord | **Fix** sets it back as Horatio made it |
+| The Horatio bot can no longer see or post in it | **Fix** lets the bot back in |
+| The player isn't on the server | **Send an invite**, if the bot has Create Invite |
+| The character's results go to another channel now | **Link it again** |
+
+The troupe's storytellers hear of each new problem once in their notifications, not every day it lasts. The changes Horatio makes, each check you ask for and each fix are in the troupe's log.
+
 #### Choosing each character's channel
 
 Back under Discord on **Customise › Connectors**:

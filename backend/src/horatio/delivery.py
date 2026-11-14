@@ -343,7 +343,7 @@ def send_due_now() -> int:
     run out (horatio.free_changes), the items that have expired or are about to
     (horatio.item_expiry), the Yorick pages kept long enough
     (horatio.yorick_imports), and the Discord character channels troupes asked
-    Horatio to make (horatio.discord_channels)."""
+    Horatio to make, keep in step and check (horatio.discord_channels)."""
     from horatio import (
         discord_channels,
         free_changes,
@@ -363,6 +363,7 @@ def send_due_now() -> int:
     item_expiry.check_due_now()
     yorick_imports.expire_due_now()
     sent += discord_channels.make_due_now()
+    sent += discord_channels.keep_in_step_now()
     return sent
 
 
