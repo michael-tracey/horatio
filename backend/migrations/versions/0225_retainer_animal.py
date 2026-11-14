@@ -31,9 +31,7 @@ def upgrade() -> None:
         "retainers", sa.column("from_merit", sa.String()), sa.column("animal", sa.Boolean())
     )
     op.execute(
-        retainers.update()
-        .where(retainers.c.from_merit.in_(ANIMAL_MERITS))
-        .values(animal=sa.true())
+        retainers.update().where(retainers.c.from_merit.in_(ANIMAL_MERITS)).values(animal=sa.true())
     )
 
 
