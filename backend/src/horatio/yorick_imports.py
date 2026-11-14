@@ -468,18 +468,20 @@ def run(db: Session, troupe_id: uuid.UUID, user_id: uuid.UUID, kind: str, *, bac
                 skipped=sum(r.outcome in ("skipped", "undecided") for r in results),
                 backup=made_backup or "none",
             )
+            # Imported: the page goes, its report stays a while. In the same commit as
+            # the report and the end of the job, so nobody ever sees the job done with
+            # the page still there: the import page stops asking once the job ends (#841).
+            record.page_name = record.page_at = record.page_by = None
         db.commit()
     except BaseException:
         db.rollback()
         importer.undo_pictures()
         raise
     if not dry_run and not failed:
-        # Imported: the page goes, its report stays a while.
+        # The file itself only once the record no longer names it.
         folder = page_folder(troupe_id)
         if folder is not None:
             shutil.rmtree(folder, ignore_errors=True)
-        record.page_name = record.page_at = record.page_by = None
-        db.commit()
 
 
 def keep_report(
