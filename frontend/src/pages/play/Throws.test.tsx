@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
 import { ThrowsTab, useThrows } from "./Throws";
+import { forgetSensor } from "./useFlip";
 import { useChallenge } from "./Challenge";
 import { load } from "./challenge";
 
@@ -11,6 +12,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   sessionStorage.clear();
+  forgetSensor();
 });
 
 function motion(reduce: boolean) {
@@ -201,6 +203,38 @@ describe("throwing by flipping the phone (#669)", () => {
   function flipOver() {
     for (const beta of [0, 60, 120, 180, 120, 60, 0]) orient(beta);
   }
+
+  it("keeps offering the switch when the tab is remade as the sheet arrives, with no new reading (#837)", () => {
+    vi.useFakeTimers();
+    motion(false);
+    function Page() {
+      const throwing = useThrows();
+      const [loaded, setLoaded] = useState(false);
+      return (
+        <>
+          <button onClick={() => setLoaded(true)}>The sheet arrives</button>
+          {loaded ? (
+            <div>
+              <ThrowsTab throwing={throwing} />
+            </div>
+          ) : (
+            <ThrowsTab throwing={throwing} />
+          )}
+        </>
+      );
+    }
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <Page />
+      </QueryClientProvider>,
+    );
+    orient(0);
+    expect(screen.getByRole("checkbox", { name: "Throw by flipping" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "The sheet arrives" }));
+    expect((screen.getByRole("checkbox", { name: "Throw by flipping" }) as HTMLInputElement).checked).toBe(true);
+    flipOver();
+    expect(screen.getByText("Rock…")).toBeTruthy();
+  });
 
   it("offers nothing where the browser gives no readings, as desktops do", () => {
     motion(false);

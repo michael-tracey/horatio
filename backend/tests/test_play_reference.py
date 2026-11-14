@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from horatio.models import CharacterTrait, TraitCategory, TraitDefinition
 from horatio.reference import (
+    TRACKED,
     Cost,
     Sheet,
     actives,
@@ -1153,8 +1154,10 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
     for e in entries:
         for x in [*e.get("pools", []), *e.get("damage", [])]:
             when = x.get("when")
-            # What the trackers hold can only be a variant (Rampart of Faith's "for 1 Blood").
-            tracked = x.get("amount") == "morality_less_beast"
+            # What the trackers hold can only be a variant (Rampart of Faith's "for 1
+            # Blood", Manic Episode's "With Celerity active").
+            tracked = x.get("amount") in TRACKED
+            assert not (tracked and when in book.switch_keys), e["name"]
             assert when is None or when in book.switch_keys or tracked, (e["name"], when)
             assert when if tracked else True, e["name"]
             # Whom a bonus holds against shows only while its switch is on (issue #613).
@@ -1165,8 +1168,201 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
         for n in e.get("notes", []):
             assert n["when"] in book.switch_keys and n["note"], (e["name"], n)
             assert n["page"] > 0 and n.get("book", "core") in ("core", "Vol. 2", "Vol. 2 Issue 1")
+    rule_set = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+    for e in entries:
         for a in actives(e):
             assert a["page"] > 0 and a.get("book", "core") in ("core", "Vol. 2", "Vol. 2 Issue 1")
-    rule_set = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+            # Each quality it gives is one the equipment rules have (#820).
+            for q in a.get("qualities", []):
+                assert (q["kind"], q["name"]) in rule_set.equipment.qualities, (e["name"], q)
     for category, name in book.others:
         assert (category, name) in rule_set.traits, name
+
+
+# --- Timed powers as switches (#820) -------------------------------------------
+
+
+def test_timed_powers_switch_on_each_from_its_page() -> None:
+    """Powers whose effect lasts a while are switches the Play View can turn on,
+    each with its book page, as checked against the books for #820."""
+    sheet = Sheet(
+        disciplines={
+            "Protean": 1,
+            "Quietus": 2,
+            "Thanatosis": 5,
+            "Visceratika": 4,
+            "Thaumaturgy: Path of Elemental Mastery": 1,
+            "Serpentis": 2,
+            "Thaumaturgy: Movement of the Mind": 3,
+            "Necromancy: Path of the Graveborn": 1,
+            "Thaumaturgy: Green Path": 2,
+            "Thaumaturgy: Path of Caelestikinesis": 2,
+            "Temporis": 5,
+            "Presence": 5,
+            "Obfuscate": 2,
+            "Auspex": 5,
+            "Animalism": 4,
+            "Dominate": 5,
+            "Necromancy: Bone Path": 5,
+            "Vicissitude": 2,
+            "Potence": 2,
+        },
+        ratings={
+            ("techniques", name): 1
+            for name in (
+                "Armor of Darkness",
+                "Flame's Bane",
+                "Unnatural Grace",
+                "Mercurial Vitality",
+                "Quickened Blood",
+                "Maw of the Anaconda",
+                "Rend Flesh",
+            )
+        },
+    )
+    pages = {s.key: s.page for s in work_out(sheet, {}).switches}
+    assert {
+        k: pages[k]
+        for k in (
+            "Eyes of the Beast",
+            "Scorpion's Touch",
+            "Necrosis",
+            "Armor of Terra",
+            "Elemental Strength: Strength",
+            "Elemental Strength: Stamina",
+            "Tongue of the Asp",
+            "Skin of the Chameleon",
+            "Flight",
+            "Lord of the Flies",
+            "Boughs Below",
+            "Gravity Well",
+            "Split Second",
+            "Clotho's Gift",
+            "Awe",
+            "Majesty",
+            "Unseen Presence",
+            "Psychic Projection",
+            "Subsume the Spirit",
+            "Possession",
+            "Death's Puppetry",
+            "Fleshcraft",
+            "Armor of Darkness",
+            "Flame's Bane",
+            "Unnatural Grace",
+            "Mercurial Vitality",
+            "Quickened Blood",
+            "Maw of the Anaconda",
+            "Rend Flesh",
+        )
+    } == {
+        "Eyes of the Beast": "p. 154",
+        "Scorpion's Touch": "p. 157",
+        "Necrosis": "p. 165",
+        "Armor of Terra": "p. 171",
+        "Elemental Strength: Strength": "p. 193",
+        "Elemental Strength: Stamina": "p. 193",
+        "Tongue of the Asp": "p. 159",
+        "Skin of the Chameleon": "p. 170",
+        "Flight": "p. 197",
+        "Lord of the Flies": "Vol. 2, p. 117",
+        "Boughs Below": "Vol. 2, p. 150",
+        "Gravity Well": "Vol. 2, p. 154",
+        "Split Second": "p. 162",
+        "Clotho's Gift": "p. 163",
+        "Awe": "p. 151",
+        "Majesty": "p. 153",
+        "Unseen Presence": "p. 145",
+        "Psychic Projection": "p. 120",
+        "Subsume the Spirit": "p. 116",
+        "Possession": "p. 136",
+        "Death's Puppetry": "p. 176",
+        "Fleshcraft": "p. 168",
+        "Armor of Darkness": "p. 225",
+        "Flame's Bane": "p. 228",
+        "Unnatural Grace": "p. 232",
+        "Mercurial Vitality": "p. 229",
+        "Quickened Blood": "p. 230",
+        "Maw of the Anaconda": "Vol. 2 Issue 1, p. 72",
+        "Rend Flesh": "Vol. 2 Issue 1, p. 76",
+    }
+
+
+def test_elemental_strength_gives_the_strength_or_the_stamina_focus() -> None:
+    """Core p. 193: one of the two foci for five minutes, and +2 to grappling with
+    the Intelligence focus."""
+    sheet = Sheet(
+        disciplines={"Thaumaturgy: Path of Elemental Mastery": 1}, focuses={"Intelligence"}
+    )
+    found = by_key(work_out(sheet, {}).switches)
+    strength = found["Elemental Strength: Strength"]
+    assert (strength.name, strength.focuses) == ("Elemental Strength (Strength)", ["Strength"])
+    assert found["Elemental Strength: Stamina"].focuses == ["Stamina"]
+    assert "+2 to grappling challenges." in strength.notes
+    assert "The Strength focus" in strength.changes
+
+
+def test_armor_of_terra_gives_its_qualities_and_full_body_with_wits() -> None:
+    """Core p. 171: Hardened and Ballistic, and Full Body with the Wits focus."""
+    plain = by_key(work_out(Sheet(disciplines={"Visceratika": 4}), {}).switches)["Armor of Terra"]
+    assert [(q.kind, q.name) for q in plain.qualities] == [
+        ("protective", "Hardened"),
+        ("protective", "Ballistic"),
+    ]
+    assert plain.changes == ["Hardened, Ballistic"]
+    witty = Sheet(disciplines={"Visceratika": 4}, focuses={"Wits"})
+    found = by_key(work_out(witty, {}).switches)["Armor of Terra"]
+    assert [q.name for q in found.qualities] == ["Hardened", "Ballistic", "Full Body"]
+
+
+def test_fleshcraft_and_rend_flesh_are_brawl_attacks_nothing_reduces() -> None:
+    """Core p. 168: Fleshcraft's attack does 1 (2 on an exceptional success), 2 (3)
+    with the Manipulation focus. Vol. 2 Issue 1 p. 76: Rend Flesh needs Potence 2,
+    so it always has Might's point: 2 (3), or 3 (4) with the focus."""
+    ratings = {
+        ("attributes", "Physical"): 4,
+        ("skills", "Brawl"): 3,
+        ("techniques", "Rend Flesh"): 1,
+    }
+    plain = power_pools(Sheet(ratings=ratings, disciplines={"Vicissitude": 2, "Potence": 2}))
+    focused = power_pools(
+        Sheet(
+            ratings=ratings, disciplines={"Vicissitude": 2, "Potence": 2}, focuses={"Manipulation"}
+        )
+    )
+
+    def hurt(p: Any) -> tuple[int, int, bool]:
+        assert p.damage is not None
+        return (p.damage.total, p.damage.exceptional, p.damage.reducible)
+
+    flesh = plain["Fleshcraft attack"]
+    assert (flesh.total, flesh.versus, flesh.switch) == (7, "Physical + Dodge", "Fleshcraft")
+    assert hurt(flesh) == (1, 1, False)
+    assert hurt(focused["Fleshcraft attack"]) == (2, 1, False)
+    assert hurt(plain["Rend Flesh"]) == (2, 1, False)
+    assert hurt(focused["Rend Flesh"]) == (3, 1, False)
+    # Without Potence 2, Rend Flesh does nothing here.
+    weak = power_pools(Sheet(ratings=ratings, disciplines={"Vicissitude": 2, "Potence": 1}))
+    assert "Rend Flesh" not in weak
+
+
+def test_manic_episode_adds_derangement_traits_to_initiative_with_celerity() -> None:
+    """Vol. 2 Issue 1 p. 71: always on; with Celerity active, initiative gains the
+    current Derangement traits, which the Play View counts from its tracker. Paying
+    for Celerity with a Derangement trait is a note on Celerity's switch."""
+    sheet = Sheet(
+        ratings={
+            ("attributes", "Physical"): 3,
+            ("attributes", "Mental"): 2,
+            ("techniques", "Manic Episode"): 1,
+        },
+        disciplines={"Celerity": 1, "Dementation": 2},
+    )
+    worked = work_out(sheet, {})
+    initiative = by_key(pools(sheet, worked.effects, worked.hurts, worked.switches))["initiative"]
+    manic = next(v for v in initiative.variants if v.when == "With Celerity active")
+    assert (manic.total, [t.model_dump() for t in manic.tracked]) == (
+        initiative.total,
+        [{"label": "Manic Episode", "tracks": "derangements"}],
+    )
+    celerity = by_key(worked.switches)["Celerity"]
+    assert [a.source for a in celerity.added] == ["Manic Episode"]
