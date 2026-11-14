@@ -841,6 +841,18 @@ Horatio only changes what it set itself. A role or person you let into a channel
 
 The troupe's storytellers hear of each new problem once in their notifications, not every day it lasts. The changes Horatio makes, each check you ask for and each fix are in the troupe's log.
 
+#### Clan and discipline emoji
+
+Horatio can add the clan, discipline and path symbols the Jyhad card uses to the troupe's server as custom emoji, so players can write `:brujah:` or `:aus_sup:` in their own messages. They're KRCG's symbols, which the custodian fetches (Custodian › Tools); until they have, there's nothing to add. Under Discord on **Customise › Connectors**, tick **Let Horatio add the clan and discipline symbols to the server as emoji**. The bot then needs **Create Expressions** on the server too (Server Settings › Roles, on its role); Horatio says beside the switch if it's missing.
+
+- **Style:** **White-bordered, as on the cards** (they read well on Discord's dark theme) or **Plain**.
+- **Names:** a clan by its name (`:brujah:`, `:banuhaqim:`), an inferior discipline by its three letters (`:aus:`), a superior one with `_sup` (`:aus_sup:`), a path with `path_` (`:path_caine:`). If the server already has an emoji of that name that Horatio didn't add, Horatio leaves it alone and skips that symbol.
+- **Choosing:** tick the symbols you want under Clans, Superior disciplines, Inferior disciplines and Paths, or use **This troupe's clans**, **Disciplines in use** (those on its characters' sheets, superior from 4 dots) or **Everything**. Horatio adds them in the order you chose them.
+
+A server can only have so many emoji: 50 without Server Boosts, then 100, 150 and 250 at boost levels 1 to 3. There are well over a hundred symbols, so Horatio shows how many slots are free, and warns if your choice won't all fit. **Add the chosen emoji** adds them, a few at a time as Discord allows, until the server is full; each symbol then says whether it was added, or why not (**No room**, **Name taken**). To make room, tick **Remove the emoji Horatio added that aren't chosen now**. Horatio only ever removes emoji it added itself.
+
+For what doesn't fit, you can tick **use Horatio's own emoji**: Discord lets the Horatio bot have emoji of its own that don't take the server's room. Players can't use those in their messages, though; only Horatio's own posts could show them. Changing the style and adding again replaces the emoji Horatio added. What Horatio adds and removes is in the troupe's log.
+
 #### Choosing each character's channel
 
 Back under Discord on **Customise › Connectors**:
