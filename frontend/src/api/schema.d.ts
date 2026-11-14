@@ -21605,6 +21605,23 @@ export interface components {
             /** Width */
             width: number;
         };
+        /**
+         * Heal
+         * @description Damage a use heals: of one kind, the worst first (aggravated, then normal),
+         *     every box, or as much as the player says (issue #825).
+         */
+        Heal: {
+            /**
+             * Amount
+             * @default 0
+             */
+            amount: number;
+            /**
+             * Damage
+             * @enum {string}
+             */
+            damage: "normal" | "aggravated" | "worst" | "all" | "asked";
+        };
         /** Health */
         Health: {
             /** Levels */
@@ -25659,6 +25676,11 @@ export interface components {
              * @default []
              */
             switches: string[];
+            /**
+             * Uses
+             * @default []
+             */
+            uses: components["schemas"]["PowerUse"][];
         };
         /** OtherStatusOut */
         OtherStatusOut: {
@@ -27501,6 +27523,11 @@ export interface components {
              * @default []
              */
             switches: string[];
+            /**
+             * Uses
+             * @default []
+             */
+            uses: components["schemas"]["PowerUse"][];
         };
         /**
          * PowerOut
@@ -27615,6 +27642,60 @@ export interface components {
              * @default 0
              */
             turned_on: number;
+        };
+        /**
+         * PowerUse
+         * @description A use of a power that changes the trackers besides spending its cost (issue
+         *     #825): a button of its own on the Pools tab, made of ordinary taps with Undo.
+         */
+        PowerUse: {
+            /**
+             * Beast
+             * @default 0
+             */
+            beast: number;
+            /**
+             * Convert
+             * @default 0
+             */
+            convert: number;
+            /**
+             * Convert All
+             * @default false
+             */
+            convert_all: boolean;
+            cost?: components["schemas"]["Cost"] | null;
+            /**
+             * Gains
+             * @default []
+             */
+            gains: components["schemas"]["Cost"][];
+            /**
+             * Half
+             * @default false
+             */
+            half: boolean;
+            heal?: components["schemas"]["Heal"] | null;
+            /** Label */
+            label: string;
+            /**
+             * Mend
+             * @default 0
+             */
+            mend: number;
+            /** Note */
+            note?: string | null;
+            /** Once */
+            once?: string | null;
+            /** Page */
+            page?: string | null;
+            /**
+             * Retainer
+             * @default 0
+             */
+            retainer: number;
+            /** When */
+            when?: string | null;
         };
         /** PraisedClaimsOut */
         PraisedClaimsOut: {
