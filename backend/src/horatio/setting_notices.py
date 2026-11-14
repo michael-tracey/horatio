@@ -73,7 +73,7 @@ def changed(db: Session, user: User | None, troupe: Troupe, changes: Sequence[st
                 Notification.read_at.is_(None),
                 Notification.created_at > func.now() - GATHER,
             )
-            .order_by(Notification.created_at)
+            .order_by(Notification.created_at, Notification.id)
         )
     }
     for notice in gathering.values():
