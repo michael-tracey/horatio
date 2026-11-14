@@ -9,7 +9,15 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import location_quests, merit_requests, quest_actions, quest_requirements, quests
+from horatio import (
+    location_quests,
+    merit_requests,
+    motif_tags,
+    quest_actions,
+    quest_requirements,
+    quests,
+)
+from horatio.api.motif_tags import MotifTagOut, MotifTagsIn, refused, tags_out
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
@@ -267,11 +275,15 @@ class QuestOut(BaseModel):
     # The merit or flaw requests it answers (horatio.merit_requests): completing it
     # approves them, failing or closing it declines them.
     answers: list[QuestAnswersOut] = []
-    # The reader may change it, assign it, send it and check sheets against it.
+    # The troupe's themes and moods staff tagged it with (horatio.motif_tags).
+    tags: list[MotifTagOut] = []
+    # The reader may change it, assign it, send it and check sheets against it; and
+    # tag it, at any point in its life.
     can_edit: bool
     can_assign: bool
     can_send: bool
     can_check: bool
+    can_tag: bool = False
 
 
 class QuestRowOut(BaseModel):
@@ -786,10 +798,12 @@ def quest_out(db: DbSession, user: User, troupe: Troupe, quest: Quest) -> QuestO
         downtime=downtime_out(db, quest),
         location=location_out(db, quest) if running else None,
         answers=answers_out(db, quest) if running else [],
+        tags=tags_out(motif_tags.of_quest(db, quest.id)),
         can_edit=may_work and open_,
         can_assign=running and open_,
         can_send=running and open_,
         can_check=running,
+        can_tag=running,
     )
 
 
@@ -1286,6 +1300,22 @@ def read_mark_quest(quest_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Qu
     quest, troupe = staff_quest(db, user, quest_id)
     quests.mark_read(quest, user)
     db.commit()
+    return quest_out(db, user, troupe, quest)
+
+
+@router.put("/quests/{quest_id}/tags")
+def tag_quest(quest_id: uuid.UUID, body: MotifTagsIn, db: DbSession, user: CurrentUser) -> QuestOut:
+    """Tag the quest with these of the troupe's themes and moods, and no others: its
+    running staff, while it is open or after it ends."""
+    quest, troupe = running_quest(db, user, quest_id)
+    try:
+        tags = motif_tags.retag(db, troupe.id, "quest", quest.id, body.ids)
+    except motif_tags.TagError as error:
+        raise refused(error) from None
+    if tags is not None:
+        named = ", ".join(m.name for m in tags) or "no themes or moods"
+        quests.log(db, quest, user, f"tagged it: {named}")
+        db.commit()
     return quest_out(db, user, troupe, quest)
 
 
