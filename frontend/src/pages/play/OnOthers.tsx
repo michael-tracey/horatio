@@ -35,8 +35,8 @@ export function OnOtherPicker({
   characterId: string;
   open: boolean;
   title: string;
-  /** The power's own options, picked each use, and how many. */
-  options?: { name: string; play?: string }[];
+  /** The power's own options, picked each use, and how many. `base` names the option an amount is of ("Tough" for "Tough: 2"): one amount of it at a time (#813). */
+  options?: { name: string; play?: string; base?: string | null }[];
   count?: number;
   /** The button's words: "Use · 1 Blood". */
   confirm: string;
@@ -54,8 +54,14 @@ export function OnOtherPicker({
   });
   const target = (targets.data ?? []).find((t) => t.id === who);
   const enough = options.length === 0 || (picked.length >= 1 && picked.length <= count);
+  const baseOf = (name: string) => options.find((o) => o.name === name)?.base ?? name;
   const toggle = (name: string) =>
-    setPicked((now) => (now.includes(name) ? now.filter((n) => n !== name) : count === 1 ? [name] : [...now, name].slice(-count)));
+    setPicked((now) => {
+      if (now.includes(name)) return now.filter((n) => n !== name);
+      // The same modification twice is one picked once (core p. 169): another amount replaces it.
+      const rest = now.filter((n) => baseOf(n) !== baseOf(name));
+      return count === 1 ? [name] : [...rest, name].slice(-count);
+    });
   return (
     <Dialog title={title} open={open} onClose={onClose}>
       <div className="flex flex-col gap-3 text-sm">

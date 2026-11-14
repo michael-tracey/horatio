@@ -43,6 +43,12 @@ its count drops the oldest, and switching it off drops them all, since using it
 again means picking again. While it is on, what they do to the pools counts as an
 equipped item's qualities do (horatio.equipment.picked_modifiers).
 
+A power's charges, points or stack (issue #826) are a tracker of their own,
+"charge:<key>" (horatio.reference.Counter): +n gains, -n spends, never below none or
+past the most the sheet gives it (Kineticism's one a power of it, Vol. 2 p. 72).
+Each game starts them at none. The Play View counts no fights or minutes, so the
+player lets them go with a tap when the book says they fade.
+
 A Stock NPC (issue #215) has only two trackers, from its stat block
 (horatio.rules.stock): its kind's resource in Blood's place (Rage for a werewolf)
 and its health levels, as one track. It has no Willpower, Morality or Beast
@@ -321,6 +327,9 @@ class Limits:
     retainers: tuple[RetainerTrack, ...] = ()
     # The allies its powers can call up at a game (issue #827).
     summons: tuple[reference.Summon, ...] = ()
+    # Powers' charges, points and stacks (issue #826): "charge:Kineticism", each at
+    # none as a game starts.
+    charges: tuple[reference.Counter, ...] = ()
     # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
     blood_name: str = "Blood"
     # The fixed trackers the character has; a Stock NPC has no Willpower and so on.
@@ -369,6 +378,9 @@ class Limits:
             gone = weapons.pop(0)
             found.append((gone, f"put away {gone.name} (two hands at most)"))
         return found
+
+    def charge(self, tracker: str) -> reference.Counter | None:
+        return next((c for c in self.charges if c.key == tracker), None)
 
     def retainer_trackers(self) -> dict[str, int]:
         return {k: most for r in self.retainers for k, most in r.trackers().items()}
@@ -429,7 +441,16 @@ class Limits:
             s for s in found if s.option_of is not None
         ]
         if any(s.form for s in found):
-            return [s for s in found if not s.normal_form_only]
+            # With Ravenous Conglomeration, kept Bonecraft alterations are kept with a
+            # form, as one of the forms it allows (Vol. 2 p. 249: `forms_now`).
+            with_form = (
+                {s.key for s in found if s.counts_as_form and s.kept} if self.forms > 1 else set()
+            )
+            return [
+                s
+                for s in found
+                if not s.normal_form_only or s.key in with_form or s.option_of in with_form
+            ]
         return found
 
     def paused(self, on: Sequence[str]) -> set[str]:
@@ -513,6 +534,9 @@ class Limits:
             if found is None:
                 return None
             return 1 if found[1] is None else found[0].trackers()[tracker]
+        if tracker.startswith(reference.CHARGE):
+            counter = self.charge(tracker)
+            return counter.most if counter else None
         return next((e.uses for e in self.expendables if e.key == tracker), None)
 
     def least(self, tracker: str) -> int:
@@ -542,7 +566,10 @@ class Limits:
             "held": {t.key: self.held.get(t.key, 0) for t in self.temporary},
             "uses": {e.key: e.uses for e in self.expendables}
             | self.retainer_trackers()
-            | self.ally_trackers(),
+            | self.ally_trackers()
+            # A power's charges start at none each game (issue #826): Kineticism's
+            # don't outlast a fight (Vol. 2 p. 72).
+            | {c.key: 0 for c in self.charges},
             # The allies called up (issue #827), in the order they were: none, as a
             # game starts.
             "allies": [],
@@ -597,6 +624,9 @@ class Limits:
         if tracker.startswith(EQUIP):
             item = self.item(tracker.removeprefix(EQUIP))
             return item.name if item else "an item"
+        if tracker.startswith(reference.CHARGE):
+            counter = self.charge(tracker)
+            return counter.name if counter else tracker.removeprefix(reference.CHARGE)
         if tracker.startswith(RETAINER):
             key, _, what = tracker.rpartition("/")
             found = next((r.name for r in self.retainers if r.key == key), None)
@@ -667,6 +697,7 @@ def known_tracker(tracker: str) -> bool:
         or tracker == DRANK
         or tracker.startswith(("trait:", "counter:", RETAINER))
         or (tracker.startswith(ALLY) and "#" in tracker)
+        or (tracker.startswith(reference.CHARGE) and len(tracker) > len(reference.CHARGE))
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or (tracker.startswith(PICK) and "/" in tracker)
         or equipped_id(tracker) is not None
@@ -774,13 +805,23 @@ def held_items(db: Session, character: Character) -> tuple[HeldItem, ...]:
     )
 
 
+def sheet_of(db: Session, character: Character) -> reference.Sheet:
+    """The character's sheet as the powers file reads it (horatio.reference)."""
+    rule_set = sheets.rules_for(db, character).rule_set
+    return reference.Sheet.read(sheets.sheet_rows(db, character), rule_set)
+
+
 def pick_options(
-    rules: EquipmentRules, switches: Iterable[reference.Switch]
+    rules: EquipmentRules,
+    switches: Iterable[reference.Switch],
+    foreign: frozenset[str] = frozenset(),
 ) -> dict[str, tuple[PickOption, ...]]:
     """What can be picked for each switch with `picks`: every quality of its kinds in
     the character's rules, in their order (issue #599), or only those it names; or
     the power's own options (issue #821), each saying what it does. A quality picked
-    to be guarded against (Perfect Stance) changes no pool."""
+    to be guarded against (Perfect Stance) changes no pool. On the character's own
+    switches, an option for others only (issue #813: Bonecraft's Crippled) can't be
+    picked; another's effect on it (`foreign`) keeps what was picked for it."""
     switches = list(switches)
     changes = {s.key: s.changes for s in switches}
     found: dict[str, tuple[PickOption, ...]] = {}
@@ -805,6 +846,8 @@ def pick_options(
                     )
                 )
         for o in picks.options:
+            if o.target == "other" and s.key not in foreign:
+                continue
             words = [*changes.get(o.key, []), *([o.note] if o.note else [])]
             options.append(
                 PickOption(
@@ -1019,15 +1062,29 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     traits, held = carried(db, character, game, least)
     switches = tuple(reference.switches(rows, rule_set))
     kept = play_effects.held(db, character, game)
+    sheet = reference.Sheet.read(rows, rule_set)
     # An effect another character's power left on this one counts as its switch does,
-    # though this sheet hasn't the power (issue #823).
+    # though this sheet hasn't the power (issue #823), less what its own traits rule
+    # out (issue #813: Scar Tissue takes no beneficial Bonecraft alteration).
     own = {s.key for s in switches}
     foreign = tuple(
         f
         for key in dict.fromkeys(k.key for k in kept if k.key not in own)
-        for f in reference.switch_for(key)
+        for f in reference.switch_for(key, sheet)
     )
     switches += foreign
+    # Another's effect of a power this sheet has too (issue #813: Bonecraft used on a
+    # Tzimisce) counts with every option it was picked with, whichever trait of the
+    # user's added it, though this sheet couldn't pick it.
+    known = {s.key for s in switches}
+    switches += tuple(
+        f
+        for key in dict.fromkeys(
+            k.key for k in kept if k.key in own and k.source_character_id != character.id
+        )
+        for f in reference.switch_for(key, sheet)[1:]
+        if f.key not in known
+    )
     found = Limits(
         generation=generation,
         blood=blood,
@@ -1049,11 +1106,13 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         temporary=temporary_derangements(db, character),
         held=held,
         switches=switches,
-        options=pick_options(rule_set.equipment, switches),
+        options=pick_options(
+            rule_set.equipment, switches, frozenset(f.key for f in foreign if not f.option_of)
+        ),
         kept=kept,
         foreign=frozenset(f.key for f in foreign),
         fixed=fixed_qualities(rule_set.equipment, switches),
-        forms=reference.forms_at_once(reference.Sheet.read(rows, rule_set)),
+        forms=reference.forms_at_once(sheet),
         blood_name=blood_name,
         trackers=trackers_for(panels),
         panels=panels,
@@ -1070,6 +1129,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         summons=tuple(reference.summons(rows, rule_set)),
         vitae=vitae,
         items=held_items(db, character),
+        charges=tuple(reference.counters(rows, rule_set)),
     )
     if not found.items:
         return found

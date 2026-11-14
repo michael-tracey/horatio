@@ -6900,6 +6900,8 @@ name = "Instinctive Command"
 [[traits]]
 category = "techniques"
 name = "Kinetic Wave"
+description = "Simple action and 1 Kineticism charge: this turn your unarmed and melee attacks reach 1 step plus a step for each Kineticism power and technique you have; no grappling or touch powers at that range."
+page_reference = "Vol. 2, p. 76"
 
 [[traits]]
 category = "techniques"
@@ -6989,6 +6991,8 @@ properties = { requires_specialization = true }
 [[traits]]
 category = "techniques"
 name = "Prevailing Force"
+description = "Spend a Kineticism charge in place of the Willpower for a retest of a Physical challenge; anything that raises that cost or forbids the retest still holds."
+page_reference = "Vol. 2, p. 76"
 
 [[traits]]
 category = "techniques"
@@ -7151,6 +7155,8 @@ name = "Visions of the True Form"
 [[traits]]
 category = "techniques"
 name = "Wall of Force"
+description = "Standard action and 2 Kineticism charges (out of a fight, two full turns instead): a crackling wall up to 5 steps long and high in sight, for 10 minutes; it blocks physical attacks and movement, and breaks after 4 health levels of damage. One at a time."
+page_reference = "Vol. 2, p. 76"
 
 [[traits]]
 category = "techniques"

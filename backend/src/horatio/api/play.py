@@ -188,6 +188,12 @@ class ExpendableOut(BaseModel):
     owed: int = 0
 
 
+class ChargeOut(reference.Counter):
+    """A power's charges, points or stack at this game (issue #826)."""
+
+    value: int
+
+
 class RetainerTrackOut(BaseModel):
     """One Retainer's health levels and (a ghoul's) Blood at this game, tapped as
     "<key>/health" and "<key>/blood" (horatio.play)."""
@@ -465,6 +471,8 @@ class PlayView(BaseModel):
     retainers: list[RetainerTrackOut] = []
     # The allies its powers can call up, and those out at this game (issue #827).
     summons: list[SummonOut] = []
+    # Powers' charges, points and stacks (issue #826), tapped as their `key`.
+    charges: list[ChargeOut] = []
     # Forms and powers in use (issue #200): those the sheet has, on or off. The
     # health tracker gains the wound levels of those on, after the sheet's own in
     # each category; `blood_per_turn` and `blood_usual` are without them.
@@ -999,6 +1007,9 @@ def play_view(db: Session, character: Character) -> PlayView:
             for r in limits.retainers
         ],
         summons=summons_out(limits, state),
+        charges=[
+            ChargeOut(**c.model_dump(), value=state["uses"].get(c.key, 0)) for c in limits.charges
+        ],
         powers=[
             PowerOut(
                 **s.model_dump(),

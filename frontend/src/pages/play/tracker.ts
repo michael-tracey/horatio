@@ -142,6 +142,14 @@ export function statusEntry(view: PlayView, tracker: string) {
 /** A Retainer's health and Blood: "retainer:Bocephus/health" (core p. 105). */
 export const RETAINER = "retainer:";
 
+/** A power's charges, points or stack (#826): "charge:Kineticism". */
+export const CHARGE = "charge:";
+
+/** The counter a tap names, or undefined for another tracker. */
+export function chargeOf(view: Pick<PlayView, "charges">, tracker: string) {
+  return tracker.startsWith(CHARGE) ? (view.charges ?? []).find((c) => c.key === tracker) : undefined;
+}
+
 /** The Retainer's tracker a tap names, or undefined for another tracker. */
 export function retainerTracker(view: PlayView, tracker: string) {
   if (!tracker.startsWith(RETAINER)) return undefined;
@@ -184,6 +192,8 @@ export function trackerName(view: PlayView, tracker: string): string {
   if (kept) return `${kept.retainer.name || "Retainer"}: ${kept.what === "blood" ? "Blood" : "health"}`;
   const ally = allyTracker(view, tracker);
   if (ally) return ally.what ? `${ally.ally.name}: ${ally.what === "blood" ? "Blood" : "health"}` : ally.ally.name;
+  const charge = chargeOf(view, tracker);
+  if (charge) return charge.name;
   const status = statusEntry(view, tracker);
   if (status) return status.name;
   if (tracker.startsWith(STATUS)) return tracker.slice(STATUS.length);
@@ -216,6 +226,7 @@ function most(view: PlayView, tracker: string): number | undefined {
     const found = allyTracker(view, tracker);
     return found && (found.what ? (found.track ?? undefined)?.most : 1);
   }
+  if (tracker.startsWith(CHARGE)) return chargeOf(view, tracker)?.most;
   if (isStatus(tracker)) return statusEntry(view, tracker) ? 1 : undefined;
   return view.expendables.find((e) => e.key === tracker)?.uses;
 }
@@ -309,6 +320,12 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
     if (!status.spent) status.spent_by = null;
     return [before, after];
   }
+  const charge = chargeOf(view, tracker);
+  if (charge) {
+    const before = charge.value;
+    charge.value = clamp(before + amount, top);
+    return [before, charge.value];
+  }
   const kept = retainerTracker(view, tracker)?.track;
   if (kept) {
     const before = kept.value;
@@ -367,6 +384,7 @@ function copy(view: PlayView): Shown {
     expendables: view.expendables.map((e) => ({ ...e })),
     retainers: (view.retainers ?? []).map((r) => ({ ...r, health: { ...r.health }, blood: r.blood ? { ...r.blood } : null })),
     summons: (view.summons ?? []).map((s) => ({ ...s, allies: s.allies.map((a) => ({ ...a, health: a.health ? { ...a.health } : null, blood: a.blood ? { ...a.blood } : null })) })),
+    charges: (view.charges ?? []).map((c) => ({ ...c })),
     powers: view.powers.map((p) => ({ ...p })),
     equipment: [...view.equipment],
     equipped: [...view.equipped],

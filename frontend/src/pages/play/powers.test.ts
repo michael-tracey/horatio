@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView, PowerSwitch } from "../../api/types";
-import { addedNote, applyPick, applySwitch, bloodMost, bloodPerTurn, boxes, countedOptions, describePick, describeSwitch, formsOn, healthMost, onKeys, withPicks } from "./powers";
+import { addedNote, applyPick, applySwitch, bloodMost, bloodPerTurn, boxes, countedOptions, describePick, describeSwitch, formsDisplaced, formsOn, healthMost, onKeys, withPicks } from "./powers";
 import { makeTap, tapToast, trackerName, withPending } from "./tracker";
 
 const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
@@ -94,6 +94,7 @@ function view(powers: PowerSwitch[], marks: string[] = [], forms = 1): PlayView 
     log: [],
     effects: [],
     effects_made: [],
+    charges: [],
   };
 }
 
@@ -291,6 +292,7 @@ describe("a power's own options picked each use (#821)", () => {
   const own = (name: string, over: Partial<Option> = {}): Option => ({
     name,
     key: `Mythic Form/${name}`,
+    target: "any",
     page: "Vol. 2, p. 234",
     note: "",
     health: [],
@@ -376,6 +378,7 @@ describe("health levels given up and amounts chosen each use (#824)", () => {
   const own = (name: string, over: Partial<Option> = {}): Option => ({
     name,
     key: `Bonecraft/${name}`,
+    target: "any",
     page: "p. 168",
     note: "",
     health: [],
@@ -434,5 +437,20 @@ describe("health levels given up and amounts chosen each use (#824)", () => {
     expect(said).toEqual(["in place of Tough: 1"]);
     expect(boxes(v).filter((b) => b.option === "Tough: 3")).toHaveLength(3);
     expect(withPicks(v.powers[0]!)).toBe("Vicissitude: Bonecraft (Tough: 3)");
+  });
+
+  it("is paused by a form, but kept with one as one of Ravenous Conglomeration's two (#813)", () => {
+    const kept = { ...bonecraft, kept: true, normal_form_only: true, counts_as_form: true, on: true, turned_on: 1, picked: ["Extra Limbs"] };
+    const horrid = power({ key: "Horrid Form", name: "Horrid Form", form: true, on: true, turned_on: 2 });
+    const one = view([kept, horrid]);
+    // Alone a form pauses it (core pp. 168-169): the two levels come back.
+    expect(onKeys(one)).toEqual(["Horrid Form"]);
+    const two = view([kept, horrid], [], 2);
+    // With Ravenous Conglomeration it is kept with the form (Vol. 2 p. 249).
+    expect(onKeys(two)).toEqual(["Bonecraft", "Horrid Form", "Bonecraft/Extra Limbs"]);
+    expect(healthMost(two)).toBe(healthMost(one) - 2);
+    // And it takes one of the two forms: another form turns Horrid Form off.
+    const beast = power({ key: "fight form", name: "Shape of the Beast", origin: "Protean 4", form: true });
+    expect(formsDisplaced(two, beast).map((p) => p.key)).toEqual(["Horrid Form"]);
   });
 });

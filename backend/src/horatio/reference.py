@@ -80,9 +80,21 @@ POWER_CATEGORIES = ("elder_disciplines", "luminary_disciplines")
 BOOK = "core"
 # How the summary of a switch names each pool family.
 # Amounts the Play View's trackers hold, which it counts (TrackedPart): current
-# Morality less current Beast traits, and current Derangement traits.
+# Morality less current Beast traits, and current Derangement traits; or a power's
+# counter, "charge:<key>" (issue #826: Reaper's Due's stack).
 TRACKED = ("morality_less_beast", "derangements")
-Tracked = Literal["morality_less_beast", "derangements"]
+Tracked = str
+# A power's charges, points or stack, tapped as "charge:<key>" (issue #826).
+CHARGE = "charge:"
+
+
+def tracked(amount: Any) -> str | None:
+    """The tracker an amount counts, if the Play View's trackers hold it."""
+    if amount in TRACKED or (isinstance(amount, str) and amount.startswith(CHARGE)):
+        return amount
+    return None
+
+
 POOL_WORDS = {
     "initiative": "initiative",
     "dodge": "Dodge",
@@ -142,7 +154,8 @@ class Damage(BaseModel):
 class TrackedPart(BaseModel):
     """A part of a variant the Play View's trackers hold, so the page counts it
     (issue #602): Rampart of Faith adds current Morality minus current Beast traits,
-    Manic Episode current Derangement traits (#820)."""
+    Manic Episode current Derangement traits (#820), Reaper's Due its stack (#826:
+    "charge:Reaper's Due")."""
 
     label: str
     tracks: Tracked
@@ -217,6 +230,23 @@ class Heal(BaseModel):
     amount: int = 0
 
 
+class ChargeChange(BaseModel):
+    """What a use does to a power's counter (issue #826): gains or spends that many,
+    fills it to its most, or empties it."""
+
+    # The counter's tracker: "charge:Kineticism".
+    counter: str
+    gain: int = 0
+    spend: int = 0
+    # The player chooses how many to spend, from `spend` up to all held (Vengeful
+    # Strike's charge a point of damage, Vol. 2 p. 75).
+    more: bool = False
+    # Filled to its most, whatever was left going (Rayzeel's Grace, Vol. 2 p. 219).
+    fill: bool = False
+    # Back to none (Reaper's Due on a new mark, Vol. 2 p. 118).
+    reset: bool = False
+
+
 class PowerUse(BaseModel):
     """A use of a power that changes the trackers besides spending its cost (issue
     #825): a button of its own on the Pools tab, made of ordinary taps with Undo."""
@@ -258,6 +288,10 @@ class PowerUse(BaseModel):
     # together, core p. 149).
     summon: str | None = None
     summon_all: bool = False
+    # What it does to a power's counter (issue #826).
+    charges: ChargeChange | None = None
+    # A switch it turns on, if off (Reaper's Due's mark).
+    on: str | None = None
 
 
 class Summon(BaseModel):
@@ -278,6 +312,38 @@ class Summon(BaseModel):
     blood: int = 0
     # How many the character can have out at once, for this sheet.
     most: int = 1
+
+
+class CounterFade(BaseModel):
+    """A button that lets a counter's charges go (issue #826): the Play View has no
+    fights or minutes to count, so the player says when."""
+
+    label: str
+    # How many it keeps: none when a fight ends, 1 going into one (Kineticism).
+    keep: int = 0
+    # A switch it also turns off (Reaper's Due's mark).
+    off: str | None = None
+
+
+class Counter(BaseModel):
+    """Charges, points or a stack a power builds and spends (issue #826), tapped as
+    its `key`, "charge:Kineticism": +n gains, -n spends, never below none or past
+    its most. Every game starts it at none."""
+
+    key: str
+    name: str
+    # What one is called, and more than one, on a use's button: "1 charge".
+    unit: str
+    units: str
+    most: int
+    note: str | None = None
+    page: str | None = None
+    fades: list[CounterFade] = []
+    # Where the Pools tab shows it: with a discipline, under one of its powers, or
+    # with a technique, elder or luminary power, by name.
+    discipline: str | None = None
+    power: str | None = None
+    other: str | None = None
 
 
 class PowerNote(BaseModel):
@@ -404,6 +470,11 @@ class SwitchOption(BaseModel):
     base: str | None = None
     amount: int | None = None
     amount_label: str | None = None
+    # Who it can be picked for, when its switch can be used on another (issue #813):
+    # "self" only, "other" only (Bonecraft's Crippled, core p. 169), or "any". A trait
+    # that rules it out (`hidden_by`: Tzimisce: Scar Tissue) rules it out on yourself
+    # only, so it is left for others.
+    target: Literal["self", "other", "any"] = "any"
 
 
 class Picks(BaseModel):
@@ -526,6 +597,8 @@ class Catalogue:
     switch_keys: frozenset[str] = frozenset()
     # The keys of switches kept until undone (issue #822).
     kept_keys: frozenset[str] = frozenset()
+    # Powers' charges, points and stacks (issue #826), as the file has them.
+    counters: Sequence[Mapping[str, Any]] = ()
 
     def power(self, discipline: str, name: str) -> Mapping[str, Any] | None:
         return next((p for p in self.powers.get(discipline, []) if p["name"] == name), None)
@@ -565,6 +638,7 @@ def catalogue() -> Catalogue:
             k for e in entries for a in actives(e) for k in (a["key"], *option_keys(a))
         ),
         kept_keys=frozenset(a["key"] for e in entries for a in actives(e) if a.get("kept")),
+        counters=tuple(raw.get("counters", [])),
     )
 
 
@@ -856,7 +930,7 @@ def _effects(
                 instead_of=tuple(e.get("instead_of", ())),
                 focus=e.get("focus"),
                 beast=e.get("beast", 0),
-                tracks=e.get("amount") if e.get("amount") in TRACKED else None,
+                tracks=tracked(e.get("amount")),
                 alternative=_alternative(e.get("alternative"), sheet),
                 against=e.get("against"),
                 label=e.get("label"),
@@ -1049,7 +1123,10 @@ def _pool(
                 (e.when, e.against),
                 PoolVariant(when=f"against {e.against}", total=0, parts=[], switch=e.when),
             )
-            if e.amount:
+            if e.tracks:
+                # What the trackers hold, which the page counts (Reaper's Due, #826).
+                variant.tracked.append(TrackedPart(label=e.label or e.source, tracks=e.tracks))
+            elif e.amount:
                 variant.parts.append(PoolPart(label=e.label or e.source, value=e.amount))
             variant.qualities += [q for q in e.qualities if q not in variant.qualities]
         elif e.when in keys:
@@ -1356,7 +1433,7 @@ def _changes(
     return lines
 
 
-def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
+def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet, every: bool = False) -> Switch:
     holds = lambda e: not isinstance(e, Mapping) or _holds(e, sheet, owner.chosen)  # noqa: E731
     name = active.get("name") or owner.entry["name"]
     chosen = [owner.chosen[k] for k in active.get("label", []) if owner.chosen.get(k)]
@@ -1389,7 +1466,7 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
         blood_half=blood.get("most") == "half",
         blood_extra=blood.get("extra", 0),
         blood_over=blood.get("over", False),
-        picks=_picks(owner, active, sheet),
+        picks=_picks(owner, active, sheet, every),
         kept=active.get("kept", False),
         normal_form_only=active.get("normal_form_only", False),
         counts_as_form=active.get("counts_as_form", False),
@@ -1439,7 +1516,7 @@ def _option(
     (`amount = { least, most, label }`, issue #824) the option at that amount: what
     its entries marked `scale` give is that many times theirs (Tough's 2 Physical for
     2 Healthy levels), and it is named with the amount ("Tough: 2")."""
-    times = amount or 1
+    times = 1 if amount is None else amount
 
     def scaled(entry: Mapping[str, Any], value: int) -> int:
         return value * times if entry.get("scale") else value
@@ -1483,6 +1560,7 @@ def _option(
         base=o["name"] if amount is not None else None,
         amount=amount,
         amount_label=spec.get("label") if amount is not None else None,
+        target=o.get("target", "any"),
     )
 
 
@@ -1496,12 +1574,20 @@ def _options(
     return [_option(active, o, holds, n) for n in range(spec.get("least", 1), spec["most"] + 1)]
 
 
-def _picks(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Picks | None:
+def _picks(
+    owner: Owner, active: Mapping[str, Any], sheet: Sheet, every: bool = False
+) -> Picks | None:
     """What the player picks each time a switch goes on (issues #599, #821): how many,
     raised by a focus (`focus_count`: Bonecraft's two with Manipulation), and the
     power's own options this sheet can pick: those its focus and purchase choices
     allow, those another trait adds (`from`: Bonecraft Prodigy's), less those a trait
-    it has rules out (`hidden_by`: Tzimisce: Scar Tissue, Vol. 2 p. 278)."""
+    it has rules out (`hidden_by`: Tzimisce: Scar Tissue, Vol. 2 p. 278).
+
+    A trait that rules an option out does so on yourself: for a switch that can be
+    used on another (issue #813), the option is left for others. With `every`, for an
+    effect another's power left on this sheet (`switch_for`), every option counts
+    whatever adds it, but those this sheet's traits rule out don't: its body can't
+    take them (Scar Tissue on a Bonecraft alteration)."""
     spec = active.get("picks")
     if spec is None:
         return None
@@ -1510,20 +1596,27 @@ def _picks(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Picks | Non
     for focus, more in spec.get("focus_count", {}).items():
         if focus in sheet.focuses:
             count = max(count, more)
+    on_others = (active.get("target") or spec.get("target", "self")) != "self"
+    options: list[SwitchOption] = []
+    for o in spec.get("options", []):
+        if not every and not (holds(o) and all(_has(sheet, n) for n in _names(o.get("from")))):
+            continue
+        target = o.get("target", "any")
+        if any(_has(sheet, n) for n in _names(o.get("hidden_by"))):
+            if every or not on_others or target == "self":
+                continue
+            target = "other"
+        options += [
+            option.model_copy(update={"target": target})
+            for option in _options(active, o, lambda e: every or holds(e))
+        ]
     return Picks(
         kind=spec.get("kind"),
         count=count,
         kinds=list(spec.get("kinds", [])),
         only=list(spec.get("only", [])),
         immune=spec.get("immune", False),
-        options=[
-            option
-            for o in spec.get("options", [])
-            if holds(o)
-            and all(_has(sheet, n) for n in _names(o.get("from")))
-            and not any(_has(sheet, n) for n in _names(o.get("hidden_by")))
-            for option in _options(active, o, holds)
-        ],
+        options=options,
         target=spec.get("target", "self"),
     )
 
@@ -1680,11 +1773,14 @@ def switches(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Switch]:
     return work_out(Sheet.read(rows, rule_set), technique_bases(rule_set)).switches
 
 
-def switch_for(key: str) -> list[Switch]:
+def switch_for(key: str, sheet: Sheet | None = None) -> list[Switch]:
     """A switch by its key, with its own options, as the powers file has it for any
     character (issue #823): what an effect another character's power left on this
     one does, though this one hasn't the power. No sheet's focus or purchase choice
-    narrows it, so what a choice or focus gives is left out."""
+    narrows it, so what a choice or focus gives is left out, and every option counts,
+    whichever trait of the user's added it (Bonecraft Prodigy's, issue #813). With the
+    sheet it is on, an option that sheet's traits rule out doesn't count: Tzimisce:
+    Scar Tissue's body takes no beneficial Bonecraft alteration (Vol. 2 p. 278)."""
     for entry in [
         *catalogue().disciplines.values(),
         *(p for powers in catalogue().powers.values() for p in powers),
@@ -1692,7 +1788,8 @@ def switch_for(key: str) -> list[Switch]:
     ]:
         for active in actives(entry):
             if active["key"] == key:
-                found = _switch(Owner(entry, entry["name"], entry["name"]), active, Sheet())
+                owner = Owner(entry, entry["name"], entry["name"])
+                found = _switch(owner, active, sheet or Sheet(), every=True)
                 return [found, *option_switches(found)]
     return []
 
@@ -1782,6 +1879,8 @@ def uses(entry: Mapping[str, Any], sheet: Sheet) -> list[PowerUse]:
                 target=u.get("target", "self"),
                 summon=u.get("summon"),
                 summon_all=u.get("summon_all", False),
+                charges=_charges(u["charges"]) if "charges" in u else None,
+                on=u.get("on"),
             )
         )
     return found
@@ -1828,6 +1927,59 @@ def summons_of(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Summon]:
                 most=max(0, most),
             )
     return [s for s in found.values() if s.most > 0]
+
+
+def _charges(spec: Mapping[str, Any]) -> ChargeChange:
+    return ChargeChange(
+        counter=CHARGE + spec["counter"],
+        gain=spec.get("gain", 0),
+        spend=spec.get("spend", 0),
+        more=spec.get("more", False),
+        fill=spec.get("fill", False),
+        reset=spec.get("reset", False),
+    )
+
+
+def _counter_held(spec: Mapping[str, Any], sheet: Sheet) -> bool:
+    """Whether the character has what a counter belongs to: the discipline (and the
+    power of it, if it names one), or the technique, elder or luminary power."""
+    if "discipline" in spec:
+        rating = sheet.disciplines.get(spec["discipline"], 0)
+        power = catalogue().power(spec["discipline"], spec["power"]) if "power" in spec else None
+        return rating > 0 and (
+            "power" not in spec or (power is not None and power["level"] <= rating)
+        )
+    return any(name == spec.get("other") for _, _, name in sheet.others)
+
+
+def counters_of(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Counter]:
+    """The charges, points and stacks this character's powers keep (issue #826),
+    each with its most for this sheet: Kineticism's one a power of it (Vol. 2 p. 72)."""
+    return [
+        Counter(
+            key=CHARGE + c["key"],
+            name=c["name"],
+            unit=c.get("unit", "charge"),
+            units=c.get("units", "charges"),
+            most=max(0, _amount(c.get("most", 0), sheet, bases)),
+            note=c.get("note"),
+            page=_page(c) if "page" in c else None,
+            fades=[
+                CounterFade(label=f["label"], keep=f.get("keep", 0), off=f.get("off"))
+                for f in c.get("fades", [])
+            ],
+            discipline=c.get("discipline"),
+            power=c.get("power"),
+            other=c.get("other"),
+        )
+        for c in catalogue().counters
+        if _counter_held(c, sheet)
+    ]
+
+
+def counters(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Counter]:
+    """The counters the Play View keeps for this sheet."""
+    return counters_of(Sheet.read(rows, rule_set), technique_bases(rule_set))
 
 
 def disciplines(sheet: Sheet) -> list[DisciplinePowers]:

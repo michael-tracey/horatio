@@ -137,7 +137,23 @@
 #   since the Play View counts no turns. `focus` and `unless_focus` limit it as
 #   for `pools`. Where an entry's uses spend, they take the place of its plain
 #   Use button; where none does (Theft of Vitae's Blood drawn on a win), the
-#   button stays for the spend.
+#   button stays for the spend. `charges = { counter, gain?, spend?, more?, fill?,
+#   reset? }` changes one of the [[counters]] (issue #826): `gain` or `spend` that
+#   many, `more = true` lets the player spend from `spend` up to all held (Vengeful
+#   Strike), `fill` fills it to its most and `reset` empties it. A use whose only
+#   change is to a counter at its most still spends its cost (Water Mastery's third
+#   and later applications). `on` names a switch it turns on, if off.
+# [[counters]]: charges, points and stacks a power builds and spends (issue #826),
+#   a tracker of their own on the Play View, "charge:<key>", at none as each game
+#   starts: { key, name, unit?, units?, most, note?, fades?, discipline?, power?,
+#   other?, page, book? }. `most` is a number or an amount as in `pools`
+#   ("powers:Kineticism", one a power of it). It shows with the discipline it names
+#   (and under its `power`, if given) or with the technique, elder or luminary power
+#   `other` names, and only for a character that has it. `unit` and `units` name one
+#   and several on a use's button ("1 charge"). `fades = [{ label, keep?, off? }]`
+#   are buttons that let them go, keeping `keep` (Kineticism's 1 going into a
+#   fight), and switching `off` a switch: the Play View counts no fights or
+#   minutes, so the player says when.
 # `summon` (on a power or [[others]] entry): the allies it calls up at a game (issue
 #   #827), one table or a list of them: { key, name, health?, blood?, most?, top?,
 #   health_add?, note?, focus?, unless_focus?, needs?, has?, page, book? } (or
@@ -1208,6 +1224,36 @@ level = 3
 name = "Bonecraft"
 note = "1 Blood, five standard actions: radically remake a body's bones and organs, such as bone spurs or armour."
 focus = { Manipulation = "Two modifications at once." }
+# Core pp. 168-169 (#813): each use picks one modification, two different ones with
+# the Manipulation focus, on yourself or on a willing or helpless character of the
+# home troupe (#823). A character carries one application at a time; what it gives
+# up (health levels, Physical) comes back only when it is undone, which keeps it
+# through Reset; it counts in the normal form only, but for Second Stomach (Vol. 2
+# Issue 1 p. 62). With Ravenous Conglomeration it is kept with a form, as one of the
+# two forms it allows (Vol. 2 p. 249). Levels given up are Healthy ones: the book
+# doesn't say which, and Tough's are Healthy. Bonecraft Prodigy (Vol. 2 Issue 1
+# p. 61) and Virtuoso del Corpo (Vol. 2 p. 248) add options; Tzimisce: Scar Tissue
+# (Vol. 2 p. 278) rules the beneficial ones out on the flawed character's own body,
+# by them or by another. Body Weaponry's weapon is built by the weapon rules; it
+# isn't an item on the Play View yet.
+active = { key = "Bonecraft", name = "Bonecraft: remade", target = "any", kept = true, normal_form_only = true, counts_as_form = true, page = 168, notes = ["Not in a transformed shape: it comes back when the form ends.", "Health levels and Physical given up come back only when it's undone."], picks = { count = 1, focus_count = { Manipulation = 2 }, options = [
+  { name = "Extra Limbs", hidden_by = "Tzimisce: Scar Tissue", health = [{ level = "Healthy", boxes = -2 }], note = "Once a turn, a simple action: the limbs attack with your usual attack pool, no discipline added, never in Celerity rounds." },
+  { name = "Tough", hidden_by = "Tzimisce: Scar Tissue", amount = { least = 1, most = 3, label = "Physical given up" }, attributes = [{ attribute = "Physical", amount = -1, scale = true }], health = [{ level = "Healthy", boxes = 1, scale = true }], note = "Physical given up for as many Healthy levels." },
+  { name = "Transformed Biology", page = 169, hidden_by = "Tzimisce: Scar Tissue", note = "Heart and organs moved: can't be staked, though parting brain from heart is still Final Death." },
+  { name = "Crippled", page = 169, target = "other", note = "Shaped unable to fight or move: they lose their simple action, their standard action, or both." },
+  { name = "Body Weaponry", page = 169, hidden_by = "Tzimisce: Scar Tissue", health = [{ level = "Healthy", boxes = -1 }], note = "Part of the body becomes a weapon, built by the weapon rules: it can't be disarmed, and a broken one is reformed for 1 Blood." },
+  { name = "Defensive Quills", from = "Bonecraft Prodigy", book = "Vol. 2 Issue 1", page = 61, hidden_by = "Tzimisce: Scar Tissue", health = [{ level = "Healthy", boxes = -2 }], note = "Quills out for a simple action: anyone who wins a Brawl challenge against you, or whom you grapple, takes 2 normal damage." },
+  { name = "Deformed", from = "Bonecraft Prodigy", book = "Vol. 2 Issue 1", page = 61, target = "other", amount = { least = 0, most = 3, label = "Social taken" }, attributes = [{ attribute = "Social", amount = -1, scale = true }], note = "Made hideous: the Appearance focus can go too; how they move is untouched." },
+  { name = "Elongated Gait", from = "Bonecraft Prodigy", book = "Vol. 2 Issue 1", page = 61, hidden_by = "Tzimisce: Scar Tissue", health = [{ level = "Healthy", boxes = -1 }], note = "One step more for each action spent moving." },
+  { name = "Second Stomach", from = "Bonecraft Prodigy", book = "Vol. 2 Issue 1", page = 61, hidden_by = "Tzimisce: Scar Tissue", normal_form_only = false, amount = { least = 1, most = 3, label = "levels given up" }, health = [{ level = "Healthy", boxes = -1, scale = true }], blood = { extra = 2, scale = true }, note = "2 more Blood at most for each level given up, kept in any form." },
+  { name = "Bauble", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, target = "other", note = "An incapacitated subject made an object at least half their size: no moving, speech, Blood, Physical or Social disciplines unless you shape them the means; Fortitude still works." },
+  { name = "Chiropteran Marauder", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, hidden_by = "Tzimisce: Scar Tissue", note = "Glide safely down from a height, and fly 3 steps a turn for a simple and a standard action." },
+  { name = "Kraken's Kiss", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, hidden_by = "Tzimisce: Scar Tissue", note = "Once a grapple holds, drain 2 Blood as a simple action, or force a Blood trait into the victim." },
+  { name = "Living Weapon", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, target = "self", hidden_by = "Tzimisce: Scar Tissue", note = "Horns and spurs: Brawl attacks gain Reach and one other Melee weapon quality, chosen when it is applied." },
+  { name = "Simplified", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, target = "other", note = "An incapacitated subject shaped for one non-combat task: +2 Physical while doing it, -5 Physical otherwise." },
+  { name = "Skin Trap", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, hidden_by = "Tzimisce: Scar Tissue", note = "Sticky skin: grapple without spending Willpower, and +2 to grapple." },
+  { name = "Skittering Legs", from = "Vicissitude: Virtuoso Del Corpo", book = "Vol. 2", page = 248, hidden_by = "Tzimisce: Scar Tissue", note = "Up to 5 steps more each action spent moving, in a straight line only." },
+] } }
 
 [[powers]]
 discipline = "Vicissitude"
@@ -1312,6 +1358,13 @@ level = 3
 name = "Reaper's Due"
 note = "Simple action, point at one target: for 10 minutes, +1 wild card to your attacks on them for each Willpower they spend or lose near you (up to +5), and they stay in your Gaze and Focus."
 focus = { Appearance = "Once a turn, when they spend Willpower to retest against you, regain 1 Willpower." }
+# Vol. 2 p. 118 (#826): a stack on the mark, counted in attacks on them.
+active = { key = "Reaper's Due", page = 118, book = "Vol. 2", notes = ["Your mark stays in your Gaze and Focus.", "The wild card is for any offensive challenge against them, not only attacks."] }
+pools = [{ pool = "attack", amount = "charge:Reaper's Due", when = "Reaper's Due", against = "your mark", label = "Reaper's Due" }]
+use = [
+  { label = "Mark them", charges = { counter = "Reaper's Due", reset = true }, on = "Reaper's Due", note = "Simple action; a new mark starts the count again.", page = 118, book = "Vol. 2" },
+  { label = "They spent or lost Willpower", charges = { counter = "Reaper's Due", gain = 1 }, when = "Reaper's Due", note = "Near you; a point each.", page = 118, book = "Vol. 2" },
+]
 
 [[powers]]
 discipline = "Necromancy: Path of the Graveborn"
@@ -1915,6 +1968,11 @@ level = 1
 name = "Accumulate"
 note = "Simple action: store 1 charge. Spend a charge when moving for 3 extra steps."
 focus = { Wits = "Run up and along walls with a charge, ending on level ground." }
+# Vol. 2 p. 73 (#826).
+use = [
+  { label = "Store a charge", charges = { counter = "Kineticism", gain = 1 }, note = "Simple action.", page = 73, book = "Vol. 2" },
+  { label = "3 more steps", charges = { counter = "Kineticism", spend = 1 }, note = "With a simple action spent moving; one charge a move.", page = 73, book = "Vol. 2" },
+]
 
 [[powers]]
 discipline = "Kineticism"
@@ -1922,13 +1980,20 @@ level = 2
 name = "Kinetic Discharge"
 note = "On a touch or a Brawl or Melee hit, spend a charge to throw the target up to 4 steps; a collision does 1 damage."
 focus = { Intelligence = "Up to 6 steps, 2 damage on collision, and knock them down." }
+# Vol. 2 p. 73 (#826).
+use = [{ label = "Throw them", charges = { counter = "Kineticism", spend = 1 }, note = "One charge an action.", page = 73, book = "Vol. 2" }]
 
 [[powers]]
 discipline = "Kineticism"
 level = 3
 name = "Kinetic Dampening"
-note = "Spend 2 charges to turn an attacker's exceptional success against you into a normal success."
-focus = { Intelligence = "Gain a charge whenever something would do you 2 or more damage." }
+note = "Spend 2 charges to turn a physical attack's exceptional success against you into a normal success; gain a charge when a physical attack would do you 2 or more damage, counted before Fortitude."
+focus = { Intelligence = "Any harm counts, not just physical: gain a charge from anything that would do you 2 or more damage, and spend 2 to blunt a damaging power's exceptional success." }
+# Vol. 2 p. 74 (#826).
+use = [
+  { label = "Blunt an exceptional success", charges = { counter = "Kineticism", spend = 2 }, page = 74, book = "Vol. 2" },
+  { label = "Took 2 or more damage", charges = { counter = "Kineticism", gain = 1 }, note = "Not to spend on that same attack.", page = 74, book = "Vol. 2" },
+]
 
 [[powers]]
 discipline = "Kineticism"
@@ -1936,6 +2001,8 @@ level = 4
 name = "Redirection"
 note = "After defending against a gun, thrown weapon or projectile power, spend 2 charges to redirect it at a new target."
 focus = { Wits = "Redirect projectiles that miss other people too." }
+# Vol. 2 p. 74 (#826).
+use = [{ label = "Redirect it", charges = { counter = "Kineticism", spend = 2 }, note = "Kineticism's test against the new target.", page = 74, book = "Vol. 2" }]
 
 [[powers]]
 discipline = "Kineticism"
@@ -1943,6 +2010,12 @@ level = 5
 name = "Vengeful Strike"
 note = "When a Brawl or Melee attack hits, spend charges to make that many points of its damage unsoakable."
 focus = { Intelligence = "Gain 2 charges on an unarmed or melee exceptional success." }
+# Vol. 2 p. 75 (#826).
+use = [
+  { label = "Unsoakable", charges = { counter = "Kineticism", spend = 1, more = true }, note = "A charge a point of the hit's damage.", page = 75, book = "Vol. 2" },
+  { label = "Exceptional success", charges = { counter = "Kineticism", gain = 1 }, unless_focus = "Intelligence", note = "Unarmed or melee; not to spend on that same attack.", page = 75, book = "Vol. 2" },
+  { label = "Exceptional success", charges = { counter = "Kineticism", gain = 2 }, focus = "Intelligence", note = "Unarmed or melee; not to spend on that same attack.", page = 75, book = "Vol. 2" },
+]
 
 [[disciplines]]
 name = "Spiritus"
@@ -2224,6 +2297,8 @@ level = 1
 name = "Water Mastery"
 note = "1 Blood, standard action: a pool of water obeys you, more with each use in turn."
 focus = { Perception = "Use any of its three effects, in any order." }
+# Vol. 2 p. 158 (#826): each use on the same water is the next application.
+use = [{ label = "Next application", cost = { blood = 1 }, charges = { counter = "Water Mastery", gain = 1 }, note = "Standard action; on the same water.", page = 158, book = "Vol. 2" }]
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Neptune's Might"
@@ -2231,6 +2306,8 @@ level = 2
 name = "Prison of Water"
 note = "1 Blood, standard action, Mental + Occult against Physical + Dodge: watery chains slow the target, freezing solid if repeated."
 focus = { Perception = "+3 wild card with three gallons of open water nearby." }
+# Vol. 2 p. 159 (#826): each success on the same target is the next application.
+use = [{ label = "Next application", cost = { blood = 1 }, charges = { counter = "Prison of Water", gain = 1 }, note = "Standard action; on the same target, when you win. An exceptional success may give the next one's effects.", page = 159, book = "Vol. 2" }]
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Neptune's Might"
@@ -2367,12 +2444,18 @@ name = "Fortitude: Resilient Mind"
 cost = { blood = 1 }
 active = { key = "Resilient Mind", page = 213, book = "Vol. 2", notes = ["Derangements, animal quirks and psychological flaws don't affect you.", "Spend Willpower to retest a power that attacks your sanity and you get the point back."] }
 
-# Vol. 2 p. 219: 2 Blood, standard action: Grace points to heal others from afar.
+# Vol. 2 p. 219: 2 Blood, standard action: Grace points to heal others from afar,
+# counted on the Play View (#826).
 [[others]]
 category = "elder_disciplines"
 name = "Obeah: Rayzeel's Grace"
 cost = { blood = 2 }
-active = { key = "Rayzeel's Grace", page = 219, book = "Vol. 2", notes = ["Grace equal to your Obeah powers (elder and luminary powers and techniques too); it fades after five minutes, or when you use this again.", "Simple action, even in Celerity rounds: each Grace heals 1 normal damage, or turns 1 aggravated to normal, for anyone in sight."] }
+use = [
+  { label = "Call up Grace", cost = { blood = 2 }, charges = { counter = "Rayzeel's Grace", fill = true }, note = "Standard action; what was left goes.", page = 219, book = "Vol. 2" },
+  { label = "Heal 1 normal", charges = { counter = "Rayzeel's Grace", spend = 1 }, heal = { damage = "normal", amount = 1 }, note = "Simple action, even in Celerity rounds; several Grace at once.", page = 219, book = "Vol. 2" },
+  { label = "Turn 1 aggravated to normal", charges = { counter = "Rayzeel's Grace", spend = 1 }, convert = 1, note = "Simple action, even in Celerity rounds.", page = 219, book = "Vol. 2" },
+  { label = "Heal 1 normal", target = "other", charges = { counter = "Rayzeel's Grace", spend = 1 }, heal = { damage = "normal", amount = 1 }, note = "Anyone in sight.", page = 219, book = "Vol. 2" },
+]
 
 # Core p. 218: 3 Blood: for one everyman round, acting doesn't end your Unseen Presence.
 [[others]]
@@ -3175,3 +3258,92 @@ category = "techniques"
 name = "Terror of Tentacles"
 cost = { blood = 1 }
 active = { key = "Terror of Tentacles", page = 83, book = "Vol. 2 Issue 1", notes = ["1 Blood and a simple action each: give Arms of the Abyss one melee quality, Accurate, Armor Piercing, Brutal, Deadly, Disabling, Fast, Trip, Impaling, Reach or Quick Draw, never the same twice; three at most.", "Shaped tentacles can move three steps with their standard action, within your sight."] }
+# Vol. 2 pp. 75-76 (#826): Kineticism's techniques, each spending charges.
+[[others]]
+category = "techniques"
+name = "Ensnaring Force"
+use = [{ label = "Pull them in", charges = { counter = "Kineticism", spend = 1, more = true }, note = "Standard action; 2 steps and 2 more for each extra charge.", page = 75, book = "Vol. 2" }]
+
+[[others]]
+category = "techniques"
+name = "Kinetic Wave"
+use = [{ label = "Reach for the turn", charges = { counter = "Kineticism", spend = 1 }, note = "Simple action.", page = 76, book = "Vol. 2" }]
+
+[[others]]
+category = "techniques"
+name = "Prevailing Force"
+use = [{ label = "Retest", charges = { counter = "Kineticism", spend = 1 }, note = "A Physical challenge, in place of the Willpower.", page = 76, book = "Vol. 2" }]
+
+[[others]]
+category = "techniques"
+name = "Wall of Force"
+use = [{ label = "Raise a wall", charges = { counter = "Kineticism", spend = 2 }, note = "Standard action; out of a fight, two full turns instead of the charges.", page = 76, book = "Vol. 2" }]
+
+# Vol. 2 p. 72: a charge a dot of Kineticism and a technique of it at most; they go
+# when a fight ends, and no one goes into a fight with more than 1.
+[[counters]]
+key = "Kineticism"
+name = "Kineticism charges"
+discipline = "Kineticism"
+most = "powers:Kineticism"
+note = "One for each Kineticism power and technique, at most. They go when a fight ends; you can't go into one holding more than 1."
+fades = [{ label = "Fight over", keep = 0 }, { label = "Going into a fight", keep = 1 }]
+page = 72
+book = "Vol. 2"
+
+# Vol. 2 p. 219: Grace equal to your Obeah powers, elder and luminary powers and
+# techniques too, for five minutes.
+[[counters]]
+key = "Rayzeel's Grace"
+name = "Grace"
+unit = "Grace"
+units = "Grace"
+other = "Obeah: Rayzeel's Grace"
+most = "powers:Obeah"
+note = "One for each Obeah power, elder and luminary powers and techniques too. They fade after five minutes."
+fades = [{ label = "Five minutes up", keep = 0 }]
+page = 219
+book = "Vol. 2"
+
+# Vol. 2 p. 118: a point for each Willpower the mark spends or loses near you, up to
+# 5, for 10 minutes.
+[[counters]]
+key = "Reaper's Due"
+name = "Reaper's Due: Willpower your mark spent"
+unit = "point"
+units = "points"
+discipline = "Necromancy: Path of the Graveborn"
+power = "Reaper's Due"
+most = 5
+note = "Each a +1 wild card against your mark, up to +5, for 10 minutes."
+fades = [{ label = "Ten minutes up", keep = 0, off = "Reaper's Due" }]
+page = 118
+book = "Vol. 2"
+
+# Vol. 2 p. 158: Neptune's Might's uses on the same water or target build, the third
+# counting for every one after; 10 minutes after the last, the next is a first again.
+[[counters]]
+key = "Water Mastery"
+name = "Water Mastery: applications"
+unit = "application"
+units = "applications"
+discipline = "Thaumaturgy: Path of Neptune's Might"
+power = "Water Mastery"
+most = 3
+note = "On the same water; the third counts for every use after it."
+fades = [{ label = "Ten minutes since the last", keep = 0 }]
+page = 158
+book = "Vol. 2"
+
+[[counters]]
+key = "Prison of Water"
+name = "Prison of Water: applications"
+unit = "application"
+units = "applications"
+discipline = "Thaumaturgy: Path of Neptune's Might"
+power = "Prison of Water"
+most = 3
+note = "On the same target; the third counts for every one after it."
+fades = [{ label = "Ten minutes since the last", keep = 0 }]
+page = 159
+book = "Vol. 2"
