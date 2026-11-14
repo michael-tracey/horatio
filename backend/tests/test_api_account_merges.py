@@ -347,7 +347,9 @@ def test_a_suspension_on_the_merged_account_carries_to_the_one_that_stays(
     assert live.reason == "Harassing other players"
     assert live.lifted_at is None
     logged = troupe.session.scalars(
-        select(AuditEvent).where(AuditEvent.action == "account.suspended")
+        select(AuditEvent)
+        .where(AuditEvent.action == "account.suspended")
+        .order_by(AuditEvent.created_at, AuditEvent.id)
     ).all()
     assert [e.data.get("kind") for e in logged] == ["until", "merged"]
     assert logged[1].data["user_id"] == troupe.player.id
