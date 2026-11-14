@@ -80,9 +80,21 @@ POWER_CATEGORIES = ("elder_disciplines", "luminary_disciplines")
 BOOK = "core"
 # How the summary of a switch names each pool family.
 # Amounts the Play View's trackers hold, which it counts (TrackedPart): current
-# Morality less current Beast traits, and current Derangement traits.
+# Morality less current Beast traits, and current Derangement traits; or a power's
+# counter, "charge:<key>" (issue #826: Reaper's Due's stack).
 TRACKED = ("morality_less_beast", "derangements")
-Tracked = Literal["morality_less_beast", "derangements"]
+Tracked = str
+# A power's charges, points or stack, tapped as "charge:<key>" (issue #826).
+CHARGE = "charge:"
+
+
+def tracked(amount: Any) -> str | None:
+    """The tracker an amount counts, if the Play View's trackers hold it."""
+    if amount in TRACKED or (isinstance(amount, str) and amount.startswith(CHARGE)):
+        return amount
+    return None
+
+
 POOL_WORDS = {
     "initiative": "initiative",
     "dodge": "Dodge",
@@ -142,7 +154,8 @@ class Damage(BaseModel):
 class TrackedPart(BaseModel):
     """A part of a variant the Play View's trackers hold, so the page counts it
     (issue #602): Rampart of Faith adds current Morality minus current Beast traits,
-    Manic Episode current Derangement traits (#820)."""
+    Manic Episode current Derangement traits (#820), Reaper's Due its stack (#826:
+    "charge:Reaper's Due")."""
 
     label: str
     tracks: Tracked
@@ -217,6 +230,23 @@ class Heal(BaseModel):
     amount: int = 0
 
 
+class ChargeChange(BaseModel):
+    """What a use does to a power's counter (issue #826): gains or spends that many,
+    fills it to its most, or empties it."""
+
+    # The counter's tracker: "charge:Kineticism".
+    counter: str
+    gain: int = 0
+    spend: int = 0
+    # The player chooses how many to spend, from `spend` up to all held (Vengeful
+    # Strike's charge a point of damage, Vol. 2 p. 75).
+    more: bool = False
+    # Filled to its most, whatever was left going (Rayzeel's Grace, Vol. 2 p. 219).
+    fill: bool = False
+    # Back to none (Reaper's Due on a new mark, Vol. 2 p. 118).
+    reset: bool = False
+
+
 class PowerUse(BaseModel):
     """A use of a power that changes the trackers besides spending its cost (issue
     #825): a button of its own on the Pools tab, made of ordinary taps with Undo."""
@@ -248,6 +278,42 @@ class PowerUse(BaseModel):
     # Who it is used on (issue #823): the character itself, or another character in
     # its home troupe, whose game it changes (horatio.play_on_others).
     target: Literal["self", "other"] = "self"
+    # What it does to a power's counter (issue #826).
+    charges: ChargeChange | None = None
+    # A switch it turns on, if off (Reaper's Due's mark).
+    on: str | None = None
+
+
+class CounterFade(BaseModel):
+    """A button that lets a counter's charges go (issue #826): the Play View has no
+    fights or minutes to count, so the player says when."""
+
+    label: str
+    # How many it keeps: none when a fight ends, 1 going into one (Kineticism).
+    keep: int = 0
+    # A switch it also turns off (Reaper's Due's mark).
+    off: str | None = None
+
+
+class Counter(BaseModel):
+    """Charges, points or a stack a power builds and spends (issue #826), tapped as
+    its `key`, "charge:Kineticism": +n gains, -n spends, never below none or past
+    its most. Every game starts it at none."""
+
+    key: str
+    name: str
+    # What one is called, and more than one, on a use's button: "1 charge".
+    unit: str
+    units: str
+    most: int
+    note: str | None = None
+    page: str | None = None
+    fades: list[CounterFade] = []
+    # Where the Pools tab shows it: with a discipline, under one of its powers, or
+    # with a technique, elder or luminary power, by name.
+    discipline: str | None = None
+    power: str | None = None
+    other: str | None = None
 
 
 class PowerNote(BaseModel):
@@ -477,6 +543,8 @@ class Catalogue:
     switch_keys: frozenset[str] = frozenset()
     # The keys of switches kept until undone (issue #822).
     kept_keys: frozenset[str] = frozenset()
+    # Powers' charges, points and stacks (issue #826), as the file has them.
+    counters: Sequence[Mapping[str, Any]] = ()
 
     def power(self, discipline: str, name: str) -> Mapping[str, Any] | None:
         return next((p for p in self.powers.get(discipline, []) if p["name"] == name), None)
@@ -516,6 +584,7 @@ def catalogue() -> Catalogue:
             k for e in entries for a in actives(e) for k in (a["key"], *option_keys(a))
         ),
         kept_keys=frozenset(a["key"] for e in entries for a in actives(e) if a.get("kept")),
+        counters=tuple(raw.get("counters", [])),
     )
 
 
@@ -804,7 +873,7 @@ def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
                     instead_of=tuple(e.get("instead_of", ())),
                     focus=e.get("focus"),
                     beast=e.get("beast", 0),
-                    tracks=e.get("amount") if e.get("amount") in TRACKED else None,
+                    tracks=tracked(e.get("amount")),
                     alternative=_alternative(e.get("alternative"), sheet),
                     against=e.get("against"),
                     label=e.get("label"),
@@ -990,7 +1059,10 @@ def _pool(
                 (e.when, e.against),
                 PoolVariant(when=f"against {e.against}", total=0, parts=[], switch=e.when),
             )
-            if e.amount:
+            if e.tracks:
+                # What the trackers hold, which the page counts (Reaper's Due, #826).
+                variant.tracked.append(TrackedPart(label=e.label or e.source, tracks=e.tracks))
+            elif e.amount:
                 variant.parts.append(PoolPart(label=e.label or e.source, value=e.amount))
             variant.qualities += [q for q in e.qualities if q not in variant.qualities]
         elif e.when in keys:
@@ -1653,9 +1725,64 @@ def uses(entry: Mapping[str, Any], sheet: Sheet) -> list[PowerUse]:
                 note=u.get("note"),
                 page=_page(u) if "page" in u else None,
                 target=u.get("target", "self"),
+                charges=_charges(u["charges"]) if "charges" in u else None,
+                on=u.get("on"),
             )
         )
     return found
+
+
+def _charges(spec: Mapping[str, Any]) -> ChargeChange:
+    return ChargeChange(
+        counter=CHARGE + spec["counter"],
+        gain=spec.get("gain", 0),
+        spend=spec.get("spend", 0),
+        more=spec.get("more", False),
+        fill=spec.get("fill", False),
+        reset=spec.get("reset", False),
+    )
+
+
+def _counter_held(spec: Mapping[str, Any], sheet: Sheet) -> bool:
+    """Whether the character has what a counter belongs to: the discipline (and the
+    power of it, if it names one), or the technique, elder or luminary power."""
+    if "discipline" in spec:
+        rating = sheet.disciplines.get(spec["discipline"], 0)
+        power = catalogue().power(spec["discipline"], spec["power"]) if "power" in spec else None
+        return rating > 0 and (
+            "power" not in spec or (power is not None and power["level"] <= rating)
+        )
+    return any(name == spec.get("other") for _, _, name in sheet.others)
+
+
+def counters_of(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Counter]:
+    """The charges, points and stacks this character's powers keep (issue #826),
+    each with its most for this sheet: Kineticism's one a power of it (Vol. 2 p. 72)."""
+    return [
+        Counter(
+            key=CHARGE + c["key"],
+            name=c["name"],
+            unit=c.get("unit", "charge"),
+            units=c.get("units", "charges"),
+            most=max(0, _amount(c.get("most", 0), sheet, bases)),
+            note=c.get("note"),
+            page=_page(c) if "page" in c else None,
+            fades=[
+                CounterFade(label=f["label"], keep=f.get("keep", 0), off=f.get("off"))
+                for f in c.get("fades", [])
+            ],
+            discipline=c.get("discipline"),
+            power=c.get("power"),
+            other=c.get("other"),
+        )
+        for c in catalogue().counters
+        if _counter_held(c, sheet)
+    ]
+
+
+def counters(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Counter]:
+    """The counters the Play View keeps for this sheet."""
+    return counters_of(Sheet.read(rows, rule_set), technique_bases(rule_set))
 
 
 def disciplines(sheet: Sheet) -> list[DisciplinePowers]:

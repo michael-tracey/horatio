@@ -17654,6 +17654,73 @@ export interface components {
             /** Ticks */
             ticks?: string[];
         };
+        /**
+         * ChargeChange
+         * @description What a use does to a power's counter (issue #826): gains or spends that many,
+         *     fills it to its most, or empties it.
+         */
+        ChargeChange: {
+            /** Counter */
+            counter: string;
+            /**
+             * Fill
+             * @default false
+             */
+            fill: boolean;
+            /**
+             * Gain
+             * @default 0
+             */
+            gain: number;
+            /**
+             * More
+             * @default false
+             */
+            more: boolean;
+            /**
+             * Reset
+             * @default false
+             */
+            reset: boolean;
+            /**
+             * Spend
+             * @default 0
+             */
+            spend: number;
+        };
+        /**
+         * ChargeOut
+         * @description A power's charges, points or stack at this game (issue #826).
+         */
+        ChargeOut: {
+            /** Discipline */
+            discipline?: string | null;
+            /**
+             * Fades
+             * @default []
+             */
+            fades: components["schemas"]["CounterFade"][];
+            /** Key */
+            key: string;
+            /** Most */
+            most: number;
+            /** Name */
+            name: string;
+            /** Note */
+            note?: string | null;
+            /** Other */
+            other?: string | null;
+            /** Page */
+            page?: string | null;
+            /** Power */
+            power?: string | null;
+            /** Unit */
+            unit: string;
+            /** Units */
+            units: string;
+            /** Value */
+            value: number;
+        };
         /** ChartCycleOut */
         ChartCycleOut: {
             /**
@@ -18478,6 +18545,22 @@ export interface components {
              * @default []
              */
             facts: string[];
+        };
+        /**
+         * CounterFade
+         * @description A button that lets a counter's charges go (issue #826): the Play View has no
+         *     fights or minutes to count, so the player says when.
+         */
+        CounterFade: {
+            /**
+             * Keep
+             * @default 0
+             */
+            keep: number;
+            /** Label */
+            label: string;
+            /** Off */
+            off?: string | null;
         };
         /** CounterIn */
         CounterIn: {
@@ -27516,6 +27599,11 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /**
+             * Charges
+             * @default []
+             */
+            charges: components["schemas"]["ChargeOut"][];
             /** Clan */
             clan: string | null;
             derangements: components["schemas"]["Derangements"];
@@ -28283,6 +28371,7 @@ export interface components {
              * @default 0
              */
             beast: number;
+            charges?: components["schemas"]["ChargeChange"] | null;
             /**
              * Convert
              * @default 0
@@ -28314,6 +28403,8 @@ export interface components {
             mend: number;
             /** Note */
             note?: string | null;
+            /** On */
+            on?: string | null;
             /** Once */
             once?: string | null;
             /** Page */
@@ -33972,16 +34063,14 @@ export interface components {
          * TrackedPart
          * @description A part of a variant the Play View's trackers hold, so the page counts it
          *     (issue #602): Rampart of Faith adds current Morality minus current Beast traits,
-         *     Manic Episode current Derangement traits (#820).
+         *     Manic Episode current Derangement traits (#820), Reaper's Due its stack (#826:
+         *     "charge:Reaper's Due").
          */
         TrackedPart: {
             /** Label */
             label: string;
-            /**
-             * Tracks
-             * @enum {string}
-             */
-            tracks: "morality_less_beast" | "derangements";
+            /** Tracks */
+            tracks: string;
         };
         /** Tracker */
         Tracker: {

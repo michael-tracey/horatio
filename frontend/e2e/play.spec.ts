@@ -587,6 +587,69 @@ test("uses that heal: Mens Sana heals 1 normal for 1 Blood, and Second Wind turn
   await expect.poll(async () => (await play()).blood.value).toBe(blood.value - 1);
 });
 
+test("a power's charges: Kineticism stores charges up to its most, spends them on its powers and techniques, and lets them go when a fight ends (#826)", async ({ browser }) => {
+  const { page: p } = await person(browser, "charge-keeper");
+  // A Caitiff with Inceptor, so Kineticism in-clan (Vol. 2 Issue 1 p. 46), raised to Kineticism 3 (Vol. 2 pp. 72-74) and,
+  // with Potence 2, the technique Kinetic Wave (p. 76): 4 charges at most.
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = (await send("POST", "/api/characters", { splat: "vampire", name: "Wenzel Brack" })) as { id: string };
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Caitiff", rating: null });
+  await send("PUT", `/api/characters/${id}/creation/categories/merits`, { picks: [{ name: "Inceptor", rating: 3 }] });
+  for (const discipline of ["Kineticism", "Celerity", "Potence"]) await send("PUT", `/api/characters/${id}/traits`, { category: "extra_in_clan_disciplines", name: discipline, rating: 1 });
+  const build: Record<string, [string, number][]> = {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Generation", 2], ["Fame", 1]],
+    disciplines: [["Kineticism", 2], ["Celerity", 1], ["Potence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+  await send("POST", `/api/characters/${id}/xp/self-entered`, { amount: 200, reason: "Played elsewhere" });
+  for (const [category, name, rating] of [
+    ["disciplines", "Kineticism", 3],
+    ["disciplines", "Potence", 2],
+    ["techniques", "Kinetic Wave", 1],
+  ] as const)
+    await send("PUT", `/api/characters/${id}/traits`, { category, name, rating });
+  const play = async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { charges: { key: string; value: number; most: number }[] };
+  await expect.poll(async () => (await play()).charges.map((c) => [c.key, c.value, c.most])).toEqual([["charge:Kineticism", 0, 4]]);
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+
+  const counter = p.getByRole("listitem", { name: "Kineticism charges" });
+  await expect(counter).toContainText("Kineticism charges 0 / 4");
+  await expect(counter).toContainText("Vol. 2, p. 72");
+  // Nothing to spend yet: the spends wait for a charge.
+  const blunt = p.getByRole("button", { name: "Kinetic Dampening: Blunt an exceptional success · 2 charges" });
+  await expect(blunt).toBeDisabled();
+
+  // Accumulate stores them, one a press, never past the most.
+  const store = p.getByRole("button", { name: "Accumulate: Store a charge" });
+  for (let i = 0; i < 4; i++) await store.click();
+  await expect(counter).toContainText("Kineticism charges 4 / 4");
+  await expect(store).toBeDisabled();
+
+  // Kinetic Dampening spends 2, and the technique Kinetic Wave 1.
+  await blunt.click();
+  await expect(counter).toContainText("Kineticism charges 2 / 4");
+  await p.getByRole("button", { name: "Kinetic Wave: Reach for the turn · 1 charge" }).click();
+  await expect(counter).toContainText("Kineticism charges 1 / 4");
+  await p.screenshot(shots("play-pools-charges"));
+
+  // Going into a fight keeps 1; when it ends, they all go.
+  await store.click();
+  await store.click();
+  await counter.getByRole("button", { name: "Kineticism charges: Going into a fight" }).click();
+  await expect(counter).toContainText("Kineticism charges 1 / 4");
+  await counter.getByRole("button", { name: "Kineticism charges: Fight over" }).click();
+  await expect(counter).toContainText("Kineticism charges 0 / 4");
+  await expect.poll(async () => (await play()).charges[0]!.value).toBe(0);
+});
+
 test("a power kept until undone: Heart of Darkness's heart stays out through Reset until it is turned off, and Use again asks first (#822)", async ({ browser }) => {
   const { page: p } = await person(browser, "heart-keeper");
   // A Follower of Set with Serpentis 5: Heart of Darkness (core p. 161).

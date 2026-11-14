@@ -1416,8 +1416,10 @@ USE_KEYS = {
     "page",
     "book",
     "target",
+    "charges",
+    "on",
 }
-CHANGES = ("heal", "convert", "mend", "gain", "beast", "retainer")
+CHANGES = ("heal", "convert", "mend", "gain", "beast", "retainer", "charges")
 
 
 def test_every_use_says_what_it_changes_and_where() -> None:
@@ -1440,7 +1442,8 @@ def test_every_use_says_what_it_changes_and_where() -> None:
         # A use on another character (issue #823) heals them, and only that for now.
         assert u.get("target", "self") in {"self", "other"}, name
         if u.get("target") == "other":
-            assert set(u) & set(CHANGES) == {"heal"}, name
+            # What it spends of the user's own counter is theirs (Rayzeel's Grace, #826).
+            assert set(u) & set(CHANGES) - {"charges"} == {"heal"}, name
             assert u["heal"]["damage"] != "asked", name
 
 

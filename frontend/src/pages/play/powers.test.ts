@@ -91,6 +91,7 @@ function view(powers: PowerSwitch[], marks: string[] = [], forms = 1): PlayView 
     log: [],
     effects: [],
     effects_made: [],
+    charges: [],
   };
 }
 

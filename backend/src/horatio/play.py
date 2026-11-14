@@ -36,6 +36,12 @@ its count drops the oldest, and switching it off drops them all, since using it
 again means picking again. While it is on, what they do to the pools counts as an
 equipped item's qualities do (horatio.equipment.picked_modifiers).
 
+A power's charges, points or stack (issue #826) are a tracker of their own,
+"charge:<key>" (horatio.reference.Counter): +n gains, -n spends, never below none or
+past the most the sheet gives it (Kineticism's one a power of it, Vol. 2 p. 72).
+Each game starts them at none. The Play View counts no fights or minutes, so the
+player lets them go with a tap when the book says they fade.
+
 A Stock NPC (issue #215) has only two trackers, from its stat block
 (horatio.rules.stock): its kind's resource in Blood's place (Rage for a werewolf)
 and its health levels, as one track. It has no Willpower, Morality or Beast
@@ -281,6 +287,9 @@ class Limits:
     foreign: frozenset[str] = frozenset()
     # Each Retainer's health and Blood.
     retainers: tuple[RetainerTrack, ...] = ()
+    # Powers' charges, points and stacks (issue #826): "charge:Kineticism", each at
+    # none as a game starts.
+    charges: tuple[reference.Counter, ...] = ()
     # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
     blood_name: str = "Blood"
     # The fixed trackers the character has; a Stock NPC has no Willpower and so on.
@@ -329,6 +338,9 @@ class Limits:
             gone = weapons.pop(0)
             found.append((gone, f"put away {gone.name} (two hands at most)"))
         return found
+
+    def charge(self, tracker: str) -> reference.Counter | None:
+        return next((c for c in self.charges if c.key == tracker), None)
 
     def retainer_trackers(self) -> dict[str, int]:
         return {k: most for r in self.retainers for k, most in r.trackers().items()}
@@ -436,6 +448,9 @@ class Limits:
             return 1 if any(t.key == tracker for t in self.temporary) else None
         if tracker.startswith(RETAINER):
             return self.retainer_trackers().get(tracker)
+        if tracker.startswith(reference.CHARGE):
+            counter = self.charge(tracker)
+            return counter.most if counter else None
         return next((e.uses for e in self.expendables if e.key == tracker), None)
 
     def least(self, tracker: str) -> int:
@@ -463,7 +478,11 @@ class Limits:
             "beast": self.beast_start,
             "derangements": self.derangements,
             "held": {t.key: self.held.get(t.key, 0) for t in self.temporary},
-            "uses": {e.key: e.uses for e in self.expendables} | self.retainer_trackers(),
+            "uses": {e.key: e.uses for e in self.expendables}
+            | self.retainer_trackers()
+            # A power's charges start at none each game (issue #826): Kineticism's
+            # don't outlast a fight (Vol. 2 p. 72).
+            | {c.key: 0 for c in self.charges},
             # Forms and powers switched on: none, as a game starts, but for the
             # effects kept until undone (issue #822).
             "on": list(
@@ -515,6 +534,9 @@ class Limits:
         if tracker.startswith(EQUIP):
             item = self.item(tracker.removeprefix(EQUIP))
             return item.name if item else "an item"
+        if tracker.startswith(reference.CHARGE):
+            counter = self.charge(tracker)
+            return counter.name if counter else tracker.removeprefix(reference.CHARGE)
         if tracker.startswith(RETAINER):
             key, _, what = tracker.rpartition("/")
             found = next((r.name for r in self.retainers if r.key == key), None)
@@ -579,6 +601,7 @@ def known_tracker(tracker: str) -> bool:
         tracker in TRACKERS
         or tracker == DRANK
         or tracker.startswith(("trait:", "counter:", RETAINER))
+        or (tracker.startswith(reference.CHARGE) and len(tracker) > len(reference.CHARGE))
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or (tracker.startswith(PICK) and "/" in tracker)
         or equipped_id(tracker) is not None
@@ -980,6 +1003,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         ),
         vitae=vitae,
         items=held_items(db, character),
+        charges=tuple(reference.counters(rows, rule_set)),
     )
     if not found.items:
         return found

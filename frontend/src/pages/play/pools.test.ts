@@ -285,8 +285,8 @@ describe("defences that aren't a flat bonus (issue #602)", () => {
   });
 
   it("reads Morality, Beast traits and Derangement traits from the Play View", () => {
-    expect(trackersOf({ morality: { value: 4 }, beast: { value: 1 } })).toEqual({ morality: 4, beast: 1, derangements: 0 });
-    expect(trackersOf({ morality: null, beast: { value: 0 }, derangements: { value: 2 } })).toEqual({ morality: 0, beast: 0, derangements: 2 });
+    expect(trackersOf({ morality: { value: 4 }, beast: { value: 1 } })).toEqual({ morality: 4, beast: 1, derangements: 0, charges: {} });
+    expect(trackersOf({ morality: null, beast: { value: 0 }, derangements: { value: 2 } })).toEqual({ morality: 0, beast: 0, derangements: 2, charges: {} });
   });
 });
 
