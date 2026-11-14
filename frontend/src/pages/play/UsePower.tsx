@@ -5,7 +5,7 @@ import { Button } from "../../components/ui";
 import { OnOtherPicker, type Picked } from "./OnOthers";
 import { switchKey } from "./powers";
 import type { makeTap } from "./tracker";
-import { canPay, costText, ghouls, marked, offered, effectTaps, type UseView } from "./uses";
+import { canPay, canSpend, costText, counterOf, ghouls, marked, offered, effectTaps, spendAmounts, unitsText, type UseView } from "./uses";
 
 type TapWhat = Parameters<typeof makeTap>[0];
 
@@ -222,7 +222,11 @@ export function UseEffects({ costed, view, use, online = true }: { costed: Coste
  */
 function UseOnOther({ power, u, view, use, online }: { power: string; u: PowerUse; view: UseView; use: UseTaps; online: boolean }) {
   const [picking, setPicking] = useState(false);
-  const suffix = u.cost ? ` · ${costText(view, u)}` : "";
+  const counter = counterOf(view, u);
+  // What it spends of the user's own counter (#826: Rayzeel's Grace) is spent here.
+  const charge = u.charges?.spend && counter ? u.charges.spend : 0;
+  const suffix = [u.cost ? costText(view, u) : null, charge && counter ? unitsText(counter, charge) : null].filter(Boolean).map((t) => ` · ${t}`).join("");
+  const paid = canPay(view, u) && canSpend(view, u);
   const said = [u.once ? `${u.once}.` : null, u.note].filter(Boolean).join(" ");
   const label = `${u.label} on someone else`;
   return (
@@ -231,8 +235,8 @@ function UseOnOther({ power, u, view, use, online }: { power: string; u: PowerUs
         type="button"
         variant="secondary"
         className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
-        disabled={!canPay(view, u)}
-        title={!canPay(view, u) ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}` : undefined}
+        disabled={!paid}
+        title={!canPay(view, u) ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}` : !paid && counter ? `Not enough ${counter.units}` : undefined}
         aria-label={`${power}: ${label}${suffix}`}
         onClick={() => setPicking(true)}
       >
@@ -254,7 +258,8 @@ function UseOnOther({ power, u, view, use, online }: { power: string; u: PowerUs
           online={online}
           onClose={() => setPicking(false)}
           onPick={(target) => {
-            use(onOtherTaps(u.cost, power, target, { use: u.label }));
+            const spent = charge && counter ? [{ kind: "change" as const, tracker: counter.key, amount: -charge, note: `${power} on ${target.name}` }] : [];
+            use([...spent, ...onOtherTaps(u.cost, power, target, { use: u.label })]);
             setPicking(false);
           }}
         />
@@ -265,10 +270,14 @@ function UseOnOther({ power, u, view, use, online }: { power: string; u: PowerUs
 
 function UseEffect({ power, u, view, use }: { power: string; u: PowerUse; view: UseView; use: UseTaps }) {
   const [asking, setAsking] = useState(false);
-  const suffix = u.cost ? ` · ${costText(view, u)}` : "";
+  const counter = counterOf(view, u);
+  const spends = spendAmounts(view, u);
+  // A spend of a counter (#826) shows with the cost: "Throw them · 1 charge".
+  const charged = (n?: number) => (n && counter ? ` · ${unitsText(counter, n)}` : "");
+  const suffix = (u.cost ? ` · ${costText(view, u)}` : "") + charged(spends.length === 1 ? spends[0] : undefined);
   const said = [u.once ? `${u.once}.` : null, u.note].filter(Boolean).join(" ");
-  const short = !canPay(view, u) ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}` : "Nothing to change now";
-  const button = (label: string, taps: ReturnType<typeof effectTaps>, key?: string) => (
+  const short = !canPay(view, u) ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}` : !canSpend(view, u) && counter ? `Not enough ${counter.units}` : "Nothing to change now";
+  const button = (label: string, taps: ReturnType<typeof effectTaps>, key?: string, end: string = suffix) => (
     <Button
       key={key ?? label}
       type="button"
@@ -276,11 +285,11 @@ function UseEffect({ power, u, view, use }: { power: string; u: PowerUse; view: 
       className="min-h-10 shrink-0 px-3 pointer-coarse:min-h-11"
       disabled={taps.length === 0}
       title={taps.length === 0 ? short : undefined}
-      aria-label={`${power}: ${label}${suffix}`}
+      aria-label={`${power}: ${label}${end}`}
       onClick={() => use(taps)}
     >
       {label}
-      {suffix}
+      {end}
     </Button>
   );
   let body;
@@ -309,6 +318,10 @@ function UseEffect({ power, u, view, use }: { power: string; u: PowerUse; view: 
         {suffix}
       </Button>
     );
+  } else if (spends.length > 1) {
+    // The player says how many to spend (#826: Vengeful Strike's charge a point).
+    const cost = u.cost ? ` · ${costText(view, u)}` : "";
+    body = spends.map((n) => button(u.label, effectTaps(view, u, power, { spend: n }), `${u.label}/${n}`, cost + charged(n)));
   } else {
     body = button(u.label, effectTaps(view, u, power));
   }

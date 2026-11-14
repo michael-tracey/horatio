@@ -161,6 +161,9 @@ export type DisciplinePowers = Schemas["DisciplinePowers"];
 export type Cost = Schemas["Cost"];
 export type PowerUse = Schemas["PowerUse"];
 export type Heal = Schemas["Heal"];
+/** A power's charges, points or stack at this game (#826): "charge:Kineticism". */
+export type Charge = Schemas["ChargeOut"];
+export type ChargeChange = Schemas["ChargeChange"];
 export type OnOtherIn = Schemas["OnOtherIn"];
 export type PlayEffectOut = Schemas["PlayEffectOut"];
 export type EffectMadeOut = Schemas["EffectMadeOut"];

@@ -11740,6 +11740,147 @@
         "title": "CharacterXpIn",
         "type": "object"
       },
+      "ChargeChange": {
+        "description": "What a use does to a power's counter (issue #826): gains or spends that many,\nfills it to its most, or empties it.",
+        "properties": {
+          "counter": {
+            "title": "Counter",
+            "type": "string"
+          },
+          "fill": {
+            "default": false,
+            "title": "Fill",
+            "type": "boolean"
+          },
+          "gain": {
+            "default": 0,
+            "title": "Gain",
+            "type": "integer"
+          },
+          "more": {
+            "default": false,
+            "title": "More",
+            "type": "boolean"
+          },
+          "reset": {
+            "default": false,
+            "title": "Reset",
+            "type": "boolean"
+          },
+          "spend": {
+            "default": 0,
+            "title": "Spend",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "counter"
+        ],
+        "title": "ChargeChange",
+        "type": "object"
+      },
+      "ChargeOut": {
+        "description": "A power's charges, points or stack at this game (issue #826).",
+        "properties": {
+          "discipline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discipline"
+          },
+          "fades": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CounterFade"
+            },
+            "title": "Fades",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "other": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "power": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Power"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "units": {
+            "title": "Units",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "unit",
+          "units",
+          "most",
+          "value"
+        ],
+        "title": "ChargeOut",
+        "type": "object"
+      },
       "ChartCycleOut": {
         "properties": {
           "closes_at": {
@@ -14011,6 +14152,36 @@
           "costs"
         ],
         "title": "CostsOut",
+        "type": "object"
+      },
+      "CounterFade": {
+        "description": "A button that lets a counter's charges go (issue #826): the Play View has no\nfights or minutes to count, so the player says when.",
+        "properties": {
+          "keep": {
+            "default": 0,
+            "title": "Keep",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "off": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Off"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "CounterFade",
         "type": "object"
       },
       "CounterIn": {
@@ -36751,6 +36922,14 @@
             "title": "Character Name",
             "type": "string"
           },
+          "charges": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChargeOut"
+            },
+            "title": "Charges",
+            "type": "array"
+          },
           "clan": {
             "anyOf": [
               {
@@ -38617,6 +38796,16 @@
             "title": "Beast",
             "type": "integer"
           },
+          "charges": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChargeChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "convert": {
             "default": 0,
             "title": "Convert",
@@ -38679,6 +38868,17 @@
               }
             ],
             "title": "Note"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
           },
           "once": {
             "anyOf": [
@@ -53278,17 +53478,13 @@
         "type": "object"
       },
       "TrackedPart": {
-        "description": "A part of a variant the Play View's trackers hold, so the page counts it\n(issue #602): Rampart of Faith adds current Morality minus current Beast traits,\nManic Episode current Derangement traits (#820).",
+        "description": "A part of a variant the Play View's trackers hold, so the page counts it\n(issue #602): Rampart of Faith adds current Morality minus current Beast traits,\nManic Episode current Derangement traits (#820), Reaper's Due its stack (#826:\n\"charge:Reaper's Due\").",
         "properties": {
           "label": {
             "title": "Label",
             "type": "string"
           },
           "tracks": {
-            "enum": [
-              "morality_less_beast",
-              "derangements"
-            ],
             "title": "Tracks",
             "type": "string"
           }

@@ -15,6 +15,7 @@ import { onKeys } from "./powers";
 import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, qualityText, showing, situations, switchedDamage, total, variantNow, variantsOn, variantText, withAttribute, type Modifier, type Trackers, type VariantNow } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
+import { Charges, chargesFor } from "./Charges";
 import { plainUse, UseButtons, UseEffects, type UseTaps } from "./UsePower";
 import { useModifiers } from "./useModifiers";
 
@@ -366,6 +367,7 @@ function Discipline({ discipline, using }: { discipline: DisciplinePowers; using
         </div>
       )}
       {discipline.focus && <p className="mb-2 text-xs text-gold">Your focus: {discipline.focus}</p>}
+      {using && <Charges charges={chargesFor(using.view, { discipline: discipline.name })} view={using.view} use={using.use} />}
       <ol className="flex flex-col gap-2 text-sm">
         {discipline.powers.map((p) => (
           <li key={p.level}>
@@ -377,6 +379,7 @@ function Discipline({ discipline, using }: { discipline: DisciplinePowers; using
             </div>
             <p className="text-mist">{p.note}</p>
             {p.focus && <p className="text-xs text-gold">Your focus: {p.focus}</p>}
+            {using && <Charges charges={chargesFor(using.view, { discipline: discipline.name, power: p.name })} view={using.view} use={using.use} />}
             {using && <UseEffects costed={p} view={using.view} use={using.use} online={using.online} />}
           </li>
         ))}
@@ -481,6 +484,7 @@ export function PoolsTab({
                     )}
                   </p>
                 )}
+                {using && <Charges charges={chargesFor(using.view, { other: o.name })} view={using.view} use={using.use} />}
                 {using && <UseEffects costed={o} view={using.view} use={using.use} online={using.online} />}
               </li>
             ))}
