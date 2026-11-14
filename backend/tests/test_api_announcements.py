@@ -6,11 +6,14 @@ channel, through the fake Discord."""
 import uuid
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
+from email.message import EmailMessage
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -20,7 +23,7 @@ from tests import test_api_posts, test_discord_connector
 from tests.api_helpers import Person, Troupe
 from tests.test_api_posts import News, bell, on_discord, png, send_all
 from tests.test_discord_connector import OPEN_CHANNEL, TEST_CHANNEL, FakeDiscord
-from tests.test_email_connector import FakeSMTP, text_of
+from tests.test_email_connector import FakeSMTP, body, text_of
 
 # The fake Discord and mail server, for the tests here that use them.
 fake_discord = test_discord_connector.fake_discord
@@ -277,6 +280,111 @@ def test_an_important_announcement_emails_even_those_who_turned_it_off(
     assert "lead sent the announcement “Venue closed tonight” as important, emailing everyone" in (
         " ".join(board.log())
     )
+
+
+def mailed_to(mail: FakeSMTP, person: Person) -> list[EmailMessage]:
+    return [m for m in mail.sent if person.email in str(m["To"])]
+
+
+def jpegs(message: EmailMessage) -> list[bytes]:
+    return [
+        part.get_content() for part in message.walk() if part.get_content_type() == "image/jpeg"
+    ]
+
+
+def test_an_announcement_email_carries_the_announcement_and_its_picture(
+    board: Board, session: Session, mail: FakeSMTP, kept: Path
+) -> None:
+    """#831: the title, troupe, byline, picture (inline, a small JPEG) and words, in
+    both parts, with a button to read it in Horatio."""
+    troupe = board.troupe
+    words = "Doors at **seven**.\n\n- Bring your sheet\n- Pay at the door\n\n<b>not bold</b>"
+    post = board.announce(title="New venue", body=words).json()["id"]
+    added = troupe.lead.client.post(
+        f"/posts/{post}/picture", files={"file": ("p.png", png(), "image/png")}
+    )
+    assert added.status_code == 200, added.text
+    assert troupe.lead.client.post(f"/posts/{post}/publish", json={}).status_code == 200
+
+    notification_emails.send_due(session, delivery.now() + timedelta(minutes=1))
+
+    [sent] = mailed_to(mail, troupe.player)
+    assert str(sent["Subject"]) == "Lords of the Night: Announcement: New venue"
+    link = f"/troupes/{troupe.id}/announcements/{post}"
+    text = text_of(sent)
+    assert "Lords of the Night: announcement\n\nNew venue\nlead, Lead storyteller" in text
+    assert "Doors at seven.\n\n- Bring your sheet\n- Pay at the door" in text
+    assert "Read it in Horatio: http" in text and link in text
+
+    page = body(sent, "html")
+    assert "Announcement · Lords of the Night" in page
+    assert ">New venue</h1>" in page and "lead, Lead storyteller" in page
+    assert "Doors at <strong>seven</strong>." in page and page.count("<li ") == 2
+    assert "&lt;b&gt;not bold&lt;/b&gt;" in page and "<b>not bold" not in page
+    assert ">Read it in Horatio</a>" in page
+    [picture] = jpegs(sent)
+    assert len(picture) <= 200 * 1024
+    with Image.open(BytesIO(picture)) as shown:
+        assert shown.format == "JPEG" and shown.width == 600
+    cid = next(p["Content-ID"] for p in sent.walk() if p.get_content_type() == "image/jpeg").strip(
+        "<>"
+    )
+    assert f'src="cid:{cid}"' in page
+    assert ".webp" not in page  # never linked from the server
+
+
+def test_without_a_picture_the_email_has_the_rest(
+    board: Board, session: Session, mail: FakeSMTP
+) -> None:
+    troupe = board.troupe
+    board.announced(title="Bring snacks", body="Anything **sweet**.")
+    notification_emails.send_due(session, delivery.now() + timedelta(minutes=1))
+    [sent] = mailed_to(mail, troupe.player)
+    assert jpegs(sent) == []
+    assert "Anything sweet." in text_of(sent)
+    assert "Anything <strong>sweet</strong>." in body(sent, "html")
+
+
+def test_the_digest_keeps_a_line_for_each_announcement(
+    board: Board, session: Session, mail: FakeSMTP, kept: Path
+) -> None:
+    """Several announcements waiting for the daily digest go as a line and a link
+    each: no pictures, no words."""
+    troupe = board.troupe
+    troupe.player.client.patch("/preferences", json={"email_digest": "daily"})
+    first = board.announce(title="New venue", body="Doors at seven.").json()["id"]
+    troupe.lead.client.post(
+        f"/posts/{first}/picture", files={"file": ("p.png", png(), "image/png")}
+    )
+    troupe.lead.client.post(f"/posts/{first}/publish", json={})
+    board.announced(title="Bring snacks", body="Anything sweet.")
+
+    notification_emails.send_due(session, delivery.now() + timedelta(days=2))
+
+    [sent] = mailed_to(mail, troupe.player)
+    assert "2 notifications today" in str(sent["Subject"])
+    text = text_of(sent)
+    assert "Lords of the Night: Announcement: New venue" in text
+    assert "Lords of the Night: Announcement: Bring snacks" in text
+    assert "Doors at seven" not in text and "Anything sweet" not in text
+    assert jpegs(sent) == []
+
+
+def test_an_announcement_unpublished_before_its_email_goes_is_only_named(
+    board: Board, session: Session, mail: FakeSMTP
+) -> None:
+    """The words go only while it is still out: taken back, the email is the plain
+    line it always was."""
+    troupe = board.troupe
+    post = board.announced(title="Wrong date", body="The game is on Friday.")
+    assert troupe.lead.client.post(f"/posts/{post}/unpublish").status_code == 200
+
+    notification_emails.send_due(session, delivery.now() + timedelta(minutes=1))
+
+    [sent] = mailed_to(mail, troupe.player)
+    text = text_of(sent)
+    assert "Lords of the Night: Announcement: Wrong date" in text
+    assert "The game is on Friday" not in text
 
 
 def test_announcements_go_to_their_own_discord_channel(

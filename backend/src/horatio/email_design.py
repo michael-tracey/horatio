@@ -398,6 +398,117 @@ def text_html(text: str, link_colour: str | None = None, style: str = "") -> str
     )
 
 
+MD_COMMENT = re.compile(r"^\s*<!--.*-->\s*$")
+MD_HEADING = re.compile(r"^ {0,3}(#{1,6})(?:\s+(.*?))?\s*#*\s*$")
+MD_RULE = re.compile(r"^ {0,3}([-*_])(\s*\1){2,}\s*$")
+MD_BULLET = re.compile(r"^ {0,3}[-*+]\s+(.*)$")
+MD_NUMBER = re.compile(r"^ {0,3}(\d{1,9})[.)]\s+(.*)$")
+MD_QUOTE = re.compile(r"^ {0,3}>\s?(.*)$")
+MD_FENCE = re.compile(r"^ {0,3}(```|~~~)")
+# A heading's size by its level, all below an announcement's own title.
+MD_HEADING_SIZES = {1: 20, 2: 18, 3: 17}
+
+
+def _md_starts_block(line: str) -> bool:
+    return any(
+        p.match(line) for p in (MD_HEADING, MD_RULE, MD_BULLET, MD_NUMBER, MD_QUOTE, MD_FENCE)
+    )
+
+
+def markdown_html(text: str, link_colour: str | None = None) -> str:
+    """Markdown as an announcement is written (headings, paragraphs, **bold**,
+    *italic*, lists, quotes, code, rules and links, as the app reads them), as HTML
+    for an email (#831). It is built from the text, so raw HTML in it only ever shows
+    as text; a line that is only an HTML comment is left out, as in the app."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    out: list[str] = []
+    gap = "margin: 0 0 16px 0"
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        fence = MD_FENCE.match(line)
+        heading = MD_HEADING.match(line)
+        numbered = MD_NUMBER.match(line)
+        if not line.strip() or MD_COMMENT.match(line):
+            i += 1
+        elif fence is not None:
+            code: list[str] = []
+            i += 1
+            while i < len(lines) and not lines[i].lstrip().startswith(fence.group(1)):
+                code.append(lines[i])
+                i += 1
+            i += 1
+            out.append(
+                f'<pre style="{gap}; padding: 4px 0 4px 12px; border-left: 3px solid {RULE}; '
+                "white-space: pre-wrap; font-family: Consolas, 'Courier New', monospace; "
+                f'font-size: 14px">{html.escape(chr(10).join(code))}</pre>'
+            )
+        elif heading is not None:
+            size = MD_HEADING_SIZES.get(len(heading.group(1)), 16)
+            out.append(
+                f'<p style="margin: 20px 0 8px 0; font-size: {size}px; font-weight: bold; '
+                f'line-height: 1.3">{inline_html(heading.group(2) or "", link_colour)}</p>'
+            )
+            i += 1
+        elif MD_RULE.match(line):
+            out.append(
+                f'<hr class="h-rule" style="border: 0; border-top: 1px solid {RULE}; '
+                'margin: 16px 0">'
+            )
+            i += 1
+        elif MD_QUOTE.match(line):
+            quoted: list[str] = []
+            while i < len(lines) and (found := MD_QUOTE.match(lines[i])) is not None:
+                quoted.append(found.group(1))
+                i += 1
+            inner = markdown_html("\n".join(quoted), link_colour)
+            out.append(
+                f'<blockquote style="{gap}; padding: 0 0 0 12px; '
+                f'border-left: 3px solid {RULE}">{inner}</blockquote>'
+            )
+        elif numbered is not None or MD_BULLET.match(line):
+            pattern = MD_NUMBER if numbered is not None else MD_BULLET
+            items: list[str] = []
+            while i < len(lines) and (found := pattern.match(lines[i])) is not None:
+                items.append(found.group(found.lastindex or 1))
+                i += 1
+            tag = "ol" if numbered is not None else "ul"
+            first = int(numbered.group(1)) if numbered is not None else 1
+            start = f' start="{first}"' if first != 1 else ""
+            rows = "".join(
+                f'<li style="margin: 0 0 4px 0">{inline_html(item, link_colour)}</li>'
+                for item in items
+            )
+            out.append(f'<{tag}{start} style="{gap}; padding-left: 24px">{rows}</{tag}>')
+        else:
+            para: list[str] = [line.strip()]
+            i += 1
+            while (
+                i < len(lines)
+                and lines[i].strip()
+                and not MD_COMMENT.match(lines[i])
+                and not _md_starts_block(lines[i])
+            ):
+                para.append(lines[i].strip())
+                i += 1
+            joined = "<br>".join(inline_html(p, link_colour) for p in para)
+            out.append(f'<p style="{gap}">{joined}</p>')
+    return "\n".join(out)
+
+
+def markdown_text(text: str) -> str:
+    """Markdown as plain text for an email: headings without their marks, emphasis
+    dropped, [words](link) as "words (link)", comment lines left out, and the rest
+    as written, which reads well as it is."""
+    kept: list[str] = []
+    for line in text.replace("\r\n", "\n").split("\n"):
+        if MD_COMMENT.match(line):
+            continue
+        heading = MD_HEADING.match(line)
+        kept.append(inline_text(heading.group(2) or "") if heading else inline_text(line))
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
+
+
 def site() -> str:
     return get_settings().public_url.rstrip("/")
 

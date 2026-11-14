@@ -128,6 +128,56 @@ def test_what_the_custodian_writes_is_escaped() -> None:
     assert 'href="javascript' not in page
 
 
+MARKDOWN = """# Venue
+
+The game moves to **Saturday**, at *the Lantern Rooms*.
+Doors at seven.
+
+- Bring your [sheet](https://example.org/sheet)
+- Pay at the door
+<!-- a note for staff -->
+
+3. Third
+4. Fourth
+
+> Quoted words
+> on two lines
+
+```
+<b>kept as written</b>
+```
+
+---
+
+<script>alert(1)</script> [no](javascript:alert(1))"""
+
+
+def test_markdown_becomes_email_html_built_from_the_text() -> None:
+    """#831: an announcement's Markdown as the app reads it, and nothing that could
+    run or link anywhere but the web."""
+    page = email_design.markdown_html(MARKDOWN, "#123456")
+    assert 'font-weight: bold; line-height: 1.3">Venue</p>' in page
+    assert "The game moves to <strong>Saturday</strong>, at <em>the Lantern Rooms</em>.<br>" in page
+    assert "Doors at seven.</p>" in page
+    assert '<a href="https://example.org/sheet" style="color: #123456">sheet</a>' in page
+    assert page.count("<li ") == 4
+    assert '<ol start="3"' in page and "<ul " in page
+    assert "<blockquote" in page and "Quoted words<br>on two lines" in page
+    assert "&lt;b&gt;kept as written&lt;/b&gt;" in page
+    assert '<hr class="h-rule"' in page
+    assert "a note for staff" not in page
+    assert "<script>" not in page and "&lt;script&gt;" in page
+    assert 'href="javascript' not in page
+
+
+def test_markdown_as_plain_text() -> None:
+    text = email_design.markdown_text(MARKDOWN)
+    assert text.startswith("Venue\n\nThe game moves to Saturday, at the Lantern Rooms.")
+    assert "- Bring your sheet (https://example.org/sheet)" in text
+    assert "a note for staff" not in text
+    assert "<script>alert(1)</script>" in text  # plain text: shown, never run
+
+
 def test_a_button_replaces_the_bare_link_in_html_only() -> None:
     url = "https://horatio.example.org/reset/abc"
     message = made(Body(text=f"Hello,\n\nFollow this:\n\n{url}\n\nThanks.", action=("Reset", url)))

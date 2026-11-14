@@ -393,6 +393,8 @@ On the **Announcements** tab, **Announcements desk** opens the desk; **Write an 
 
 Tick **Important** for what can't wait, such as a game moved or cancelled. As it's published, an important announcement is emailed to everyone in the troupe, even players who've turned announcement emails off. The editor says so beside the tick. Use it sparingly: the troupe log records who used it. Ticking it on an announcement already published sends nothing.
 
+The email carries the whole announcement, in the site's email design: its title, the troupe, your byline, the picture (made small for email, and left out if it's too large to send) and the words, with a **Read it in Horatio** button. It goes as the announcement stands when it's sent; one unpublished before then is emailed only as its title, and editing an announcement once it's out sends no new email. A daily digest lists each waiting announcement as a line with a link.
+
 ### Announcements on Discord
 
 Under **Customise › News agencies**, **Announcements on Discord** picks the troupe's announcements channel, separately from the news channel. An announcement goes there as a plain embed with its title, byline, message (split over several posts if it's long), picture and a **Read in Horatio** link. Editing it edits the post, and unpublishing deletes it. With no Discord server connected, or no announcements channel chosen, it's in the app only, and the desk says so.
