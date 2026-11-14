@@ -1,3 +1,4 @@
+import { CryptTemplates } from "./tools/CryptTemplates";
 import { DarkPackResources } from "./tools/DarkPackResources";
 import { FitNpcPicks } from "./tools/FitNpcPicks";
 import { VtesSymbols } from "./tools/VtesSymbols";
@@ -15,6 +16,7 @@ export function ToolsTab() {
       <FitNpcPicks />
       <DarkPackResources />
       <VtesSymbols />
+      <CryptTemplates />
     </div>
   );
 }

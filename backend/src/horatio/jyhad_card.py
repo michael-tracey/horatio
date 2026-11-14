@@ -35,7 +35,7 @@ from dataclasses import dataclass, replace
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import checkin, pictures, sheets, social_age, titles, vtes_symbols
+from horatio import checkin, crypt_templates, pictures, sheets, social_age, titles, vtes_symbols
 from horatio.models import Character, RuleSet, Troupe
 
 # Each capacity's average discipline points (inferior 1, superior 2) over every
@@ -196,6 +196,10 @@ class Card:
     picture: str | None
     text: str
     flavour: str
+    # The clan's crypt card template the custodian uploaded (horatio.crypt_templates),
+    # if there is one: the card is drawn on it, not on Horatio's own frame.
+    template: str | None = None
+    template_key: str | None = None
 
 
 def symbol_url(group: str, name: str | None, fetched: set[str]) -> str | None:
@@ -282,6 +286,8 @@ def card(db: Session, character: Character) -> Card:
     inferior = vtes_symbols.symbols(record, "disc/inf")
     superior = vtes_symbols.symbols(record, "disc/sup")
     clan = age.clan
+    templates = crypt_templates.manifest()
+    template_key = crypt_templates.chosen(clan, sect, crypt_templates.present(templates))
     krcg_clan = (
         vtes_symbols.CLANS.get(clan) or vtes_symbols.CLANS.get(clan.split(":")[0].strip())
         if clan
@@ -317,4 +323,11 @@ def card(db: Session, character: Character) -> Card:
             for d in shown
         ],
         picture=picture,
+        template=(
+            f"/api/characters/{character.id}/jyhad-card/template.webp"
+            f"?v={crypt_templates.version(templates)}"
+            if template_key
+            else None
+        ),
+        template_key=template_key,
     )
