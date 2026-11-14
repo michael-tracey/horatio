@@ -329,7 +329,9 @@ Each story is one-off: there are no repeating stories. For a regular bulletin, *
 - its **Masthead colour**, shown behind its name, beside its stories and down the side of its Discord posts;
 - its own **Discord channel**, if it should post somewhere other than the troupe's news channel (storytellers only).
 
-Its **⋯** has **Edit…**, **Masthead picture…** (a nameplate or logo shown in place of its name) and **Retire**. A retired agency is no longer offered for new stories; its old stories stay, and **Bring back** returns it.
+Its **⋯** has **Edit…**, **Masthead picture…** (a nameplate or logo shown in place of its name), **Portrait…** and **Retire**. A retired agency is no longer offered for new stories; its old stories stay, and **Bring back** returns it.
+
+An agency's **portrait** is a square picture, such as its logo, separate from its masthead. Its stories show it on Discord as the one who posted them, beside the agency's name, in place of the Horatio bot. **Portrait…** uploads one and crops it square, as a character's picture is cropped; **Move the crop** and **Remove** change it later. Without a portrait, stories still post under the agency's name, with Discord's own default picture. The portrait shows beside the masthead in the list of agencies.
 
 ### The news channel on Discord
 
@@ -366,6 +368,10 @@ A published story's **⋯** on the desk has:
 A draft that was never published, or has been unpublished, can be deleted.
 
 On Discord, a story is an embed in its agency's colour, with the agency's name and masthead picture, the headline, the dateline and story, the picture, and a **Read in Horatio** link. A long story is split over several posts. If Discord refuses it, Horatio tries again for a while; if it still can't, the desk shows why, with **Retry** and **Mark as sent** (for when you've posted it yourself).
+
+A story posts **as its agency**: Discord shows the agency's name and portrait as the sender, not the Horatio bot. Discord allows that only through a channel's webhook, so the bot makes one webhook named Horatio in each channel it posts stories to, and reuses it; this needs the bot to have **Manage Webhooks** in that channel. Without it, stories there post as the bot, as before, and the agency's row on the Agencies tab says the bot lacks Manage Webhooks. A story already on Discord stays with whoever posted it: one the bot posted (including every story from before agencies posted as themselves) is still edited and deleted by the bot. Announcements always post as the Horatio bot. If someone deletes the Horatio webhook on Discord, the bot makes another the next time it posts; the stories the old webhook sent can no longer be changed by Horatio, so an edit posts the story again and the old copy stays until someone deletes it on Discord.
+
+Discord fetches an agency's portrait from Horatio itself, so a portrait has an address of its own that anyone holding it can open without signing in. Only the stories Horatio sends to Discord carry that address, and a new portrait gets a new one: the old address stops working.
 
 ### Narrators' proposals
 
@@ -522,6 +528,8 @@ The rest of the document is built from the troupe's own settings, so it's never 
 - **Setting-specific mechanics**: what a new character starts with, your changes to starting points, the checks that limit creation (your own and the book's you play differently), the game XP chart and monthly cap, and your other house rules. **Graduated XP cap** says **Yes** when the game XP chart gives less as a character earns more (p. 349).
 
 Every member reads the whole document on the troupe's **Setting** tab, beside **Overview**; running staff see an edit link beside each built part. **Print it** opens it black on white for the Storyteller table. Under **Where players read it**, storytellers can tick **Show it on the troupe's profile**, as written rules can be; a public profile then shows it to anyone. A character built to the troupe's rules shows its themes, moods and teaser on the wizard's Concept step, with a link to the whole document.
+
+When you change the document, the troupe's players hear of it in the bell, with what changed ("The setting changed: the theme Betrayal added; the teaser rewritten."), and the notice opens the **Setting** tab. A sitting's changes make one notice: each change within half an hour of the last joins the player's unread notice rather than making another. The parts you write count, as do the chronicle's name and city on the profile, the sects that may join, clan rarity and the New Character Incentive. Prices, house merits, checks and the other house rules don't: players read those on the **House rules** tab. Whoever makes a change isn't told of it, and showing the document on the profile tells no one.
 
 ### A feature's own settings
 
@@ -800,7 +808,7 @@ Each character's results go to a private text channel of its own. You can make t
 2. Make it private, so everyone in the server is kept out of it.
 3. Let in the character's player, the staff (a staff role is easiest), and the Horatio bot (by its own role, named after the bot, or by name). The bot must be able to see the channel and send messages there.
 
-Where the bot lacks a permission it needs in a channel you've chosen, Horatio says so beside it: **View Channels** and **Send Messages** for results, and also **Embed Links** and **Attach Files** for news and announcements. A server that added the bot before Horatio asked for the last two can [update the bot's permissions](#updating-the-bots-permissions), or give them in the channels' own settings. If Discord refuses a post anyway, the delivery's error names the permission that's missing.
+Where the bot lacks a permission it needs in a channel you've chosen, Horatio says so beside it: **View Channels** and **Send Messages** for results, and also **Embed Links** and **Attach Files** for news and announcements. A server that added the bot before Horatio asked for the last two can [update the bot's permissions](#updating-the-bots-permissions), or give them in the channels' own settings. For an agency's stories to post as the agency, the bot also needs **Manage Webhooks** in its channel (see [Editing, unpublishing and duplicating](#editing-unpublishing-and-duplicating)); without it they post as the bot. If Discord refuses a post anyway, the delivery's error names the permission that's missing.
 
 Make a **test channel** that only staff can see, with the bot let in, too. Putting the characters' channels in one category whose permissions they share saves setting each one up.
 
