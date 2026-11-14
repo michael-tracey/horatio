@@ -1342,6 +1342,12 @@ def _names(spec: str | Sequence[str] | None) -> list[str]:
     return [spec] if isinstance(spec, str) else list(spec)
 
 
+def _ruled_out(active: Mapping[str, Any], sheet: Sheet) -> bool:
+    """Whether a trait the character has rules this switch out (`hidden_by`, #812:
+    Tzimisce: Scar Tissue on Malleable Visage, Vol. 2 p. 278)."""
+    return any(_has(sheet, n) for n in _names(active.get("hidden_by")))
+
+
 def _option(
     active: Mapping[str, Any],
     o: Mapping[str, Any],
@@ -1517,7 +1523,12 @@ class Worked:
 
 
 def work_out(sheet: Sheet, bases: Mapping[str, set[str]]) -> Worked:
-    found = [_switch(o, a, sheet) for o in owners(sheet) for a in actives(o.entry)]
+    found = [
+        _switch(o, a, sheet)
+        for o in owners(sheet)
+        for a in actives(o.entry)
+        if not _ruled_out(a, sheet)
+    ]
     # A power's own options are switches too, on while picked (issue #821).
     found += [option for s in list(found) for option in option_switches(s)]
     pools, hurts = effects(sheet, bases), damage_effects(sheet)
@@ -1618,7 +1629,7 @@ def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
                 note=spec.get("note"),
                 focus=focus,
                 cost=cost(spec, sheet),
-                switches=[a["key"] for a in actives(spec)],
+                switches=[a["key"] for a in actives(spec) if not _ruled_out(a, sheet)],
                 powers=[
                     PowerNote(
                         level=p["level"],
@@ -1628,7 +1639,7 @@ def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
                             (n for a, n in p.get("focus", {}).items() if a in sheet.focuses), None
                         ),
                         cost=cost(p, sheet),
-                        switches=[a["key"] for a in actives(p)],
+                        switches=[a["key"] for a in actives(p) if not _ruled_out(a, sheet)],
                         uses=uses(p, sheet),
                     )
                     for p in book.powers.get(name, [])
@@ -1695,7 +1706,7 @@ def other_powers(sheet: Sheet, rule_set: RuleSetData) -> list[OtherPower]:
                 note=trait.description if trait else None,
                 page=trait.page_reference if trait else None,
                 cost=cost(entry, sheet),
-                switches=[a["key"] for a in actives(entry)],
+                switches=[a["key"] for a in actives(entry) if not _ruled_out(a, sheet)],
                 uses=uses(entry, sheet),
             )
         )
