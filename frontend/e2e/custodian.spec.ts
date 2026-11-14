@@ -494,6 +494,73 @@ test("the custodian sets up a troupe, changes its lead and approves a request, a
   await c.screenshot(shots("troupe-management"));
 });
 
+test("the custodian opens a player's row on People to see every character they have, active and retired, with its picture (#890)", async ({ browser }) => {
+  const custodian = await person(browser, "rowchar-custodian");
+  makeCustodian(custodian.email);
+  const player = await person(browser, "rowchar-player");
+  const p = player.page;
+  const headers = { "X-Horatio": "1" };
+  const make = async (name: string) => {
+    const made = await p.request.post("/api/characters", { headers, data: { name, splat: "vampire" } });
+    expect(made.status(), await made.text()).toBe(201);
+    return (await made.json()).id as string;
+  };
+  // One met Final Death; the newer one is still being made, with a picture.
+  const gone = await make("Bartholomew Crane");
+  const retired = await p.request.post(`/api/characters/${gone}/retire`, { headers, data: { reason: "final_death", note: "", listed: false } });
+  expect(retired.status(), await retired.text()).toBe(200);
+  const active = await make("Rosalind Vane");
+  const picture = await p.request.post(`/api/characters/${active}/picture`, {
+    headers,
+    multipart: { file: { name: "portrait.jpg", mimeType: "image/jpeg", buffer: readFileSync("e2e/portrait.jpg") } },
+  });
+  expect(picture.status(), await picture.text()).toBeLessThan(300);
+
+  const c = custodian.page;
+  await c.reload();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(player.email);
+  const row = c.locator("main tr").filter({ hasText: player.email });
+  // The chevron at the start of the row opens it; nothing is listed until then.
+  const chevron = row.getByRole("button", { name: "rowchar-player's characters" });
+  await expect(chevron).toHaveAttribute("aria-expanded", "false");
+  const characters = c.getByRole("region", { name: "rowchar-player's characters" });
+  await expect(characters).toHaveCount(0);
+  await chevron.click();
+  await expect(chevron).toHaveAttribute("aria-expanded", "true");
+  const items = characters.getByRole("listitem");
+  await expect(items).toHaveCount(2);
+
+  // Active ones first, each with where it stands, its troupe and its picture.
+  const rosalind = items.nth(0);
+  await expect(rosalind.getByRole("link", { name: "Rosalind Vane" })).toHaveAttribute("href", `/characters/${active}`);
+  await expect(rosalind.getByText("Active", { exact: true })).toBeVisible();
+  await expect(rosalind.getByText("In creation", { exact: true })).toBeVisible();
+  await expect(rosalind.getByText("no home troupe", { exact: true })).toBeVisible();
+  await expect(rosalind.locator("img")).toHaveAttribute("src", new RegExp(`/api/characters/${active}/pictures/[^/]+/\\d+\\.webp$`));
+  await expect(rosalind.getByRole("button", { name: "Move Rosalind Vane to another player" })).toBeVisible();
+  // Then the retired one, with why it left, and its initials for want of a picture.
+  const bartholomew = items.nth(1);
+  await expect(bartholomew.getByRole("link", { name: "Bartholomew Crane" })).toHaveAttribute("href", `/characters/${gone}`);
+  await expect(bartholomew.getByText("Retired: Final Death", { exact: true })).toBeVisible();
+  await expect(bartholomew.getByText("BC", { exact: true })).toBeVisible();
+  await expect(bartholomew.locator("img")).toHaveCount(0);
+  await c.screenshot(shots("people-characters"));
+
+  // The ⋯ has no Characters any more: the chevron does its job.
+  await row.getByRole("button", { name: "Actions for rowchar-player" }).click();
+  const menu = c.getByRole("menu", { name: "Actions for rowchar-player" });
+  await expect(menu.getByRole("menuitem", { name: "Reset password…" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Characters" })).toHaveCount(0);
+  await c.keyboard.press("Escape");
+
+  // The chevron closes it again.
+  await chevron.click();
+  await expect(chevron).toHaveAttribute("aria-expanded", "false");
+  await expect(characters).toHaveCount(0);
+});
+
 test("the custodian moves a character to another player, not while its game is under way, and back again", async ({ browser }) => {
   const custodian = await person(browser, "mvc-custodian");
   makeCustodian(custodian.email);
@@ -525,9 +592,9 @@ test("the custodian moves a character to another player, not while its game is u
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(before.email);
   const row = c.locator("main tr").filter({ hasText: before.email });
-  await personAction(row, "mvc-before", "Characters");
-  const characters = c.getByRole("dialog", { name: "mvc-before's characters" });
-  await expect(characters.getByRole("link", { name: /Ottilie Marsh/ })).toContainText(troupeName);
+  await row.getByRole("button", { name: "mvc-before's characters" }).click();
+  const characters = c.getByRole("region", { name: "mvc-before's characters" });
+  await expect(characters.getByRole("listitem").filter({ hasText: "Ottilie Marsh" })).toContainText(troupeName);
   await characters.getByRole("button", { name: "Move Ottilie Marsh to another player" }).click();
   const dialog = c.getByRole("dialog", { name: "Move Ottilie Marsh to another player" });
   await expect(dialog.getByText(`Ottilie Marsh is played by mvc-before @${before.handle}.`)).toBeVisible();
@@ -552,7 +619,7 @@ test("the custodian moves a character to another player, not while its game is u
   await c.screenshot(shots("move-character-confirm"));
   await confirm.click();
   await expect(dialog).toBeHidden();
-  // The list of their characters stays open behind it, now without it.
+  // The list of their characters stays open on their row, now without it.
   await expect(characters.getByText("No characters.")).toBeVisible();
 
   // The new player has it in their vault, with its history and the move in its log.

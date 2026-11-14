@@ -37697,6 +37697,33 @@
       },
       "PlayerCharacter": {
         "properties": {
+          "asking_troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asking Troupe"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "creation_complete": {
+            "default": true,
+            "title": "Creation Complete",
+            "type": "boolean"
+          },
           "home_troupe": {
             "anyOf": [
               {
@@ -37713,20 +37740,102 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "default": "pc",
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
           "name": {
             "title": "Name",
             "type": "string"
           },
+          "npc_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
+          "npc_kind_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind Name"
+          },
+          "owner_troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe"
+          },
+          "owner_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe Id"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "retired": {
             "title": "Retired",
             "type": "boolean"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "name",
           "home_troupe",
-          "retired"
+          "retired",
+          "status"
         ],
         "title": "PlayerCharacter",
         "type": "object"
