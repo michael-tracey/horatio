@@ -974,6 +974,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "scheduled_games": "games are the troupe's own",
     "shared_backgrounds": PLAY,
     "sheet_versions": PLAY,
+    "story_bible_notes": "the story bible is staff's own",
     "teachings": PLAY,
     "title_holdings": PLAY,
     "troupe_connectors": "connectors (tokens, Discord channels) are never carried",

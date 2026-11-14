@@ -26,6 +26,7 @@ import { useReference } from "./useReference";
 import { useKeepAwake } from "./wakeLock";
 import { useOnline } from "../../offline/connection";
 import { NeedsSignal, ScenesStrip } from "../../offline/KeepScenes";
+import { MotifTags } from "../troupe/MotifTags";
 import { expandPower } from "../troupe/stockNpcs";
 import { useTitle } from "../../title";
 
@@ -161,6 +162,16 @@ export function ScenePage() {
               </div>
             )}
             <ErrorText error={changes.rename.error} />
+            <MotifTags
+              troupeId={troupeId}
+              tags={scene.data.tags ?? []}
+              canTag={online}
+              onSave={async (ids) => {
+                const data = await unwrap(api.PUT("/api/troupes/{troupe_id}/scenes/{scene_id}/tags", { params: { path: { troupe_id: troupeId, scene_id: sceneId } }, body: { ids } }));
+                client.setQueryData(sceneKey, data);
+                await client.invalidateQueries({ queryKey: ["setting-tags", troupeId] });
+              }}
+            />
             {online ? (
               <AddToScene roster={roster.data} pinned={pinned} onPin={(id) => pinning.mutate({ id, on: true })} error={roster.error ?? pinning.error} />
             ) : (

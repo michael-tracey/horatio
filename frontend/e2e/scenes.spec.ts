@@ -374,6 +374,63 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   );
 });
 
+test("staff tag a scene with the setting's themes and moods, the Setting tab counts what each touches, and a player sees none of it (#880)", async ({ browser }) => {
+  const custodian = await person(browser, "scenetag-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "scenetag-lead");
+  const player = await person(browser, "scenetag-player");
+  await custodian.page.reload();
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const troupeId: string = (await send(custodian.page, "POST", "/api/troupes", { name: `Court of Tags ${run}`, lead_handle: lead.handle })).id;
+  const l = lead.page;
+  for (const [kind, name] of [
+    ["theme", "Betrayal"],
+    ["theme", "Rebirth"],
+    ["mood", "Brooding"],
+  ]) {
+    await send(l, "POST", `/api/troupes/${troupeId}/setting/entries`, { kind, name, description: "" });
+  }
+  const scene = await send(l, "POST", `/api/troupes/${troupeId}/scenes`, { name: "Elysium, rooftop" });
+
+  // On the scene, the lead tags it with a theme and a mood.
+  await l.goto(`/play/troupes/${troupeId}/scenes/${scene.id}`);
+  const tags = l.getByRole("group", { name: "Themes and moods" });
+  await expect(tags).toContainText("none tagged");
+  await tags.getByRole("button", { name: "Tag it" }).click();
+  await tags.getByRole("list", { name: "Themes" }).getByRole("button", { name: "Betrayal" }).click();
+  await tags.getByRole("list", { name: "Moods" }).getByRole("button", { name: "Brooding" }).click();
+  await expect(tags.getByRole("button", { name: "Betrayal" })).toHaveAttribute("aria-pressed", "true");
+  await tags.getByRole("button", { name: "Save tags" }).click();
+  await expect(tags.getByRole("button", { name: "Change tags" })).toBeVisible();
+  await expect(tags).toContainText("Betrayal");
+  await expect(tags).toContainText("Brooding");
+  await l.reload();
+  await expect(l.getByRole("group", { name: "Themes and moods" })).toContainText("Betrayal");
+
+  // The Setting tab shows the staff what each touches, Rebirth nothing yet, and leads to the scene.
+  await l.goto(`/troupes/${troupeId}/setting`);
+  const touched = l.getByRole("list", { name: "Themes and moods touched" });
+  await expect(touched.getByRole("listitem", { name: "Betrayal" })).toContainText("1 scene");
+  await expect(touched.getByRole("listitem", { name: "Rebirth" })).toContainText("Not touched yet");
+  await expect(touched.getByRole("listitem", { name: "Brooding" })).toContainText("1 scene");
+  await touched.getByRole("listitem", { name: "Betrayal" }).getByRole("link", { name: "Elysium, rooftop" }).click();
+  await expect(l).toHaveURL(new RegExp(`/play/troupes/${troupeId}/scenes/${scene.id}$`));
+
+  // A player reads the setting but sees no tags, and can't ask for them.
+  const p = player.page;
+  await p.goto(`/troupes/${troupeId}/setting`);
+  await expect(p.getByRole("article", { name: "Setting Style Document" })).toContainText("Betrayal");
+  await expect(p.getByText("Themes and moods touched")).toHaveCount(0);
+  expect((await p.request.get(`/api/troupes/${troupeId}/setting/tags`)).status()).toBe(403);
+  const tagging = await p.request.put(`/api/troupes/${troupeId}/scenes/${scene.id}/tags`, { headers, data: { ids: [] } });
+  expect(tagging.status()).toBe(403);
+});
+
 test("staff keep a troupe's scenes on their phones: with no signal both tap the same NPC, and both taps count, in order, once they reconnect (#503)", async ({ browser }) => {
   test.slow();
   // Two storytellers' own phones, with the service worker, each keeping their characters there.

@@ -49,8 +49,11 @@ test("a player taps their clan seven times and finds a Jyhad card, and staff ope
   await expect(p.getByLabel("Card text")).toHaveValue("");
   await p.getByLabel("Card text").fill("Once each turn, Celestine may burn a blood to untap a Toreador.");
   await p.getByLabel("Flavour line").fill("Beauty is a knife.");
-  await p.getByRole("button", { name: "Save text" }).click();
-  await expect(p.getByRole("button", { name: "Save text" })).toBeDisabled();
+  // The card stays with the character, its other details following the sheet (#889).
+  await expect(p.getByText(/^The card stays with Celestine\. .*the rest follows the sheet/)).toBeVisible();
+  await p.getByRole("button", { name: "Save card" }).click();
+  await expect(p.getByText("Saved with Celestine. Change it here any time.")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Save card" })).toBeDisabled();
   await p.screenshot(shots("jyhad-card"));
 
   // Downloaded as an image, for Discord.

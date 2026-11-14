@@ -8,6 +8,7 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { guidanceText, meetsNow, offerText, questStatus, questType, resultText, type Option } from "../quests/quests";
 import { RequirementBuilder } from "../quests/RequirementBuilder";
+import { MotifTags } from "./MotifTags";
 import { QuestFields, type QuestDraft } from "./QuestsTab";
 
 /** One quest, for staff: build it, check and meet its requirements, send it, and see it through. */
@@ -57,6 +58,7 @@ function Overview({ quest: q, troupeId }: { quest: QuestOut; troupeId: string })
   const accept = useAction(() => unwrap(api.POST("/api/quests/{quest_id}/accept", path)));
   const read = useAction(() => unwrap(api.POST("/api/quests/{quest_id}/read", path)));
   const send = useAction(() => unwrap(api.POST("/api/quests/{quest_id}/send", path)));
+  const tag = useAction((ids: string[]) => unwrap(api.PUT("/api/quests/{quest_id}/tags", { ...path, body: { ids } })));
   const close = useAction(async (note: string) => {
     await unwrap(api.POST("/api/quests/{quest_id}/close", { ...path, body: { note } }));
     setClosing(null);
@@ -142,6 +144,7 @@ function Overview({ quest: q, troupeId }: { quest: QuestOut; troupeId: string })
           ))}
           <p className="text-mist">{guidanceText(q.guidance)}</p>
           {q.staff_notes && <p className="whitespace-pre-line text-mist">Staff notes: {q.staff_notes}</p>}
+          <MotifTags troupeId={troupeId} tags={q.tags ?? []} canTag={!!q.can_tag} onSave={(ids) => tag.mutateAsync(ids)} />
           {q.request && (
             <p className="text-mist">
               Asked for by {q.request.character_name} ({q.request.player_name}): “{q.request.objective}”
