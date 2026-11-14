@@ -9179,6 +9179,10 @@
             "title": "Abbreviation",
             "type": "string"
           },
+          "bordered": {
+            "title": "Bordered",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -9203,7 +9207,8 @@
           "name",
           "superior",
           "symbol",
-          "abbreviation"
+          "abbreviation",
+          "bordered"
         ],
         "title": "CardDisciplineOut",
         "type": "object"
@@ -51470,6 +51475,10 @@
             "title": "Kind",
             "type": "string"
           },
+          "paths": {
+            "title": "Paths",
+            "type": "integer"
+          },
           "superior": {
             "title": "Superior",
             "type": "integer"
@@ -51480,7 +51489,8 @@
           "clans",
           "inferior",
           "superior",
-          "icons"
+          "icons",
+          "paths"
         ],
         "title": "SymbolCount",
         "type": "object"
@@ -57088,6 +57098,17 @@
             "title": "Large Png",
             "type": "array"
           },
+          "logos": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Logos",
+            "type": "array"
+          },
+          "outdated": {
+            "title": "Outdated",
+            "type": "boolean"
+          },
           "writable": {
             "title": "Writable",
             "type": "boolean"
@@ -57103,6 +57124,8 @@
           "address",
           "counts",
           "fonts",
+          "logos",
+          "outdated",
           "clans",
           "disciplines",
           "large_png",
@@ -98878,9 +98901,45 @@
         ]
       }
     },
+    "/api/vtes-symbols/logos/{name}": {
+      "get": {
+        "description": "KRCG's logos: VTES's (`vtes.svg`) and the Dark Pack's (`dark-pack.png`).",
+        "operationId": "logo_api_vtes_symbols_logos__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logo",
+        "tags": [
+          "dark pack"
+        ]
+      }
+    },
     "/api/vtes-symbols/{kind}/{path}": {
       "get": {
-        "description": "A symbol, as `/api/vtes-symbols/svg/disc/inf/aus.svg`.",
+        "description": "A symbol, as `/api/vtes-symbols/svg/disc/inf/aus.svg`, or white-bordered as\n`/api/vtes-symbols/webp_wb/disc/sup/aus.webp`.",
         "operationId": "symbol_api_vtes_symbols__kind___path__get",
         "parameters": [
           {

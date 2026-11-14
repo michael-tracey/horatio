@@ -23,6 +23,14 @@ describe("the Jyhad card's frame artwork", () => {
     expect(none.getElementsByTagName("path").length).toBeLessThan(doc.getElementsByTagName("path").length - 3);
   });
 
+  it("draws no plates under KRCG's white-bordered symbols, which are their own square or diamond (#869)", () => {
+    const plain = parsed(frameSvg({ look: "night", superior: [true, false], capacity: true }));
+    const edged = parsed(frameSvg({ look: "night", superior: [true, false], capacity: true, bordered: true }));
+    // One disc and one diamond fewer; the ribbon stays.
+    expect(edged.getElementsByTagName("circle")).toHaveLength(plain.getElementsByTagName("circle").length - 1);
+    expect(edged.getElementsByTagName("path")).toHaveLength(plain.getElementsByTagName("path").length - 1);
+  });
+
   it("is drawn at a size for the canvas, or fills its box on screen", () => {
     expect(frameSvg({ look: "bone", superior: [], capacity: true }, { w: 756, h: 1056 })).toContain('width="756" height="1056"');
     expect(frameSvg({ look: "bone", superior: [], capacity: true })).toContain('width="100%"');

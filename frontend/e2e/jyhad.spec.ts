@@ -164,12 +164,31 @@ test("a Jyhad card on its clan's crypt card template, which the custodian upload
     ctx.fill();
     return canvas.toDataURL("image/png").split(",")[1]!;
   });
+  // KRCG's white-bordered symbols (#869), stood in for: a white square round black.
+  const edged = await p.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 64, 64);
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(6, 6, 52, 52);
+    return canvas.toDataURL("image/png").split(",")[1]!;
+  });
   const template = `/api/characters/${id}/jyhad-card/template.webp?v=1`;
   await p.route("**/api/characters/*/jyhad-card/template.webp**", (route) => route.fulfill({ contentType: "image/png", body: Buffer.from(png, "base64") }));
+  await p.route("**/api/vtes-symbols/webp_wb/**", (route) => route.fulfill({ contentType: "image/png", body: Buffer.from(edged, "base64") }));
   await p.route(`**/api/characters/${id}/jyhad-card`, async (route) => {
     if (route.request().method() !== "GET") return route.continue();
     const real = await route.fetch();
-    await route.fulfill({ response: real, json: { ...(await real.json()), template } });
+    const card = await real.json();
+    const disciplines = card.disciplines.map((d: { abbreviation: string; superior: boolean }) => ({
+      ...d,
+      symbol: `/api/vtes-symbols/webp_wb/disc/${d.superior ? "sup" : "inf"}/${d.abbreviation}.webp`,
+      bordered: true,
+    }));
+    await route.fulfill({ response: real, json: { ...card, template, disciplines } });
   });
 
   await p.goto(`/print/characters/${id}/jyhad`);
@@ -178,7 +197,19 @@ test("a Jyhad card on its clan's crypt card template, which the custodian upload
   await expect(card.locator(`img[src="${template}"]`)).toBeVisible();
   // The disciplines down the sidebar; the template's own lines say it isn't for play,
   // so only Horatio's and KRCG's go on the edge below it.
-  await expect(card.getByRole("list", { name: "Disciplines" }).getByRole("listitem")).toHaveText(["ani", "aus", "vic"]);
+  // White-bordered, as a printed card has them (#869): shown as they are, untinted, and
+  // stacked up the sidebar from its foot, beside the text box.
+  const disciplines = card.getByRole("list", { name: "Disciplines" }).getByRole("listitem");
+  await expect(disciplines).toHaveCount(3);
+  await expect(card.locator('img[src^="/api/vtes-symbols/webp_wb/disc/inf/"]')).toHaveCount(3);
+  await expect(disciplines.nth(0)).toHaveAttribute("aria-label", "Animalism");
+  await expect(disciplines.nth(2)).toHaveAttribute("aria-label", "Vicissitude");
+  const top = (await disciplines.nth(0).locator("div").boundingBox())!;
+  const foot = (await disciplines.nth(2).locator("div").boundingBox())!;
+  const article = (await card.boundingBox())!;
+  expect(foot.y).toBeGreaterThan(top.y);
+  // The lowest ends in the card's last fifth, by the text box, as on KRCG's sample card.
+  expect(foot.y + foot.height).toBeGreaterThan(article.y + article.height * 0.8);
   await expect(card.getByText("Unofficial · made with Horatio · symbols by KRCG", { exact: true })).toBeAttached();
   await expect(card.getByText("Unofficial · not a real card · made with Horatio", { exact: true })).toHaveCount(0);
   await expect(card).toContainText("Capacity 4.");

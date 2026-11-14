@@ -22,8 +22,11 @@ Thin Blooded (p. 265) is always capacity 1.
 
 **Disciplines:** superior at 4 or 5 dots, inferior at 1 to 3. A path of
 Thaumaturgy or Necromancy counts as its discipline, at its primary path's dots
-(the highest: no other path may be above the primary, p. 187). At most six, highest
-first, as on any VTES card; a tie keeps the sheet's order.
+(the highest: no other path may be above the primary, p. 187). At most six, the
+highest kept, as on any VTES card; a tie keeps the sheet's order. They're printed as a
+VTES card prints them (#869): the inferior first, then the superior, each in the order
+of their three letters, stacked up the sidebar so the superior sit at its foot; with
+KRCG's white-bordered symbols (squares and diamonds) once fetched, all or none.
 
 **Title:** those VTES has, with its votes ("Camarilla Prince of Asheville: 2
 votes"); a character with none shows its sect.
@@ -116,6 +119,13 @@ def on_card(held: Iterable[tuple[str, int]]) -> list[Discipline]:
     return [Discipline(name, n) for name, n in found[:MOST_DISCIPLINES]]
 
 
+def printed_order(disciplines: Iterable[Discipline]) -> list[Discipline]:
+    """The disciplines in the order a VTES card prints them, top to bottom (#869):
+    the inferior ones, then the superior, each in the order of their three letters,
+    so a superior sits at the foot of the stack, by the text box."""
+    return sorted(disciplines, key=lambda d: (d.superior, abbreviation(d.name)))
+
+
 def points(disciplines: Iterable[Discipline]) -> int:
     return sum(d.points for d in disciplines)
 
@@ -174,8 +184,11 @@ class CardDiscipline:
     name: str
     superior: bool
     # Where KRCG's symbol is, if the custodian fetched it; else its three letters show.
+    # White-bordered, as a printed card has them, when the fetch brought those (#869).
     symbol: str | None
     abbreviation: str
+    # Whether `symbol` is white-bordered: then it's drawn as it is, on no plate.
+    bordered: bool = False
 
 
 @dataclass(frozen=True)
@@ -204,6 +217,43 @@ class Card:
 
 def symbol_url(group: str, name: str | None, fetched: set[str]) -> str | None:
     return f"/api/vtes-symbols/svg/{group}/{name}.svg" if name and name in fetched else None
+
+
+def bordered_url(group: str, name: str | None, fetched: set[str]) -> str | None:
+    """A white-bordered symbol, as a printed card has them: WebP, KRCG having no SVG
+    of them."""
+    return f"/api/vtes-symbols/webp_wb/{group}/{name}.webp" if name and name in fetched else None
+
+
+def card_disciplines(
+    shown: Sequence[Discipline],
+    inferior: set[str],
+    superior: set[str],
+    bordered: Mapping[str, set[str]],
+) -> list[CardDiscipline]:
+    """The disciplines on the card: all with KRCG's white-bordered symbols if every one
+    has one, so the stack is all of a kind; else their plain symbols, else letters."""
+
+    def group(d: Discipline) -> str:
+        return "disc/sup" if d.superior else "disc/inf"
+
+    def krcg(d: Discipline) -> str | None:
+        return vtes_symbols.DISCIPLINES.get(d.name)
+
+    edged = [bordered_url(group(d), krcg(d), bordered[group(d)]) for d in shown]
+    whole = all(edged)
+    return [
+        CardDiscipline(
+            name=d.name,
+            superior=d.superior,
+            symbol=edge
+            if whole
+            else symbol_url(group(d), krcg(d), superior if d.superior else inferior),
+            abbreviation=abbreviation(d.name),
+            bordered=whole and edge is not None,
+        )
+        for d, edge in zip(shown, edged, strict=True)
+    ]
 
 
 def capacity_symbol_url(record: Mapping[str, object]) -> str | None:
@@ -285,6 +335,10 @@ def card(db: Session, character: Character) -> Card:
     clans = vtes_symbols.symbols(record, "clan")
     inferior = vtes_symbols.symbols(record, "disc/inf")
     superior = vtes_symbols.symbols(record, "disc/sup")
+    bordered = {
+        "disc/inf": vtes_symbols.bordered(record, "disc/inf"),
+        "disc/sup": vtes_symbols.bordered(record, "disc/sup"),
+    }
     clan = age.clan
     templates = crypt_templates.manifest()
     template_key = crypt_templates.chosen(clan, sect, crypt_templates.present(templates))
@@ -309,19 +363,7 @@ def card(db: Session, character: Character) -> Card:
             thin_blooded=thin,
         ),
         capacity_symbol=capacity_symbol_url(record),
-        disciplines=[
-            CardDiscipline(
-                name=d.name,
-                superior=d.superior,
-                symbol=symbol_url(
-                    "disc/sup" if d.superior else "disc/inf",
-                    vtes_symbols.DISCIPLINES.get(d.name),
-                    superior if d.superior else inferior,
-                ),
-                abbreviation=abbreviation(d.name),
-            )
-            for d in shown
-        ],
+        disciplines=card_disciplines(printed_order(shown), inferior, superior, bordered),
         picture=picture,
         template=(
             f"/api/characters/{character.id}/jyhad-card/template.webp"
