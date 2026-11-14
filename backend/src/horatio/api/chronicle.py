@@ -44,6 +44,23 @@ class ChronicleOut(BaseModel):
     events: list[ChronicleEventOut]
 
 
+def event_out(e: chronicle.Event) -> ChronicleEventOut:
+    return ChronicleEventOut(
+        key=e.key,
+        kind=e.kind,
+        character_id=e.character_id,
+        character_name=e.character_name,
+        clan=e.clan,
+        label=e.label,
+        detail=e.detail,
+        at=e.at,
+        on=e.on,
+        ends_at=e.ends_at,
+        ends_on=e.ends_on,
+        ongoing=e.ongoing,
+    )
+
+
 @router.get("/troupes/{troupe_id}/chronicle")
 def troupe_chronicle(troupe_id: uuid.UUID, user: CurrentUser, db: DbSession) -> ChronicleOut:
     troupe = get_troupe(db, troupe_id)
@@ -53,21 +70,5 @@ def troupe_chronicle(troupe_id: uuid.UUID, user: CurrentUser, db: DbSession) -> 
     return ChronicleOut(
         full=full,
         players_see=troupe.chronicle_players,
-        events=[
-            ChronicleEventOut(
-                key=e.key,
-                kind=e.kind,
-                character_id=e.character_id,
-                character_name=e.character_name,
-                clan=e.clan,
-                label=e.label,
-                detail=e.detail,
-                at=e.at,
-                on=e.on,
-                ends_at=e.ends_at,
-                ends_on=e.ends_on,
-                ongoing=e.ongoing,
-            )
-            for e in chronicle.events(db, troupe, full=full)
-        ],
+        events=[event_out(e) for e in chronicle.events(db, troupe, full=full)],
     )

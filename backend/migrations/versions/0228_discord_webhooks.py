@@ -3,7 +3,7 @@
 the bot makes in the channel and reuses. One per troupe and channel.
 
 Revision ID: 0228
-Revises: 0225
+Revises: 0227
 Create Date: 2026-11-14 12:00:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0228"
-down_revision: str | None = "0225"
+down_revision: str | None = "0227"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

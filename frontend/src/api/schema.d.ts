@@ -6816,6 +6816,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quests/{quest_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Tag Quest
+         * @description Tag the quest with these of the troupe's themes and moods, and no others: its
+         *     running staff, while it is open or after it ends.
+         */
+        put: operations["tag_quest_api_quests__quest_id__tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quests/{quest_id}/tale": {
         parameters: {
             query?: never;
@@ -11938,6 +11959,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/scenes/{scene_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Tag Scene
+         * @description Tag the scene with these of the troupe's themes and moods, and no others.
+         */
+        put: operations["tag_scene_api_troupes__troupe_id__scenes__scene_id__tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/seats": {
         parameters: {
             query?: never;
@@ -12064,6 +12105,27 @@ export interface paths {
          *     storytellers switch it on. A public profile shows it to anyone at all.
          */
         put: operations["show_setting_on_profile_api_troupes__troupe_id__setting_public_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/setting/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Motif Tags
+         * @description For running staff: every theme, then every mood, of the troupe's Setting Style
+         *     Document, each with the scenes and quests tagged with it.
+         */
+        get: operations["read_motif_tags_api_troupes__troupe_id__setting_tags_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -12403,6 +12465,85 @@ export interface paths {
          */
         get: operations["status_rules_api_troupes__troupe_id__status_rules_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/story-bible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Story Bible
+         * @description The troupe's story bible: its chronicle, NPCs and locations as Horatio holds
+         *     them, and staff's own notes. For its running staff only.
+         */
+        get: operations["read_story_bible_api_troupes__troupe_id__story_bible_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/story-bible/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Story Bible Note
+         * @description Add a note, last in the bible.
+         */
+        post: operations["add_story_bible_note_api_troupes__troupe_id__story_bible_notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/story-bible/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Story Bible Note */
+        put: operations["change_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__put"];
+        post?: never;
+        /** Remove Story Bible Note */
+        delete: operations["remove_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/story-bible/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Order Story Bible Notes
+         * @description Put the notes in a new order.
+         */
+        put: operations["order_story_bible_notes_api_troupes__troupe_id__story_bible_order_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -25577,6 +25718,52 @@ export interface components {
             /** Value */
             value: number;
         };
+        /**
+         * MotifTagOut
+         * @description A theme or mood a scene or quest is tagged with.
+         */
+        MotifTagOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "theme" | "mood";
+            /** Name */
+            name: string;
+        };
+        /** MotifTagsIn */
+        MotifTagsIn: {
+            /** Ids */
+            ids: string[];
+        };
+        /**
+         * MotifTouchedOut
+         * @description A theme or mood, with the scenes and quests tagged with it: none for one
+         *     nothing has touched yet.
+         */
+        MotifTouchedOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "theme" | "mood";
+            /** Name */
+            name: string;
+            /** Quests */
+            quests: components["schemas"]["TaggedQuestOut"][];
+            /** Scenes */
+            scenes: components["schemas"]["TaggedSceneOut"][];
+        };
         /** MoveIn */
         MoveIn: {
             /** Handle */
@@ -26121,7 +26308,8 @@ export interface components {
         };
         /**
          * NewsAgencyItem
-         * @description A news agency: its name, description and colour, never its picture or channel.
+         * @description A news agency: its name, description and colour, never its pictures (masthead
+         *     and portrait) or channel.
          */
         NewsAgencyItem: {
             /**
@@ -29595,6 +29783,11 @@ export interface components {
             /** Can Send */
             can_send: boolean;
             /**
+             * Can Tag
+             * @default false
+             */
+            can_tag: boolean;
+            /**
              * Category
              * @enum {string}
              */
@@ -29648,6 +29841,11 @@ export interface components {
             staff_notes: string;
             /** Status */
             status: string;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: components["schemas"]["MotifTagOut"][];
             /** Tale */
             tale: string;
             /** Tale Approved */
@@ -31383,6 +31581,11 @@ export interface components {
             name: string;
             /** Stock */
             stock: components["schemas"]["StockPin"][];
+            /**
+             * Tags
+             * @default []
+             */
+            tags: components["schemas"]["MotifTagOut"][];
         };
         /** SceneSummary */
         SceneSummary: {
@@ -33339,6 +33542,78 @@ export interface components {
             /** Rating */
             rating: number;
         };
+        /** StoryBibleLocaleOut */
+        StoryBibleLocaleOut: {
+            /** Address */
+            address: string;
+            /** Controller */
+            controller: string | null;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "prestige" | "iconic" | "haven";
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+            /** Parent */
+            parent: string | null;
+            /** Rating */
+            rating: number;
+        };
+        /** StoryBibleNoteIn */
+        StoryBibleNoteIn: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** StoryBibleNoteOut */
+        StoryBibleNoteOut: {
+            /** Body */
+            body: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+        };
+        /** StoryBibleOrderIn */
+        StoryBibleOrderIn: {
+            /** Ids */
+            ids: string[];
+        };
+        /** StoryBibleOut */
+        StoryBibleOut: {
+            /** Chronicle */
+            chronicle: string;
+            /** Chronology */
+            chronology: components["schemas"]["ChronicleEventOut"][];
+            /** Locales */
+            locales: components["schemas"]["StoryBibleLocaleOut"][];
+            /** Notes */
+            notes: components["schemas"]["StoryBibleNoteOut"][];
+            /** Npcs */
+            npcs: components["schemas"]["CharacterOut"][];
+            /** Troupe */
+            troupe: string;
+        };
         /** SuggestedRequirementOut */
         SuggestedRequirementOut: {
             /** Label */
@@ -33644,6 +33919,28 @@ export interface components {
         TableOut: {
             /** Entries */
             entries: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** TaggedQuestOut */
+        TaggedQuestOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+        };
+        /** TaggedSceneOut */
+        TaggedSceneOut: {
             /**
              * Id
              * Format: uuid
@@ -49676,6 +49973,41 @@ export interface operations {
             };
         };
     };
+    tag_quest_api_quests__quest_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MotifTagsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     staff_tale_api_quests__quest_id__tale_put: {
         parameters: {
             query?: never;
@@ -59967,6 +60299,42 @@ export interface operations {
             };
         };
     };
+    tag_scene_api_troupes__troupe_id__scenes__scene_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                scene_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MotifTagsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_seats_api_troupes__troupe_id__seats_get: {
         parameters: {
             query?: never;
@@ -60259,6 +60627,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_motif_tags_api_troupes__troupe_id__setting_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotifTouchedOut"][];
                 };
             };
             /** @description Validation Error */
@@ -60880,6 +61279,175 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatusRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_story_bible_api_troupes__troupe_id__story_bible_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_story_bible_note_api_troupes__troupe_id__story_bible_notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryBibleNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryBibleNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    order_story_bible_notes_api_troupes__troupe_id__story_bible_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryBibleOrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryBibleOut"];
                 };
             };
             /** @description Validation Error */
