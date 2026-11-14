@@ -26305,7 +26305,8 @@ export interface components {
         };
         /**
          * NewsAgencyItem
-         * @description A news agency: its name, description and colour, never its picture or channel.
+         * @description A news agency: its name, description and colour, never its pictures (masthead
+         *     and portrait) or channel.
          */
         NewsAgencyItem: {
             /**

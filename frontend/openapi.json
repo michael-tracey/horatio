@@ -32983,7 +32983,7 @@
       },
       "NewsAgencyItem": {
         "additionalProperties": false,
-        "description": "A news agency: its name, description and colour, never its picture or channel.",
+        "description": "A news agency: its name, description and colour, never its pictures (masthead\nand portrait) or channel.",
         "properties": {
           "colour": {
             "default": "#8b1e1e",
