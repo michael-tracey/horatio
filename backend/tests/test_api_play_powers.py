@@ -581,3 +581,39 @@ def test_only_powers_the_character_has_reached_ask(troupe: Troupe, session: Sess
     give(session, character_id, "disciplines", "Protean", 3)
     assert choices(troupe.player, character_id) == {}
     assert choose(troupe.player, character_id, template="Huge").status_code == 409
+
+
+def test_malleable_visages_alien_beauty_is_kept_through_reset(
+    troupe: Troupe, session: Session
+) -> None:
+    """Malleable Visage (core p. 168, #812): alien beauty is picked when it's used, and
+    the new face stays through Reset until it is sculpted again."""
+    character_id = new_character(troupe, troupe.player, "Sculptor")
+    give(session, character_id, "disciplines", "Vicissitude", 1)
+    visage = powers(view(troupe.player, character_id))["Malleable Visage"]
+    assert (visage["kept"], visage["normal_form_only"]) == (True, True)
+    assert [o["name"] for o in visage["options"]] == ["Ordinary change", "Alien beauty"]
+    send(
+        troupe.player,
+        character_id,
+        tap("power:Malleable Visage", 1),
+        tap("pick:Malleable Visage/Alien beauty", 1, at=1),
+    )
+    state = reset(troupe, character_id)
+    visage = powers(state)["Malleable Visage"]
+    assert (visage["on"], visage["picked"]) == (True, ["Alien beauty"])
+
+    # Sculpted again for an ordinary change, that is what stays.
+    send(troupe.player, character_id, tap("pick:Malleable Visage/Ordinary change", 1, at=2))
+    state = reset(troupe, character_id)
+    assert powers(state)["Malleable Visage"]["picked"] == ["Ordinary change"]
+
+
+def test_scar_tissue_leaves_malleable_visage_nothing_to_switch_on(
+    troupe: Troupe, session: Session
+) -> None:
+    """Tzimisce: Scar Tissue (Vol. 2 p. 278): no Malleable Visage on yourself."""
+    character_id = new_character(troupe, troupe.player, "Scarred One")
+    give(session, character_id, "disciplines", "Vicissitude", 1)
+    give(session, character_id, "flaws", "Tzimisce: Scar Tissue", 3)
+    assert "Malleable Visage" not in powers(view(troupe.player, character_id))

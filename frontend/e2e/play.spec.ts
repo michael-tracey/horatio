@@ -790,6 +790,50 @@ test("a power's own options: Mythic Form's two qualities picked each use, Tough'
   await expect(p.getByRole("status")).toHaveText("Saved");
 });
 
+test("Malleable Visage's alien beauty: -2 Social and the Appearance focus, kept through Reset, paused in Horrid Form (#812)", async ({ browser }) => {
+  const { page: p } = await person(browser, "visage-sculptor");
+  // A Tzimisce with Vicissitude 4: Malleable Visage (core p. 168) and Horrid Form (core p. 169).
+  const id = await builtVampire(
+    p,
+    "Mirela",
+    "Tzimisce",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]] },
+    [["disciplines", "Vicissitude", 4]],
+  );
+  const headers = { "X-Horatio": "1" };
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const social = p.getByRole("main").getByRole("listitem").filter({ hasText: /^Resisting Social powers/ }).first();
+  await expect(social).toBeVisible();
+  const before = Number(await social.locator("strong").first().textContent());
+
+  // Used, it asks what the sculpting is for; alien beauty costs 2 Social.
+  await p.getByRole("button", { name: /^Use Malleable Visage: reshaped, 1 Blood/ }).click();
+  await expect(p.getByText(/Malleable Visage: reshaped switched on/)).toBeVisible();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  const options = drawer.getByRole("group", { name: "Malleable Visage: reshaped: qualities" });
+  await options.getByRole("button", { name: "Alien beauty" }).click();
+  await expect(options).toContainText("Alien beauty: -2 Social; The Appearance focus; Beautiful, if slightly alien. (p. 168)");
+  await drawer.getByRole("button", { name: "Close" }).first().click();
+  await expect(social.locator("strong").first()).toHaveText(String(before - 2));
+  const banner = p.getByRole("region", { name: "Switched on now" });
+  await expect(banner).toContainText("Kept: Malleable Visage: reshaped (Alien beauty)");
+
+  // In Horrid Form it's paused: only the form's -3 Social counts.
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await drawer.getByLabel("Horrid Form on").check();
+  await expect(drawer).toContainText("Paused while you're in a form: it changes your normal form only.");
+  await drawer.getByRole("button", { name: "Close" }).first().click();
+  await expect(social.locator("strong").first()).toHaveText(String(before - 3));
+
+  // Reset ends the form; the new face stays.
+  const response = await p.request.post(`/api/characters/${id}/play/reset`, { headers, data: {} });
+  expect(response.status(), await response.text()).toBe(200);
+  await p.reload();
+  await expect(banner).toContainText("Kept: Malleable Visage: reshaped (Alien beauty)");
+  await expect(social.locator("strong").first()).toHaveText(String(before - 2));
+});
+
 test("timed powers as switches: Armor of Terra's own qualities under Dodge, and Fleshcraft's attack in Combat (#820)", async ({ browser }) => {
   const { page: p } = await person(browser, "terra-flesh");
   // A Gargoyle elder (Generation 3) with Visceratika 4.
