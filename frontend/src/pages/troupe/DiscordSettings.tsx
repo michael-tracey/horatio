@@ -15,6 +15,7 @@ import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
 import { BotLacks, FOR_RESULTS, lacking } from "./botPermissions";
 import { DiscordEmoji } from "./DiscordEmoji";
+import { DiscordPostChannels } from "./DiscordPostChannels";
 import { InCharacterChannel } from "./InCharacterChannel";
 import { ManagedCharacterRow, ManagedChannels } from "./ManagedChannels";
 
@@ -22,7 +23,8 @@ type Settings = Record<string, unknown>;
 
 /**
  * The troupe's Discord server and channels: add the Horatio bot to the server,
- * then pick a private channel for each character and a test channel. A channel
+ * choose the troupe's own channels for news, announcements and each news agency
+ * (#882), then pick a private channel for each character and a test channel. A channel
  * named for a character is suggested, for storytellers to use or not; one already
  * chosen for someone else, or as the test channel, is not.
  */
@@ -169,6 +171,7 @@ export function DiscordSettings({
           </Button>
         )}
       </div>
+      <DiscordPostChannels troupeId={troupeId} />
       <Notice>
         Each character's channel should be private: visible only to that player,
         the storytellers and the Horatio bot. Horatio warns where everyone in

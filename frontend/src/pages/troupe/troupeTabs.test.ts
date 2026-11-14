@@ -26,7 +26,7 @@ function layout(can: ReturnType<typeof abilities>, t: TroupeTabsTroupe = troupe)
 }
 
 const storytellerLayout = {
-  Troupe: ["Overview", "Setting", "Who's Who", "News", "Announcements", "Nominations", "Staff", "Log"],
+  Troupe: ["Overview", "Setting", "Story bible", "Who's Who", "News", "Announcements", "Nominations", "Staff", "Log"],
   Characters: ["Approvals", "Being built", "Characters", "Players", "Lines and veils"],
   Games: ["At game", "Scenes", "Award XP"],
   Court: ["Titles", "Court", "Chronicle", "Boons", "Bonds", "Web of obligation"],
@@ -94,6 +94,15 @@ describe("troupeTabGroups (#779)", () => {
         ?.tabs.find((tab) => tab.label === "My work");
     expect(work("narrator")?.also).toBe("/troupes/t1/downtimes");
     expect(work("storyteller")?.also).toBeUndefined();
+  });
+
+  it("keeps the story bible to running staff of a troupe still open (#879)", () => {
+    const has = (role: Parameters<typeof abilities>[0], t: TroupeTabsTroupe = troupe) =>
+      troupeTabGroups(t, abilities(role, false)).some((g) => g.tabs.some((tab) => tab.label === "Story bible"));
+    expect(has("assistant_storyteller")).toBe(true);
+    expect(has("narrator")).toBe(false);
+    expect(has(null)).toBe(false);
+    expect(has("lead_storyteller", { ...troupe, archived: true })).toBe(false);
   });
 
   it("opens Characters on the roster, and Scenes on the scenes page", () => {

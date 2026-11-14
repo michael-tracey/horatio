@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { LiveReset, PlayerSummary } from "../../api/types";
@@ -7,6 +7,7 @@ import { ActionMenu, MenuGroup, MenuItem } from "../../components/ActionMenu";
 import { Dialog } from "../../components/Dialog";
 import { LogList } from "../../components/LogList";
 import { useToast } from "../../components/Toast";
+import { Chevron } from "../../components/TraitInfo";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { memberSince } from "../players";
@@ -18,9 +19,10 @@ import { SuspendedPeople, SuspendPerson } from "./Suspension";
 import { ViewAs } from "./ViewAs";
 
 /** Every account, for the custodian: find someone by name, handle or email, or by the troupe an active character
- * of theirs is home in, open their profile, or act on their account from the ⋯ on
- * their row. Below, who is suspended, the reset links out now and who has reset
- * their password, and the email changes. */
+ * of theirs is home in, open their profile, see all their characters under the
+ * chevron on their row, or act on their account from the ⋯ there. Below, who is
+ * suspended, the reset links out now and who has reset their password, and the
+ * email changes. */
 export function PeopleTab() {
   // A link can open it searched already: a new sign-up's notice names their handle (#757).
   const [params] = useSearchParams();
@@ -56,6 +58,9 @@ export function PeopleTab() {
             {/* On a phone or a narrow window each row folds into a card, under the one heading. */}
             <thead className="max-lg:sr-only">
               <tr className="border-b border-ash text-left text-xs text-mist">
+                <th className="w-px py-2 pr-1 font-normal">
+                  <span className="sr-only">Characters</span>
+                </th>
                 <th className="py-2 pr-3 font-normal">Name</th>
                 <th className={`${WIDE} py-2 pr-3 font-normal`}>Handle</th>
                 <th className={`${WIDE} py-2 pr-3 font-normal`}>Email</th>
@@ -87,11 +92,18 @@ export function PeopleTab() {
 /** A column shown only on a wide screen; on a narrow one it folds in under the name. */
 const WIDE = "hidden lg:table-cell";
 
-type Opened = "view" | "characters" | "email" | "reset" | "suspend" | "merge";
+/** Every column a row has on a wide screen, for the row of characters under it. */
+const COLUMNS = 7;
 
-/** One account: its details, and what the custodian can do with it behind ⋯, each in a dialog. */
+type Opened = "view" | "email" | "reset" | "suspend" | "merge";
+
+/** One account: its details, its characters under the chevron at its start (#890),
+ * and what the custodian can do with it behind ⋯, each in a dialog. */
 function Person({ person }: { person: PlayerSummary }) {
   const [open, setOpen] = useState<Opened | null>(null);
+  // Its characters, in a row of their own under it. More than one row can be open.
+  const [expanded, setExpanded] = useState(false);
+  const charactersId = useId();
   const close = () => setOpen(null);
   const toast = useToast();
   const dates = useDates();
@@ -105,62 +117,83 @@ function Person({ person }: { person: PlayerSummary }) {
     </>
   );
   return (
-    <tr>
-      <td className="py-2.5 pr-3 align-top">
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Link to={`/players/${person.id}`} className="text-parchment hover:text-gold">
-            {name}
-          </Link>
-          <span className="flex flex-wrap gap-1 lg:hidden">{badges}</span>
-        </span>
-        <span className="mt-0.5 block text-xs text-mist wrap-anywhere lg:hidden">
-          @{person.handle} · {person.email} · since {since}
-        </span>
-      </td>
-      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist wrap-anywhere`}>@{person.handle}</td>
-      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist wrap-anywhere`}>{person.email}</td>
-      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{since}</td>
-      <td className={`${WIDE} py-2.5 pr-3 align-top`}>
-        <span className="flex flex-wrap gap-1">{badges}</span>
-      </td>
-      <td className="w-px py-1 text-right align-top">
-        <ActionMenu label={`Actions for ${name}`} variant="ghost">
-          <MenuGroup label="Help with the account">
-            {!person.is_custodian && <MenuItem onSelect={() => setOpen("view")}>View as…</MenuItem>}
-            <MenuItem onSelect={() => setOpen("characters")}>Characters</MenuItem>
-            <MenuItem onSelect={() => setOpen("email")}>Change email…</MenuItem>
-            <MenuItem onSelect={() => setOpen("reset")}>Reset password…</MenuItem>
-          </MenuGroup>
-          <MenuGroup label="Suspend or merge">
-            <MenuItem onSelect={() => setOpen("suspend")}>{person.suspended ? "Lift suspension…" : "Suspend…"}</MenuItem>
-            <MenuItem onSelect={() => setOpen("merge")}>Merge…</MenuItem>
-          </MenuGroup>
-        </ActionMenu>
-        {/* The dialogs sit here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
-        <ViewAs person={person} open={open === "view"} onClose={close} />
-        <Dialog title={`${name}'s characters`} open={open === "characters"} onClose={close}>
-          <PersonCharacters playerId={person.id} />
-        </Dialog>
-        <Dialog title={`Change ${name}'s email`} open={open === "email"} onClose={close}>
-          <ChangeEmail person={person} />
-        </Dialog>
-        <Dialog title={`Reset ${name}'s password`} open={open === "reset"} onClose={close}>
-          <ResetPassword player={person} />
-        </Dialog>
-        <Dialog title={person.suspended ? `Lift ${name}'s suspension` : `Suspend ${name}`} open={open === "suspend"} onClose={close}>
-          <SuspendPerson
-            person={person}
-            onDone={() => {
-              toast({ message: person.suspended ? `${name} can sign in again.` : `${name} is suspended.` });
-              close();
-            }}
-          />
-        </Dialog>
-        <Dialog title={`Merge ${name} with another account`} open={open === "merge"} onClose={close}>
-          <MergeAccounts person={person} onDone={close} />
-        </Dialog>
-      </td>
-    </tr>
+    <>
+      <tr className={expanded ? "border-b-0" : undefined}>
+        <td className="w-px py-1 pr-1 align-top">
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-8 px-1.5"
+            aria-label={`${name}'s characters`}
+            aria-expanded={expanded}
+            aria-controls={expanded ? charactersId : undefined}
+            onClick={() => setExpanded(!expanded)}
+          >
+            <Chevron open={expanded} />
+          </Button>
+        </td>
+        <td className="py-2.5 pr-3 align-top">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Link to={`/players/${person.id}`} className="text-parchment hover:text-gold">
+              {name}
+            </Link>
+            <span className="flex flex-wrap gap-1 lg:hidden">{badges}</span>
+          </span>
+          <span className="mt-0.5 block text-xs text-mist wrap-anywhere lg:hidden">
+            @{person.handle} · {person.email} · since {since}
+          </span>
+        </td>
+        <td className={`${WIDE} py-2.5 pr-3 align-top text-mist wrap-anywhere`}>@{person.handle}</td>
+        <td className={`${WIDE} py-2.5 pr-3 align-top text-mist wrap-anywhere`}>{person.email}</td>
+        <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{since}</td>
+        <td className={`${WIDE} py-2.5 pr-3 align-top`}>
+          <span className="flex flex-wrap gap-1">{badges}</span>
+        </td>
+        <td className="w-px py-1 text-right align-top">
+          <ActionMenu label={`Actions for ${name}`} variant="ghost">
+            <MenuGroup label="Help with the account">
+              {!person.is_custodian && <MenuItem onSelect={() => setOpen("view")}>View as…</MenuItem>}
+              <MenuItem onSelect={() => setOpen("email")}>Change email…</MenuItem>
+              <MenuItem onSelect={() => setOpen("reset")}>Reset password…</MenuItem>
+            </MenuGroup>
+            <MenuGroup label="Suspend or merge">
+              <MenuItem onSelect={() => setOpen("suspend")}>{person.suspended ? "Lift suspension…" : "Suspend…"}</MenuItem>
+              <MenuItem onSelect={() => setOpen("merge")}>Merge…</MenuItem>
+            </MenuGroup>
+          </ActionMenu>
+          {/* The dialogs sit here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
+          <ViewAs person={person} open={open === "view"} onClose={close} />
+          <Dialog title={`Change ${name}'s email`} open={open === "email"} onClose={close}>
+            <ChangeEmail person={person} />
+          </Dialog>
+          <Dialog title={`Reset ${name}'s password`} open={open === "reset"} onClose={close}>
+            <ResetPassword player={person} />
+          </Dialog>
+          <Dialog title={person.suspended ? `Lift ${name}'s suspension` : `Suspend ${name}`} open={open === "suspend"} onClose={close}>
+            <SuspendPerson
+              person={person}
+              onDone={() => {
+                toast({ message: person.suspended ? `${name} can sign in again.` : `${name} is suspended.` });
+                close();
+              }}
+            />
+          </Dialog>
+          <Dialog title={`Merge ${name} with another account`} open={open === "merge"} onClose={close}>
+            <MergeAccounts person={person} onDone={close} />
+          </Dialog>
+        </td>
+      </tr>
+      {expanded && (
+        <tr id={charactersId}>
+          {/* Under the name on a wide screen; the whole width of the card on a phone. */}
+          <td colSpan={COLUMNS} className="pb-3 lg:pl-10">
+            <section aria-label={`${name}'s characters`}>
+              <PersonCharacters playerId={person.id} />
+            </section>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 

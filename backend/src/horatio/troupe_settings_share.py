@@ -334,7 +334,8 @@ class FillTableItem(Strict):
 
 
 class NewsAgencyItem(Strict):
-    """A news agency: its name, description and colour, never its picture or channel."""
+    """A news agency: its name, description and colour, never its pictures (masthead
+    and portrait) or channel."""
 
     type: Literal["news_agency"] = "news_agency"
     name: str = Field(min_length=1, max_length=100)
@@ -975,6 +976,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "scheduled_games": "games are the troupe's own",
     "shared_backgrounds": PLAY,
     "sheet_versions": PLAY,
+    "story_bible_notes": "the story bible is staff's own",
     "teachings": PLAY,
     "title_holdings": PLAY,
     "troupe_connectors": "connectors (tokens, Discord channels) are never carried",

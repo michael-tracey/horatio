@@ -96,11 +96,13 @@ function Contact({ player }: { player: PlayerOut }) {
 }
 
 function Characters({ player }: { player: PlayerOut }) {
-  if (!player.characters.length) return null;
+  // Their PCs: the NPCs they made belong to their troupes (the custodian sees those on People).
+  const characters = player.characters.filter((c) => c.kind === "pc");
+  if (!characters.length) return null;
   return (
     <Card title="Characters you can see">
       <ul className="divide-y divide-ash text-sm">
-        {player.characters.map((c) => (
+        {characters.map((c) => (
           <li key={c.id} className="flex items-center justify-between gap-2 py-2">
             <Link to={`/characters/${c.id}`} className="hover:text-gold">
               {c.name}

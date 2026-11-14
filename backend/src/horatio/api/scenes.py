@@ -15,8 +15,9 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from horatio import audit, play_tabs
+from horatio import audit, motif_tags, play_tabs
 from horatio.api.downtimes import staff_troupe
+from horatio.api.motif_tags import MotifTagOut, MotifTagsIn, refused, tags_out
 from horatio.api.play import PlayReference, PlayView, read_play, read_reference
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.viewing import read_only
@@ -85,6 +86,8 @@ class SceneOut(SceneSummary):
     characters: list[uuid.UUID]
     # Those of them that are Stock NPCs.
     stock: list[StockPin]
+    # The troupe's themes and moods staff tagged it with (horatio.motif_tags).
+    tags: list[MotifTagOut] = []
 
 
 class Cleared(BaseModel):
@@ -233,7 +236,12 @@ def scene_out(db: Session, user: User, troupe: Troupe, scene: Scene) -> SceneOut
             .where(Character.id.in_(characters), Character.npc_form == "stock")
         )
     ]
-    return SceneOut(**summary.model_dump(), characters=characters, stock=stock)
+    return SceneOut(
+        **summary.model_dump(),
+        characters=characters,
+        stock=stock,
+        tags=tags_out(motif_tags.of_scene(db, scene.id)),
+    )
 
 
 def used(scene: Scene) -> None:
@@ -368,6 +376,32 @@ def remove_scene(
     db.delete(scene)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/{scene_id}/tags")
+def tag_scene(
+    troupe_id: uuid.UUID, scene_id: uuid.UUID, body: MotifTagsIn, db: DbSession, user: CurrentUser
+) -> SceneOut:
+    """Tag the scene with these of the troupe's themes and moods, and no others."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.RUN_SCENES)
+    scene = troupe_scene(db, troupe, scene_id)
+    try:
+        tags = motif_tags.retag(db, troupe.id, "scene", scene.id, body.ids)
+    except motif_tags.TagError as error:
+        raise refused(error) from None
+    if tags is not None:
+        audit.record(
+            db,
+            user,
+            "scene.tagged",
+            troupe_id=troupe.id,
+            scene_id=scene.id,
+            name=scene.name,
+            tags=", ".join(m.name for m in tags) or "no themes or moods",
+        )
+        used(scene)
+        db.commit()
+    return scene_out(db, user, troupe, scene)
 
 
 @router.put("/{scene_id}/characters/{character_id}")

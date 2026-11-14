@@ -311,9 +311,38 @@ test("screenshots for Running a troupe", async ({ browser }) => {
       },
     }),
   );
+  // The troupe's own channels (#882): news and announcements chosen, and an agency of its own.
+  await l.route(`**/api/troupes/${troupeId}/post-channels`, (route) =>
+    route.fulfill({
+      json: {
+        server: "Court of Ashes",
+        unavailable: null,
+        channels: [
+          { id: "204", name: "general", category: null, private: false, missing: [] },
+          { id: "206", name: "court-news", category: "In character", private: false, missing: [] },
+          { id: "207", name: "announcements", category: null, private: false, missing: [] },
+          { id: "208", name: "ashen-courier", category: "In character", private: false, missing: [] },
+        ],
+        news: "206",
+        announcements: "207",
+        can_change: true,
+      },
+    }),
+  );
+  await l.route(`**/api/troupes/${troupeId}/agencies`, (route) =>
+    route.fulfill({
+      json: [
+        { id: "a1", name: "The Ashen Courier", description: "", colour: "#8b1e1e", picture: null, discord_channel: "208", retired: false },
+        { id: "a2", name: "WKBN Nightly", description: "", colour: "#204080", picture: null, discord_channel: null, retired: false },
+      ],
+    }),
+  );
   await l.goto(`${base}/connectors`);
   await expect(l.getByText("Suggested: #ezra-vale")).toBeVisible();
-  await shot(l, "connectors-discord", card(l, "Discord"), 1300);
+  await expect(l.getByLabel("The Ashen Courier's channel")).toHaveValue("208");
+  await shot(l, "connectors-discord", card(l, "Discord"), 1900);
+  await l.unroute(`**/api/troupes/${troupeId}/post-channels`);
+  await l.unroute(`**/api/troupes/${troupeId}/agencies`);
 
   // Delivering with Discord on: Ezra has no channel yet.
   for (const r of responses) await send(l, "PUT", `/api/responses/${r.id}`, { body: "The night passes quietly." });

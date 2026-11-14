@@ -1113,6 +1113,106 @@ test("staff add the clan and discipline symbols to the troupe's Discord server a
   await expect.poll(() => pushed).toEqual([{ symbols: ["clan/tremere", "disc/sup/aus"], remove_others: false }]);
 });
 
+/**
+ * The troupe's own channels under Connectors › Discord (#882), where News agencies
+ * had them: the news and announcements channels, apart, and an agency's own. As
+ * above, the browser is shown a connected server; the agency is real, and the News
+ * agencies tab names its channel, with a link back to change it.
+ */
+test("staff choose the news, announcements and agency channels under Connectors › Discord (#882)", async ({ browser }) => {
+  const custodian = await person(browser, "pchan-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "pchan-lead");
+  await custodian.page.reload();
+  const created = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Post Channels ${run}`, lead_handle: lead.handle } });
+  expect(created.status(), await created.text()).toBeLessThan(300);
+  const troupe = await created.json();
+  const l = lead.page;
+  const made = await l.request.post(`/api/troupes/${troupe.id}/agencies`, { headers: { "X-Horatio": "1" }, data: { name: "The Harbour Crier" } });
+  expect(made.status(), await made.text()).toBeLessThan(300);
+  const agency = await made.json();
+
+  const settings = { guild_id: "111", guild_name: "Court of Ash", channels: {}, test_channel: null };
+  await l.route(`**/api/troupes/${troupe.id}/connectors`, (route) =>
+    route.fulfill({ json: [{ kind: "discord", name: "Discord", unavailable: null, needs: [], enabled: true, mode: "alert", test_mode: false, settings }] }),
+  );
+  await l.route(`**/api/troupes/${troupe.id}/discord`, (route) =>
+    route.fulfill({ json: { guild_id: "111", guild_name: "Court of Ash", channels: [], characters: [], suggestions: {}, managed: null } }),
+  );
+  // The server's channels for posts, and what is chosen; the bot can't embed links in #crier-desk.
+  const posts = {
+    server: "Court of Ash",
+    unavailable: null,
+    channels: [
+      { id: "301", name: "court-news", category: null, private: false, missing: [] },
+      { id: "302", name: "announcements", category: null, private: false, missing: [] },
+      { id: "303", name: "crier-desk", category: "News", private: false, missing: ["Embed Links"] },
+    ],
+    news: null as string | null,
+    announcements: null as string | null,
+    can_change: true,
+  };
+  const chosen: unknown[] = [];
+  await l.route(`**/api/troupes/${troupe.id}/post-channels`, async (route) => {
+    if (route.request().method() === "PUT") {
+      const body = route.request().postDataJSON();
+      chosen.push(body);
+      if (body.kind === "news") posts.news = body.channel;
+      else posts.announcements = body.channel;
+    }
+    await route.fulfill({ json: posts });
+  });
+  // The agency's own channel needs a connected server, so its change is answered here too.
+  let own: string | null = null;
+  const agencyChanges: unknown[] = [];
+  await l.route(`**/api/agencies/${agency.id}`, async (route) => {
+    const body = route.request().postDataJSON();
+    agencyChanges.push(body);
+    own = body.discord_channel;
+    await route.fulfill({ json: { ...agency, discord_channel: own } });
+  });
+  await l.route(`**/api/troupes/${troupe.id}/agencies`, async (route) => {
+    const real: { id: string }[] = await (await route.fetch()).json();
+    await route.fulfill({ json: real.map((a) => (a.id === agency.id ? { ...a, discord_channel: own } : a)) });
+  });
+
+  await l.goto(`/troupes/${troupe.id}/connectors`);
+  const troupeChannels = l.getByRole("region", { name: "Channels for the whole troupe" });
+  await troupeChannels.getByLabel("The troupe's news channel, on Court of Ash").selectOption("301");
+  await expect(l.getByText("Channel chosen.")).toBeVisible();
+  await troupeChannels.getByLabel("The troupe's announcements channel, on Court of Ash").selectOption("302");
+  await expect.poll(() => chosen).toEqual([
+    { kind: "news", channel: "301" },
+    { kind: "announcement", channel: "302" },
+  ]);
+  await expect(troupeChannels.getByLabel("The troupe's news channel, on Court of Ash")).toHaveValue("301");
+  await expect(troupeChannels.getByLabel("The troupe's announcements channel, on Court of Ash")).toHaveValue("302");
+
+  // The agency posts to the news channel until it has its own; its name and colour go back unchanged.
+  const agencyChannel = troupeChannels.getByLabel("The Harbour Crier's channel");
+  await expect(agencyChannel).toHaveValue("");
+  await agencyChannel.selectOption("303");
+  await expect(l.getByText("The Harbour Crier's channel is chosen.")).toBeVisible();
+  await expect.poll(() => agencyChanges).toEqual([{ name: "The Harbour Crier", description: "", colour: agency.colour, discord_channel: "303" }]);
+  await expect(agencyChannel).toHaveValue("303");
+  await expect(troupeChannels.getByText(/The Horatio bot lacks Embed Links in #crier-desk/)).toBeVisible();
+
+  // News agencies no longer chooses channels: it names the agency's, with a link to change it.
+  await l.goto(`/troupes/${troupe.id}/news-agencies`);
+  const row = l.getByRole("row").filter({ hasText: "The Harbour Crier" });
+  await expect(row).toContainText("#crier-desk");
+  await expect(l.getByText("News on Discord")).toHaveCount(0);
+  await row.getByRole("button", { name: "Actions for The Harbour Crier" }).click();
+  await l.getByRole("menuitem", { name: "Edit…" }).click();
+  await expect(l.getByRole("dialog", { name: "Edit The Harbour Crier" }).getByLabel("Discord channel")).toHaveCount(0);
+  await l.keyboard.press("Escape");
+  await row.getByRole("link", { name: "Change in Connectors" }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/connectors$`));
+  await expect(l.getByRole("region", { name: "Channels for the whole troupe" }).getByLabel("The Harbour Crier's channel")).toHaveValue("303");
+  // A refetch still in a handler as the test ends would fail it when the page closes.
+  await l.unrouteAll({ behavior: "ignoreErrors" });
+});
+
 test("staff share out a cycle's responses by character, and assign several in one go", async ({ browser }) => {
   const custodian = await person(browser, "bulkassign-cust");
   makeCustodian(custodian.email);

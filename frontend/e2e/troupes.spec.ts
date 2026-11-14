@@ -733,6 +733,73 @@ test("a burst of changes to the setting rings one bell for the troupe's players,
   await expect(p.getByRole("article", { name: "Setting Style Document" }).getByText("Masks")).toBeVisible();
 });
 
+test("staff keep a story bible beside the setting: their notes with the chronicle, NPCs and locations, printed apart, and players never see it (#879)", async ({ browser }) => {
+  const custodian = await person(browser, "bible-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bible-lead");
+  const assistant = await person(browser, "bible-assistant");
+  const player = await person(browser, "bible-player");
+  await custodian.page.reload();
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: unknown) => {
+    const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.ok(), await response.text()).toBe(true);
+    return response.json();
+  };
+  const troupeName = `Court of Secrets ${run}`;
+  const troupeId: string = (await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle })).id;
+  const l = lead.page;
+  await send(l, "PUT", `/api/troupes/${troupeId}/staff`, { handle: assistant.handle, role: "assistant_storyteller" });
+  // What Horatio already holds: an NPC and a location.
+  await send(l, "POST", `/api/troupes/${troupeId}/npcs`, { name: "Elder Ravel" });
+  await send(l, "POST", `/api/troupes/${troupeId}/locations`, { name: "The Rookery", rating: 3, control: "named", controller_name: "The Sheriff" });
+
+  // An assistant storyteller finds it from the Setting tab, and writes two notes.
+  const a = assistant.page;
+  await a.goto(`/troupes/${troupeId}/setting`);
+  await a.getByRole("link", { name: "story bible", exact: true }).click();
+  await expect(a).toHaveURL(new RegExp(`/troupes/${troupeId}/story-bible$`));
+  const notes = a.locator("section").filter({ has: a.getByRole("heading", { name: "Staff notes", exact: true }) });
+  const addNote = async (title: string, body: string) => {
+    await notes.getByRole("button", { name: "Add a note" }).click();
+    const dialog = a.getByRole("dialog", { name: "Add a note" });
+    await dialog.getByLabel("Title").fill(title);
+    await dialog.getByLabel("The note, in Markdown").fill(body);
+    await dialog.getByRole("button", { name: "Add it" }).click();
+    await expect(dialog).toBeHidden();
+  };
+  await addNote("The Prince's secret", "She drinks from **Baali** stock.");
+  await addNote("Who burned the chantry", "The Sheriff, on orders.");
+  const titles = notes.getByRole("list", { name: "Staff notes" }).getByRole("heading");
+  await expect(titles).toHaveText(["The Prince's secret", "Who burned the chantry"]);
+  await expect(notes.locator("strong")).toHaveText("Baali");
+  await notes.getByRole("button", { name: "Move The Prince's secret down" }).click();
+  await expect(titles).toHaveText(["Who burned the chantry", "The Prince's secret"]);
+
+  // The rest is gathered from the troupe's own records.
+  await expect(a.getByRole("region", { name: "Important NPCs" })).toContainText("Elder Ravel");
+  await expect(a.getByRole("region", { name: "Recurring locales" })).toContainText("The Rookery · Standard 3 · held by The Sheriff");
+  const chronology = a.getByRole("region", { name: "Chronology" });
+  await chronology.getByText(/Without an in-game date/).click();
+  await expect(chronology).toContainText("Elder Ravel");
+
+  // Printed on its own, for staff.
+  await l.goto(`/print/story-bible/${troupeId}`);
+  await expect(l).toHaveTitle(`Print · Story bible · ${troupeName} · Horatio`);
+  await expect(l.getByRole("region", { name: "Staff notes" })).toContainText("Who burned the chantry");
+  await expect(l.getByRole("region", { name: "Recurring locales" })).toContainText("The Rookery");
+
+  // A player has no tab for it, can't open it, and never reads it in the setting.
+  const p = player.page;
+  await p.goto(`/troupes/${troupeId}/setting`);
+  await expect(p.getByRole("article", { name: "Setting Style Document" })).toBeVisible();
+  await expect(p.getByRole("link", { name: /story bible/i })).toHaveCount(0);
+  await expect(p.getByText("Baali")).toHaveCount(0);
+  expect((await p.request.get(`/api/troupes/${troupeId}/story-bible`)).status()).toBe(403);
+  await p.goto(`/print/story-bible/${troupeId}`);
+  await expect(p.getByText("You cannot do that in this troupe.")).toBeVisible();
+  await expect(p.getByText("Baali")).toHaveCount(0);
+});
+
 test("a player looks up the rules: a power by name and by its summary, then as played in a troupe, a house price shown and a banned merit hidden (#422)", async ({ browser }) => {
   const custodian = await person(browser, "rulebook-custodian");
   makeCustodian(custodian.email);

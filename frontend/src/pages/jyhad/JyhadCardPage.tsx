@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { useClanName } from "../../components/ClanNames";
+import { useToast } from "../../components/Toast";
 import { usePreferences } from "../../hooks";
 import { pageRule } from "../../paper";
 import { downloadCard } from "./draw";
@@ -27,7 +28,8 @@ const SIZING = `
  * A character's Jyhad card (#537), found by tapping its clan symbol seven times,
  * or from the ⋯ on the troupe's Characters list for its staff: the card, Print (at
  * its real size, 63 × 88 mm) and Download image, and for its player (staff, for an
- * NPC) its text and flavour line to write. Never official: it says so on its face.
+ * NPC) its text and flavour line to write, kept with the character (#889). Never
+ * official: it says so on its face.
  */
 export function JyhadCardPage() {
   const { characterId = "" } = useParams();
@@ -36,6 +38,7 @@ export function JyhadCardPage() {
   const named = useClanName();
   const prefs = usePreferences();
   const client = useQueryClient();
+  const toast = useToast();
   const key = ["jyhad-card", characterId];
   const card = useQuery({
     queryKey: key,
@@ -48,6 +51,7 @@ export function JyhadCardPage() {
     onSuccess: (saved) => {
       client.setQueryData(key, saved);
       setTyped(null);
+      toast({ message: `Saved with ${saved.name}. Change it here any time.` });
     },
   });
   const [making, setMaking] = useState(false);
@@ -123,9 +127,16 @@ export function JyhadCardPage() {
                   />
                 </label>
                 {save.error && <p className="text-sm text-blood-bright">{save.error.message}</p>}
-                <div className="flex justify-end">
-                  <button type="submit" disabled={save.isPending || typed === null} className="rounded-md bg-blood px-4 py-1.5 text-sm hover:bg-blood-bright disabled:opacity-60">
-                    Save text
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-xs text-mist">
+                    The card stays with {c.name}. Its text and flavour line are yours; the rest follows the sheet as {c.name} changes.
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={save.isPending || typed === null}
+                    className="shrink-0 rounded-md bg-blood px-4 py-1.5 text-sm hover:bg-blood-bright disabled:opacity-60"
+                  >
+                    Save card
                   </button>
                 </div>
               </form>

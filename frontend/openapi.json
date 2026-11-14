@@ -31833,6 +31833,98 @@
         "title": "Morality",
         "type": "object"
       },
+      "MotifTagOut": {
+        "description": "A theme or mood a scene or quest is tagged with.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "theme",
+              "mood"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name"
+        ],
+        "title": "MotifTagOut",
+        "type": "object"
+      },
+      "MotifTagsIn": {
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "MotifTagsIn",
+        "type": "object"
+      },
+      "MotifTouchedOut": {
+        "description": "A theme or mood, with the scenes and quests tagged with it: none for one\nnothing has touched yet.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "theme",
+              "mood"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quests": {
+            "items": {
+              "$ref": "#/components/schemas/TaggedQuestOut"
+            },
+            "title": "Quests",
+            "type": "array"
+          },
+          "scenes": {
+            "items": {
+              "$ref": "#/components/schemas/TaggedSceneOut"
+            },
+            "title": "Scenes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "scenes",
+          "quests"
+        ],
+        "title": "MotifTouchedOut",
+        "type": "object"
+      },
       "MoveIn": {
         "properties": {
           "handle": {
@@ -33097,7 +33189,7 @@
       },
       "NewsAgencyItem": {
         "additionalProperties": false,
-        "description": "A news agency: its name, description and colour, never its picture or channel.",
+        "description": "A news agency: its name, description and colour, never its pictures (masthead\nand portrait) or channel.",
         "properties": {
           "colour": {
             "default": "#8b1e1e",
@@ -37886,6 +37978,33 @@
       },
       "PlayerCharacter": {
         "properties": {
+          "asking_troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asking Troupe"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "creation_complete": {
+            "default": true,
+            "title": "Creation Complete",
+            "type": "boolean"
+          },
           "home_troupe": {
             "anyOf": [
               {
@@ -37902,20 +38021,102 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "default": "pc",
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
           "name": {
             "title": "Name",
             "type": "string"
           },
+          "npc_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
+          "npc_kind_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind Name"
+          },
+          "owner_troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe"
+          },
+          "owner_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe Id"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "retired": {
             "title": "Retired",
             "type": "boolean"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "name",
           "home_troupe",
-          "retired"
+          "retired",
+          "status"
         ],
         "title": "PlayerCharacter",
         "type": "object"
@@ -41569,6 +41770,11 @@
             "title": "Can Send",
             "type": "boolean"
           },
+          "can_tag": {
+            "default": false,
+            "title": "Can Tag",
+            "type": "boolean"
+          },
           "category": {
             "enum": [
               "simple",
@@ -41748,6 +41954,14 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MotifTagOut"
+            },
+            "title": "Tags",
+            "type": "array"
           },
           "tale": {
             "title": "Tale",
@@ -46378,6 +46592,14 @@
               "$ref": "#/components/schemas/StockPin"
             },
             "title": "Stock",
+            "type": "array"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MotifTagOut"
+            },
+            "title": "Tags",
             "type": "array"
           }
         },
@@ -51474,6 +51696,189 @@
         "title": "StockPin",
         "type": "object"
       },
+      "StoryBibleLocaleOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Controller"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "rating",
+          "controller",
+          "parent",
+          "address",
+          "description",
+          "notes"
+        ],
+        "title": "StoryBibleLocaleOut",
+        "type": "object"
+      },
+      "StoryBibleNoteIn": {
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Body",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "StoryBibleNoteIn",
+        "type": "object"
+      },
+      "StoryBibleNoteOut": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body"
+        ],
+        "title": "StoryBibleNoteOut",
+        "type": "object"
+      },
+      "StoryBibleOrderIn": {
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "StoryBibleOrderIn",
+        "type": "object"
+      },
+      "StoryBibleOut": {
+        "properties": {
+          "chronicle": {
+            "title": "Chronicle",
+            "type": "string"
+          },
+          "chronology": {
+            "items": {
+              "$ref": "#/components/schemas/ChronicleEventOut"
+            },
+            "title": "Chronology",
+            "type": "array"
+          },
+          "locales": {
+            "items": {
+              "$ref": "#/components/schemas/StoryBibleLocaleOut"
+            },
+            "title": "Locales",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/StoryBibleNoteOut"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "npcs": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterOut"
+            },
+            "title": "Npcs",
+            "type": "array"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe",
+          "chronicle",
+          "notes",
+          "chronology",
+          "npcs",
+          "locales"
+        ],
+        "title": "StoryBibleOut",
+        "type": "object"
+      },
       "SuggestedRequirementOut": {
         "properties": {
           "label": {
@@ -52250,6 +52655,49 @@
           "id"
         ],
         "title": "TableOut",
+        "type": "object"
+      },
+      "TaggedQuestOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "title": "TaggedQuestOut",
+        "type": "object"
+      },
+      "TaggedSceneOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TaggedSceneOut",
         "type": "object"
       },
       "TakeBackEquipmentIn": {
@@ -80234,6 +80682,60 @@
         ]
       }
     },
+    "/api/quests/{quest_id}/tags": {
+      "put": {
+        "description": "Tag the quest with these of the troupe's themes and moods, and no others: its\nrunning staff, while it is open or after it ends.",
+        "operationId": "tag_quest_api_quests__quest_id__tags_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MotifTagsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tag Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
     "/api/quests/{quest_id}/tale": {
       "put": {
         "description": "Edit the tale, and approve it as the official account.",
@@ -96935,6 +97437,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/scenes/{scene_id}/tags": {
+      "put": {
+        "description": "Tag the scene with these of the troupe's themes and moods, and no others.",
+        "operationId": "tag_scene_api_troupes__troupe_id__scenes__scene_id__tags_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MotifTagsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tag Scene",
+        "tags": [
+          "scenes"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/seats": {
       "get": {
         "description": "Which clans have a seat at the troupe's court, and which it could seat.",
@@ -97399,6 +97965,54 @@
           }
         },
         "summary": "Show Setting On Profile",
+        "tags": [
+          "setting style"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setting/tags": {
+      "get": {
+        "description": "For running staff: every theme, then every mood, of the troupe's Setting Style\nDocument, each with the scenes and quests tagged with it.",
+        "operationId": "read_motif_tags_api_troupes__troupe_id__setting_tags_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MotifTouchedOut"
+                  },
+                  "title": "Response Read Motif Tags Api Troupes  Troupe Id  Setting Tags Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Motif Tags",
         "tags": [
           "setting style"
         ]
@@ -98337,6 +98951,272 @@
         "summary": "Status Rules",
         "tags": [
           "titles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/story-bible": {
+      "get": {
+        "description": "The troupe's story bible: its chronicle, NPCs and locations as Horatio holds\nthem, and staff's own notes. For its running staff only.",
+        "operationId": "read_story_bible_api_troupes__troupe_id__story_bible_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryBibleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Story Bible",
+        "tags": [
+          "story bible"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/story-bible/notes": {
+      "post": {
+        "description": "Add a note, last in the bible.",
+        "operationId": "add_story_bible_note_api_troupes__troupe_id__story_bible_notes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryBibleNoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryBibleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Story Bible Note",
+        "tags": [
+          "story bible"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/story-bible/notes/{note_id}": {
+      "delete": {
+        "operationId": "remove_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryBibleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Story Bible Note",
+        "tags": [
+          "story bible"
+        ]
+      },
+      "put": {
+        "operationId": "change_story_bible_note_api_troupes__troupe_id__story_bible_notes__note_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryBibleNoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryBibleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Story Bible Note",
+        "tags": [
+          "story bible"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/story-bible/order": {
+      "put": {
+        "description": "Put the notes in a new order.",
+        "operationId": "order_story_bible_notes_api_troupes__troupe_id__story_bible_order_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryBibleOrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryBibleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Order Story Bible Notes",
+        "tags": [
+          "story bible"
         ]
       }
     },

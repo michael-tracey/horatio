@@ -16,7 +16,9 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Change the house rules and troupe settings (Customise) | Yes | Yes | No (can read them) | No |
 | Write the setting: its teaser, scope, themes, moods and storyteller notes (Troupe settings) | Yes | Yes | Yes | No |
 | Show the setting on the troupe's profile | Yes | Yes | No | No |
-| Set up connectors (Discord, email) and choose the Discord channels for news and announcements | Yes | Yes | No (can read them) | No |
+| Read and keep the story bible | Yes | Yes | Yes | No |
+| Tag scenes and quests with the setting's themes and moods, and see which are touched | Yes | Yes | Yes | No |
+| Set up connectors (Discord, email) and choose the Discord channels for news, announcements and news agencies | Yes | Yes | No (can read them) | No |
 | Edit the troupe's profile, add games to the schedule | Yes | Yes | No | No |
 | See character sheets, the Characters list and the Players list | Yes | Yes | Yes | No |
 | Decide approvals, give exceptions, read backstories | Yes | Yes | Yes | No |
@@ -95,7 +97,7 @@ A troupe's page has its tabs in groups, one for each job. Which tabs you see dep
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | Overview, Setting, Who's Who, News, Announcements, Nominations, House rules (players and narrators), Staff, Log |
+| Troupe | Overview, Setting, Story bible (storytellers and assistant storytellers), Who's Who, News, Announcements, Nominations, House rules (players and narrators), Staff, Log |
 | Characters | Approvals, Being built, Characters, Players, Lines and veils |
 | Games | At game, Scenes, Award XP |
 | Court | Titles, Court, Chronicle, Boons, Bonds, Web of obligation |
@@ -341,8 +343,9 @@ Each story is one-off: there are no repeating stories. For a regular bulletin, *
 **Customise › News agencies** lists the troupe's agencies. Storytellers and assistant storytellers keep them. **Add an agency** asks for:
 
 - its **Name**, and a line of **Description** for staff;
-- its **Masthead colour**, shown behind its name, beside its stories and down the side of its Discord posts;
-- its own **Discord channel**, if it should post somewhere other than the troupe's news channel (storytellers only).
+- its **Masthead colour**, shown behind its name, beside its stories and down the side of its Discord posts.
+
+An agency's stories go to the troupe's news channel on Discord, unless it has a channel of its own. Both are chosen under **Customise › Connectors** (see [The news channel on Discord](#the-news-channel-on-discord)). Where an agency has its own channel, the list names it, with **Change in Connectors**.
 
 Its **⋯** has **Edit…**, **Masthead picture…** (a nameplate or logo shown in place of its name), **Portrait…** and **Retire**. A retired agency is no longer offered for new stories; its old stories stay, and **Bring back** returns it.
 
@@ -350,7 +353,7 @@ An agency's **portrait** is a square picture, such as its logo, separate from it
 
 ### The news channel on Discord
 
-Under **News on Discord** on the same tab, a storyteller picks **The troupe's news channel** from the connected server's text channels. Stories from agencies without a channel of their own go there. With no Discord server connected, or no channel chosen, news is in the app only, and the desk says so beside each story. The server is connected under [Connectors](#connectors-discord-and-email); the switches there for downtime results (on or off, test mode, alert or full) don't apply to news.
+Under Discord on **Customise › Connectors**, **Channels for the whole troupe** holds the troupe's own channels (see [Connectors](#connectors-discord-and-email)). There a storyteller picks **The troupe's news channel** from the connected server's text channels. Stories from agencies without a channel of their own go there. Under **Each news agency's channel**, a storyteller gives an agency a channel of its own instead, or sets it back to **The troupe's news channel**. With no Discord server connected, or no channel chosen, news is in the app only, and the desk says so beside each story. The Discord switches for downtime results (on or off, test mode, alert or full) don't apply to news.
 
 ### Writing a story
 
@@ -384,7 +387,7 @@ A draft that was never published, or has been unpublished, can be deleted.
 
 On Discord, a story is an embed in its agency's colour, with the agency's name and masthead picture, the headline, the dateline and story, the picture, and a **Read in Horatio** link. A long story is split over several posts. If Discord refuses it, Horatio tries again for a while; if it still can't, the desk shows why, with **Retry** and **Mark as sent** (for when you've posted it yourself).
 
-A story posts **as its agency**: Discord shows the agency's name and portrait as the sender, not the Horatio bot. Discord allows that only through a channel's webhook, so the bot makes one webhook named Horatio in each channel it posts stories to, and reuses it; this needs the bot to have **Manage Webhooks** in that channel. Without it, stories there post as the bot, as before, and the agency's row on the Agencies tab says the bot lacks Manage Webhooks. A story already on Discord stays with whoever posted it: one the bot posted (including every story from before agencies posted as themselves) is still edited and deleted by the bot. Announcements always post as the Horatio bot. If someone deletes the Horatio webhook on Discord, the bot makes another the next time it posts; the stories the old webhook sent can no longer be changed by Horatio, so an edit posts the story again and the old copy stays until someone deletes it on Discord.
+A story posts **as its agency**: Discord shows the agency's name and portrait as the sender, not the Horatio bot. Discord allows that only through a channel's webhook, so the bot makes one webhook named Horatio in each channel it posts stories to, and reuses it; this needs the bot to have **Manage Webhooks** in that channel. Without it, stories there post as the bot, as before, and **Connectors › Discord** says the bot lacks Manage Webhooks beside the news channel and each agency's own channel. A story already on Discord stays with whoever posted it: one the bot posted (including every story from before agencies posted as themselves) is still edited and deleted by the bot. Announcements always post as the Horatio bot. If someone deletes the Horatio webhook on Discord, the bot makes another the next time it posts; the stories the old webhook sent can no longer be changed by Horatio, so an edit posts the story again and the old copy stays until someone deletes it on Discord.
 
 Discord fetches an agency's portrait from Horatio itself, so a portrait has an address of its own that anyone holding it can open without signing in. Only the stories Horatio sends to Discord carry that address, and a new portrait gets a new one: the old address stops working.
 
@@ -418,7 +421,7 @@ The email carries the whole announcement, in the site's email design: its title,
 
 ### Announcements on Discord
 
-Under **Customise › News agencies**, **Announcements on Discord** picks the troupe's announcements channel, separately from the news channel. An announcement goes there as a plain embed with its title, byline, message (split over several posts if it's long), picture and a **Read in Horatio** link. Editing it edits the post, and unpublishing deletes it. With no Discord server connected, or no announcements channel chosen, it's in the app only, and the desk says so.
+Under Discord on **Customise › Connectors**, in **Channels for the whole troupe**, **The troupe's announcements channel** picks where announcements go, separately from the news channel. An announcement goes there as a plain embed with its title, byline, message (split over several posts if it's long), picture and a **Read in Horatio** link. Editing it edits the post, and unpublishing deletes it. With no Discord server connected, or no announcements channel chosen, it's in the app only, and the desk says so.
 
 Publishing, editing a published announcement, pinning and unpinning, unpublishing and using Important go in the [troupe log](#the-troupe-log).
 
@@ -459,7 +462,7 @@ The troupe's house options for locations are under [Location rules](#location-ru
 - **Requests**: players' quest requests, shown by **To answer**, **Unassigned**, **Assigned to me**, **Any narrator**, **Waiting to send** and **Answered**. Assign a request to a staff member or any narrator, then answer it, for example with **Build a quest** or **Build a location quest**.
 - **Quests**: the quests themselves, being built and under way. A quest has requirements and scenarios, and Horatio keeps track as the party meets them.
 
-Narrators see the requests and quests assigned to them; storytellers and assistant storytellers see them all. A merit or flaw request can also be answered with a quest (see [Merit and flaw requests](#merit-and-flaw-requests)).
+Narrators see the requests and quests assigned to them; storytellers and assistant storytellers see them all. Storytellers and assistant storytellers can tag a quest with the setting's themes and moods, at any point in its life (see [Theme and mood tags](#theme-and-mood-tags)). A merit or flaw request can also be answered with a quest (see [Merit and flaw requests](#merit-and-flaw-requests)).
 
 On a character's page, its home troupe's storytellers and assistant storytellers, and the custodian, also have a **Quests** tab, beside **Projects**, while the troupe runs quests. It shows the quests the character leads or has joined, those still being built too, with how many of each one's requirements are met, and the character's quest requests and how they were answered. Open a quest for its objective, party, each requirement (met or not, and by whom) and its results so far, including any not yet sent. Nothing changes there: **Manage it in the troupe's Quests** opens it under **Downtimes › Quests**. On your own character there is one **Quests** tab, the player's, where you ask for a quest.
 
@@ -545,6 +548,23 @@ The rest of the document is built from the troupe's own settings, so it's never 
 Every member reads the whole document on the troupe's **Setting** tab, beside **Overview**; running staff see an edit link beside each built part. **Print it** opens it black on white for the Storyteller table. Under **Where players read it**, storytellers can tick **Show it on the troupe's profile**, as written rules can be; a public profile then shows it to anyone. A character built to the troupe's rules shows its themes, moods and teaser on the wizard's Concept step, with a link to the whole document.
 
 When you change the document, the troupe's players hear of it in the bell, with what changed ("The setting changed: the theme Betrayal added; the teaser rewritten."), and the notice opens the **Setting** tab. A sitting's changes make one notice: each change within half an hour of the last joins the player's unread notice rather than making another. The parts you write count, as do the chronicle's name and city on the profile, the sects that may join, clan rarity and the New Character Incentive. Prices, house merits, checks and the other house rules don't: players read those on the **House rules** tab. Whoever makes a change isn't told of it, and showing the document on the profile tells no one.
+
+#### Theme and mood tags
+
+To see which themes and moods the chronicle is actually touching, tag your [scenes](#scenes) and [quests](#quests) with them: **Tag it** (or **Change tags**) under a scene's name, or in a quest's overview, picks from the troupe's themes and moods. Storytellers and assistant storytellers tag; narrators see a quest's tags but don't change them. Players never see tags, and tagging changes nothing in the document they read.
+
+Below the document on the **Setting** tab, **Themes and moods touched** lists every theme, then every mood, with how many scenes and quests are tagged with it and links to them. Those nothing is tagged with yet say **Not touched yet**. Removing a theme or mood removes its tags; so does removing a scene.
+
+#### The story bible
+
+The **Story bible** tab, beside **Setting**, is its staff-only companion (MET: VTM p. 336). Storytellers and assistant storytellers read and keep it; players and narrators never see it, and it's never on the Setting tab, the profile, the wizard or the setting's print. It gathers what Horatio already holds, so nothing is typed twice:
+
+- **Staff notes**: the one part you write here, each with a title and Markdown: plots, secrets, what the players don't know. **Add a note**, **Edit**, **Remove**, and ↑ ↓ to put them in order. Each change goes in the troupe log, and nobody is told of it.
+- **Chronology**: the events of the chronicle timeline (**Court › Chronicle**), in in-game order where they have an in-game date, then the rest as Horatio recorded them.
+- **Important NPCs**: the troupe's NPCs, those in play and then those retired, each linking to its sheet.
+- **Recurring locales**: the troupe's [locations](#locations), without Havens, with who holds them, their address, description and notes.
+
+**Print it** prints the bible on its own, black on white, for staff.
 
 ### A feature's own settings
 
@@ -789,7 +809,7 @@ Choose **Add a written rule**, then give it a **Title**, a **Section** (such as 
 
 A connector the server isn't set up for says so; ask the custodian, who sets it up as in [Setting up Discord and email](custodian.md#setting-up-discord-and-email).
 
-The Discord channels for the troupe's news and its announcements are chosen apart from these, under **Customise › News agencies** (see [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord)).
+Once a Discord server is connected, **Channels for the whole troupe**, under Discord, chooses where Horatio posts for everyone in the troupe: **The troupe's news channel**, **The troupe's announcements channel**, and under **Each news agency's channel**, any agency's own. Each is saved as soon as you choose it, without **Save**, and the switches for downtime results don't apply to them. Storytellers choose them; assistant storytellers can read them. See [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord).
 
 #### Adding the Horatio bot
 
@@ -886,7 +906,7 @@ Back under Discord on **Customise › Connectors**:
 
 Where a channel's name matches a character's, Horatio suggests it: **Suggested: #agnes-wren**, with **Use** to take it. Case, spaces, dashes, underscores and accents don't matter, so `#agnes-wren`, `#Agnes_Wren` and `#agnès-wren` all match Agnes Wren. A channel named for the first name alone, such as `#agnes`, matches too, as long as no other character shares it; and a private channel is suggested before one everyone can see. **Use the suggestions** takes them all at once. Nothing is chosen until you use a suggestion and save.
 
-![Customise › Connectors: Discord connected, with the test channel, each character's channel, and a suggestion to use.](images/running-a-troupe/connectors-discord.png)
+![Customise › Connectors: Discord connected, with the troupe's news, announcements and agency channels, the test channel, each character's channel, and a suggestion to use.](images/running-a-troupe/connectors-discord.png)
 
 The list above the characters names any with no channel yet. They still get their results in Horatio, and by email if it's on, but nothing on Discord until one is chosen. Delivering a cycle warns of them too (see [Delivering results](#delivering-results)).
 
@@ -1267,6 +1287,7 @@ If an award takes a character past the monthly figure, Horatio warns you (or, wi
 - Scenes are kept for the troupe: every storyteller and assistant storyteller sees them all and can put characters in any.
 - A scene's maker, or the lead storyteller, renames or removes it. Removing a scene leaves its characters as they are.
 - The lead can clear **Old scenes** not used since a date.
+- Tag a scene with the setting's themes and moods, for staff only (see [Theme and mood tags](#theme-and-mood-tags)).
 
 ### Scenes at a game with no signal
 
