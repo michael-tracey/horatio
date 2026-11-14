@@ -436,7 +436,7 @@ test("a storyteller opens Post in IC chat as NPC, told where to choose the chann
   await expect(dialog.getByText(/The In-Character channel is set in/)).toBeVisible();
   await expect(dialog.getByRole("link", { name: "Connectors › Discord" })).toHaveAttribute("href", `/troupes/${troupeId}/connectors`);
   await expect(dialog.getByRole("button", { name: "Post as Bastien Moreau" })).toHaveCount(0);
-  await dialog.getByRole("button", { name: "Close" }).click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expect(dialog).toBeHidden();
 
   // Its IC chat tab lists what it has said, for staff: nothing yet.
@@ -521,7 +521,7 @@ test("a storyteller sends a claim link, and a newcomer signs up through it and c
   await dialog.getByRole("button", { name: "Make a claim link" }).click();
   const url = await dialog.getByLabel("Claim link").inputValue();
   await p.screenshot(shots("claim-link"));
-  await dialog.getByRole("button", { name: "Close" }).click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await p.goto(`/troupes/${troupeId}/npcs`);
   await expect(p.getByRole("row", { name: /Bastien Roux/ }).getByText("Claim link out")).toBeVisible();
 

@@ -63,18 +63,8 @@ export function PostAsNpc({ character, onDone }: { character: CharacterOut; onDo
   );
   if (found.isPending) return <Loading />;
   if (found.error) return <ErrorText error={found.error} />;
-  if (found.data.unavailable) {
-    return (
-      <div className="flex flex-col gap-3">
-        <CantPost found={found.data} name={character.name} />
-        <div className="flex justify-end">
-          <Button variant="ghost" onClick={onDone}>
-            Close
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // The dialog's own Close takes it away.
+  if (found.data.unavailable) return <CantPost found={found.data} name={character.name} />;
   return (
     <form
       className="flex flex-col gap-3"
