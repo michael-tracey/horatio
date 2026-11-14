@@ -16529,6 +16529,30 @@
         "title": "DisciplinePowers",
         "type": "object"
       },
+      "DisciplineRaise": {
+        "description": "Dots a switch adds to a discipline the character has, never past 5 (issue #849:\nMercurial Vitality's Potence and Fortitude, core p. 229). The powers gained hold\nwhile it is on: their pool and damage changes count as the switch's.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "discipline": {
+            "title": "Discipline",
+            "type": "string"
+          },
+          "to": {
+            "default": 0,
+            "title": "To",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "discipline",
+          "amount"
+        ],
+        "title": "DisciplineRaise",
+        "type": "object"
+      },
       "DiscordAccount": {
         "properties": {
           "available": {
@@ -38178,6 +38202,14 @@
             "title": "Counts As Form",
             "type": "boolean"
           },
+          "disciplines": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DisciplineRaise"
+            },
+            "title": "Disciplines",
+            "type": "array"
+          },
           "fixed": {
             "default": [],
             "items": {
@@ -38311,6 +38343,14 @@
             "default": 0,
             "title": "Turned On",
             "type": "integer"
+          },
+          "waives": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Waives",
+            "type": "array"
           }
         },
         "required": [
