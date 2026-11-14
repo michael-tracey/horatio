@@ -69,10 +69,20 @@ export function total(pool: TestPool, willpower: number, modifiers: Modifier[] =
 const part = (label: string, value: number) => (value < 0 ? `− ${label} ${-value}` : `${label} ${value}`);
 
 /** What the Play View's trackers hold that a pool can count (issue #602): Morality, Beast traits and Derangement traits (#820). */
-export type Trackers = { morality: number; beast: number; derangements?: number };
+export type Trackers = { morality: number; beast: number; derangements?: number; charges?: Record<string, number> };
 
-export function trackersOf(view: { morality: { value: number } | null; beast: { value: number }; derangements?: { value: number } | null }): Trackers {
-  return { morality: view.morality?.value ?? 0, beast: view.beast.value, derangements: view.derangements?.value ?? 0 };
+export function trackersOf(view: {
+  morality: { value: number } | null;
+  beast: { value: number };
+  derangements?: { value: number } | null;
+  charges?: { key: string; value: number }[];
+}): Trackers {
+  return {
+    morality: view.morality?.value ?? 0,
+    beast: view.beast.value,
+    derangements: view.derangements?.value ?? 0,
+    charges: Object.fromEntries((view.charges ?? []).map((c) => [c.key, c.value])),
+  };
 }
 
 type Variant = TestPool["variants"][number];
@@ -93,10 +103,13 @@ export function variantsOn(pool: TestPool, on: readonly string[]): Variant[] {
 /**
  * What a tracked part counts now: Rampart of Faith's current Morality minus current
  * Beast traits (Vol. 2 p. 244), never below 0; Manic Episode's current Derangement
- * traits (Vol. 2 Issue 1 p. 71).
+ * traits (Vol. 2 Issue 1 p. 71); Reaper's Due's stack against its mark (Vol. 2
+ * p. 118, #826).
  */
 export function trackedValue(tracked: Variant["tracked"][number], trackers: Trackers | undefined): number {
   if (tracked.tracks === "derangements") return trackers?.derangements ?? 0;
+  // A power's stack (#826): Reaper's Due's points against the mark.
+  if (tracked.tracks.startsWith("charge:")) return trackers?.charges?.[tracked.tracks] ?? 0;
   return Math.max(0, (trackers?.morality ?? 0) - (trackers?.beast ?? 0));
 }
 

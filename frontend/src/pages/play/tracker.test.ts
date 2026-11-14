@@ -45,6 +45,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     log: [],
     effects: [],
     effects_made: [],
+    charges: [],
     ...overrides,
   };
 }
