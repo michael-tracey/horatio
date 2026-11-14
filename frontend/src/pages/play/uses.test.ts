@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView, PowerUse } from "../../api/types";
 import { applyChange } from "./tracker";
-import { canPay, costText, effectTaps, offered, type UseView } from "./uses";
+import { canPay, costText, effectTaps, ghouls, offered, type UseView } from "./uses";
 
 type Mark = "normal" | "aggravated";
 
@@ -28,7 +28,7 @@ function view(marks: Mark[] = [], overrides: Partial<UseView> = {}): UseView {
 }
 
 function use(overrides: Partial<PowerUse>): PowerUse {
-  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], beast: 0, retainer: 0, when: null, once: null, note: null, page: null, target: "self", ...overrides };
+  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], over: false, beast: 0, retainer: 0, animal: false, when: null, once: null, note: null, page: null, target: "self", ...overrides };
 }
 
 const blood = (amount: number) => ({ tracker: "blood" as const, amount });
@@ -96,6 +96,20 @@ describe("a use's taps (issue #825)", () => {
     expect(effectTaps(view([], { blood: { value: 10, most: 10, start: 10 }, willpower: { value: 6, most: 6, start: 6 } }), harvest, "Harvest Despair")).toEqual([]);
   });
 
+  it("keeps Mantle of Sutekh's tithes past the pool while it lasts, and only those (#854)", () => {
+    const tithe = use({ gains: [blood(1)], over: true, when: "Mantle of Sutekh" });
+    const harvest = use({ gains: [blood(2)] });
+    const mantle = (on: boolean) => ({ key: "Mantle of Sutekh", on, blood_over: true }) as UseView["powers"][number];
+    const full = view([], { blood: { value: 10, most: 10, start: 10 }, powers: [mantle(true)] });
+    const taps = effectTaps(full, tithe, "Serpentis: Mantle of Sutekh");
+    expect(taps).toEqual([{ kind: "change", tracker: "blood", amount: 1 }]);
+    expect(after(full, taps).blood).toBe(11);
+    // Other Blood gained still stops at the pool.
+    expect(effectTaps(full, harvest, "Harvest Despair")).toEqual([]);
+    // With the Mantle off, a tithe at a full pool changes nothing.
+    expect(effectTaps(view([], { blood: { value: 10, most: 10, start: 10 }, powers: [mantle(false)] }), tithe, "Serpentis: Mantle of Sutekh")).toEqual([]);
+  });
+
   it("takes a Beast trait for a retest (Feed the Blighted Wolf)", () => {
     const wolf = use({ beast: 1 });
     expect(effectTaps(view(), wolf, "Feed the Blighted Wolf")).toEqual([{ kind: "change", tracker: "beast", amount: 1 }]);
@@ -110,11 +124,15 @@ describe("a use's taps (issue #825)", () => {
     expect(canPay(view([], { blood: { value: 1, most: 10, start: 10 } }), indestructible)).toBe(false);
   });
 
-  it("moves damage onto a ghoul Retainer for a Beast trait (Beast's Vigor)", () => {
-    const vigor = use({ retainer: 3, beast: 1, when: "Beast's Vigor" });
-    const hound = { key: "retainer:Hound", name: "Hound", health: { value: 2, most: 3, start: 3 }, blood: { value: 1, most: 1, start: 1 } };
-    const v = view(["aggravated", "normal", "normal"], { retainers: [hound], powers: [] });
+  it("moves damage onto an animal ghoul Retainer for a Beast trait (Beast's Vigor, #854)", () => {
+    const vigor = use({ retainer: 3, animal: true, beast: 1, when: "Beast's Vigor" });
+    const hound = { key: "retainer:Hound", name: "Hound", animal: true, health: { value: 2, most: 3, start: 3 }, blood: { value: 1, most: 1, start: 1 } };
+    const butler = { ...hound, key: "retainer:Butler", name: "Butler", animal: false };
+    const v = view(["aggravated", "normal", "normal"], { retainers: [hound, butler], powers: [] });
     expect(offered(v, vigor)).toBe(false);
+    // Only the animal ghoul takes the damage; a human ghoul isn't offered.
+    expect(ghouls(v, vigor).map((r) => r.name)).toEqual(["Hound"]);
+    expect(effectTaps(v, vigor, "Beast's Vigor", { retainer: "retainer:Butler" })).toEqual([]);
     const taps = effectTaps(v, vigor, "Beast's Vigor", { retainer: "retainer:Hound" });
     expect(taps).toContainEqual({ kind: "change", tracker: "retainer:Hound/health", amount: -2 });
     expect(after(v, taps)).toMatchObject({ marks: ["normal"], beast: 1 });

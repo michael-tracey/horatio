@@ -285,10 +285,10 @@ function UseEffect({ power, u, view, use }: { power: string; u: PowerUse; view: 
   );
   let body;
   if (u.retainer) {
-    const kept = ghouls(view);
+    const kept = ghouls(view, u);
     body =
       kept.length === 0 ? (
-        <span className="text-xs text-mist">No ghoul Retainer with health left to take it.</span>
+        <span className="text-xs text-mist">{u.animal ? "No animal ghoul Retainer with health left to take it." : "No ghoul Retainer with health left to take it."}</span>
       ) : (
         kept.map((r) => button(`${u.label} to ${r.name || "Retainer"}`, effectTaps(view, u, power, { retainer: r.key }), r.key))
       );

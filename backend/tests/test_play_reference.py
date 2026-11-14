@@ -1482,6 +1482,7 @@ USE_KEYS = {
     "gain",
     "beast",
     "retainer",
+    "animal",
     "when",
     "once",
     "focus",
@@ -1507,7 +1508,7 @@ def test_every_use_says_what_it_changes_and_where() -> None:
         assert any(k in u for k in CHANGES), name
         if "heal" in u:
             assert u["heal"]["damage"] in {"normal", "aggravated", "worst", "all", "asked"}, name
-        assert set(u.get("gain", {})) <= {"blood", "willpower"}, name
+        assert set(u.get("gain", {})) <= {"blood", "willpower", "over"}, name
         assert set(u.get("cost", {})) <= {"blood", "willpower"}, name
         if "when" in u:
             assert u["when"] in book.switch_keys, name
@@ -1616,8 +1617,8 @@ def test_uses_that_gain_spend_half_or_move_damage() -> None:
     assert said == [(True, "blood", "asked")]
     vigor = book.others[("techniques", "Beast's Vigor")]
     assert [a["key"] for a in actives(vigor)] == ["Beast's Vigor"]
-    assert [(u.retainer, u.beast, u.when) for u in uses(vigor, Sheet())] == [
-        (3, 1, "Beast's Vigor")
+    assert [(u.retainer, u.animal, u.beast, u.when) for u in uses(vigor, Sheet())] == [
+        (3, True, 1, "Beast's Vigor")
     ]
     wolf = uses(book.others[("techniques", "Feed the Blighted Wolf")], Sheet())
     assert [(u.beast, u.cost) for u in wolf] == [(1, None)]

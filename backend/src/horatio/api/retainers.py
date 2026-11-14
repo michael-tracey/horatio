@@ -41,6 +41,8 @@ class RetainerOut(BaseModel):
     # each +5 to its pool) and a ghoul's discipline specialty, with the powers
     # that reaches, one for each dot.
     ghoul: bool = False
+    # An animal (issue #854: Beast's Vigor's animal ghoul Retainers).
+    animal: bool = False
     specialties: list[str] = []
     discipline: str = ""
     powers: list[RetainerPower] = []
@@ -100,6 +102,7 @@ class RetainerIn(BaseModel):
     lost_on: date | None = None
     npc_id: uuid.UUID | None = None
     ghoul: bool = False
+    animal: bool = False
     specialties: list[str] = Field(default=[], max_length=10)
     discipline: str = Field(default="", max_length=100)
 
@@ -135,6 +138,7 @@ def listed(
                 npc_id=npc.id if npc else None,
                 npc_name=npc.name if npc else None,
                 ghoul=e.ghoul,
+                animal=e.animal,
                 specialties=list(r.specialties) if r else [],
                 discipline=r.discipline if r else "",
                 powers=powers(r.discipline, e.dots) if r and r.discipline else [],
