@@ -20,7 +20,7 @@ from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import pictures
+from horatio import pictures, setting_notices
 from horatio.api.pictures import CropIn, as_fractions, uploads
 from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.audit import record
@@ -276,8 +276,19 @@ def edit_profile(
             "links": links,
         }
     )
+    was = Profile.model_validate(troupe.profile).setting
     troupe.profile = _stripped(trimmed).model_dump(mode="json")
     troupe.contact_id = body.contact_id
+    now = Profile.model_validate(troupe.profile).setting
+    setting_notices.changed(
+        db,
+        user,
+        troupe,
+        [
+            *(["the chronicle's name changed"] if now.chronicle != was.chronicle else []),
+            *(["the locale changed"] if now.city != was.city else []),
+        ],
+    )
     if body.public is not None:
         make_public(db, user, troupe, body.public)
     record(db, user, "troupe.profile_changed", troupe_id=troupe.id)
