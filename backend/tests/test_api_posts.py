@@ -15,8 +15,9 @@ from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import delivery, posts
+from horatio import delivery, posts, public_pictures
 from horatio.config import get_settings
+from horatio.connectors import discord
 from horatio.models import Delivery, EmailNotice, Notification, Post
 from tests import test_discord_connector
 from tests.api_helpers import Person, Troupe, new_character, sign_up
@@ -655,8 +656,12 @@ def test_a_story_goes_to_discord_as_an_embed_and_follows_edits(
     assert embed["url"] == f"http://localhost:5173/troupes/{troupe.id}/news/{post}"
     assert embed["description"].startswith("*Boston, Monday*\n\nSmoke.")
     assert "[Read in Horatio](http://localhost:5173/troupes/" in embed["description"]
+    # It posts as its agency, through the channel's webhook (#883).
+    assert sent.webhook is not None
+    assert sent.payload["username"] == "The Boston Herald"
+    assert "avatar_url" not in sent.payload
     story = session.get_one(Post, uuid.UUID(post))
-    assert story.discord == {"channel": OPEN_CHANNEL, "message_ids": [message_id]}
+    assert story.discord == {"channel": OPEN_CHANNEL, "message_ids": [message_id], "webhook": True}
     assert troupe.storyteller.client.get(f"/posts/{post}").json()["discord"]["state"] == "sent"
 
     # Editing it edits the same message.
@@ -827,6 +832,125 @@ def test_a_message_deleted_on_discord_is_posted_again_on_edit(
     [(new_id, sent)] = fake_discord.messages.items()
     assert sent.payload["embeds"][0]["title"] == "Back again"
     assert session.get_one(Post, uuid.UUID(post)).discord["message_ids"] == [new_id]
+
+
+def test_a_story_posts_under_its_agencys_portrait(
+    news: News, session: Session, fake_discord: FakeDiscord, kept: Path
+) -> None:
+    on_discord(news)
+    added = news.troupe.storyteller.client.post(
+        f"/agencies/{news.agency}/portrait", files={"file": ("p.png", png(), "image/png")}
+    )
+    assert added.status_code == 200, added.text
+    assert "storyteller changed the portrait of the news agency The Boston Herald." in news.log()
+    portrait = uuid.UUID(added.json()["portrait"].rsplit("/", 1)[1])
+    news.published()
+
+    send_all(session)
+
+    [sent] = fake_discord.messages.values()
+    assert sent.payload["username"] == "The Boston Herald"
+    assert sent.payload["avatar_url"] == public_pictures.avatar_url(
+        "agency", uuid.UUID(news.agency), portrait
+    )
+    # The masthead stays where it was, beside the story.
+    assert sent.payload["embeds"][0]["author"] == {"name": "The Boston Herald"}
+    shown = news.troupe.client_for().get(
+        sent.payload["avatar_url"].removeprefix("http://localhost:5173/api")
+    )
+    assert shown.status_code == 200
+    # Members see it in the app too; strangers don't.
+    small = added.json()["portrait"].removeprefix("/api") + "/128.webp"
+    assert news.troupe.player.client.get(small).status_code == 200
+    assert news.troupe.stranger.client.get(small).status_code == 404
+
+
+def test_without_manage_webhooks_a_story_posts_as_the_bot_and_stays_the_bots(
+    news: News, session: Session, fake_discord: FakeDiscord
+) -> None:
+    on_discord(news)
+    fake_discord.bot_role = discord.PERMISSIONS
+    post = news.published()
+
+    send_all(session)
+
+    [(message_id, sent)] = fake_discord.messages.items()
+    assert sent.webhook is None
+    assert "username" not in sent.payload
+    assert session.get_one(Post, uuid.UUID(post)).discord == {
+        "channel": OPEN_CHANNEL,
+        "message_ids": [message_id],
+    }
+    shown = news.troupe.storyteller.client.get(f"/posts/{post}").json()["discord"]
+    assert shown["state"] == "sent"
+
+    # Given Manage Webhooks later, its messages stay the bot's to edit and delete.
+    fake_discord.bot_role = discord.CHECKED
+    news.troupe.storyteller.client.put(
+        f"/posts/{post}", json={"agency_id": news.agency, "title": "Fire out at the docks"}
+    )
+    send_all(session)
+    assert fake_discord.edits == [message_id]
+    assert fake_discord.messages[message_id].webhook is None
+    news.troupe.storyteller.client.post(f"/posts/{post}/unpublish")
+    send_all(session)
+    assert fake_discord.deletions == [message_id]
+
+
+def test_a_story_sent_before_it_could_post_as_its_agency_stays_the_bots(
+    news: News, session: Session, fake_discord: FakeDiscord
+) -> None:
+    """Stories on Discord from before #883 name no webhook: they are the bot's."""
+    on_discord(news)
+    post = news.published()
+    message_id = discord.post_message(OPEN_CHANNEL, {"embeds": [{"title": "Fire at the docks"}]})
+    story = session.get_one(Post, uuid.UUID(post))
+    story.discord = {"channel": OPEN_CHANNEL, "message_ids": [message_id]}
+    for pending in session.scalars(select(Delivery).where(Delivery.post_id == story.id)):
+        session.delete(pending)
+    session.flush()
+
+    news.troupe.storyteller.client.put(
+        f"/posts/{post}", json={"agency_id": news.agency, "title": "Fire out at the docks"}
+    )
+    send_all(session)
+
+    assert fake_discord.edits == [message_id]
+    assert fake_discord.messages[message_id].webhook is None
+    assert fake_discord.webhooks == {}
+    news.troupe.storyteller.client.post(f"/posts/{post}/unpublish")
+    send_all(session)
+    assert fake_discord.deletions == [message_id]
+
+
+def test_a_story_that_moves_channel_goes_as_its_agency_there(
+    news: News, session: Session, fake_discord: FakeDiscord
+) -> None:
+    on_discord(news)
+    fake_discord.bot_role = discord.PERMISSIONS
+    post = news.published()
+    send_all(session)
+    [old_id] = fake_discord.messages
+
+    fake_discord.bot_role = discord.CHECKED
+    news.troupe.storyteller.client.put(
+        f"/agencies/{news.agency}",
+        json={"name": "The Boston Herald", "discord_channel": TEST_CHANNEL},
+    )
+    news.troupe.storyteller.client.put(
+        f"/posts/{post}", json={"agency_id": news.agency, "title": "Fire out at the docks"}
+    )
+    send_all(session)
+
+    # The bot deletes its own message, and the agency posts it in the new channel.
+    assert fake_discord.deletions == [old_id]
+    [(new_id, sent)] = fake_discord.messages.items()
+    assert (sent.channel, sent.payload["username"]) == (TEST_CHANNEL, "The Boston Herald")
+    assert session.get_one(Post, uuid.UUID(post)).discord == {
+        "channel": TEST_CHANNEL,
+        "message_ids": [new_id],
+        "webhook": True,
+    }
 
 
 def test_only_storytellers_choose_the_news_channel(news: News, fake_discord: FakeDiscord) -> None:

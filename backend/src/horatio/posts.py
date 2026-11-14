@@ -28,6 +28,13 @@ troupe's channel for posts of its kind. The worker sends it as a `Delivery` with
 the action "sync", which makes Discord show the post as it now stands: posting it,
 or editing the messages it is already in, whose ids are kept on the post. Editing a
 published post queues another sync; unpublishing queues a "delete" of its messages.
+
+A news story posts as its agency (#883): under the agency's name and portrait,
+through the channel's webhook (horatio.discord_webhooks), or with no portrait, under
+its name with Discord's default picture. Where the bot lacks Manage Webhooks it posts
+as the bot instead, as an announcement always does. The post keeps which way its
+messages went (`"webhook": true`), since only the sender of a message may change it:
+those sent as the bot, including every one from before #883, stay the bot's.
 Failures back off and wait for staff to retry or mark as sent, as downtime results
 do (horatio.delivery). With no Discord server, or no channel chosen, a post is in
 the app only, and its staff are told why.
@@ -49,7 +56,14 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from horatio import audit, notification_emails, pictures, preferences
+from horatio import (
+    audit,
+    discord_webhooks,
+    notification_emails,
+    pictures,
+    preferences,
+    public_pictures,
+)
 from horatio.config import get_settings
 from horatio.connectors import SendError, discord
 from horatio.models import (
@@ -254,6 +268,79 @@ def discord_messages(
     return messages
 
 
+class Sender:
+    """How a post's messages go to Discord: through the channel's webhook, as its
+    agency, or as the bot. `webhook` is None until the first message decides."""
+
+    def __init__(
+        self, db: Session, post: Post, agency: NewsAgency | None, webhook: bool | None
+    ) -> None:
+        self.db = db
+        self.troupe_id = post.troupe_id
+        self.agency = agency
+        self.webhook = webhook
+
+    def avatar(self) -> str | None:
+        agency = self.agency
+        if agency is None or agency.portrait_id is None:
+            return None
+        return public_pictures.avatar_url("agency", agency.id, agency.portrait_id)
+
+    def post(self, channel: str, payload: dict[str, Any], files: list[discord.File]) -> str:
+        """Post one message. A story's first goes through the webhook if it can, and
+        as the bot if the bot lacks Manage Webhooks there; the rest follow it."""
+        if self.webhook is None:
+            self.webhook = False
+            if self.agency is not None:
+                try:
+                    sent = self.as_agency(channel, payload, files)
+                except SendError as error:
+                    if error.status != 403:
+                        raise
+                else:
+                    self.webhook = True
+                    return sent
+        if self.webhook:
+            return self.as_agency(channel, payload, files)
+        return discord.post_message(channel, payload, files)
+
+    def as_agency(self, channel: str, payload: dict[str, Any], files: list[discord.File]) -> str:
+        assert self.agency is not None
+        return discord_webhooks.send_as(
+            self.db,
+            self.troupe_id,
+            channel,
+            name=self.agency.name,
+            avatar_url=self.avatar(),
+            payload=payload,
+            files=files,
+        )
+
+    def edit(
+        self, channel: str, message_id: str, payload: dict[str, Any], files: list[discord.File]
+    ) -> None:
+        if self.webhook:
+            discord_webhooks.edit_as(
+                self.db, self.troupe_id, channel, message_id, payload=payload, files=files
+            )
+        else:
+            discord.edit_message(channel, message_id, payload, files)
+
+    def delete(self, channel: str, message_id: str) -> None:
+        if self.webhook:
+            discord_webhooks.delete_as(self.db, self.troupe_id, channel, message_id)
+        else:
+            discord.delete_message(channel, message_id)
+
+
+def where(channel: str | None, live: Sequence[str], webhook: bool | None) -> dict[str, Any]:
+    """What the post keeps about its messages on Discord: where they are, and
+    whether they went through the channel's webhook."""
+    if not live:
+        return {}
+    return {"channel": channel, "message_ids": list(live), **({"webhook": True} if webhook else {})}
+
+
 def sync(db: Session, post: Post) -> dict[str, Any]:
     """Make Discord show the published post as it now stands: edit the messages it
     is in, post any more it needs, and delete any it no longer needs. The ids kept
@@ -270,15 +357,16 @@ def sync(db: Session, post: Post) -> dict[str, Any]:
     messages = discord_messages(post, agency)
     live: list[str] = list(post.discord.get("message_ids") or [])
     old_channel = post.discord.get("channel")
+    sender = Sender(db, post, agency, bool(post.discord.get("webhook")) if live else None)
 
-    def keep(where: str | None) -> None:
-        post.discord = {"channel": where, "message_ids": list(live)} if live else {}
+    def keep(at: str | None) -> None:
+        post.discord = where(at, live, sender.webhook)
 
     if old_channel and old_channel != channel:
         # Its agency's channel changed: it moves.
         try:
             while live:
-                discord.delete_message(old_channel, live[0])
+                sender.delete(old_channel, live[0])
                 live.pop(0)
         finally:
             keep(old_channel)
@@ -286,35 +374,45 @@ def sync(db: Session, post: Post) -> dict[str, Any]:
         for n, (payload, files) in enumerate(messages):
             if n < len(live):
                 try:
-                    discord.edit_message(channel, live[n], payload, files)
+                    sender.edit(channel, live[n], payload, files)
                     continue
                 except SendError as error:
                     if error.status != 404:
                         raise
                 # Someone deleted it on Discord: post the rest again, in order.
                 for gone in live[n:]:
-                    discord.delete_message(channel, gone)
+                    sender.delete(channel, gone)
                 del live[n:]
-            live.append(discord.post_message(channel, payload, files))
+            if not live:
+                # None left to follow: it may go as its agency now.
+                sender.webhook = None
+            live.append(sender.post(channel, payload, files))
         while len(live) > len(messages):
-            discord.delete_message(channel, live[-1])
+            sender.delete(channel, live[-1])
             live.pop()
     finally:
         keep(channel)
-    return {"channel": channel, "message_ids": list(live)}
+    return where(channel, live, sender.webhook) or {"channel": channel, "message_ids": []}
 
 
-def delete_from_discord(delivery: Delivery) -> dict[str, Any]:
-    """Delete the messages an unpublished post was in, as the delivery names them.
-    Those deleted leave the list as they go, so trying again carries on."""
+def delete_from_discord(db: Session, post: Post, delivery: Delivery) -> dict[str, Any]:
+    """Delete the messages an unpublished post was in, as the delivery names them,
+    the way they were sent. Those deleted leave the list as they go, so trying again
+    carries on."""
     channel = delivery.external_ids.get("channel")
     left: list[str] = list(delivery.external_ids.get("message_ids") or [])
+    webhook = bool(delivery.external_ids.get("webhook"))
+    sender = Sender(db, post, None, webhook)
     try:
         while channel and left:
-            discord.delete_message(channel, left[0])
+            sender.delete(channel, left[0])
             left.pop(0)
     finally:
-        delivery.external_ids = {"channel": channel, "message_ids": list(left)}
+        delivery.external_ids = {
+            "channel": channel,
+            "message_ids": list(left),
+            **({"webhook": True} if webhook else {}),
+        }
     return {"channel": channel, "deleted": True}
 
 
@@ -323,7 +421,7 @@ def send(db: Session, delivery: Delivery) -> dict[str, Any]:
     assert delivery.post_id is not None
     post = db.get_one(Post, delivery.post_id, with_for_update=True)
     if delivery.action == "delete":
-        return delete_from_discord(delivery)
+        return delete_from_discord(db, post, delivery)
     return sync(db, post)
 
 

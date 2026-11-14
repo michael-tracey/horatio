@@ -1209,6 +1209,8 @@ test("staff choose the news, announcements and agency channels under Connectors 
   await row.getByRole("link", { name: "Change in Connectors" }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/connectors$`));
   await expect(l.getByRole("region", { name: "Channels for the whole troupe" }).getByLabel("The Harbour Crier's channel")).toHaveValue("303");
+  // A refetch still in a handler as the test ends would fail it when the page closes.
+  await l.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 test("staff share out a cycle's responses by character, and assign several in one go", async ({ browser }) => {

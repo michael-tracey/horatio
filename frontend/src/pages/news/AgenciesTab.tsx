@@ -4,11 +4,13 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { AgencyOut, ChannelsOut } from "../../api/types";
 import { ActionMenu, MenuGroup, MenuItem } from "../../components/ActionMenu";
+import { Avatar } from "../../components/Avatar";
 import { Dialog } from "../../components/Dialog";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
+import { AgencyPortrait } from "./AgencyPortrait";
 import { ACCEPT, MAX_BYTES } from "./PostForm";
 import { useAgencies } from "./queries";
 import { Masthead } from "./Story";
@@ -105,7 +107,7 @@ function AgencyChannel({ troupeId, agency, channels }: { troupeId: string; agenc
   );
 }
 
-type Opened = "edit" | "masthead";
+type Opened = "edit" | "masthead" | "portrait";
 
 function AgencyRow({ troupeId, agency, channels, archived }: { troupeId: string; agency: AgencyOut; channels: ChannelsOut | undefined; archived: boolean }) {
   const [open, setOpen] = useState<Opened | null>(null);
@@ -117,6 +119,7 @@ function AgencyRow({ troupeId, agency, channels, archived }: { troupeId: string;
     <tr>
       <td className="py-2.5 pr-3 align-top">
         <span className="flex flex-wrap items-center gap-2">
+          {agency.portrait && <Avatar name={agency.name} picture={agency.portrait} size="xs" />}
           <Masthead agency={agency} small />
           {agency.retired && <Badge>Retired</Badge>}
         </span>
@@ -135,6 +138,7 @@ function AgencyRow({ troupeId, agency, channels, archived }: { troupeId: string;
             <MenuGroup label="Change">
               <MenuItem onSelect={() => setOpen("edit")}>Edit…</MenuItem>
               <MenuItem onSelect={() => setOpen("masthead")}>Masthead picture…</MenuItem>
+              <MenuItem onSelect={() => setOpen("portrait")}>Portrait…</MenuItem>
             </MenuGroup>
             <MenuGroup label="Retire">
               <MenuItem onSelect={() => retire.mutate(undefined, { onSuccess: () => toast({ message: agency.retired ? `${agency.name} is back.` : `${agency.name} is retired; its stories stay.` }) })}>
@@ -148,6 +152,9 @@ function AgencyRow({ troupeId, agency, channels, archived }: { troupeId: string;
         </Dialog>
         <Dialog title={`${agency.name}'s masthead`} open={open === "masthead"} onClose={() => setOpen(null)}>
           <MastheadPicture agency={agency} />
+        </Dialog>
+        <Dialog title={`${agency.name}'s portrait`} open={open === "portrait"} onClose={() => setOpen(null)}>
+          <AgencyPortrait agency={agency} />
         </Dialog>
         <ErrorText error={retire.error} />
       </td>

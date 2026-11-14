@@ -31,6 +31,7 @@ from horatio.models.characters import (
     TraitException,
     XpEntry,
 )
+from horatio.models.discord_webhooks import DiscordWebhook
 from horatio.models.downtimes import (
     AllowanceAdjustment,
     Answer,
@@ -165,6 +166,7 @@ __all__ = [
     "StatusSuppression",
     "StoryBibleNote",
     "DisciplinePurchase",
+    "DiscordWebhook",
     "DowntimeCycle",
     "DowntimeKeyword",
     "EmailNotice",

@@ -8,7 +8,7 @@ import { useAction } from "../../hooks";
 import type { Kind } from "../news/posts";
 import { useAgencies } from "../news/queries";
 import { Masthead } from "../news/Story";
-import { BotLacks, FOR_POSTS } from "./botPermissions";
+import { BotLacks, FOR_NEWS, FOR_POSTS } from "./botPermissions";
 
 type Channel = ChannelsOut["channels"][number];
 
@@ -101,6 +101,7 @@ function ChannelChoice({
   disabled,
   onChoose,
   what,
+  needs = FOR_POSTS,
 }: {
   label: string;
   hint: string;
@@ -110,6 +111,8 @@ function ChannelChoice({
   disabled: boolean;
   onChoose: (channel: string | null) => void;
   what: string;
+  /** The permissions to warn about; news also needs Manage Webhooks, to post as its agency (#883). */
+  needs?: readonly string[];
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -124,7 +127,7 @@ function ChannelChoice({
           {value && !channels.some((c) => c.id === value) && <option value={value}>A channel no longer on the server</option>}
         </Select>
       </Field>
-      <BotLacks channel={channels.find((c) => c.id === value)} needs={FOR_POSTS} what={what} />
+      <BotLacks channel={channels.find((c) => c.id === value)} needs={needs} what={what} />
     </div>
   );
 }
@@ -149,6 +152,7 @@ function PostChannel({ kind, troupeId, channels }: { kind: Kind; troupeId: strin
           choose.mutate(channel, { onSuccess: () => toast({ message: channel ? "Channel chosen." : `${words.what} ${kind === "news" ? "is" : "are"} in the app only.` }) })
         }
         what={words.what.toLowerCase()}
+        needs={kind === "news" ? FOR_NEWS : FOR_POSTS}
       />
       <ErrorText error={choose.error} />
     </div>
@@ -196,7 +200,7 @@ function AgencyChannel({ agency, channels }: { agency: AgencyOut; channels: Chan
           {value && !channels.channels.some((c) => c.id === value) && <option value={value}>A channel no longer on the server</option>}
         </Select>
       </div>
-      <BotLacks channel={channels.channels.find((c) => c.id === value)} needs={FOR_POSTS} what="its stories" />
+      <BotLacks channel={channels.channels.find((c) => c.id === value)} needs={FOR_NEWS} what="its stories" />
       <ErrorText error={choose.error} />
     </li>
   );
