@@ -256,3 +256,101 @@ def test_the_same_modification_cant_be_picked_twice(
     state = send(troupe.player, ilsa, crafted(oren, "Tough: 1", "Tough: 2"))
     assert "same modification" in state["log"][0]["text"]
     assert session.scalars(select(PlayEffect)).all() == []
+
+
+# --- Body Weaponry's weapon (issue #876, core p. 169) ----------------------------
+
+
+def test_body_weaponry_is_a_weapon_built_by_the_weapon_rules() -> None:
+    """Its own picks: two melee qualities, as a standard weapon has (p. 516)."""
+    weapon = bonecraft()["Bonecraft/Body Weaponry"]
+    assert weapon.picks is not None
+    assert (weapon.picks.kind, weapon.picks.count) == ("melee", 2)
+    entry = reference.catalogue().power("Vicissitude", "Bonecraft")
+    assert entry is not None
+    [reform] = entry["use"]
+    assert (reform["when"], reform["cost"], reform["spends"]) == (
+        "Bonecraft/Body Weaponry",
+        {"blood": 1},
+        True,
+    )
+
+
+def reset(troupe: Troupe, character_id: str) -> dict[str, Any]:
+    response = troupe.player.client.post(f"/characters/{character_id}/play/reset", json={})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def weapon(state: dict[str, Any]) -> dict[str, Any]:
+    [power] = [p for p in state["powers"] if p["key"] == "Bonecraft"]
+    [found] = power["option_picks"]
+    return found
+
+
+def test_body_weaponrys_qualities_are_picked_while_it_is_and_kept_through_reset(
+    troupe: Troupe, ilsa: str
+) -> None:
+    found = weapon(view(troupe.player, ilsa))
+    assert (found["key"], found["name"], found["count"]) == (
+        "Bonecraft/Body Weaponry",
+        "Body Weaponry",
+        2,
+    )
+    assert {"Brutal", "Reach", "Deadly"} <= {o["name"] for o in found["options"]}
+    # A weapon's quality counts on its kind's attack, named for the option.
+    [accurate] = [o for o in found["options"] if o["name"] == "Accurate"]
+    assert [(m["label"], m["pools"], m["amount"]) for m in accurate["modifiers"]] == [
+        ("Body Weaponry: Accurate", "pool:attack:Melee", 2)
+    ]
+
+    # Not picked yet: its weapon's qualities can't be.
+    state = send(
+        troupe.player,
+        ilsa,
+        tap("power:Bonecraft", 1),
+        tap("pick:Bonecraft/Body Weaponry/Brutal", 1, at=1),
+    )
+    assert weapon(state)["picked"] == []
+
+    state = send(
+        troupe.player,
+        ilsa,
+        tap("pick:Bonecraft/Body Weaponry", 1, at=2),
+        tap("pick:Bonecraft/Body Weaponry/Brutal", 1, at=3),
+        tap("pick:Bonecraft/Body Weaponry/Reach", 1, at=4),
+        tap("pick:Bonecraft/Body Weaponry/Deadly", 1, at=5),
+    )
+    # Two at most: the oldest goes.
+    assert weapon(state)["picked"] == ["Reach", "Deadly"]
+    assert state["log"][0]["text"] == (
+        "Picked Deadly for Bonecraft: remade: Body Weaponry: dropped Brutal (2 at most)"
+    )
+
+    # Kept until undone (issue #822): the next game starts with the weapon as it was.
+    state = reset(troupe, ilsa)
+    assert picked(state) == ["Body Weaponry"]
+    assert weapon(state)["picked"] == ["Reach", "Deadly"]
+
+    # Dropping Body Weaponry takes its weapon with it.
+    state = send(troupe.player, ilsa, tap("pick:Bonecraft/Body Weaponry", -1, at=1))
+    assert picked(state) == [] and weapon(state)["picked"] == []
+    # Picked again, it is a new weapon, built again.
+    state = send(troupe.player, ilsa, tap("pick:Bonecraft/Body Weaponry", 1, at=2))
+    assert weapon(state)["picked"] == []
+
+
+def test_using_bonecraft_again_rebuilds_the_weapon(troupe: Troupe, ilsa: str) -> None:
+    state = send(
+        troupe.player,
+        ilsa,
+        tap("power:Bonecraft", 1),
+        tap("pick:Bonecraft/Body Weaponry", 1, at=1),
+        tap("pick:Bonecraft/Body Weaponry/Brutal", 1, at=2),
+    )
+    assert weapon(state)["picked"] == ["Brutal"]
+    # Used again, it replaces the one on (one at a time): picked again from scratch.
+    state = send(troupe.player, ilsa, tap("power:Bonecraft", 1, at=3))
+    assert picked(state) == [] and weapon(state)["picked"] == []
+    state = send(troupe.player, ilsa, tap("power:Bonecraft", -1, at=4))
+    assert weapon(state)["picked"] == []

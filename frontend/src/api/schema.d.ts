@@ -26304,6 +26304,27 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * OptionPicksOut
+         * @description What is picked for one of a power's own options while it is picked (issue
+         *     #876): Bonecraft's Body Weaponry, a weapon whose qualities the player chooses by
+         *     the weapon rules (core p. 169), counted as an equipped item's while it is.
+         */
+        OptionPicksOut: {
+            /** Count */
+            count: number;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Options */
+            options: components["schemas"]["PickOptionOut"][];
+            /**
+             * Picked
+             * @default []
+             */
+            picked: string[];
+        };
         /** OrderIn */
         OrderIn: {
             /** Keys */
@@ -28397,6 +28418,11 @@ export interface components {
             /** Option Of */
             option_of?: string | null;
             /**
+             * Option Picks
+             * @default []
+             */
+            option_picks: components["schemas"]["OptionPicksOut"][];
+            /**
              * Options
              * @default []
              */
@@ -28504,6 +28530,11 @@ export interface components {
              * @default 0
              */
             retainer: number;
+            /**
+             * Spends
+             * @default false
+             */
+            spends: boolean;
             /** Summon */
             summon?: string | null;
             /**
@@ -33241,6 +33272,7 @@ export interface components {
             note: string;
             /** Page */
             page: string;
+            picks?: components["schemas"]["Picks"] | null;
             /**
              * Qualities
              * @default []

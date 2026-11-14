@@ -29,6 +29,7 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   counts_as_form: false,
   disciplines: [],
   waives: [],
+  option_picks: [],
   paused: false,
   foreign: false,
   target: "self" as const,
@@ -370,6 +371,68 @@ describe("a power's own options picked each use (#821)", () => {
     applySwitch(v, "Visage", 1, said);
     expect(said).toEqual(["replaces the one on before"]);
     expect(v.powers[0]!.picked).toEqual([]);
+  });
+});
+
+describe("an option's own picks: Body Weaponry's weapon (#876)", () => {
+  type Option = NonNullable<PowerSwitch["picks"]>["options"][number];
+  const own = (name: string, over: Partial<Option> = {}): Option => ({
+    name,
+    key: `Bonecraft/${name}`,
+    target: "any",
+    page: "p. 169",
+    note: "",
+    health: [],
+    attributes: [],
+    focuses: [],
+    blood_per_turn: 0,
+    blood_half: false,
+    blood_extra: 0,
+    qualities: [],
+    normal_form_only: null,
+    ...over,
+  });
+  const chip = (name: string) => ({ name, play: "", page: "p. 169", modifiers: [] });
+  const weapon = own("Body Weaponry", { health: [{ level: "Healthy", boxes: -1 }] });
+  const limbs = own("Extra Limbs", { health: [{ level: "Healthy", boxes: -2 }] });
+  const crafted = () =>
+    power({
+      key: "Bonecraft",
+      name: "Bonecraft: remade",
+      form: false,
+      picks: picks({ count: 1, options: [weapon, limbs] }),
+      options: [chip("Body Weaponry"), chip("Extra Limbs")],
+      option_picks: [{ key: "Bonecraft/Body Weaponry", name: "Body Weaponry", count: 2, options: ["Brutal", "Reach", "Deadly"].map(chip), picked: [] }],
+    });
+
+  it("picks the weapon's qualities only while Body Weaponry is, two at most, as the server does", () => {
+    const v = view([crafted()]);
+    applySwitch(v, "Bonecraft", 1);
+    // Not picked yet: no weapon to give qualities to.
+    expect(applyPick(v, "Bonecraft/Body Weaponry/Brutal", 1)).toEqual([0, 0]);
+    applyPick(v, "Bonecraft/Body Weaponry", 1);
+    applyPick(v, "Bonecraft/Body Weaponry/Brutal", 1);
+    applyPick(v, "Bonecraft/Body Weaponry/Reach", 1);
+    const said: string[] = [];
+    expect(applyPick(v, "Bonecraft/Body Weaponry/Deadly", 1, said)).toEqual([0, 1]);
+    expect(v.powers[0]!.option_picks[0]!.picked).toEqual(["Reach", "Deadly"]);
+    expect(said).toEqual(["dropped Brutal (2 at most)"]);
+    expect(withPicks(v.powers[0]!)).toBe("Bonecraft: remade (Body Weaponry: Reach and Deadly)");
+    expect(describePick(v, "Bonecraft/Body Weaponry/Deadly", 1)).toBe("Picked Deadly for Bonecraft: remade: Body Weaponry");
+  });
+
+  it("drops the weapon with the option, and with the power", () => {
+    const v = view([crafted()]);
+    applySwitch(v, "Bonecraft", 1);
+    applyPick(v, "Bonecraft/Body Weaponry", 1);
+    applyPick(v, "Bonecraft/Body Weaponry/Brutal", 1);
+    // Another modification in its place (one at a time): the weapon goes.
+    applyPick(v, "Bonecraft/Extra Limbs", 1);
+    expect(v.powers[0]!.option_picks[0]!.picked).toEqual([]);
+    applyPick(v, "Bonecraft/Body Weaponry", 1);
+    applyPick(v, "Bonecraft/Body Weaponry/Reach", 1);
+    applySwitch(v, "Bonecraft", -1);
+    expect(v.powers[0]!.option_picks[0]!.picked).toEqual([]);
   });
 });
 
