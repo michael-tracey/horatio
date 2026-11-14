@@ -46,9 +46,11 @@
 #     limits it to some pools;
 #   - `focuses = [Name]`: the character counts as having that focus, so what the
 #     focus adds elsewhere in this file counts too;
-#   - `blood = { per_turn?, most?, extra? }`: more Blood a turn, `most = "half"` makes
-#     the Blood pool half again as big (rounded up) until it ends, and `extra` adds
-#     that much to it (issue #824: Second Stomach);
+#   - `blood = { per_turn?, most?, extra?, over? }`: more Blood a turn, `most = "half"`
+#     makes the Blood pool half again as big (rounded up) until it ends, `extra` adds
+#     that much to it (issue #824: Second Stomach), and `over = true` lets a use's
+#     `gain` marked `over` take Blood past the pool while it is on; when it ends, the
+#     Blood over the pool goes (issue #854: Mantle of Sutekh, Vol. 2 p. 240);
 #   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out;
 #   - `picks = { count, kind?, kinds?, only?, immune?, focus_count?, options?,
 #     target? }`: what the player picks each time it goes on, `count` at most, or
@@ -70,7 +72,14 @@
 #     `pools`, `damage` or `test` entry may name it;
 #   - `qualities = [{ kind, name, focus? }]`: equipment qualities it gives every
 #     time it is on, without picking (#820: Armor of Terra's Hardened and Ballistic),
-#     counted as picked ones are.
+#     counted as picked ones are;
+#   - `disciplines = [{ discipline, amount }]`: the character counts that many dots
+#     more of a discipline it has, never past 5 (issue #849: Mercurial Vitality's
+#     Potence and Fortitude, core p. 229). The powers gained by them hold while it
+#     is on: their `pools` and `damage` with no `when` count as this switch's, and
+#     their notes are added to it;
+#   - `waives = [Name]`: using the named disciplines or powers costs nothing while
+#     it is on (issue #849: Quickened Blood's Celerity, core p. 230).
 #   `target` is who it can be used on (issue #823): "self" (the default), "other"
 #   for one used only on another character of the home troupe (Fleshcraft reshaping
 #   a willing person), or "any" for either. Used on another, it is an effect on
@@ -108,17 +117,20 @@
 # `use` (on a power or [[others]] entry): uses that change the trackers besides
 #   spending (issue #825), each a button of its own on the Pools tab, made of
 #   ordinary taps with one Undo: [{ label, cost?, heal?, convert?, mend?, gain?,
-#   beast?, retainer?, when?, once?, focus?, unless_focus?, target?, note?, page,
-#   book? }]. `target = "other"` makes it a use on another character of the home
+#   beast?, retainer?, animal?, when?, once?, focus?, unless_focus?, target?, note?,
+#   page, book? }]. `target = "other"` makes it a use on another character of the home
 #   troupe (issue #823), whose own trackers it changes (healing only, for now).
 #   `cost` is as above, spent on each press. `heal = { damage, amount? }` heals
 #   `amount` of "normal" or "aggravated" damage, of the "worst" first
 #   (aggravated, then normal), "all" of it, or as much as the player says
 #   ("asked"). `convert` turns that much aggravated damage to normal ("all" for
 #   every box), and `mend` does so or, with no aggravated damage, heals normal.
-#   `gain = { blood?, willpower? }` restores them, never past the pool. `beast`
+#   `gain = { blood?, willpower?, over? }` restores them, never past the pool, but
+#   with `over = true` Blood may go past it while a switch with `blood.over` is on
+#   (issue #854). `beast`
 #   takes Beast traits. `retainer` moves up to that much damage onto one of the
-#   character's ghoul Retainers. `when` names a switch that must be on; `once`
+#   character's ghoul Retainers, an animal one with `animal = true` (issue #854:
+#   Beast's Vigor). `when` names a switch that must be on; `once`
 #   says how often the book allows it ("Once a turn"), for the player to keep to,
 #   since the Play View counts no turns. `focus` and `unless_focus` limit it as
 #   for `pools`. Where an entry's uses spend, they take the place of its plain
@@ -2819,12 +2831,12 @@ active = { key = "Awaken the Heartsblood", page = 236, book = "Vol. 2", blood = 
 category = "luminary_disciplines"
 name = "Serpentis: Mantle of Sutekh"
 cost = { blood = 1 }
-# Vol. 2 p. 240 (#825): each tithe comes to you as 1 Blood. The book lets it go past
-# your pool until the power ends; here it stops at the pool (see the note).
+# Vol. 2 p. 240 (#825, #854): each tithe comes to you as 1 Blood, kept even past your
+# pool while the power lasts; when it ends, the Blood over your pool dissipates.
 use = [
-  { label = "Tithe: +1 Blood", gain = { blood = 1 }, when = "Mantle of Sutekh", note = "Over your pool, keep count yourself until it ends.", page = 240, book = "Vol. 2" },
+  { label = "Tithe: +1 Blood", gain = { blood = 1, over = true }, when = "Mantle of Sutekh", note = "Even past your pool, until it ends.", page = 240, book = "Vol. 2" },
 ]
-active = { key = "Mantle of Sutekh", page = 239, book = "Vol. 2", notes = ["Anyone in sight who spends fuel can be made to spend 1 more, which comes to you as Blood, even past your pool until it ends.", "Simple action, even in Celerity rounds: give up to 5 Blood to a willing supernatural ally in sight within 30 steps."] }
+active = { key = "Mantle of Sutekh", page = 239, book = "Vol. 2", blood = { over = true }, notes = ["Anyone in sight who spends fuel can be made to spend 1 more, which comes to you as Blood, even past your pool; when it ends, the Blood over your pool goes.", "Simple action, even in Celerity rounds: give up to 5 Blood to a willing supernatural ally in sight within 30 steps."] }
 
 # Vol. 2 p. 243: 3 Blood, simple action: no healing near you, and Thanatosis without a Grapple.
 [[others]]
@@ -2938,18 +2950,21 @@ name = "Unnatural Grace"
 cost = { blood = 1 }
 active = { key = "Unnatural Grace", page = 232, notes = ["An hour: stick to surfaces up to upright (walls, tightropes, not ceilings).", "Land silently and unhurt from any fall up to a mile."] }
 
-# Core p. 229 (#820): for the turn, Potence and Fortitude each a dot higher.
+# Core p. 229 (#820, #849): 1 Blood and a simple action, and for the rest of the
+# turn Potence and Fortitude each count a dot higher, never past the 5th.
 [[others]]
 category = "techniques"
 name = "Mercurial Vitality"
 cost = { blood = 1 }
-active = { key = "Mercurial Vitality", page = 229, notes = ["This turn: your Potence and Fortitude each count a dot higher, never past 5."] }
+active = { key = "Mercurial Vitality", page = 229, disciplines = [{ discipline = "Potence", amount = 1 }, { discipline = "Fortitude", amount = 1 }], notes = ["For the rest of the turn: your Potence and Fortitude each count a dot higher, never past 5."] }
 
-# Core p. 230 (#820): pay for Celerity two turns running, and it's free for five minutes.
+# Core p. 230 (#820, #849): after paying for Celerity two turns running, its first
+# five dots cost no Blood for five minutes. The player switches it on then; Celerity's
+# Use spends nothing while it is on. Elder powers of Celerity aren't among those dots.
 [[others]]
 category = "techniques"
 name = "Quickened Blood"
-active = { key = "Quickened Blood", page = 230, notes = ["After paying for Celerity two turns running: five minutes in which its first five dots cost no Blood."] }
+active = { key = "Quickened Blood", page = 230, waives = ["Celerity"], notes = ["Turn it on after paying for Celerity two turns running: for five minutes, Celerity's first five dots cost no Blood.", "Elder powers of Celerity (Projectile and the like) still cost what they do."] }
 
 # Vol. 2 Issue 1 p. 71 (#820): always on: with Celerity active, initiative gains your
 # current Derangement traits, which the Play View counts; and a Derangement trait can
@@ -3099,7 +3114,7 @@ name = "Beast's Vigor"
 cost = { blood = 1 }
 active = { key = "Beast's Vigor", page = 58, book = "Vol. 2 Issue 1", notes = ["Five minutes: a simple action moves up to 3 damage onto an animal ghoul Retainer within 15 steps, for a Beast trait each time.", "Its own Fortitude and the like can't lessen it."] }
 use = [
-  { label = "Move damage", retainer = 3, beast = 1, when = "Beast's Vigor", note = "Animal ghoul Retainers only.", page = 58, book = "Vol. 2 Issue 1" },
+  { label = "Move damage", retainer = 3, animal = true, beast = 1, when = "Beast's Vigor", note = "Onto an animal ghoul Retainer of yours.", page = 58, book = "Vol. 2 Issue 1" },
 ]
 
 # Vol. 2 pp. 75-76 (#826): Kineticism's techniques, each spending charges.

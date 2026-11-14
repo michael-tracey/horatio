@@ -19518,6 +19518,23 @@ export interface components {
             /** Versus */
             versus: string | null;
         };
+        /**
+         * DisciplineRaise
+         * @description Dots a switch adds to a discipline the character has, never past 5 (issue #849:
+         *     Mercurial Vitality's Potence and Fortitude, core p. 229). The powers gained hold
+         *     while it is on: their pool and damage changes count as the switch's.
+         */
+        DisciplineRaise: {
+            /** Amount */
+            amount: number;
+            /** Discipline */
+            discipline: string;
+            /**
+             * To
+             * @default 0
+             */
+            to: number;
+        };
         /** DiscordAccount */
         DiscordAccount: {
             /** Available */
@@ -28254,6 +28271,11 @@ export interface components {
              */
             blood_half: boolean;
             /**
+             * Blood Over
+             * @default false
+             */
+            blood_over: boolean;
+            /**
              * Blood Per Turn
              * @default 0
              */
@@ -28273,6 +28295,11 @@ export interface components {
              * @default false
              */
             counts_as_form: boolean;
+            /**
+             * Disciplines
+             * @default []
+             */
+            disciplines: components["schemas"]["DisciplineRaise"][];
             /**
              * Fixed
              * @default []
@@ -28359,6 +28386,11 @@ export interface components {
              * @default 0
              */
             turned_on: number;
+            /**
+             * Waives
+             * @default []
+             */
+            waives: string[];
         };
         /**
          * PowerUse
@@ -28366,6 +28398,11 @@ export interface components {
          *     #825): a button of its own on the Pools tab, made of ordinary taps with Undo.
          */
         PowerUse: {
+            /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
             /**
              * Beast
              * @default 0
@@ -28407,6 +28444,11 @@ export interface components {
             on?: string | null;
             /** Once */
             once?: string | null;
+            /**
+             * Over
+             * @default false
+             */
+            over: boolean;
             /** Page */
             page?: string | null;
             /**
@@ -30399,6 +30441,11 @@ export interface components {
         /** RetainerIn */
         RetainerIn: {
             /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
+            /**
              * Description
              * @default
              */
@@ -30438,6 +30485,11 @@ export interface components {
         };
         /** RetainerOut */
         RetainerOut: {
+            /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
             /**
              * Away
              * @default false
@@ -30577,6 +30629,11 @@ export interface components {
          *     "<key>/health" and "<key>/blood" (horatio.play).
          */
         RetainerTrackOut: {
+            /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
             blood: components["schemas"]["Tracker"] | null;
             health: components["schemas"]["Tracker"];
             /** Key */

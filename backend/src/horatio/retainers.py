@@ -69,6 +69,8 @@ class Draft:
     ghoul: bool = False
     specialties: list[str] = field(default_factory=list[str])
     discipline: str = ""
+    # An animal (issue #854: Beast's Vigor's animal ghoul Retainers).
+    animal: bool = False
 
 
 # A lost Retainer's dots are out of reach for one game or two weeks for each dot
@@ -135,6 +137,7 @@ class Given:
     kind: str
     dots: int
     ghoul: bool = False
+    animal: bool = False
     # What its discipline specialty can be, beside a ghoul's in-clan one.
     disciplines: tuple[str, ...] = ()
     note: str = ""
@@ -162,6 +165,10 @@ class Listed:
     @property
     def ghoul(self) -> bool:
         return self.given.ghoul if self.given else bool(self.row and self.row.ghoul)
+
+    @property
+    def animal(self) -> bool:
+        return self.given.animal if self.given else bool(self.row and self.row.animal)
 
 
 def rows(db: Session, character: Character) -> list[Retainer]:
@@ -208,6 +215,7 @@ def given(db: Session, character: Character) -> list[Given]:
                     kind=target["kind"],
                     dots=grant.amount,
                     ghoul=bool(target.get("ghoul")),
+                    animal=bool(target.get("animal")),
                     disciplines=tuple(target.get("disciplines", ())),
                     note=target.get("note", ""),
                     page=grant.page,
@@ -331,7 +339,7 @@ def _clean(
         spec = giving[d.from_merit].pop(0) if giving.get(d.from_merit) else None
         if not checked:
             if spec is not None:
-                d.dots, d.ghoul = spec.dots, spec.ghoul
+                d.dots, d.ghoul, d.animal = spec.dots, spec.ghoul, spec.animal
             continue
         if d.from_merit in giving and spec is None:
             raise _refuse(
@@ -339,7 +347,7 @@ def _clean(
                 f"{d.from_merit} gives {character.name} no more Retainers than it lists.",
             )
         if spec is not None:
-            d.dots, d.ghoul = spec.dots, spec.ghoul
+            d.dots, d.ghoul, d.animal = spec.dots, spec.ghoul, spec.animal
         top = MAX_MERIT_DOTS if d.from_merit else MAX_DOTS
         if not 1 <= d.dots <= top:
             raise _refuse(
@@ -412,12 +420,13 @@ def replace(
             was = made = None
         else:
             was = (row.name, row.dots, row.description, row.lost, row.npc_id)
-            made = (row.ghoul, list(row.specialties), row.discipline)
+            made = (row.ghoul, row.animal, list(row.specialties), row.discipline)
             kept.add(row.id)
         row.position = position
         row.name, row.dots, row.description = d.name, d.dots, d.description
         row.from_merit, row.lost, row.lost_on = d.from_merit, d.lost, d.lost_on
         row.ghoul, row.specialties, row.discipline = d.ghoul, d.specialties, d.discipline
+        row.animal = d.animal
         if link:
             if d.npc_id is not None and d.npc_id != row.npc_id:
                 _link(db, character, d.npc_id)
@@ -431,7 +440,7 @@ def replace(
             continue
         # A bought Retainer's dots change on the sheet, whose own log has them.
         moved = was[1] != row.dots and (bool(d.from_merit) or d.name not in on_sheet)
-        remade = made != (row.ghoul, row.specialties, row.discipline)
+        remade = made != (row.ghoul, row.animal, row.specialties, row.discipline)
         if (was[0], was[2]) != (row.name, row.description) or moved or remade:
             audit.record(db, user, "retainer.changed", **log, **facts, was=was[0], was_dots=was[1])
         if was[3] != row.lost and row.lost:
@@ -466,6 +475,7 @@ def _kept(row: Retainer) -> Draft:
         ghoul=row.ghoul,
         specialties=list(row.specialties),
         discipline=row.discipline,
+        animal=row.animal,
     )
 
 

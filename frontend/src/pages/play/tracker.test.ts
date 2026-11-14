@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView } from "../../api/types";
-import { afterSending, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, tapsToast, tapToast, withPending, type Tap } from "./tracker";
-import { amountsOf, usingTaps } from "./UsePower";
+import { afterSending, applyChange, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, tapsToast, tapToast, withPending, type Tap } from "./tracker";
+import { amountsOf, usingTaps, waivedBy } from "./UsePower";
 
 function view(overrides: Partial<PlayView> = {}): PlayView {
   return {
@@ -315,7 +315,7 @@ describe("a power's Use (#370)", () => {
     attributes: [],
     focuses: [],
     blood_per_turn: 0,
-    blood_half: false, blood_extra: 0,
+    blood_half: false, blood_extra: 0, blood_over: false,
     on: false,
     options: [],
     picked: [],
@@ -325,6 +325,8 @@ describe("a power's Use (#370)", () => {
     kept: false,
     normal_form_only: false,
     counts_as_form: false,
+    disciplines: [],
+    waives: [],
     paused: false,
     foreign: false,
     target: "self" as const,
@@ -344,6 +346,21 @@ describe("a power's Use (#370)", () => {
     const after = withPending(v, taps);
     expect(after.blood.value).toBe(9);
     expect(after.powers[0]!.on).toBe(true);
+  });
+
+  it("keeps Blood tithed past the pool while Mantle of Sutekh lasts, and lets it go when it ends (#854)", () => {
+    const mantle = { ...celerity, key: "Mantle of Sutekh", name: "Serpentis: Mantle of Sutekh", origin: "Serpentis", blood_over: true, on: true };
+    const v = view({ powers: [mantle] });
+    v.blood.value = v.blood.most;
+    const top = v.blood.most;
+    expect(applyChange(v, "blood", 2)).toEqual([top, top + 2]);
+    // Spending while over the pool spends from what is held, as any Blood.
+    expect(applyChange(v, "blood", -1)).toEqual([top + 2, top + 1]);
+    // Its end takes the Blood over the pool, without it being spent.
+    applyChange(v, "power:Mantle of Sutekh", -1);
+    expect(v.blood.value).toBe(top);
+    // Without it, Blood stops at the pool.
+    expect(applyChange(v, "blood", 1)).toEqual([top, top]);
   });
 
   it("spends the amount its player chooses, from its cost up to its most (#824)", () => {
@@ -374,6 +391,23 @@ describe("a power's Use (#370)", () => {
     ]);
   });
 
+  it("spends nothing while a switch on waives it, and only turns its switch on (#849)", () => {
+    const quickened = { ...celerity, key: "Quickened Blood", name: "Quickened Blood", page: "p. 230", waives: ["Celerity"] };
+    expect(waivedBy(view({ powers: [celerity, quickened] }), "Celerity")).toBeUndefined();
+    const v = view({ powers: [celerity, { ...quickened, on: true }] });
+    expect(waivedBy(v, "Celerity")).toBe("Quickened Blood");
+    expect(waivedBy(v, "Celerity: Projectile")).toBeUndefined();
+    // Paused while a form is on, it waives nothing.
+    expect(waivedBy(view({ powers: [{ ...quickened, on: true, paused: true }] }), "Celerity")).toBeUndefined();
+
+    const taps = made(usingTaps(v, { ...blood, amount: 0 }, "Celerity", "Celerity"));
+    expect(taps.map((t) => [t.tracker, t.amount])).toEqual([["power:Celerity", 1]]);
+    expect(withPending(v, taps).blood.value).toBe(10);
+    // On already, there is nothing to tap.
+    const on = view({ powers: [{ ...celerity, on: true }, { ...quickened, on: true }] });
+    expect(usingTaps(on, { ...blood, amount: 0 }, "Celerity", "Celerity")).toEqual([]);
+  });
+
   it("says Undone once when its Undo takes both back", () => {
     const v = view({ powers: [celerity] });
     const taps = made(usingTaps(v, blood, "Celerity", "Celerity"));
@@ -402,7 +436,7 @@ describe("an elder power's Use (#588)", () => {
     attributes: [],
     focuses: [],
     blood_per_turn: 0,
-    blood_half: false, blood_extra: 0,
+    blood_half: false, blood_extra: 0, blood_over: false,
     on: false,
     options: [],
     picked: [],
@@ -412,6 +446,8 @@ describe("an elder power's Use (#588)", () => {
     kept: false,
     normal_form_only: false,
     counts_as_form: false,
+    disciplines: [],
+    waives: [],
     paused: false,
     foreign: false,
     target: "self" as const,

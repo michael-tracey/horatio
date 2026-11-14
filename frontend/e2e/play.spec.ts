@@ -650,6 +650,48 @@ test("a power's charges: Kineticism stores charges up to its most, spends them o
   await expect.poll(async () => (await play()).charges[0]!.value).toBe(0);
 });
 
+test("Mantle of Sutekh's tithes are kept past the Blood pool while it lasts, and go when it ends (#854)", async ({ browser }) => {
+  const { page: p } = await person(browser, "sutekh-tither");
+  // A Follower of Set luminary (Generation 5) with Serpentis 5 and Mantle of Sutekh (Vol. 2 pp. 239-240).
+  const id = await builtVampire(
+    p,
+    "Khaemwaset",
+    "Followers of Set",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Obfuscate", 2], ["Presence", 1], ["Serpentis", 1]] },
+    [
+      ["backgrounds", "Generation", 4],
+      ["backgrounds", "Generation", 5],
+      ["disciplines", "Serpentis", 5],
+      ["luminary_disciplines", "Serpentis: Mantle of Sutekh", 1],
+    ],
+  );
+  const play = async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { blood: { value: number; most: number } };
+  const { blood } = await play();
+  // A full pool to start from.
+  const fill = { id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: "blood", amount: blood.most };
+  const sent = await p.request.post(`/api/characters/${id}/play/taps`, { headers: { "X-Horatio": "1" }, data: { taps: [fill] } });
+  expect(sent.status(), await sent.text()).toBeLessThan(300);
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await p.getByLabel("Serpentis: Mantle of Sutekh on").check();
+  await p.keyboard.press("Escape");
+
+  // Two tithes from a full pool: kept past it.
+  const tithe = p.getByRole("button", { name: /Mantle of Sutekh: Tithe: \+1 Blood/ });
+  await tithe.click();
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.most + 1);
+  await tithe.click();
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.most + 2);
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await expect(p.getByLabel(`Blood: ${blood.most + 2} of ${blood.most}`)).toBeVisible();
+
+  // Its end takes the Blood over the pool, unspent.
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await p.getByLabel("Serpentis: Mantle of Sutekh on").uncheck();
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.most);
+});
+
 test("a power kept until undone: Heart of Darkness's heart stays out through Reset until it is turned off, and Use again asks first (#822)", async ({ browser }) => {
   const { page: p } = await person(browser, "heart-keeper");
   // A Follower of Set with Serpentis 5: Heart of Darkness (core p. 161).
@@ -1038,6 +1080,52 @@ test("timed powers as switches: Armor of Terra's own qualities under Dodge, and 
   await p.getByLabel("Fleshcraft on").uncheck();
   await drawer.getByRole("button", { name: "Close" }).click();
   await expect(flesh).toHaveCount(0);
+});
+
+test("Mercurial Vitality counts Potence a dot higher while on, and Quickened Blood makes Celerity's Use free (#849)", async ({ browser }) => {
+  const { page: p } = await person(browser, "vital-quickener");
+  // A Tzimisce with Vicissitude 2, Potence 1, Fortitude 1 and Celerity 2, and the techniques
+  // Mercurial Vitality (core p. 229) and Quickened Blood (core p. 230).
+  const id = await builtVampire(
+    p,
+    "Dobromila",
+    "Tzimisce",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]] },
+    [
+      ["disciplines", "Potence", 1],
+      ["disciplines", "Fortitude", 1],
+      ["disciplines", "Celerity", 2],
+      ["techniques", "Mercurial Vitality", 1],
+      ["techniques", "Quickened Blood", 1],
+    ],
+  );
+  const play = async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { blood: { value: number; most: number } };
+  const { blood } = await play();
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const unarmed = p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ });
+  await expect(unarmed.getByText("Damage 1 (unarmed) · exceptional 2")).toBeVisible();
+
+  // Mercurial Vitality: Potence counts as 2 for the turn, so Might's point is in the damage.
+  await p.getByRole("button", { name: "Use Mercurial Vitality, 1 Blood" }).click();
+  await expect(p.getByText(/Mercurial Vitality switched on$/)).toBeVisible();
+  await expect(unarmed.getByText("Damage 2 (1 unarmed + 1 Might) · exceptional 3")).toBeVisible();
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await switches.click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  await expect(drawer).toContainText("Potence counts as 2");
+  await expect(drawer).toContainText("Fortitude counts as 2");
+  await expect(drawer).toContainText("Fortitude 2, Mettle:");
+  await p.getByLabel("Mercurial Vitality on").uncheck();
+  await expect(unarmed.getByText("Damage 1 (unarmed) · exceptional 2")).toBeVisible();
+
+  // Quickened Blood on: Celerity's Use spends nothing, and switches Celerity on.
+  await p.getByLabel("Quickened Blood on").check();
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await p.getByRole("button", { name: "Use Celerity, free while Quickened Blood is on" }).click();
+  await expect(p.getByText(/Celerity switched on$/)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Use Celerity, free while Quickened Blood is on" })).toBeDisabled();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.value - 1);
 });
 
 test("Azhi Dahaka gives every attribute focus: on the sheet and the Play View, from the power, and counted in its powers (#598)", async ({ browser }) => {

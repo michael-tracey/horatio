@@ -840,6 +840,72 @@ def test_powers_switched_on_change_damage_only_while_on() -> None:
     assert [(s.switch, s.exceptional) for s in legerity.switched] == [("Celerity", 1)]
 
 
+def vital(potence: int, fortitude: int) -> tuple[Any, dict[str, Any]]:
+    """Mercurial Vitality's switch, and each attack's damage, for a sheet with
+    Potence and Fortitude at these dots."""
+    sheet = Sheet(
+        ratings={
+            ("attributes", "Physical"): 3,
+            ("skills", "Brawl"): 2,
+            ("skills", "Melee"): 1,
+            ("techniques", "Mercurial Vitality"): 1,
+        },
+        disciplines={"Potence": potence, "Fortitude": fortitude, "Vicissitude": 2},
+    )
+    worked = work_out(sheet, {})
+    made = pools(sheet, worked.effects, worked.hurts, worked.switches)
+    return by_key(worked.switches)["Mercurial Vitality"], {
+        p.key: p.damage for p in made if p.damage
+    }
+
+
+def test_mercurial_vitality_counts_potence_and_fortitude_a_dot_higher_while_on() -> None:
+    """Issue #849: Mercurial Vitality raises Potence and Fortitude by a dot each for
+    the turn, never past the 5th (core p. 229). The powers gained count while its
+    switch is on: Might's damage at Potence 1, and Mettle's note at Fortitude 1."""
+    switch, damage = vital(potence=1, fortitude=1)
+
+    assert [(r.discipline, r.to) for r in switch.disciplines] == [("Potence", 2), ("Fortitude", 2)]
+    assert switch.changes[:2] == ["Potence counts as 2", "Fortitude counts as 2"]
+    assert "+1 Brawl and Melee damage" in switch.changes
+    assert any(n.startswith("Potence 2, Might: ") for n in switch.notes)
+    assert any(n.startswith("Fortitude 2, Mettle: ") for n in switch.notes)
+    # Off, the damage is Prowess's: nothing more; on, Might's point.
+    brawl = damage["attack:Brawl"]
+    assert brawl.total == 1
+    assert [(s.switch, s.label, s.amount) for s in brawl.switched] == [
+        ("Mercurial Vitality", "Might", 1)
+    ]
+
+
+def test_mercurial_vitality_gives_intensity_or_puissance_and_never_a_sixth_dot() -> None:
+    _, at_three = vital(potence=3, fortitude=3)
+    # Potence 4's Intensity: an exceptional success adds one more (core p. 151).
+    assert [(s.label, s.exceptional) for s in at_three["attack:Melee"].switched] == [
+        ("Intensity", 1)
+    ]
+    _, at_four = vital(potence=4, fortitude=2)
+    assert [(s.label, s.amount) for s in at_four["attack:Brawl"].switched] == [("Puissance", 1)]
+
+    switch, at_five = vital(potence=5, fortitude=5)
+    assert at_five["attack:Brawl"].switched == []
+    assert switch.changes[:2] == [
+        "Potence is already at 5, the most",
+        "Fortitude is already at 5, the most",
+    ]
+
+
+def test_quickened_blood_waives_celerity_while_on() -> None:
+    """Issue #849: with Quickened Blood on, Celerity's first five dots cost no Blood
+    for five minutes (core p. 230). Its switch names what it waives."""
+    sheet = Sheet(
+        ratings={("techniques", "Quickened Blood"): 1},
+        disciplines={"Celerity": 2, "Fortitude": 1},
+    )
+    switch = by_key(work_out(sheet, {}).switches)["Quickened Blood"]
+    assert (switch.waives, switch.page) == (["Celerity"], "p. 230")
+
+
 def test_the_reference_sends_the_damage(troupe: Troupe, swift: str) -> None:
     brawl = pool(reference(troupe, swift), "attack:Brawl")["damage"]
 
@@ -1408,6 +1474,7 @@ USE_KEYS = {
     "gain",
     "beast",
     "retainer",
+    "animal",
     "when",
     "once",
     "focus",
@@ -1435,7 +1502,7 @@ def test_every_use_says_what_it_changes_and_where() -> None:
         assert any(k in u for k in CHANGES), name
         if "heal" in u:
             assert u["heal"]["damage"] in {"normal", "aggravated", "worst", "all", "asked"}, name
-        assert set(u.get("gain", {})) <= {"blood", "willpower"}, name
+        assert set(u.get("gain", {})) <= {"blood", "willpower", "over"}, name
         assert set(u.get("cost", {})) <= {"blood", "willpower"}, name
         if "when" in u:
             assert u["when"] in book.switch_keys, name
@@ -1545,8 +1612,8 @@ def test_uses_that_gain_spend_half_or_move_damage() -> None:
     assert said == [(True, "blood", "asked")]
     vigor = book.others[("techniques", "Beast's Vigor")]
     assert [a["key"] for a in actives(vigor)] == ["Beast's Vigor"]
-    assert [(u.retainer, u.beast, u.when) for u in uses(vigor, Sheet())] == [
-        (3, 1, "Beast's Vigor")
+    assert [(u.retainer, u.animal, u.beast, u.when) for u in uses(vigor, Sheet())] == [
+        (3, True, 1, "Beast's Vigor")
     ]
     wolf = uses(book.others[("techniques", "Feed the Blighted Wolf")], Sheet())
     assert [(u.beast, u.cost) for u in wolf] == [(1, None)]

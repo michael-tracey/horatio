@@ -1,5 +1,5 @@
 import type { Charge, PlayView, PowerUse } from "../../api/types";
-import { switchKey } from "./powers";
+import { bloodOver, switchKey } from "./powers";
 import type { makeTap } from "./tracker";
 
 type TapWhat = Parameters<typeof makeTap>[0];
@@ -108,14 +108,16 @@ function effects(view: UseView, use: PowerUse, asked?: { normal: number; aggrava
   if (use.mend) found.push(...(aggravated > 0 ? convert(Math.min(use.mend, aggravated)) : heal("normal", Math.min(use.mend, normal))));
   for (const g of use.gains) {
     const t = g.tracker === "blood" ? view.blood : view.willpower;
-    if (t.value < t.most) found.push({ kind: "change", tracker: g.tracker, amount: Math.min(g.amount, t.most - t.value) });
+    // Mantle of Sutekh's tithes are kept even past the pool while it lasts (#854).
+    if (g.tracker === "blood" && use.over && bloodOver(view)) found.push({ kind: "change", tracker: g.tracker, amount: g.amount });
+    else if (t.value < t.most) found.push({ kind: "change", tracker: g.tracker, amount: Math.min(g.amount, t.most - t.value) });
   }
   return found;
 }
 
-/** The ghoul Retainers damage can be moved onto (Beast's Vigor): those with health left. */
-export function ghouls(view: UseView): NonNullable<PlayView["retainers"]> {
-  return (view.retainers ?? []).filter((r) => r.blood && r.health.value > 0);
+/** The ghoul Retainers damage can be moved onto: those with health left, and animals only where the use says (#854: Beast's Vigor). */
+export function ghouls(view: UseView, use?: Pick<PowerUse, "animal">): NonNullable<PlayView["retainers"]> {
+  return (view.retainers ?? []).filter((r) => r.blood && r.health.value > 0 && (!use?.animal || r.animal));
 }
 
 /**
@@ -128,7 +130,7 @@ export function effectTaps(view: UseView, use: PowerUse, power: string, opts: { 
   if (!canPay(view, use) || !canSpend(view, use, opts.spend)) return [];
   const made: TapWhat[] = [...effects(view, use, opts.asked)];
   if (use.retainer && opts.retainer) {
-    const r = ghouls(view).find((g) => g.key === opts.retainer);
+    const r = ghouls(view, use).find((g) => g.key === opts.retainer);
     const { normal, aggravated } = marked(view);
     const n = r ? Math.min(use.retainer, r.health.value, normal + aggravated) : 0;
     if (n > 0) made.push(...healWorst(view, n), { kind: "change", tracker: `${r!.key}/health`, amount: -n });

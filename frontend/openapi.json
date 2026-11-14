@@ -16700,6 +16700,30 @@
         "title": "DisciplinePowers",
         "type": "object"
       },
+      "DisciplineRaise": {
+        "description": "Dots a switch adds to a discipline the character has, never past 5 (issue #849:\nMercurial Vitality's Potence and Fortitude, core p. 229). The powers gained hold\nwhile it is on: their pool and damage changes count as the switch's.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "discipline": {
+            "title": "Discipline",
+            "type": "string"
+          },
+          "to": {
+            "default": 0,
+            "title": "To",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "discipline",
+          "amount"
+        ],
+        "title": "DisciplineRaise",
+        "type": "object"
+      },
       "DiscordAccount": {
         "properties": {
           "available": {
@@ -38552,6 +38576,11 @@
             "title": "Blood Half",
             "type": "boolean"
           },
+          "blood_over": {
+            "default": false,
+            "title": "Blood Over",
+            "type": "boolean"
+          },
           "blood_per_turn": {
             "default": 0,
             "title": "Blood Per Turn",
@@ -38577,6 +38606,14 @@
             "default": false,
             "title": "Counts As Form",
             "type": "boolean"
+          },
+          "disciplines": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DisciplineRaise"
+            },
+            "title": "Disciplines",
+            "type": "array"
           },
           "fixed": {
             "default": [],
@@ -38726,6 +38763,14 @@
             "default": 0,
             "title": "Turned On",
             "type": "integer"
+          },
+          "waives": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Waives",
+            "type": "array"
           }
         },
         "required": [
@@ -38741,6 +38786,11 @@
       "PowerUse": {
         "description": "A use of a power that changes the trackers besides spending its cost (issue\n#825): a button of its own on the Pools tab, made of ordinary taps with Undo.",
         "properties": {
+          "animal": {
+            "default": false,
+            "title": "Animal",
+            "type": "boolean"
+          },
           "beast": {
             "default": 0,
             "title": "Beast",
@@ -38840,6 +38890,11 @@
               }
             ],
             "title": "Once"
+          },
+          "over": {
+            "default": false,
+            "title": "Over",
+            "type": "boolean"
           },
           "page": {
             "anyOf": [
@@ -44011,6 +44066,11 @@
       },
       "RetainerIn": {
         "properties": {
+          "animal": {
+            "default": false,
+            "title": "Animal",
+            "type": "boolean"
+          },
           "description": {
             "default": "",
             "maxLength": 500,
@@ -44111,6 +44171,11 @@
       },
       "RetainerOut": {
         "properties": {
+          "animal": {
+            "default": false,
+            "title": "Animal",
+            "type": "boolean"
+          },
           "away": {
             "default": false,
             "title": "Away",
@@ -44468,6 +44533,11 @@
       "RetainerTrackOut": {
         "description": "One Retainer's health levels and (a ghoul's) Blood at this game, tapped as\n\"<key>/health\" and \"<key>/blood\" (horatio.play).",
         "properties": {
+          "animal": {
+            "default": false,
+            "title": "Animal",
+            "type": "boolean"
+          },
           "blood": {
             "anyOf": [
               {

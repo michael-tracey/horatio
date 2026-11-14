@@ -198,6 +198,8 @@ class RetainerTrack:
     name: str
     health: int
     blood: int
+    # An animal (issue #854): only an animal ghoul takes Beast's Vigor's damage.
+    animal: bool = False
 
     def trackers(self) -> dict[str, int]:
         found = {f"{self.key}/health": self.health}
@@ -416,6 +418,16 @@ class Limits:
         counting = self.counting(on)
         half = sum(-(-self.blood // 2) for s in counting if s.blood_half)
         return self.blood + half + sum(s.blood_extra for s in counting)
+
+    def blood_over(self, on: Sequence[str] = ()) -> bool:
+        """Whether a power on lets Blood go past the pool (issue #854: Mantle of
+        Sutekh's tithes, Vol. 2 p. 240), until it ends."""
+        return any(s.blood_over for s in self.counting(on))
+
+    def blood_top(self, on: Sequence[str] = ()) -> int | None:
+        """The most Blood can stand at now: the pool, or no limit while a power on
+        lets it go past (what its uses gained over the pool is kept until it ends)."""
+        return None if self.blood_over(on) else self.blood_most(on)
 
     def blood_per_turn_now(self, on: Sequence[str] = ()) -> int:
         return self.blood_per_turn + sum(s.blood_per_turn for s in self.counting(on))
@@ -998,6 +1010,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
                 name=r.name or (r.given.kind if r.given else ""),
                 health=r.dots,
                 blood=retainers.GHOUL_BLOOD if r.ghoul else 0,
+                animal=r.animal,
             )
             for r in retainers.read(db, character)
         ),
@@ -1051,9 +1064,17 @@ def switch_off(
         on.remove(k)
     # Using it again means picking its qualities again (Vol. 2 p. 232).
     state.get("picked", {}).pop(key, None)
-    state["blood"] = min(state["blood"], limits.blood_most(on))
+    trim_blood(state, limits, on)
     if said is not None and lost:
         said.append(f"{lost} damage in its levels gone")
+
+
+def trim_blood(state: dict[str, Any], limits: Limits, on: Sequence[str]) -> None:
+    """Blood over the most it can stand at goes, as when a power that raised the pool
+    ends; Blood a power keeps past the pool stays while that power is on (#854)."""
+    top = limits.blood_top(on)
+    if top is not None:
+        state["blood"] = min(state["blood"], top)
 
 
 def lose_levels(state: dict[str, Any], limits: Limits, keys: Collection[str]) -> int:
@@ -1160,7 +1181,7 @@ def pick(
         lost = lose_levels(state, limits, gone)
         for k in gone:
             on.remove(k)
-        state["blood"] = min(state["blood"], limits.blood_most(on))
+        trim_blood(state, limits, on)
         if said is not None and lost:
             said.append(f"{lost} damage in its levels gone")
     added = f"{switch.key}/{option.name}"
@@ -1239,6 +1260,10 @@ def apply(
         return change_vitae(state, limits.vitae, event.amount)
     if event.tracker in TRACKERS:
         before = state[event.tracker]
+        if event.tracker == "blood" and limits.blood_over(state.get("on", [])):
+            # Kept past the pool while the power lasts (#854); a tap made while the
+            # Blood stands over the pool takes nothing more than it brings.
+            most = max(most, before + max(event.amount, 0))
         state[event.tracker] = max(limits.least(event.tracker), min(before + event.amount, most))
         return before, state[event.tracker]
     before = state["uses"].get(event.tracker, most)

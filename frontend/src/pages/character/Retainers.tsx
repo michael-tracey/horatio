@@ -29,9 +29,11 @@ type Draft = {
   lost_on: string;
   npc_id: string;
   ghoul: boolean;
+  // An animal (#854: Beast's Vigor moves damage onto animal ghouls only).
+  animal: boolean;
   specialties: string[];
   discipline: string;
-  // Given by its merit's rules: its dots, kind and being a ghoul are the merit's.
+  // Given by its merit's rules: its dots, kind, being a ghoul and an animal are the merit's.
   given: boolean;
   kind: string;
   given_disciplines: string[];
@@ -48,6 +50,7 @@ const blank = (merit: string): Draft => ({
   lost_on: "",
   npc_id: "",
   ghoul: false,
+  animal: false,
   specialties: [],
   discipline: "",
   given: false,
@@ -66,6 +69,7 @@ const draftOf = (r: RetainerOut): Draft => ({
   lost_on: r.lost_on ?? "",
   npc_id: r.npc_id ?? "",
   ghoul: r.ghoul,
+  animal: r.animal ?? false,
   specialties: r.specialties,
   discipline: r.discipline,
   given: r.given ?? false,
@@ -111,6 +115,7 @@ function RetainerLine({ retainer: r, onClear }: { retainer: RetainerOut; onClear
       <span className="text-gold"> · {r.dots}</span>
       {r.given && r.name && r.kind && <span className="text-mist"> · {r.kind.toLowerCase()}</span>}
       {r.ghoul && !(r.given && /ghoul/i.test(r.kind ?? "")) && <span className="text-mist"> · ghoul</span>}
+      {r.animal && !(r.given && /animal/i.test(r.kind ?? "")) && <span className="text-mist"> · animal</span>}
       {retainerSource(r) && <span className="text-mist"> · {retainerSource(r)}</span>}
       {specialtiesOf(r) && <span className="text-mist"> · {specialtiesOf(r)}</span>}
       {r.lost && (
@@ -247,6 +252,7 @@ function RetainerEditor({ character, draft: first, onDone }: { character: Charac
           lost_on: d.lost ? d.lost_on || null : null,
           npc_id: d.npc_id || null,
           ghoul: d.ghoul,
+          animal: d.animal,
           specialties: d.specialties,
           discipline: d.ghoul || d.given_disciplines.length ? d.discipline : "",
         },
@@ -379,6 +385,10 @@ function Specialties({
           onChange={(e) => onChange({ ghoul: e.target.checked, discipline: e.target.checked ? draft.discipline : "" })}
         />
         Ghoul
+      </label>
+      <label className="flex items-center gap-1 text-mist">
+        <input type="checkbox" aria-label={`${label} is an animal`} checked={draft.animal} disabled={draft.given} onChange={(e) => onChange({ animal: e.target.checked })} />
+        Animal
       </label>
       <span className={taken > draft.dots ? "text-blood-bright" : "text-mist"}>
         Specialties {taken} of {draft.dots}:
