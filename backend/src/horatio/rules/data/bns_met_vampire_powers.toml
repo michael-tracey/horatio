@@ -53,6 +53,15 @@
 #   - `qualities = [{ kind, name, focus? }]`: equipment qualities it gives every
 #     time it is on, without picking (#820: Armor of Terra's Hardened and Ballistic),
 #     counted as picked ones are.
+#   `kept = true` makes it last until undone rather than until the game ends (issue
+#   #822): it is kept through Reset until the player turns it off (a removed heart,
+#   a reshaped face), and using it again while it is on replaces it, as a character
+#   carries one application at a time. Never a form. `normal_form_only = true`
+#   pauses what it does while a form is on (core pp. 168-169: Vicissitude changes
+#   don't carry into a transformed shape). `counts_as_form = true` makes it take one
+#   of the forms Ravenous Conglomeration allows at once while it is kept (Vol. 2
+#   p. 249). A frenzy `pools` entry with a switch's `when` counts its `beast` only
+#   while that switch is on.
 # `notes` (on a discipline, power or [[others]] entry): what it adds to another
 #   entry's switch while the character has it (issue #601), shown with that switch
 #   under its own name and page: [{ when, note, page, book?, focus?, choice? }],
@@ -913,6 +922,10 @@ level = 5
 name = "Heart of Darkness"
 note = "1 Blood and an hour's ritual on a new moon: remove a willing vampire's heart (your own too), safe from staking."
 focus = { Charisma = "Any night, and on an unwilling vampire in torpor." }
+# Core p. 161: the heart stays out until it is put back with another use, so the
+# switch is kept through Reset.
+active = { key = "Heart removed", name = "Heart of Darkness: heart removed", kept = true, page = 161, notes = ["You can't be staked.", "Your heart can be: staked, it paralyses you; fire or sunlight on it destroys you."] }
+pools = [{ pool = "frenzy", beast = -1, when = "Heart removed" }]
 
 [[disciplines]]
 name = "Temporis"
@@ -2754,7 +2767,7 @@ active = { key = "Maw of the Anaconda", page = 72, book = "Vol. 2 Issue 1", note
 category = "techniques"
 name = "Mortician's Secret"
 needs = { discipline = "Thanatosis", level = 1 }
-active = { key = "Mortician's Secret", page = 73, book = "Vol. 2 Issue 1", qualities = [{ kind = "protective", name = "Chest Plate" }], picks = { kind = "protective", count = 1 }, notes = ["Always on through Hag's Wrinkles: pick one of Ballistic, Hardened, Impact Absorption or Rugged.", "Changing the one picked, or mending it, takes three standard actions in a row."] }
+active = { key = "Mortician's Secret", kept = true, page = 73, book = "Vol. 2 Issue 1", qualities = [{ kind = "protective", name = "Chest Plate" }], picks = { kind = "protective", count = 1 }, notes = ["Always on through Hag's Wrinkles: pick one of Ballistic, Hardened, Impact Absorption or Rugged.", "Changing the one picked, or mending it, takes three standard actions in a row."] }
 
 # Vol. 2 Issue 1 p. 76 (#820): 1 Blood and a simple action, then Brawl attacks like
 # Fleshcraft's: 1 damage that nothing reduces (2 on an exceptional success), 1 more

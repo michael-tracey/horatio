@@ -8,16 +8,19 @@ import { LoaderMark, loaders } from "../../loaders/art";
 import { MOTIFS, motifFor, rememberMotif, type Motif, type MotifsBySplat } from "../../loaders/motifs";
 import { SplashScreen } from "../../loaders/splash";
 import { useAppearance } from "../../loaders/useMotif";
+import { EmailDesignCard } from "./EmailDesign";
 import { DiscordCard, MailCard } from "./SiteServices";
 
 /** The site as a whole (#790): what everyone sees that only the custodian chooses,
- * mail and Discord (#833, #834), and what is running. Was the Settings and System tabs. */
+ * mail, its design and Discord (#833, #830, #834), and what is running. Was the Settings
+ * and System tabs. */
 export function SiteTab() {
   const appearance = useAppearance();
   return (
     <div className="flex flex-col gap-6">
       <Loaded query={appearance}>{(found) => <LoadingAnimationCard bySplat={found.loading_animation} />}</Loaded>
       <MailCard />
+      <EmailDesignCard />
       <DiscordCard />
       <WhatIsRunningCard />
     </div>

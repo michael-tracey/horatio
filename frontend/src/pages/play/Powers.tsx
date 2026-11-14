@@ -1,6 +1,6 @@
 import type { PowerSwitch } from "../../api/types";
 import { pageLabel } from "../../components/TraitInfo";
-import { addedNote, formsOn, pickKey, switchKey, withPicks } from "./powers";
+import { addedNote, formsOn, isPaused, pickKey, switchKey, withPicks } from "./powers";
 import type { makeTap } from "./tracker";
 
 type Tap = (what: Parameters<typeof makeTap>[0]) => void;
@@ -51,7 +51,21 @@ function Picks({ power, tap }: { power: PowerSwitch; tap: Tap }) {
   );
 }
 
-function Row({ power, tap }: { power: PowerSwitch; tap: Tap }) {
+/**
+ * What a kept power (issue #822) says beside it: kept through Reset until it is
+ * turned off, and paused while a form is on for one that changes the normal form only.
+ */
+function KeptNote({ power, paused }: { power: PowerSwitch; paused: boolean }) {
+  if (!power.kept) return null;
+  return (
+    <>
+      <span className="block text-xs text-mist">{power.on ? "Kept through Reset until you turn it off." : "Lasts until undone: kept through Reset until you turn it off."}</span>
+      {paused && <span className="block text-xs text-gold">Paused while you're in a form: it changes your normal form only.</span>}
+    </>
+  );
+}
+
+function Row({ power, tap, paused }: { power: PowerSwitch; tap: Tap; paused: boolean }) {
   return (
     <li className="py-2">
       <label className="flex min-h-10 items-start gap-3">
@@ -65,6 +79,7 @@ function Row({ power, tap }: { power: PowerSwitch; tap: Tap }) {
         <span className="min-w-0">
           <span className={power.on ? "text-parchment" : "text-mist"}>{power.name}</span>
           {power.changes.length > 0 && <span className="block text-xs text-parchment/80">{power.changes.join(" · ")}</span>}
+          <KeptNote power={power} paused={paused} />
           {power.notes.map((n) => (
             <span key={n} className="block text-xs text-mist">
               {n}
@@ -109,7 +124,7 @@ export function PowersList({ powers, forms: atOnce = 1, tap }: { powers: PowerSw
           </p>
           <ul className="divide-y divide-ash/60" aria-label="Forms">
             {forms.map((p) => (
-              <Row key={p.key} power={p} tap={tap} />
+              <Row key={p.key} power={p} tap={tap} paused={false} />
             ))}
           </ul>
         </>
@@ -117,7 +132,7 @@ export function PowersList({ powers, forms: atOnce = 1, tap }: { powers: PowerSw
       {others.length > 0 && (
         <ul className="divide-y divide-ash/60 border-t border-ash/60" aria-label="Powers">
           {others.map((p) => (
-            <Row key={p.key} power={p} tap={tap} />
+            <Row key={p.key} power={p} tap={tap} paused={isPaused({ powers }, p)} />
           ))}
         </ul>
       )}
@@ -166,8 +181,9 @@ export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap 
             <li key={p.key} className={`flex items-start justify-between gap-3 ${brief ? "" : "py-0.5"}`}>
               <div className="min-w-0">
                 <p>
-                  <span className="text-mist">On: </span>
+                  <span className="text-mist">{p.kept ? "Kept: " : "On: "}</span>
                   {withPicks(p)}
+                  {isPaused({ powers }, p) && <span className="text-xs text-gold"> (paused while in a form)</span>}
                 </p>
                 {!brief && p.notes.length > 0 && <p className="text-xs text-mist">{p.notes.join(" ")}</p>}
                 {!brief &&

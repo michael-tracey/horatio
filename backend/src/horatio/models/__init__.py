@@ -71,6 +71,7 @@ from horatio.models.people import (
 from horatio.models.play import (
     PlayCounter,
     PlayDerangement,
+    PlayEffect,
     PlayEvent,
     PlayGame,
     PoolModifier,
@@ -190,6 +191,7 @@ __all__ = [
     "PlayCounter",
     "PoolModifier",
     "PlayDerangement",
+    "PlayEffect",
     "PlayEvent",
     "PlayGame",
     "Question",

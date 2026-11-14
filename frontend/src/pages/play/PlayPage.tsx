@@ -19,7 +19,7 @@ import { Frenzy } from "./Frenzy";
 import { frenzyNumbers } from "./frenzy";
 import { trackersOf } from "./pools";
 import { KindBadge } from "../character/NpcKindBadge";
-import { bloodPerTurn, boxes, healthMost } from "./powers";
+import { bloodPerTurn, boxes, healthMost, onKeys } from "./powers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { PlayBondReports } from "../character/BondReports";
@@ -253,12 +253,12 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
                   value={shown.beast.value}
                   most={shown.beast.most}
                   spendIsUp
-                  warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality, reference && frenzyNumbers(reference.frenzy, shown.willpower.value, shown.beast.value, shown.morality).against)} />}
+                  warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality, reference && frenzyNumbers(reference.frenzy, shown.willpower.value, shown.beast.value, shown.morality, onKeys(shown)).against)} />}
                   record={record}
                   small
                 />
               )}
-              {shown.panels.frenzy && <Frenzy resist={reference?.frenzy} willpower={shown.willpower.value} beast={shown.beast.value} morality={shown.morality} />}
+              {shown.panels.frenzy && <Frenzy resist={reference?.frenzy} willpower={shown.willpower.value} beast={shown.beast.value} morality={shown.morality} on={onKeys(shown)} />}
               <Derangements view={shown} record={record} tap={tap} />
             </div>
           </div>

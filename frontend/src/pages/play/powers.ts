@@ -42,9 +42,23 @@ export function withPicks(power: Pick<PowerSwitch, "name" | "picked">): string {
   return picked.length ? `${power.name} (${picked.join(", ")})` : power.name;
 }
 
-/** The keys of the forms and powers on now. */
+/**
+ * A kept power changes the normal form only (issue #822: Malleable Visage,
+ * Bonecraft, core pp. 168-169): while a form is on, what it does is paused, and it
+ * comes back when the form ends. True for one on that a form pauses now.
+ */
+export function isPaused(view: Pick<PlayView, "powers">, power: Pick<PowerSwitch, "on" | "normal_form_only">): boolean {
+  return Boolean(power.on && power.normal_form_only && view.powers.some((p) => p.on && p.form));
+}
+
+/** The forms and powers on whose effects count now: on, and not paused by a form. */
+export function counted(view: Pick<PlayView, "powers">): PowerSwitch[] {
+  return view.powers.filter((p) => p.on && !isPaused(view, p));
+}
+
+/** The keys of the forms and powers on now whose effects count. */
 export function onKeys(view: Pick<PlayView, "powers">): string[] {
-  return view.powers.filter((p) => p.on).map((p) => p.key);
+  return counted(view).map((p) => p.key);
 }
 
 /** The forms on now: usually none or one, two with Ravenous Conglomeration. */
@@ -58,7 +72,7 @@ export type Box = { level: string; from: PowerSwitch | null };
 /** Every wound box, in the order damage fills them. */
 export function boxes(view: Pick<PlayView, "health" | "powers">): Box[] {
   const found: Box[] = [];
-  const on = view.powers.filter((p) => p.on);
+  const on = counted(view);
   for (const level of view.health.levels) {
     for (let i = 0; i < level.boxes; i++) found.push({ level: level.name, from: null });
     for (const p of on) for (const h of p.health) if (h.level === level.name) for (let i = 0; i < h.boxes; i++) found.push({ level: level.name, from: p });
@@ -70,12 +84,12 @@ export const healthMost = (view: Pick<PlayView, "health" | "powers">) => boxes(v
 
 /** The most Blood: half again (rounded up) with Blood of Potency on. */
 export function bloodMost(view: Pick<PlayView, "blood_usual" | "powers">): number {
-  return view.blood_usual + view.powers.filter((p) => p.on && p.blood_half).reduce((sum) => sum + Math.ceil(view.blood_usual / 2), 0);
+  return view.blood_usual + counted(view).filter((p) => p.blood_half).reduce((sum) => sum + Math.ceil(view.blood_usual / 2), 0);
 }
 
 /** Blood a turn, with what the powers on add. */
 export function bloodPerTurn(view: Pick<PlayView, "blood_per_turn" | "powers">): number {
-  return view.blood_per_turn + view.powers.filter((p) => p.on).reduce((sum, p) => sum + p.blood_per_turn, 0);
+  return view.blood_per_turn + counted(view).reduce((sum, p) => sum + p.blood_per_turn, 0);
 }
 
 function switchOff(view: PlayView, power: PowerSwitch, said: string[]) {
@@ -115,7 +129,10 @@ export function applySwitch(view: PlayView, key: string, amount: number, said: s
   const power = view.powers.find((p) => p.key === key);
   if (!power) return null;
   const before = power.on ? 1 : 0;
-  if (amount > 0 && !power.on) {
+  if (amount > 0 && power.on && power.kept) {
+    // Used again: it replaces the one on, as a character carries one at a time (#822).
+    said.push("replaces the one on before");
+  } else if (amount > 0 && !power.on) {
     if (power.form) {
       for (const other of formsDisplaced(view, power)) {
         said.push(`out of ${other.name}`);

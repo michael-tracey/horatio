@@ -267,7 +267,7 @@ Everything since that backup is lost, so make a fresh backup with **Back up now*
 
 ## Site
 
-**Custodian › Site** holds what's the same for everyone on the server: the loading animation, mail and Discord. It also shows what's running. It used to be two tabs, Settings and System; their old links still land here.
+**Custodian › Site** holds what's the same for everyone on the server: the loading animation, mail, how emails look, and Discord. It also shows what's running. It used to be two tabs, Settings and System; their old links still land here.
 
 ![The loading animation on the Site tab](images/custodian/site-loading-animation.png)
 
@@ -294,6 +294,18 @@ The **Mail** card says whether Horatio can send email, and if not, which setting
 - **Mail that failed lately:** downtime results and quests' news sent by email that failed or are being tried again, and notification emails Horatio gave up on. Each says when and why. Open one to see it where it lives, or choose **Retry** for one Horatio gave up on.
 
 The server, username and password stay in `deploy/production.env`: change them there, then redeploy with `deploy/deploy.sh --no-build`.
+
+### Email design
+
+The **Email design** card sets how every email Horatio sends looks: password resets, email changes, suspensions, notifications and the daily digest, account merges, and downtime results and quests' news. Each email goes as a formatted email with a plain-text version beside it, for mail apps that want only text.
+
+- **Header:** the site's name, on a header colour with a text colour, or a **header picture** in its place, such as a logo. The picture is made at most 1200 × 400 px and kept small, as a PNG (if it has transparency) or a JPEG, never WebP, which some mail apps can't show. It travels inside every email, so it shows without signing in, and Horatio never learns who opened one. Where a mail app blocks pictures, the site's name shows instead. A picture too detailed to make small enough is refused, with the reason.
+- **Accent:** for buttons and the line under the header. Links use it too, darkened where they must be to read on white.
+- **Footer:** a few lines of your own, up to 1,000 characters, such as who runs this Horatio and how to reach them. **Bold**, *italic*, [links](https://example.org) and bare links work. Under it, each email still says why it came and how to stop it, and "Sent by Horatio" with the site's address: your footer can't remove those.
+- **Preview:** a sample email as a mail app shows it, **Light** or **Dark**, at **Phone** or **Desktop** width, and as **Plain text**.
+- **Send me this email:** sends the sample to your own address, to see it in your own mail app. It shows only while mail is set up.
+
+Leave a box as it was to keep Horatio's own: its name, night and gold. **Put back Horatio's name and colours** does that for all of them at once. The card warns when the header's text is hard to read on its colour. Each change goes in the audit log.
 
 ### Discord
 

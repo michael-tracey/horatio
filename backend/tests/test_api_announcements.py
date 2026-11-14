@@ -20,7 +20,7 @@ from tests import test_api_posts, test_discord_connector
 from tests.api_helpers import Person, Troupe
 from tests.test_api_posts import News, bell, on_discord, png, send_all
 from tests.test_discord_connector import OPEN_CHANNEL, TEST_CHANNEL, FakeDiscord
-from tests.test_email_connector import FakeSMTP
+from tests.test_email_connector import FakeSMTP, text_of
 
 # The fake Discord and mail server, for the tests here that use them.
 fake_discord = test_discord_connector.fake_discord
@@ -273,7 +273,7 @@ def test_an_important_announcement_emails_even_those_who_turned_it_off(
 
     [sent] = [m for m in mail.sent if troupe.player.email in str(m["To"])]
     assert "Announcement: Venue closed tonight" in str(sent["Subject"])
-    assert "Its staff marked this important" in sent.get_content()
+    assert "Its staff marked this important" in text_of(sent)
     assert "lead sent the announcement “Venue closed tonight” as important, emailing everyone" in (
         " ".join(board.log())
     )

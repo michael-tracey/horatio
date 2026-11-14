@@ -94,6 +94,7 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
                     Health {c.health_marked}/{c.health_boxes} marked
                   </Badge>
                 </span>
+                {(c.effects ?? []).length > 0 && <span className="basis-full text-xs text-parchment/80">Kept until undone: {(c.effects ?? []).join(", ")}</span>}
                 <LinesVeilsNote value={c.lines_veils} who={c.player_name} className="basis-full text-xs text-parchment/80" />
               </li>
             ))}
