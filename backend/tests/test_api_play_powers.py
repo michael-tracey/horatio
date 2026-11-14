@@ -364,6 +364,40 @@ def test_only_its_own_kind_of_quality_is_picked(troupe: Troupe, marble: str) -> 
     ]
 
 
+def test_a_power_gives_its_own_qualities_every_time_it_is_on(
+    troupe: Troupe, session: Session
+) -> None:
+    """Issue #820: Armor of Terra's stone skin is Hardened and Ballistic (core p. 171)
+    without picking, and Mortician's Secret's Chest Plate comes with the one quality
+    picked (Vol. 2 Issue 1 p. 73). What they do counts as a picked quality's does."""
+    character_id = new_character(troupe, troupe.player, "Gargoyle")
+    give(session, character_id, "disciplines", "Visceratika", 4)
+    give(session, character_id, "disciplines", "Thanatosis", 1)
+    give(session, character_id, "techniques", "Mortician's Secret", None)
+
+    found = powers(view(troupe.player, character_id))
+    terra = found["Armor of Terra"]
+    assert [o["name"] for o in terra["fixed"]] == ["Hardened", "Ballistic"]
+    assert terra["changes"] == ["Hardened, Ballistic"]
+    assert (terra["picks"], terra["options"]) == (None, [])
+    hardened = terra["fixed"][0]
+    assert [(m["label"], m["amount"], m["when"]) for m in hardened["modifiers"]] == [
+        ("Armor of Terra: Hardened", 3, "against Brawl, Melee and thrown weapons"),
+        ("Armor of Terra: Hardened", 1, "against firearms"),
+    ]
+    assert found["Mortician's Secret"]["fixed"][0]["name"] == "Chest Plate"
+    assert found["Mortician's Secret"]["picks"] == {"kind": "protective", "count": 1}
+    state = send(
+        troupe.player,
+        character_id,
+        tap("power:Mortician's Secret", 1),
+        tap("pick:Mortician's Secret/Rugged", 1, at=1),
+    )
+    secret = powers(state)["Mortician's Secret"]
+    assert (secret["on"], secret["picked"]) == (True, ["Rugged"])
+    assert [o["name"] for o in secret["fixed"]] == ["Chest Plate"]
+
+
 # --- Choices made when buying a power ----------------------------------------
 
 

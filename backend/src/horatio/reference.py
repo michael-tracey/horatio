@@ -79,8 +79,10 @@ COMBAT_SKILLS = ("Brawl", "Dodge", "Firearms", "Melee")
 POWER_CATEGORIES = ("elder_disciplines", "luminary_disciplines")
 BOOK = "core"
 # How the summary of a switch names each pool family.
-# Amounts the Play View's trackers hold, which it counts (TrackedPart).
-TRACKED = ("morality_less_beast",)
+# Amounts the Play View's trackers hold, which it counts (TrackedPart): current
+# Morality less current Beast traits, and current Derangement traits.
+TRACKED = ("morality_less_beast", "derangements")
+Tracked = Literal["morality_less_beast", "derangements"]
 POOL_WORDS = {
     "initiative": "initiative",
     "dodge": "Dodge",
@@ -139,10 +141,11 @@ class Damage(BaseModel):
 
 class TrackedPart(BaseModel):
     """A part of a variant the Play View's trackers hold, so the page counts it
-    (issue #602): Rampart of Faith adds current Morality minus current Beast traits."""
+    (issue #602): Rampart of Faith adds current Morality minus current Beast traits,
+    Manic Episode current Derangement traits (#820)."""
 
     label: str
-    tracks: Literal["morality_less_beast"]
+    tracks: Tracked
 
 
 class VariantQuality(BaseModel):
@@ -278,6 +281,16 @@ class Picks(BaseModel):
     count: int
 
 
+class SwitchQuality(BaseModel):
+    """An equipment quality a switch gives while it is on (#820): Armor of Terra's
+    Hardened and Ballistic. What it does to the pools counts as a picked quality's
+    does (horatio.play)."""
+
+    # The kind of equipment it is a quality of: "protective", "melee".
+    kind: str
+    name: str
+
+
 class Switch(BaseModel):
     """A form or power the Play View can switch on while the character has it
     (issue #200). Forms are transformative: only one is on at a time (core
@@ -307,6 +320,8 @@ class Switch(BaseModel):
     # The Blood pool is half again as big (rounded up) while it is on.
     blood_half: bool = False
     picks: Picks | None = None
+    # Qualities it gives every time, without picking.
+    qualities: list[SwitchQuality] = []
 
 
 class Frenzy(BaseModel):
@@ -387,7 +402,7 @@ class Effect:
     # For frenzy: Beast traits it counts as more (or fewer, below 0).
     beast: int = 0
     # An amount the Play View's trackers hold, which it counts (TrackedPart).
-    tracks: Literal["morality_less_beast"] | None = None
+    tracks: Tracked | None = None
     # Another pool to use in place of this one: Physical + Survival (Rockheart).
     alternative: tuple[PoolPart, ...] = ()
     # Whom it holds against, with a switch: a line of its own under the pool while
@@ -1127,6 +1142,8 @@ def _changes(
         reduced = "" if hurt.reducible else " that nothing reduces"
         lines.append(f"{t.name} in Combat: {hurt.total} {kind}{reduced}")
     lines += [f"The {focus} focus" for focus in switch.focuses]
+    if switch.qualities:
+        lines.append(", ".join(q.name for q in switch.qualities))
     if switch.blood_per_turn:
         lines.append(f"{_signed(switch.blood_per_turn)} Blood a turn")
     if switch.blood_half:
@@ -1166,6 +1183,11 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
         blood_per_turn=blood.get("per_turn", 0),
         blood_half=blood.get("most") == "half",
         picks=Picks(**active["picks"]) if "picks" in active else None,
+        qualities=[
+            SwitchQuality(kind=q["kind"], name=q["name"])
+            for q in active.get("qualities", [])
+            if holds(q)
+        ],
     )
 
 

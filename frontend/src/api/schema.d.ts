@@ -27292,6 +27292,11 @@ export interface components {
              */
             combines: string[];
             /**
+             * Fixed
+             * @default []
+             */
+            fixed: components["schemas"]["PickOptionOut"][];
+            /**
              * Focuses
              * @default []
              */
@@ -27332,6 +27337,11 @@ export interface components {
              */
             picked: string[];
             picks?: components["schemas"]["Picks"] | null;
+            /**
+             * Qualities
+             * @default []
+             */
+            qualities: components["schemas"]["SwitchQuality"][];
             /**
              * Turned On
              * @default 0
@@ -31944,6 +31954,18 @@ export interface components {
             level: string;
         };
         /**
+         * SwitchQuality
+         * @description An equipment quality a switch gives while it is on (#820): Armor of Terra's
+         *     Hardened and Ballistic. What it does to the pools counts as a picked quality's
+         *     does (horatio.play).
+         */
+        SwitchQuality: {
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /**
          * SwitchedDamage
          * @description What a switch does to an attack's damage while it is on.
          */
@@ -32877,16 +32899,17 @@ export interface components {
         /**
          * TrackedPart
          * @description A part of a variant the Play View's trackers hold, so the page counts it
-         *     (issue #602): Rampart of Faith adds current Morality minus current Beast traits.
+         *     (issue #602): Rampart of Faith adds current Morality minus current Beast traits,
+         *     Manic Episode current Derangement traits (#820).
          */
         TrackedPart: {
             /** Label */
             label: string;
             /**
              * Tracks
-             * @constant
+             * @enum {string}
              */
-            tracks: "morality_less_beast";
+            tracks: "morality_less_beast" | "derangements";
         };
         /** Tracker */
         Tracker: {

@@ -502,6 +502,8 @@ The **Pools** tab works out the character's test pools from its sheet: attacks, 
 
 **Forms, powers and modifiers**, at the foot of the screen, opens a drawer of switches: the forms and powers in use, the equipment the character has equipped, and modifiers of your own. The pools count whatever is switched on.
 
+A power that lasts a while (an hour of Armor of Terra, a turn of Split Second) is a switch that says how long it lasts and what it does; the Play View doesn't time it, so switch it off when it ends. One that gives equipment qualities, such as Armor of Terra's Hardened and Ballistic, counts them under the defences while it's on, as worn gear's do. One that attacks through a test of its own, such as Fleshcraft, adds its attack to the Combat pools while it's on.
+
 #### Equipment at game
 
 The **Equipment** tab shows what the character carries, weapons first, each with what its qualities do in play. You can give an item to another character or discard it from here; it's listed under what was given or discarded this game, with **Undo**.
