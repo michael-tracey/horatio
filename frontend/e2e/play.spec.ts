@@ -587,6 +587,48 @@ test("uses that heal: Mens Sana heals 1 normal for 1 Blood, and Second Wind turn
   await expect.poll(async () => (await play()).blood.value).toBe(blood.value - 1);
 });
 
+test("Mantle of Sutekh's tithes are kept past the Blood pool while it lasts, and go when it ends (#854)", async ({ browser }) => {
+  const { page: p } = await person(browser, "sutekh-tither");
+  // A Follower of Set luminary (Generation 5) with Serpentis 5 and Mantle of Sutekh (Vol. 2 pp. 239-240).
+  const id = await builtVampire(
+    p,
+    "Khaemwaset",
+    "Followers of Set",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Obfuscate", 2], ["Presence", 1], ["Serpentis", 1]] },
+    [
+      ["backgrounds", "Generation", 4],
+      ["backgrounds", "Generation", 5],
+      ["disciplines", "Serpentis", 5],
+      ["luminary_disciplines", "Serpentis: Mantle of Sutekh", 1],
+    ],
+  );
+  const play = async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { blood: { value: number; most: number } };
+  const { blood } = await play();
+  // A full pool to start from.
+  const fill = { id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: "blood", amount: blood.most };
+  const sent = await p.request.post(`/api/characters/${id}/play/taps`, { headers: { "X-Horatio": "1" }, data: { taps: [fill] } });
+  expect(sent.status(), await sent.text()).toBeLessThan(300);
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await p.getByLabel("Serpentis: Mantle of Sutekh on").check();
+  await p.keyboard.press("Escape");
+
+  // Two tithes from a full pool: kept past it.
+  const tithe = p.getByRole("button", { name: /Mantle of Sutekh: Tithe: \+1 Blood/ });
+  await tithe.click();
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.most + 1);
+  await tithe.click();
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.most + 2);
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await expect(p.getByLabel(`Blood: ${blood.most + 2} of ${blood.most}`)).toBeVisible();
+
+  // Its end takes the Blood over the pool, unspent.
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await p.getByLabel("Serpentis: Mantle of Sutekh on").uncheck();
+  await expect.poll(async () => (await play()).blood.value).toBe(blood.most);
+});
+
 test("a power kept until undone: Heart of Darkness's heart stays out through Reset until it is turned off, and Use again asks first (#822)", async ({ browser }) => {
   const { page: p } = await person(browser, "heart-keeper");
   // A Follower of Set with Serpentis 5: Heart of Darkness (core p. 161).

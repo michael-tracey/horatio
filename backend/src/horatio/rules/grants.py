@@ -75,7 +75,8 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
                  built at `amount` dots (Ardent Companion: a ghouled animal at 7),
                  listed with the character's Retainers (horatio.retainers). The
                  target names the Retainers background, and says what it is
-                 (`kind`), whether it is a `ghoul`, the `disciplines` its specialty
+                 (`kind`), whether it is a `ghoul` and an `animal` (issue #854:
+                 Beast's Vigor's animal ghouls), the `disciplines` its specialty
                  can be beside a ghoul's, and a `note`. It changes no trait, so it
                  is read by horatio.retainers, not by `effects`
 

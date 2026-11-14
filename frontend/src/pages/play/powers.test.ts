@@ -17,7 +17,7 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   attributes: [],
   focuses: [],
   blood_per_turn: 0,
-  blood_half: false, blood_extra: 0,
+  blood_half: false, blood_extra: 0, blood_over: false,
   on: false,
   options: [],
   picked: [],

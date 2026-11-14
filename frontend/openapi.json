@@ -38397,6 +38397,11 @@
             "title": "Blood Half",
             "type": "boolean"
           },
+          "blood_over": {
+            "default": false,
+            "title": "Blood Over",
+            "type": "boolean"
+          },
           "blood_per_turn": {
             "default": 0,
             "title": "Blood Per Turn",
@@ -38602,6 +38607,11 @@
       "PowerUse": {
         "description": "A use of a power that changes the trackers besides spending its cost (issue\n#825): a button of its own on the Pools tab, made of ordinary taps with Undo.",
         "properties": {
+          "animal": {
+            "default": false,
+            "title": "Animal",
+            "type": "boolean"
+          },
           "beast": {
             "default": 0,
             "title": "Beast",
@@ -38680,6 +38690,11 @@
               }
             ],
             "title": "Once"
+          },
+          "over": {
+            "default": false,
+            "title": "Over",
+            "type": "boolean"
           },
           "page": {
             "anyOf": [
@@ -43851,6 +43866,11 @@
       },
       "RetainerIn": {
         "properties": {
+          "animal": {
+            "default": false,
+            "title": "Animal",
+            "type": "boolean"
+          },
           "description": {
             "default": "",
             "maxLength": 500,
@@ -43951,6 +43971,11 @@
       },
       "RetainerOut": {
         "properties": {
+          "animal": {
+            "default": false,
+            "title": "Animal",
+            "type": "boolean"
+          },
           "away": {
             "default": false,
             "title": "Away",
@@ -44308,6 +44333,11 @@
       "RetainerTrackOut": {
         "description": "One Retainer's health levels and (a ghoul's) Blood at this game, tapped as\n\"<key>/health\" and \"<key>/blood\" (horatio.play).",
         "properties": {
+          "animal": {
+            "default": false,
+            "title": "Animal",
+            "type": "boolean"
+          },
           "blood": {
             "anyOf": [
               {

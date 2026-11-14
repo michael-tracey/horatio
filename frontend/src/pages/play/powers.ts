@@ -122,6 +122,16 @@ export function bloodMost(view: Pick<PlayView, "blood_usual" | "powers">): numbe
   return view.blood_usual + halves * Math.ceil(view.blood_usual / 2) + now.reduce((sum, p) => sum + (p.blood_extra ?? 0), 0);
 }
 
+/** Whether a power on lets Blood go past the pool (#854: Mantle of Sutekh's tithes, Vol. 2 p. 240). */
+export function bloodOver(view: Pick<PlayView, "powers">): boolean {
+  return counted(view).some((p) => p.blood_over);
+}
+
+/** Blood over the pool goes (as when a power that raised it ends), but not while a power keeps it past the pool (#854). */
+function trimBlood(view: PlayView) {
+  if (!bloodOver(view)) view.blood.value = Math.min(view.blood.value, view.blood.most);
+}
+
 /** The other amounts of the option `name` is one amount of (#824): "Tough: 1" and "Tough: 3" for "Tough: 2". */
 export function sameOption(power: Pick<PowerSwitch, "picks">, name: string): string[] {
   const options = power.picks?.options ?? [];
@@ -152,7 +162,7 @@ function switchOff(view: PlayView, power: PowerSwitch, said: string[]) {
   power.picked = [];
   power.turned_on = 0;
   view.blood.most = bloodMost(view);
-  view.blood.value = Math.min(view.blood.value, view.blood.most);
+  trimBlood(view);
   if (lost) said.push(`${lost} damage in its levels gone`);
 }
 
@@ -185,7 +195,7 @@ export function applySwitch(view: PlayView, key: string, amount: number, said: s
     loseLevels(view, (b) => b.from?.key === power.key && b.option !== undefined);
     power.picked = [];
     view.blood.most = bloodMost(view);
-    view.blood.value = Math.min(view.blood.value, view.blood.most);
+    trimBlood(view);
   } else if (amount > 0 && !power.on) {
     if (power.form) {
       for (const other of formsDisplaced(view, power)) {
@@ -243,7 +253,7 @@ export function applyPick(view: PlayView, rest: string, amount: number, said: st
   const lost = dropped.length ? loseLevels(view, (b) => b.from?.key === power.key && b.option !== undefined && dropped.includes(b.option)) : 0;
   power.picked = now;
   view.blood.most = bloodMost(view);
-  view.blood.value = Math.min(view.blood.value, view.blood.most);
+  trimBlood(view);
   if (lost) said.push(`${lost} damage in its levels gone`);
   return [before, now.includes(quality) ? 1 : 0];
 }

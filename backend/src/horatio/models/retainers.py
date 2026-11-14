@@ -36,6 +36,9 @@ class Retainer(Record):
     )
     # A ghoul has 5 potent Blood and may take a discipline specialty (p. 105).
     ghoul: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # An animal (issue #854): Beast's Vigor moves damage onto an animal ghoul Retainer
+    # only (Vol. 2 Issue 1 pp. 58-59).
+    animal: Mapped[bool] = mapped_column(default=False, server_default="false")
     # One specialty a dot (p. 105): skills, each +5 to the pool, and for a ghoul
     # perhaps one discipline in-clan for its domitor, to its dots.
     specialties: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")

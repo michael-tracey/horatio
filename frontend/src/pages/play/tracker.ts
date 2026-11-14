@@ -1,7 +1,7 @@
 import type { InfluenceDetailsIn, ItemTapIn, OnOtherIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
 import { TYPE_NAMES } from "../../influence";
 import { applyEquip, describeEquip, EQUIP } from "./equipped";
-import { applyPick, applySwitch, describePick, describeSwitch, healthMost, PICK, pickedFor, SWITCH } from "./powers";
+import { applyPick, applySwitch, bloodOver, describePick, describeSwitch, healthMost, PICK, pickedFor, SWITCH } from "./powers";
 
 /**
  * The Play View's taps on the device. The server works the trackers out from
@@ -247,8 +247,10 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
   if (isFixed(tracker)) {
     const t = tracker === "morality" ? view.morality! : view[tracker];
     const before = t.value;
+    // Kept past the pool while the power lasts (#854); a tap made over the pool takes nothing more than it brings.
+    const ceiling = tracker === "blood" && bloodOver(view) ? Math.max(top, before + Math.max(amount, 0)) : top;
     // A Malkavian never has fewer than 1 Derangement trait.
-    t.value = clamp(before + amount, top, tracker === "derangements" ? view.derangements.least : 0);
+    t.value = clamp(before + amount, ceiling, tracker === "derangements" ? view.derangements.least : 0);
     return [before, t.value];
   }
   if (tracker.startsWith(TEMPORARY)) {

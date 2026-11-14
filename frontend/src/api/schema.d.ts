@@ -28183,6 +28183,11 @@ export interface components {
              */
             blood_half: boolean;
             /**
+             * Blood Over
+             * @default false
+             */
+            blood_over: boolean;
+            /**
              * Blood Per Turn
              * @default 0
              */
@@ -28306,6 +28311,11 @@ export interface components {
          */
         PowerUse: {
             /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
+            /**
              * Beast
              * @default 0
              */
@@ -28343,6 +28353,11 @@ export interface components {
             note?: string | null;
             /** Once */
             once?: string | null;
+            /**
+             * Over
+             * @default false
+             */
+            over: boolean;
             /** Page */
             page?: string | null;
             /**
@@ -30335,6 +30350,11 @@ export interface components {
         /** RetainerIn */
         RetainerIn: {
             /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
+            /**
              * Description
              * @default
              */
@@ -30374,6 +30394,11 @@ export interface components {
         };
         /** RetainerOut */
         RetainerOut: {
+            /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
             /**
              * Away
              * @default false
@@ -30513,6 +30538,11 @@ export interface components {
          *     "<key>/health" and "<key>/blood" (horatio.play).
          */
         RetainerTrackOut: {
+            /**
+             * Animal
+             * @default false
+             */
+            animal: boolean;
             blood: components["schemas"]["Tracker"] | null;
             health: components["schemas"]["Tracker"];
             /** Key */
