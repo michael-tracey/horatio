@@ -20,7 +20,7 @@ from horatio.config import get_settings
 from horatio.connectors import email
 from horatio.models import AuditEvent
 from tests.api_helpers import PASSWORD, Person, sign_up
-from tests.test_email_connector import FakeSMTP
+from tests.test_email_connector import FakeSMTP, text_of
 
 ON_ITS_WAY = {
     "message": "If an account uses that address, a reset link is on its way. "
@@ -57,8 +57,8 @@ def forgot(client: TestClient, address: str) -> Any:
 
 def link_in(message: EmailMessage) -> str:
     """The token from the reset link an email holds."""
-    found = re.search(r"http://localhost:5173/reset-password/(\S+)", message.get_content())
-    assert found, message.get_content()
+    found = re.search(r"http://localhost:5173/reset-password/(\S+)", text_of(message))
+    assert found, text_of(message)
     return found.group(1)
 
 
@@ -124,7 +124,7 @@ def test_known_and_unknown_addresses_get_the_same_answer(
     # Only the account's own address gets an email.
     assert [m["To"] for m in mail.sent] == [f"player <{player.email}>"]
     assert mail.sent[0]["Subject"] == "Reset your Horatio password"
-    assert "hopefully you" in mail.sent[0].get_content()
+    assert "hopefully you" in text_of(mail.sent[0])
     # Both requests are logged, for the custodian.
     requested = events(session, "account.reset_requested")
     assert [(e.actor_id is not None, e.data["email"]) for e in requested] == [
@@ -168,7 +168,7 @@ def test_an_emailed_link_goes_on_to_where_they_were_going(
     )
 
     assert asked.status_code == 202
-    found = re.search(r"/reset-password/(\S+)", mail.sent[0].get_content())
+    found = re.search(r"/reset-password/(\S+)", text_of(mail.sent[0]))
     assert found
     token, _, query = found.group(1).partition("?")
     assert query == "next=%2Fcycles%2Fabc%3Ftab%3D1"
@@ -194,7 +194,7 @@ def test_an_emailed_link_never_goes_on_to_another_site(
     assert resets.same_site_path(unsafe) is None
     client_for().post("/auth/forgot", json={"email": player.email, "next": unsafe})
 
-    assert "next=" not in mail.sent[0].get_content()
+    assert "next=" not in text_of(mail.sent[0])
     assert link_in(mail.sent[0])
 
 
@@ -278,7 +278,7 @@ def test_the_custodian_has_horatio_email_the_link(
     assert link["emailed_to"] == player.email
     assert link["email_error"] is None
     assert link_in(mail.sent[0]) == link["url"].rsplit("/", 1)[1]
-    assert "custodian, Horatio's custodian, made you a link" in mail.sent[0].get_content()
+    assert "custodian, Horatio's custodian, made you a link" in text_of(mail.sent[0])
     assert actions(session) == ["account.reset_link", "account.reset_sent"]
     assert events(session, "account.reset_sent")[0].actor_id is not None
 

@@ -773,6 +773,11 @@ MESSAGES: dict[str, str] = {
     " {reply_to}.",
     "mail.test_sent": "{actor} sent a test email to {to}.",
     "mail.test_failed": "{actor}'s test email failed: {error}",
+    "mail.design_set": "{actor} changed how Horatio's emails look: {changed}.",
+    "mail.header_uploaded": "{actor} put a picture ({size}) at the top of Horatio's emails.",
+    "mail.header_removed": "{actor} took the picture off the top of Horatio's emails.",
+    "mail.design_test_sent": "{actor} sent a test email in the email design to {to}.",
+    "mail.design_test_failed": "{actor}'s test email in the email design failed: {error}",
     "mail.gave_up": "Horatio gave up emailing {count} notifications to {member}: {error}",
     "audit.exported": "{actor} exported {count} events from the audit log.",
     "dark_pack.fetched": "{actor} fetched the Dark Pack resources from {address}: {clans} clan"
