@@ -148,3 +148,21 @@ describe("equipment modifiers", () => {
     expect(describeModifier({ amount: 1, pools: "purpose", when: "for its purpose, with the skill" }, [])).toBe("+1 for its purpose, with the skill");
   });
 });
+
+describe("an option's own picks count as an item's (#876)", () => {
+  const brutal: EquipmentModifier = { quality: "Brutal", label: "Brutal", amount: 1, pools: "attack:Brawl", when: "", situational: false };
+  const chip = (name: string, modifiers: EquipmentModifier[] = []) => ({ name, play: "", page: "p. 169", modifiers });
+  const bonecraft = (picked: string[], weapon: string[]) =>
+    ({
+      key: "Bonecraft",
+      on: true,
+      picked,
+      options: [chip("Body Weaponry")],
+      option_picks: [{ key: "Bonecraft/Body Weaponry", name: "Body Weaponry", count: 2, options: [chip("Brutal", [brutal])], picked: weapon }],
+    }) as unknown as PowerSwitch;
+
+  it("counts the weapon's qualities while Body Weaponry is picked", () => {
+    expect(equipmentModifiers([], [], [bonecraft(["Body Weaponry"], ["Brutal"])]).map((m) => m.label)).toEqual(["Brutal"]);
+    expect(equipmentModifiers([], [], [bonecraft([], ["Brutal"])])).toEqual([]);
+  });
+});

@@ -156,7 +156,8 @@ export function effectTaps(view: UseView, use: PowerUse, power: string, opts: { 
   made.push(...spending, ...turned);
   // A gain at the counter's most still uses the power, for its cost (Water Mastery's third and later applications).
   const counting = !!use.charges && !use.charges.spend && !!counterOf(view, use) && costNow(view, use) > 0;
-  if (made.length === 0 && !counting) return [];
+  // A use whose whole effect is its cost (#876: reforming Bonecraft's body weapon) spends it.
+  if (made.length === 0 && !counting && !use.spends) return [];
   const spent = costNow(view, use);
   return [...(spent > 0 ? [{ kind: "change" as const, tracker: use.cost!.tracker, amount: -spent, note: power }] : []), ...made];
 }
@@ -170,5 +171,6 @@ export function costText(view: UseView, use: Pick<PowerUse, "cost" | "half">): s
 
 /** Whether a use is offered now: its switch, if it names one, is on. */
 export function offered(view: Pick<PlayView, "powers">, use: PowerUse): boolean {
-  return !use.when || view.powers.some((p) => p.key === use.when && p.on);
+  // A switch, or one of a power's options picked (#876: Bonecraft's Body Weaponry).
+  return !use.when || view.powers.some((p) => p.on && (p.key === use.when || (p.picked ?? []).some((name) => `${p.key}/${name}` === use.when)));
 }

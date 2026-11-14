@@ -34014,6 +34014,46 @@
         "title": "OptionOut",
         "type": "object"
       },
+      "OptionPicksOut": {
+        "description": "What is picked for one of a power's own options while it is picked (issue\n#876): Bonecraft's Body Weaponry, a weapon whose qualities the player chooses by\nthe weapon rules (core p. 169), counted as an equipped item's while it is.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/PickOptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "picked": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Picked",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "count",
+          "options"
+        ],
+        "title": "OptionPicksOut",
+        "type": "object"
+      },
       "OrderIn": {
         "properties": {
           "keys": {
@@ -39022,6 +39062,14 @@
             ],
             "title": "Option Of"
           },
+          "option_picks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OptionPicksOut"
+            },
+            "title": "Option Picks",
+            "type": "array"
+          },
           "options": {
             "default": [],
             "items": {
@@ -39243,6 +39291,11 @@
             "default": 0,
             "title": "Retainer",
             "type": "integer"
+          },
+          "spends": {
+            "default": false,
+            "title": "Spends",
+            "type": "boolean"
           },
           "summon": {
             "anyOf": [
@@ -51777,6 +51830,16 @@
           "page": {
             "title": "Page",
             "type": "string"
+          },
+          "picks": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Picks"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "qualities": {
             "default": [],

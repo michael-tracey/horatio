@@ -32,6 +32,7 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   counts_as_form: false,
   disciplines: [],
   waives: [],
+  option_picks: [],
   paused: false,
   foreign: false,
   target: "self" as const,

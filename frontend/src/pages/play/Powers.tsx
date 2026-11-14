@@ -78,6 +78,47 @@ function Picks({ power, tap }: { power: PowerSwitch; tap: Tap }) {
           {pageLabel(o.page) && <span className="text-mist"> ({pageLabel(o.page)})</span>}
         </p>
       ))}
+      {(power.option_picks ?? [])
+        .filter((o) => power.picked.includes(o.name))
+        .map((o) => (
+          <OptionPicks key={o.key} option={o} tap={tap} />
+        ))}
+    </div>
+  );
+}
+
+type OptionPicked = PowerSwitch["option_picks"][number];
+
+/**
+ * What is picked for one of a power's options while it is picked (#876): Bonecraft's
+ * Body Weaponry, a weapon whose qualities are chosen by the weapon rules (core
+ * p. 169), counted as an equipped item's. Past its count, the oldest goes.
+ */
+function OptionPicks({ option, tap }: { option: OptionPicked; tap: Tap }) {
+  const chosen = option.options.filter((o) => option.picked.includes(o.name));
+  return (
+    <div className="mt-2 border-l border-ash/60 pl-3" role="group" aria-label={`${option.name}: qualities`}>
+      <p className="text-xs text-mist">
+        {option.name}: pick {COUNTS[option.count] ?? option.count} ({option.picked.length} picked).
+      </p>
+      <ul className="mt-1 flex flex-wrap gap-1">
+        {option.options.map((q) => {
+          const picked = option.picked.includes(q.name);
+          return (
+            <li key={q.name}>
+              <button type="button" aria-pressed={picked} title={q.play} onClick={() => tap({ kind: "change", tracker: pickKey(option.key, q.name), amount: picked ? -1 : 1 })} className={pill(picked)}>
+                {q.name}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {chosen.map((q) => (
+        <p key={q.name} className="mt-1 text-xs text-parchment/80">
+          {q.name}: {q.play}
+          {pageLabel(q.page) && <span className="text-mist"> ({pageLabel(q.page)})</span>}
+        </p>
+      ))}
     </div>
   );
 }

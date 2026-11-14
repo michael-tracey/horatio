@@ -286,6 +286,20 @@ class PickOptionOut(BaseModel):
     modifiers: list[EquipmentModifierOut]
 
 
+class OptionPicksOut(BaseModel):
+    """What is picked for one of a power's own options while it is picked (issue
+    #876): Bonecraft's Body Weaponry, a weapon whose qualities the player chooses by
+    the weapon rules (core p. 169), counted as an equipped item's while it is."""
+
+    # The option's own switch, "Bonecraft/Body Weaponry": a pick tap names it.
+    key: str
+    # The option, as the power's `picked` names it.
+    name: str
+    count: int
+    options: list[PickOptionOut]
+    picked: list[str] = []
+
+
 class PowerOut(reference.Switch):
     """A form or power the character has, and whether it is on in this game."""
 
@@ -293,6 +307,8 @@ class PowerOut(reference.Switch):
     # For a power with `picks`: what can be picked, and what is, in the order picked.
     options: list[PickOptionOut] = []
     picked: list[str] = []
+    # For its own options that have picks of their own (issue #876).
+    option_picks: list[OptionPicksOut] = []
     # For a power with `qualities`: those it gives every time it is on (#820).
     fixed: list[PickOptionOut] = []
     # Its place in the order those on were switched on (1 for the first), so the
@@ -834,7 +850,7 @@ def effects_out(
                 started_by=who.get(e.started_by_id, ""),
                 source_character_name=sources.get(e.id),
                 paused=e.key in paused,
-                options=list(e.options),
+                options=play_effects.top(e.options),
                 acknowledged_at=e.acknowledged_at,
                 disputed_at=e.disputed_at,
                 dispute_note=e.dispute_note,
@@ -855,7 +871,7 @@ def effects_made_out(db: Session, character: Character) -> list[EffectMadeOut]:
                 character_id=on.id,
                 character_name=on.name,
                 name=switch[0].name if switch else e.key,
-                options=list(e.options),
+                options=play_effects.top(e.options),
                 since=e.started_at,
                 acknowledged_at=e.acknowledged_at,
                 disputed_at=e.disputed_at,
@@ -1024,6 +1040,25 @@ def play_view(db: Session, character: Character) -> PlayView:
                     for o in limits.options.get(s.key, ())
                 ],
                 picked=state.get("picked", {}).get(s.key, []),
+                option_picks=[
+                    OptionPicksOut(
+                        key=o.key,
+                        name=o.name,
+                        count=o.picks.count,
+                        options=[
+                            PickOptionOut(
+                                name=q.name,
+                                play=q.play,
+                                page=q.page,
+                                modifiers=[modifier_out(m) for m in q.modifiers],
+                            )
+                            for q in limits.options.get(o.key, ())
+                        ],
+                        picked=state.get("picked", {}).get(o.key, []),
+                    )
+                    for o in (s.picks.options if s.picks else [])
+                    if o.picks is not None
+                ],
                 fixed=[
                     PickOptionOut(
                         name=o.name,

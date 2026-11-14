@@ -37,8 +37,12 @@ function picking(rest: string): [string, string] {
  * "Protean: Flesh of Marble (Ballistic, Hardened)": a power with what is picked for
  * it. A view kept on the phone from before picks (#502) has none.
  */
-export function withPicks(power: Pick<PowerSwitch, "name" | "picked">): string {
-  const picked = power.picked ?? [];
+export function withPicks(power: Pick<PowerSwitch, "name" | "picked"> & Partial<Pick<PowerSwitch, "option_picks">>): string {
+  // What was picked for an option goes with it (#876): "Body Weaponry: Reach and Deadly".
+  const picked = (power.picked ?? []).map((name) => {
+    const own = (power.option_picks ?? []).find((o) => o.name === name)?.picked ?? [];
+    return own.length ? `${name}: ${own.join(" and ")}` : name;
+  });
   return picked.length ? `${power.name} (${picked.join(", ")})` : power.name;
 }
 
@@ -167,8 +171,9 @@ function switchOff(view: PlayView, power: PowerSwitch, said: string[]) {
   // Its own options picked go with it (#821): their levels are its.
   const lost = loseLevels(view, (b) => b.from?.key === power.key);
   power.on = false;
-  // Using it again means picking again (Vol. 2 p. 232).
+  // Using it again means picking again (Vol. 2 p. 232), its options' own picks too (#876).
   power.picked = [];
+  clearOptionPicks(power);
   power.turned_on = 0;
   view.blood.most = bloodMost(view);
   trimBlood(view);
@@ -206,6 +211,7 @@ export function applySwitch(view: PlayView, key: string, amount: number, said: s
     said.push("replaces the one on before");
     loseLevels(view, (b) => b.from?.key === power.key && b.option !== undefined);
     power.picked = [];
+    clearOptionPicks(power);
     view.blood.most = bloodMost(view);
     trimBlood(view);
   } else if (amount > 0 && !power.on) {
@@ -236,10 +242,55 @@ export function describeSwitch(view: Pick<PlayView, "powers">, key: string, amou
  * Pick a quality for a power that is on (amount > 0), or drop it, in `view` (changed
  * in place), as the server does; null for a quality it can't pick.
  */
+/** The options a power has picks of their own for (#876), as a view kept on the phone from before has none. */
+const optionPicksOf = (power: Pick<PowerSwitch, "option_picks">) => power.option_picks ?? [];
+
+/** What was picked for a power's options goes with them (#876): all, or those named. */
+function clearOptionPicks(power: PowerSwitch, only?: string[]) {
+  for (const o of optionPicksOf(power)) if (!only || only.includes(o.name)) o.picked = [];
+}
+
+/**
+ * The power whose option a pick is for, with that option's own picks (#876:
+ * "pick:Bonecraft/Body Weaponry/Brutal" is a quality for Body Weaponry's weapon).
+ */
+function optionPicked(view: Pick<PlayView, "powers">, key: string): [PowerSwitch, ReturnType<typeof optionPicksOf>[number]] | null {
+  for (const power of view.powers) {
+    const found = optionPicksOf(power).find((o) => o.key === key);
+    if (found) return [power, found];
+  }
+  return null;
+}
+
+/**
+ * A quality picked for one of a power's options (#876), while the power is on and the
+ * option picked; past its count, the oldest goes.
+ */
+function applyOptionPick(view: PlayView, key: string, quality: string, amount: number, said: string[]): [number, number] | null {
+  const found = optionPicked(view, key);
+  if (!found) return null;
+  const [power, option] = found;
+  if (!option.options.some((o) => o.name === quality)) return null;
+  const now = [...option.picked];
+  const before = now.includes(quality) ? 1 : 0;
+  if (amount > 0 && !before && power.on && (power.picked ?? []).includes(option.name)) {
+    while (now.length && now.length >= option.count) {
+      const gone = now.shift()!;
+      said.push(`dropped ${gone} (${option.count} at most)`);
+    }
+    now.push(quality);
+  } else if (amount < 0 && before) {
+    now.splice(now.indexOf(quality), 1);
+  }
+  option.picked = now;
+  return [before, now.includes(quality) ? 1 : 0];
+}
+
 export function applyPick(view: PlayView, rest: string, amount: number, said: string[] = []): [number, number] | null {
   const [key, quality] = picking(rest);
   const power = view.powers.find((p) => p.key === key);
-  if (!power?.picks || !(power.options ?? []).some((o) => o.name === quality)) return null;
+  if (!power) return applyOptionPick(view, key, quality, amount, said);
+  if (!power.picks || !(power.options ?? []).some((o) => o.name === quality)) return null;
   const now = [...(power.picked ?? [])];
   const before = now.includes(quality) ? 1 : 0;
   const dropped: string[] = [];
@@ -264,6 +315,8 @@ export function applyPick(view: PlayView, rest: string, amount: number, said: st
   // A power's own option dropped takes its levels and the damage in them (#821).
   const lost = dropped.length ? loseLevels(view, (b) => b.from?.key === power.key && b.option !== undefined && dropped.includes(b.option)) : 0;
   power.picked = now;
+  // An option dropped takes what was picked for it (#876: Body Weaponry's weapon).
+  clearOptionPicks(power, dropped);
   view.blood.most = bloodMost(view);
   trimBlood(view);
   if (lost) said.push(`${lost} damage in its levels gone`);
@@ -273,7 +326,11 @@ export function applyPick(view: PlayView, rest: string, amount: number, said: st
 /** The power a pick is for, by name, and the quality: ["Protean: Flesh of Marble", "Ballistic"]. */
 export function pickedFor(view: Pick<PlayView, "powers">, rest: string): [string, string] {
   const [key, quality] = picking(rest);
-  return [view.powers.find((p) => p.key === key)?.name ?? key, quality];
+  const power = view.powers.find((p) => p.key === key);
+  if (power) return [power.name, quality];
+  // One of a power's options (#876): "Bonecraft: remade: Body Weaponry".
+  const found = optionPicked(view, key);
+  return [found ? `${found[0].name}: ${found[1].name}` : key, quality];
 }
 
 /** The pick as the log reads it: "Picked Ballistic for Protean: Flesh of Marble". */

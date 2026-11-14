@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { PlayView, PowerUse } from "../../api/types";
+import type { PlayView, PowerSwitch, PowerUse } from "../../api/types";
 import { applyChange } from "./tracker";
+import { plainUse } from "./UsePower";
 import { canPay, costText, effectTaps, ghouls, offered, type UseView } from "./uses";
 
 type Mark = "normal" | "aggravated";
@@ -28,7 +29,7 @@ function view(marks: Mark[] = [], overrides: Partial<UseView> = {}): UseView {
 }
 
 function use(overrides: Partial<PowerUse>): PowerUse {
-  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], over: false, beast: 0, retainer: 0, animal: false, when: null, once: null, note: null, page: null, target: "self", summon: null, summon_all: false, ...overrides };
+  return { label: "Use", cost: null, half: false, heal: null, convert: 0, convert_all: false, mend: 0, gains: [], over: false, beast: 0, retainer: 0, animal: false, when: null, once: null, note: null, page: null, target: "self", summon: null, summon_all: false, spends: false, ...overrides };
 }
 
 const blood = (amount: number) => ({ tracker: "blood" as const, amount });
@@ -177,5 +178,18 @@ describe("a use that calls up allies (issue #827)", () => {
     expect(applyChange(v, "ally:Arms#1/health", -3)).toEqual([4, 1]);
     expect(applyChange(v, "ally:Arms#1", -1)).toEqual([1, 0]);
     expect(v.summons![0]!.allies[0]!.out).toBe(false);
+  });
+});
+
+describe("a use that only spends, while an option is picked (#876)", () => {
+  it("reforms Bonecraft's body weapon for 1 Blood, while Body Weaponry is picked", () => {
+    const reform = use({ label: "Reform the body weapon", cost: { tracker: "blood", amount: 1 }, spends: true, when: "Bonecraft/Body Weaponry" });
+    const crafted = (picked: string[]) => ({ key: "Bonecraft", on: true, picked }) as unknown as PowerSwitch;
+    expect(offered({ powers: [crafted(["Body Weaponry"])] }, reform)).toBe(true);
+    expect(offered({ powers: [crafted(["Extra Limbs"])] }, reform)).toBe(false);
+    expect(effectTaps(view(), reform, "Bonecraft")).toEqual([{ kind: "change", tracker: "blood", amount: -1, note: "Bonecraft" }]);
+    // It waits on a switch, so Bonecraft's own Use stays beside it.
+    expect(plainUse({ name: "Bonecraft", cost: { tracker: "blood", amount: 1 }, uses: [reform] })).toBe(true);
+    expect(plainUse({ name: "Corpore Sano", cost: { tracker: "blood", amount: 1 }, uses: [use({ cost: { tracker: "blood", amount: 1 }, heal: { damage: "normal", amount: 1 } })] })).toBe(false);
   });
 });
