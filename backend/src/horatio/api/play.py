@@ -230,6 +230,8 @@ class PowerOut(reference.Switch):
     # For a power with `picks`: what can be picked, and what is, in the order picked.
     options: list[PickOptionOut] = []
     picked: list[str] = []
+    # For a power with `qualities`: those it gives every time it is on (#820).
+    fixed: list[PickOptionOut] = []
     # Its place in the order those on were switched on (1 for the first), so the
     # Play View knows which form goes first past the limit; 0 while off.
     turned_on: int = 0
@@ -846,6 +848,15 @@ def play_view(db: Session, character: Character) -> PlayView:
                     for o in limits.options.get(s.key, ())
                 ],
                 picked=state.get("picked", {}).get(s.key, []),
+                fixed=[
+                    PickOptionOut(
+                        name=o.name,
+                        play=o.play,
+                        page=o.page,
+                        modifiers=[modifier_out(m) for m in o.modifiers],
+                    )
+                    for o in limits.fixed.get(s.key, ())
+                ],
                 turned_on=state["on"].index(s.key) + 1 if s.key in state["on"] else 0,
                 paused=s.key in paused,
                 since=since.get(s.key) if s.key in state["on"] else None,

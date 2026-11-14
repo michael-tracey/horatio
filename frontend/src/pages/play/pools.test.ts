@@ -261,6 +261,16 @@ describe("defences that aren't a flat bonus (issue #602)", () => {
     expect(variantNow(mental, rampart, 4, [], ["Horrid Form"], { morality: 5, beast: 2 }).total).toBe(0 + 4 + 3);
   });
 
+  it("adds current Derangement traits for Manic Episode (#820, Vol. 2 Issue 1 p. 71)", () => {
+    const initiative = pool({ key: "initiative", name: "Initiative", group: "Combat", parts: [{ label: "Physical", value: 4 }], total: 4, adds_willpower: false, variants: [] });
+    const manic = { when: "With Celerity active", total: 4, parts: [], instead: false, tracked: [{ label: "Manic Episode", tracks: "derangements" as const }], qualities: [] };
+    const now = variantNow(initiative, manic, 0, [], [], { morality: 5, beast: 2, derangements: 3 });
+    expect(now.total).toBe(7);
+    expect(variantText(now)).toBe("+3 Manic Episode");
+    // A Play View kept from before has no Derangement traits to count.
+    expect(variantNow(initiative, manic, 0, [], [], { morality: 5, beast: 2 }).total).toBe(4);
+  });
+
   it("counts Physical + Survival without Willpower, for Rockheart", () => {
     const now = variantNow(mental, rockheart, 6);
     expect(now.total).toBe(7);
@@ -274,9 +284,9 @@ describe("defences that aren't a flat bonus (issue #602)", () => {
     expect(variantNow(mental, rockheart, 6, mods, ["Horrid Form", "Ward"]).total).toBe(7 + 1 + 2 + 1);
   });
 
-  it("reads Morality and Beast traits from the Play View", () => {
-    expect(trackersOf({ morality: { value: 4 }, beast: { value: 1 } })).toEqual({ morality: 4, beast: 1 });
-    expect(trackersOf({ morality: null, beast: { value: 0 } })).toEqual({ morality: 0, beast: 0 });
+  it("reads Morality, Beast traits and Derangement traits from the Play View", () => {
+    expect(trackersOf({ morality: { value: 4 }, beast: { value: 1 } })).toEqual({ morality: 4, beast: 1, derangements: 0 });
+    expect(trackersOf({ morality: null, beast: { value: 0 }, derangements: { value: 2 } })).toEqual({ morality: 0, beast: 0, derangements: 2 });
   });
 });
 

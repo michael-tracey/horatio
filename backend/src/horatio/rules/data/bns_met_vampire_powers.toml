@@ -13,9 +13,10 @@
 #   attack:<Skill>, defense, defense:<Attribute>, discipline:<Name>, skill:<Name>
 #   or frenzy (where `beast` counts that many more Beast traits, or fewer); `amount`
 #   is a number, "powers:<Discipline>" for how many powers of it the character
-#   has, "rating:<category>/<Name>", or "morality_less_beast" for current Morality
-#   minus current Beast traits, which the Play View counts from its trackers (it
-#   needs a `when`); a `when` naming a switch (see `active`) makes it hold only
+#   has, "rating:<category>/<Name>", "morality_less_beast" for current Morality
+#   minus current Beast traits, or "derangements" for current Derangement traits,
+#   which the Play View counts from its trackers (it needs a `when` that names no
+#   switch); a `when` naming a switch (see `active`) makes it hold only
 #   while that switch is on, and any other `when` makes it a variant ("For 1
 #   Blood"); `focus` limits it to characters with that focus, `unless_focus` to
 #   those without it (for a bonus a focus replaces), and `choice` (see `choices`)
@@ -48,7 +49,10 @@
 #   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out;
 #   - `picks = { kind, count }`: the player picks `count` equipment qualities of
 #     that kind each time it goes on (issue #599: Flesh of Marble's two Protective
-#     Gear qualities), and their pool effects count as an equipped item's do.
+#     Gear qualities), and their pool effects count as an equipped item's do;
+#   - `qualities = [{ kind, name, focus? }]`: equipment qualities it gives every
+#     time it is on, without picking (#820: Armor of Terra's Hardened and Ballistic),
+#     counted as picked ones are.
 #   `kept = true` makes it last until undone rather than until the game ends (issue
 #   #822): it is kept through Reset until the player turns it off (a removed heart,
 #   a reshaped face), and using it again while it is on replaces it, as a character
@@ -160,6 +164,8 @@ level = 4
 name = "Subsume the Spirit"
 note = "1 Blood, standard action, meeting an animal's eyes: win and your mind moves into its body."
 focus = { Manipulation = "Use the first 2 dots of your Mental and Social in-clan disciplines while inside it." }
+# Core p. 116 (#820): your mind is in an animal; your body lies empty.
+active = { key = "Subsume the Spirit", page = 116, notes = ["Your mind is in the animal's body, and your own lies helpless."] }
 
 [[powers]]
 discipline = "Animalism"
@@ -207,6 +213,8 @@ level = 5
 name = "Psychic Projection"
 note = "1 Blood, standard action: leave your body in a torpor-like state and travel as an invisible, intangible mind."
 focus = { Wits = "Use the first 2 dots of your Mental and Social in-clan disciplines while projecting." }
+# Core p. 120 (#820): your body lies empty while your mind travels.
+active = { key = "Psychic Projection", page = 120, notes = ["Your body lies helpless in a torpor-like state while your mind travels."] }
 
 [[disciplines]]
 name = "Celerity"
@@ -411,6 +419,8 @@ level = 5
 name = "Possession"
 note = "Standard action, meeting the target's eyes, opposed test: your mind moves into a mortal's body."
 focus = { Wits = "Use the first 2 dots of your Mental and Social in-clan disciplines while possessing." }
+# Core p. 136 (#820): your mind is in a mortal's body; yours lies empty.
+active = { key = "Possession", page = 136, notes = ["Your mind is in the mortal's body until sunrise or you leave it; your own lies helpless."] }
 
 [[disciplines]]
 name = "Fortitude"
@@ -589,6 +599,8 @@ level = 2
 name = "Unseen Presence"
 note = "Standard action: become invisible, with what you carry, until you act openly."
 focus = { Wits = "Whisper, or quietly handle unattended objects, without breaking it." }
+# Core p. 145 (#820): invisible until you act openly.
+active = { key = "Unseen Presence", page = 145, notes = ["Invisible, with what you carry, until you talk, touch someone or take any action that needs a challenge."] }
 
 [[powers]]
 discipline = "Obfuscate"
@@ -710,6 +722,8 @@ level = 1
 name = "Awe"
 note = "1 Blood, standard action: for the scene, everyone nearby pays you attention and wants to be near you; ignoring it costs 1 Willpower."
 focus = { Appearance = "Ignoring your Awe costs 2 Willpower." }
+# Core p. 151 (#820): for the scene, everyone nearby pays you attention.
+active = { key = "Awe", page = 151, notes = ["For the scene: everyone within conversational distance pays you attention and wants to be near you.", "Ignoring every Awe for an hour costs 1 Willpower (2 if you have the Appearance focus)."] }
 
 [[powers]]
 discipline = "Presence"
@@ -738,6 +752,8 @@ level = 5
 name = "Majesty"
 note = "1 Blood, standard action: for an hour, no one can act against you without spending Willpower and winning a test."
 focus = { Appearance = "You ignore other people's Majesty while yours is up." }
+# Core p. 153 (#820): an hour of Majesty.
+active = { key = "Majesty", page = 153, notes = ["An hour: no one can act against you without spending Willpower and winning a test."] }
 
 [[disciplines]]
 name = "Protean"
@@ -750,6 +766,8 @@ name = "Eyes of the Beast"
 note = "1 Blood, simple action: for an hour your eyes glow red and you see, and fight, perfectly in the dark."
 focus = { Perception = "Always on and free, and your eyes glow only if you want." }
 cost = { blood = 1, unless_focus = "Perception" }
+# Core p. 154 (#820): an hour of seeing, and fighting, in the dark.
+active = { key = "Eyes of the Beast", page = 154, notes = ["An hour: see perfectly in pitch darkness, and fight in it without the Fighting Blind maneuver.", { note = "Always on and free; your eyes glow only when you want them to.", focus = "Perception" }] }
 
 [[powers]]
 discipline = "Protean"
@@ -828,6 +846,8 @@ level = 2
 name = "Scorpion's Touch"
 note = "1 Blood, simple action: coat a blade with your blood; for three turns a hit poisons, -2 to the victim's Physical attacks."
 focus = { Intelligence = "Stays toxic for five turns." }
+# Core p. 157 (#820): a coated blade poisons for three turns (five with the focus).
+active = { key = "Scorpion's Touch", page = 157, notes = ["Coats one edged weapon, bolt or arrow (not unarmed attacks or bullets) for three turns.", "A hit poisons, damage or not: -2 to the victim's Physical attack pools for five minutes; each further hit adds five minutes.", { note = "It stays toxic for five turns, others can wield it safely, and the poison is -3.", focus = "Intelligence" }] }
 
 [[powers]]
 discipline = "Quietus"
@@ -871,6 +891,8 @@ level = 2
 name = "Tongue of the Asp"
 note = "1 Blood, simple action: for an hour, a forked tongue: talk to snakes, and whisper unheard."
 focus = { Charisma = "+1 to tests that rely on your voice, Entrancement included." }
+# Core p. 159 (#820): an hour with a forked tongue.
+active = { key = "Tongue of the Asp", page = 159, notes = ["An hour: talk with snakes in a whisper only those with Heightened Senses can hear.", "Sense your surroundings in any darkness, and fight in it without the Fighting Blind maneuver.", { note = "+1 to tests that rely on your voice, Entrancement included.", focus = "Charisma" }] }
 
 [[powers]]
 discipline = "Serpentis"
@@ -931,6 +953,8 @@ level = 3
 name = "Split Second"
 note = "1 Blood, once a turn: an extra simple action on your initiative, not against others or for powers."
 focus = { Stamina = "Two extra simple actions instead of one." }
+# Core p. 162 (#820): for the turn, an extra simple action.
+active = { key = "Split Second", page = 162, notes = ["This turn: an extra simple action on your initiative, which can't be interrupted, not aimed at others or what they hold."] }
 
 [[powers]]
 discipline = "Temporis"
@@ -945,6 +969,8 @@ level = 5
 name = "Clotho's Gift"
 note = "1 Blood: two extra rounds of actions this turn, in the Celerity rounds."
 focus = { Stamina = "One of those standard actions can be a Mental or Social power." }
+# Core p. 163 (#820): two extra rounds of actions this turn.
+active = { key = "Clotho's Gift", page = 163, notes = ["This turn: two extra rounds of actions (a simple and a standard each), in the first and second Celerity rounds."] }
 
 [[disciplines]]
 name = "Thanatosis"
@@ -987,6 +1013,8 @@ level = 5
 name = "Necrosis"
 note = "1 Blood, simple action: for an hour, a grapple can rot the victim for 3 aggravated damage, once a turn."
 focus = { Intelligence = "4 aggravated damage instead of 3." }
+# Core p. 165 (#820): for an hour, a grapple can rot the victim, once a turn.
+active = { key = "Necrosis", page = 165, notes = ["An hour: once a turn, a target you grapple (or still hold, for a standard action) takes 3 aggravated damage, in Celerity rounds too.", "The Grapple maneuver doesn't reduce it, and the grapple's own damage stays normal.", { note = "4 aggravated damage instead of 3.", focus = "Intelligence" }] }
 
 [[disciplines]]
 name = "Valeren"
@@ -1051,6 +1079,14 @@ level = 2
 name = "Fleshcraft"
 note = "1 Blood: reshape a willing person over five actions, or in combat a Brawl attack that twists the victim's flesh."
 focus = { Manipulation = "Three actions on the willing; harder-hitting attacks." }
+# Core p. 168 (#820): 1 Blood and a standard action for a Brawl attack doing 1 normal
+# damage that nothing reduces or raises (2 on an exceptional success); with the
+# Manipulation focus, 2 (3 on an exceptional success).
+active = { key = "Fleshcraft", page = 168, notes = ["1 Blood and a standard action for each attack; Potence, Feral Claws and other powers don't change its damage.", "Reshaping a willing person's looks changes their sheet, not yours."] }
+test = [
+  { when = "Fleshcraft", name = "Fleshcraft attack", pool = "Physical + Brawl", versus = "Physical + Dodge", damage = 1, exceptional = 1, unreducible = true, unless_focus = "Manipulation", page = 168 },
+  { when = "Fleshcraft", name = "Fleshcraft attack", pool = "Physical + Brawl", versus = "Physical + Dodge", damage = 2, exceptional = 1, unreducible = true, focus = "Manipulation", page = 168 },
+]
 
 [[powers]]
 discipline = "Vicissitude"
@@ -1093,6 +1129,8 @@ level = 1
 name = "Skin of the Chameleon"
 note = "1 Blood, simple action, unobserved: for an hour mortals take you for an expected part of the scene."
 focus = { Perception = "Works on vampires and other supernatural creatures too." }
+# Core p. 170 (#820): an hour of blending into the scene.
+active = { key = "Skin of the Chameleon", page = 170, notes = ["An hour: mortals take you for an expected part of the scene.", { note = "Vampires and other supernatural creatures too.", focus = "Perception" }] }
 
 [[powers]]
 discipline = "Visceratika"
@@ -1114,6 +1152,9 @@ level = 4
 name = "Armor of Terra"
 note = "1 Blood, simple action: stone skin for an hour, Hardened and Ballistic armour."
 focus = { Wits = "Full Body armour as well, hidden under clothes." }
+# Core p. 171 (#820): an hour of stone skin, Hardened and Ballistic (and Full Body
+# with the Wits focus), not mundane armour, so nothing that pierces armour pierces it.
+active = { key = "Armor of Terra", page = 171, qualities = [{ kind = "protective", name = "Hardened" }, { kind = "protective", name = "Ballistic" }, { kind = "protective", name = "Full Body", focus = "Wits" }], notes = ["An hour of stone skin, which can breach the Masquerade if seen.", "Attacks that pierce armour don't pierce it.", { note = "Full Body too, and it can be hidden under clothes.", focus = "Wits" }] }
 
 [[powers]]
 discipline = "Visceratika"
@@ -1138,6 +1179,8 @@ level = 1
 name = "Lord of the Flies"
 note = "1 Blood, simple action: carrion insects swarm you until the end of next turn, so no Firearms, thrown attack or Gaze and Focus power can target you; when they go, heal 1 normal damage."
 focus = { Charisma = "The swarm covers zombies you control too, up to your Occult dots." }
+# Vol. 2 p. 117 (#820): until the end of next turn, a swarm of carrion insects.
+active = { key = "Lord of the Flies", page = 117, book = "Vol. 2", notes = ["Until the end of next turn: no Firearms or thrown attack, and no power needing Gaze and Focus, can target you.", "When the swarm goes, heal 1 normal damage."] }
 
 [[powers]]
 discipline = "Necromancy: Path of the Graveborn"
@@ -1258,6 +1301,8 @@ level = 5
 name = "Death's Puppetry"
 note = "Standard action: move your mind into a corpse or zombie in sight; your body lies torpid."
 focus = { Charisma = "Possess any zombie you control within a mile, unseen." }
+# Core p. 176 (#820): your mind is in a corpse or zombie; your body lies torpid.
+active = { key = "Death's Puppetry", page = 176, notes = ["Your mind is in the corpse or zombie, and your own body lies torpid."] }
 
 [[disciplines]]
 name = "Necromancy: Ash Path"
@@ -1493,6 +1538,11 @@ level = 1
 name = "Elemental Strength"
 note = "1 Blood, simple action: the Strength or Stamina focus for five minutes."
 focus = { Intelligence = "+2 to grappling while it's on." }
+# Core p. 193 (#820): the Strength or the Stamina focus, for five minutes.
+active = [
+  { key = "Elemental Strength: Strength", name = "Elemental Strength (Strength)", page = 193, focuses = ["Strength"], notes = ["Five minutes; only one Elemental Strength at a time.", { note = "+2 to grappling challenges.", focus = "Intelligence" }] },
+  { key = "Elemental Strength: Stamina", name = "Elemental Strength (Stamina)", page = 193, focuses = ["Stamina"], notes = ["Five minutes; only one Elemental Strength at a time.", { note = "+2 to grappling challenges.", focus = "Intelligence" }] },
+]
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Elemental Mastery"
@@ -1603,6 +1653,8 @@ level = 3
 name = "Flight"
 note = "1 Blood, standard action: fly for five minutes."
 focus = { Perception = "Nine steps when you spend both actions moving." }
+# Core p. 197 (#820): fly for five minutes.
+active = { key = "Flight", page = 197, notes = ["Five minutes: fly at your normal speed, carrying 10 pounds for each dot of Movement of the Mind.", { note = "Nine steps when you spend both actions moving.", focus = "Perception" }] }
 
 [[powers]]
 discipline = "Thaumaturgy: Movement of the Mind"
@@ -1897,6 +1949,8 @@ level = 2
 name = "Boughs Below"
 note = "1 Blood, simple action: for 30 minutes, a standard action and opposed test has roots grapple a foe."
 focus = { Wits = "They're disarmed too, and the vines can hand you the item." }
+# Vol. 2 p. 150 (#820): 30 minutes in which roots can grapple a foe.
+active = { key = "Boughs Below", page = 150, book = "Vol. 2", notes = ["30 minutes: a standard action and an opposed test has roots grapple a foe."] }
 
 [[powers]]
 discipline = "Thaumaturgy: Green Path"
@@ -1938,6 +1992,8 @@ level = 2
 name = "Gravity Well"
 note = "1 Blood, simple action: each round, everyone within 10 steps is pulled a step towards you."
 focus = { Wits = "5 more steps, and you can fix it on a place." }
+# Vol. 2 p. 154 (#820): ten minutes of pulling everyone near you closer.
+active = { key = "Gravity Well", page = 154, book = "Vol. 2", notes = ["Ten minutes: at the start of each everyman round, everyone within 10 steps is pulled a step towards you.", "Only one Gravity Well of yours at a time."] }
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Caelestikinesis"
@@ -2653,6 +2709,80 @@ category = "techniques"
 name = "Animal Swarm"
 needs = { discipline = "Protean", level = 4 }
 active = { key = "Animal Swarm", form = true, page = 19, book = "Vol. 2 Issue 1", notes = ["One animal per dot of Celerity, each acting on its own, with 5 health levels.", "No Blood and no other powers; flight: Physical counts as 1 to attack, +1 Dodge; fight: Physical half yours.", "Coming back: 2 aggravated per animal destroyed, 1 per one hurt."] }
+
+# Core pp. 225-226 (#820): no action, on your initiative; one turn, and 1 Blood a
+# turn to keep it.
+[[others]]
+category = "techniques"
+name = "Armor of Darkness"
+cost = { blood = 1 }
+active = { key = "Armor of Darkness", page = 225, notes = ["One turn, and 1 Blood each turn to keep it: no damage from sunlight, and fire or incendiary weapons do normal damage instead of aggravated.", "Takes no action, but starts on your initiative."] }
+
+# Core p. 228 (#820): an hour immune to fire.
+[[others]]
+category = "techniques"
+name = "Flame's Bane"
+cost = { blood = 1 }
+active = { key = "Flame's Bane", page = 228, notes = ["An hour: no damage from fire, and Flaming weapons or incendiary ammunition do normal damage; no frenzy from being near fire.", "Derangement triggers and fire's other effects still count."] }
+
+# Core p. 232 (#820): an hour walking up walls.
+[[others]]
+category = "techniques"
+name = "Unnatural Grace"
+cost = { blood = 1 }
+active = { key = "Unnatural Grace", page = 232, notes = ["An hour: stick to surfaces up to upright (walls, tightropes, not ceilings).", "Land silently and unhurt from any fall up to a mile."] }
+
+# Core p. 229 (#820): for the turn, Potence and Fortitude each a dot higher.
+[[others]]
+category = "techniques"
+name = "Mercurial Vitality"
+cost = { blood = 1 }
+active = { key = "Mercurial Vitality", page = 229, notes = ["This turn: your Potence and Fortitude each count a dot higher, never past 5."] }
+
+# Core p. 230 (#820): pay for Celerity two turns running, and it's free for five minutes.
+[[others]]
+category = "techniques"
+name = "Quickened Blood"
+active = { key = "Quickened Blood", page = 230, notes = ["After paying for Celerity two turns running: five minutes in which its first five dots cost no Blood."] }
+
+# Vol. 2 Issue 1 p. 71 (#820): always on: with Celerity active, initiative gains your
+# current Derangement traits, which the Play View counts; and a Derangement trait can
+# pay for the first five dots of Celerity instead of 1 Blood.
+[[others]]
+category = "techniques"
+name = "Manic Episode"
+pools = [{ pool = "initiative", amount = "derangements", when = "With Celerity active" }]
+notes = [{ when = "Celerity", note = "You can gain a Derangement trait instead of spending 1 Blood for the first five dots of Celerity, even before your initiative.", page = 71, book = "Vol. 2 Issue 1" }]
+
+# Vol. 2 Issue 1 p. 72 (#820): a minor transformation: Brutal and Deadly bites.
+[[others]]
+category = "techniques"
+name = "Maw of the Anaconda"
+cost = { blood = 1 }
+active = { key = "Maw of the Anaconda", page = 72, book = "Vol. 2 Issue 1", notes = ["Your bites are Brutal and Deadly; you still need a grapple to bite, unless something lets you bite without one.", "Drain 1 more Blood for each action spent feeding.", "A minor transformation, usable in any form with a jaw."] }
+
+# Vol. 2 Issue 1 p. 73 (#820): always on with Hag's Wrinkles: the Chest Plate quality
+# and one more of Ballistic, Hardened, Impact Absorption or Rugged.
+[[others]]
+category = "techniques"
+name = "Mortician's Secret"
+needs = { discipline = "Thanatosis", level = 1 }
+active = { key = "Mortician's Secret", kept = true, page = 73, book = "Vol. 2 Issue 1", qualities = [{ kind = "protective", name = "Chest Plate" }], picks = { kind = "protective", count = 1 }, notes = ["Always on through Hag's Wrinkles: pick one of Ballistic, Hardened, Impact Absorption or Rugged.", "Changing the one picked, or mending it, takes three standard actions in a row."] }
+
+# Vol. 2 Issue 1 p. 76 (#820): 1 Blood and a simple action, then Brawl attacks like
+# Fleshcraft's: 1 damage that nothing reduces (2 on an exceptional success), 1 more
+# with Potence's Might and 1 more with Fleshcraft's Manipulation focus. It needs
+# Potence 2, so everyone with it has Might: 2 (3), or 3 (4) with the focus.
+[[others]]
+category = "techniques"
+name = "Rend Flesh"
+needs = { discipline = "Potence", level = 2 }
+cost = { blood = 1 }
+active = { key = "Rend Flesh", page = 76, book = "Vol. 2 Issue 1", notes = ["Your hands must touch the target; no other power raises its damage or makes it aggravated.", "Prowess and Vigor, and the Potence focus, help the attack as usual."] }
+test = [
+  { when = "Rend Flesh", name = "Rend Flesh", pool = "Physical + Brawl", versus = "Physical + Dodge", damage = 2, exceptional = 1, unreducible = true, unless_focus = "Manipulation", page = 76, book = "Vol. 2 Issue 1" },
+  { when = "Rend Flesh", name = "Rend Flesh", pool = "Physical + Brawl", versus = "Physical + Dodge", damage = 3, exceptional = 1, unreducible = true, focus = "Manipulation", page = 76, book = "Vol. 2 Issue 1" },
+]
 
 # Core p. 240: instead of Shape of the Beast's fight form, a half-wolf monster.
 [[others]]

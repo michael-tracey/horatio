@@ -37328,6 +37328,14 @@
             "title": "Counts As Form",
             "type": "boolean"
           },
+          "fixed": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PickOptionOut"
+            },
+            "title": "Fixed",
+            "type": "array"
+          },
           "focuses": {
             "default": [],
             "items": {
@@ -37417,6 +37425,14 @@
                 "type": "null"
               }
             ]
+          },
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SwitchQuality"
+            },
+            "title": "Qualities",
+            "type": "array"
           },
           "since": {
             "anyOf": [
@@ -49539,6 +49555,25 @@
         "title": "SwitchLevel",
         "type": "object"
       },
+      "SwitchQuality": {
+        "description": "An equipment quality a switch gives while it is on (#820): Armor of Terra's\nHardened and Ballistic. What it does to the pools counts as a picked quality's\ndoes (horatio.play).",
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "SwitchQuality",
+        "type": "object"
+      },
       "SwitchedDamage": {
         "description": "What a switch does to an attack's damage while it is on.",
         "properties": {
@@ -51761,14 +51796,17 @@
         "type": "object"
       },
       "TrackedPart": {
-        "description": "A part of a variant the Play View's trackers hold, so the page counts it\n(issue #602): Rampart of Faith adds current Morality minus current Beast traits.",
+        "description": "A part of a variant the Play View's trackers hold, so the page counts it\n(issue #602): Rampart of Faith adds current Morality minus current Beast traits,\nManic Episode current Derangement traits (#820).",
         "properties": {
           "label": {
             "title": "Label",
             "type": "string"
           },
           "tracks": {
-            "const": "morality_less_beast",
+            "enum": [
+              "morality_less_beast",
+              "derangements"
+            ],
             "title": "Tracks",
             "type": "string"
           }

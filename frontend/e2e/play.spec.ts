@@ -697,6 +697,63 @@ test("Flesh of Marble: two Protective Gear qualities picked each use, each again
   await expect(qualities).toContainText("(0 picked)");
 });
 
+test("timed powers as switches: Armor of Terra's own qualities under Dodge, and Fleshcraft's attack in Combat (#820)", async ({ browser }) => {
+  const { page: p } = await person(browser, "terra-flesh");
+  // A Gargoyle elder (Generation 3) with Visceratika 4.
+  const id = await builtVampire(
+    p,
+    "Zdenek",
+    "Gargoyles",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Visceratika", 2], ["Fortitude", 1], ["Potence", 1]] },
+    [["disciplines", "Visceratika", 4]],
+  );
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const row = (name: RegExp) => p.getByRole("main").getByRole("listitem").filter({ hasText: name }).first();
+  const dodge = row(/^Dodge/);
+  await expect(dodge).toBeVisible();
+  const before = Number(await dodge.locator("strong").first().textContent());
+  const against = (attacks: RegExp) => dodge.getByRole("listitem").filter({ hasText: attacks });
+
+  // Armor of Terra (core p. 171): Hardened and Ballistic without picking, each a line under Dodge.
+  await p.getByRole("button", { name: "Use Armor of Terra, 1 Blood" }).click();
+  await expect(p.getByText(/Armor of Terra switched on$/)).toBeVisible();
+  await expect(against(/^Against firearms/)).toContainText("+1 Armor of Terra: Hardened");
+  await expect(against(/^Against firearms/)).toContainText("+3 Armor of Terra: Ballistic");
+  await expect(against(/^Against firearms/).locator("strong")).toHaveText(String(before + 4));
+  await expect(against(/^Against Brawl, Melee and thrown weapons/).locator("strong")).toHaveText(String(before + 4));
+  await expect(dodge.locator("strong").first()).toHaveText(String(before));
+
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await switches.click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  await expect(drawer).toContainText("Hardened, Ballistic");
+  // Switched off, its qualities go.
+  await p.getByLabel("Armor of Terra on").uncheck();
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await expect(against(/^Against/)).toHaveCount(0);
+
+  // A Tzimisce with Vicissitude 2: Fleshcraft (core p. 168) is a Brawl attack in Combat while it's on, 1 damage nothing reduces.
+  const tzimisce = await builtVampire(
+    p,
+    "Vaclava",
+    "Tzimisce",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]] },
+    [],
+  );
+  await p.goto(`/play/characters/${tzimisce}?tab=pools`);
+  await expect(row(/^Dodge/)).toBeVisible();
+  const flesh = p.getByRole("listitem").filter({ hasText: /^Fleshcraft attack/ });
+  await expect(flesh).toHaveCount(0);
+  await p.getByRole("button", { name: "Use Fleshcraft, 1 Blood" }).click();
+  await expect(flesh).toContainText("against Physical + Dodge");
+  await expect(flesh).toContainText("Damage 1, nothing reduces it · exceptional 2");
+  await switches.click();
+  await expect(drawer).toContainText("Fleshcraft attack in Combat: 1 damage that nothing reduces");
+  await p.getByLabel("Fleshcraft on").uncheck();
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await expect(flesh).toHaveCount(0);
+});
+
 test("Azhi Dahaka gives every attribute focus: on the sheet and the Play View, from the power, and counted in its powers (#598)", async ({ browser }) => {
   const { page: p } = await person(browser, "azhi-seeker");
   // A Tzimisce Luminary Elder (Generation 5) with Vicissitude 5, whose own Social focus is Manipulation.

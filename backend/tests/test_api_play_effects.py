@@ -140,9 +140,7 @@ def test_undo_ends_the_effect_a_tap_started_or_brings_back_one_it_ended(
     assert on(reset(troupe, setne)) == {"Heart removed"}
 
 
-def test_a_character_without_the_power_starts_nothing(
-    troupe: Troupe, session: Session
-) -> None:
+def test_a_character_without_the_power_starts_nothing(troupe: Troupe, session: Session) -> None:
     character_id = new_character(troupe, troupe.player, "Plain")
     state = send(troupe.player, character_id, tap(HEART, 1))
     assert on(state) == set()

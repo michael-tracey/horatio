@@ -24,6 +24,8 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   on: false,
   options: [],
   picked: [],
+  qualities: [],
+  fixed: [],
   turned_on: 0,
   kept: false,
   normal_form_only: false,

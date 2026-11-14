@@ -68,11 +68,11 @@ export function total(pool: TestPool, willpower: number, modifiers: Modifier[] =
 
 const part = (label: string, value: number) => (value < 0 ? `− ${label} ${-value}` : `${label} ${value}`);
 
-/** What the Play View's trackers hold that a pool can count (issue #602). */
-export type Trackers = { morality: number; beast: number };
+/** What the Play View's trackers hold that a pool can count (issue #602): Morality, Beast traits and Derangement traits (#820). */
+export type Trackers = { morality: number; beast: number; derangements?: number };
 
-export function trackersOf(view: { morality: { value: number } | null; beast: { value: number } }): Trackers {
-  return { morality: view.morality?.value ?? 0, beast: view.beast.value };
+export function trackersOf(view: { morality: { value: number } | null; beast: { value: number }; derangements?: { value: number } | null }): Trackers {
+  return { morality: view.morality?.value ?? 0, beast: view.beast.value, derangements: view.derangements?.value ?? 0 };
 }
 
 type Variant = TestPool["variants"][number];
@@ -90,8 +90,13 @@ export function variantsOn(pool: TestPool, on: readonly string[]): Variant[] {
   return pool.variants.filter((v) => !v.switch || on.includes(v.switch));
 }
 
-/** Rampart of Faith's current Morality minus current Beast traits (Vol. 2 p. 244), never below 0. */
-export function trackedValue(_tracked: Variant["tracked"][number], trackers: Trackers | undefined): number {
+/**
+ * What a tracked part counts now: Rampart of Faith's current Morality minus current
+ * Beast traits (Vol. 2 p. 244), never below 0; Manic Episode's current Derangement
+ * traits (Vol. 2 Issue 1 p. 71).
+ */
+export function trackedValue(tracked: Variant["tracked"][number], trackers: Trackers | undefined): number {
+  if (tracked.tracks === "derangements") return trackers?.derangements ?? 0;
   return Math.max(0, (trackers?.morality ?? 0) - (trackers?.beast ?? 0));
 }
 
