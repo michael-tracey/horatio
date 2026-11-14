@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { Card } from "../../components/ui";
+import { MotifsTouched } from "./MotifTags";
 import { SettingDocumentFor } from "./SettingDocument";
 
 /**
@@ -30,6 +31,7 @@ export function SettingTab({ troupeId, staff }: { troupeId: string; staff: boole
       <Card>
         <SettingDocumentFor troupeId={troupeId} editBase={staff ? base : undefined} />
       </Card>
+      {staff && <MotifsTouched troupeId={troupeId} />}
     </div>
   );
 }
