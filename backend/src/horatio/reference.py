@@ -283,10 +283,35 @@ class PowerUse(BaseModel):
     # Who it is used on (issue #823): the character itself, or another character in
     # its home troupe, whose game it changes (horatio.play_on_others).
     target: Literal["self", "other"] = "self"
+    # The ally it calls up, by its summon's key (issue #827): one more, or with
+    # `summon_all` every one the character can have at once (Arms of the Abyss rise
+    # together, core p. 149).
+    summon: str | None = None
+    summon_all: bool = False
     # What it does to a power's counter (issue #826).
     charges: ChargeChange | None = None
     # A switch it turns on, if off (Reaper's Due's mark).
     on: str | None = None
+
+
+class Summon(BaseModel):
+    """An ally a power calls up at a game (issue #827): Arms of the Abyss, a zombie, a
+    bound wraith. Each has its own health levels (and Blood, where the book gives it),
+    tapped as a Retainer's are, and is gone when dismissed or when the game ends. One
+    with no health levels (Shadow Twin, immune to Physical harm) is only out or not."""
+
+    key: str
+    # One of them: "Arm of the Abyss".
+    name: str
+    # The power it comes from: "Obtenebration 3", "Guardian Lion".
+    origin: str
+    page: str
+    # What it can do, and what ends it, in words.
+    note: str = ""
+    health: int = 0
+    blood: int = 0
+    # How many the character can have out at once, for this sheet.
+    most: int = 1
 
 
 class CounterFade(BaseModel):
@@ -1852,11 +1877,56 @@ def uses(entry: Mapping[str, Any], sheet: Sheet) -> list[PowerUse]:
                 note=u.get("note"),
                 page=_page(u) if "page" in u else None,
                 target=u.get("target", "self"),
+                summon=u.get("summon"),
+                summon_all=u.get("summon_all", False),
                 charges=_charges(u["charges"]) if "charges" in u else None,
                 on=u.get("on"),
             )
         )
     return found
+
+
+def _summon_holds(entry: Mapping[str, Any], sheet: Sheet, chosen: Mapping[str, str]) -> bool:
+    """Whether a summon's variant holds for this sheet: its focus, a discipline it
+    needs (`needs`), and a trait it needs (`has`: Spiritus: Primal Strength)."""
+    return (
+        _holds(entry, sheet, chosen)
+        and _needs(entry, sheet)
+        and ("has" not in entry or _has(sheet, entry["has"]))
+    )
+
+
+def summons(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Summon]:
+    """The allies this sheet's powers can call up (issue #827), from each entry's
+    `summon`: one table or a list of them. Variants share a key, and the last that
+    holds for the sheet is the one it has (Arms of the Abyss: 4 health levels, or 6
+    with the Manipulation focus and a dot of Fortitude, core p. 149)."""
+    return summons_of(Sheet.read(rows, rule_set), technique_bases(rule_set))
+
+
+def summons_of(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Summon]:
+    """The allies a sheet's powers can call up (see `summons`)."""
+    found: dict[str, Summon] = {}
+    for owner in owners(sheet):
+        spec = owner.entry.get("summon", [])
+        for entry in [spec] if isinstance(spec, Mapping) else spec:
+            if not _summon_holds(entry, sheet, owner.chosen):
+                continue
+            most = _amount(entry.get("most", 1), sheet, bases)
+            if "top" in entry:
+                most = min(most, entry["top"])
+            health = _amount(entry.get("health", 0), sheet, bases) + entry.get("health_add", 0)
+            found[entry["key"]] = Summon(
+                key=entry["key"],
+                name=entry["name"],
+                origin=owner.origin,
+                page=_page(entry),
+                note=entry.get("note", ""),
+                health=max(0, health),
+                blood=entry.get("blood", 0),
+                most=max(0, most),
+            )
+    return [s for s in found.values() if s.most > 0]
 
 
 def _charges(spec: Mapping[str, Any]) -> ChargeChange:

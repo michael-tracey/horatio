@@ -528,6 +528,10 @@ Some powers do more than spend. Each of those has buttons of its own under its n
 
 Where the book allows a use only so often ("once a turn"), the button says so. The Play View counts no turns, so keeping to it is up to you. Powers used on someone else heal only you here for now.
 
+**Allies a power calls up.** Some powers call up allies: Arms of the Abyss (MET: VtM core pp. 148-149), Shambling Hordes' zombies (p. 175), a wraith with Bind Soul (p. 173), a Guardian Lion (pp. 228-229), an elemental, a simulacrum, your Shadow Twin, Animal Swarm's animals or Snake Den's snakes, your Beast Spirit, Choir of the Damned's singers. The power's button on the Pools tab calls them up and spends its cost: **Raise the Arms** raises as many as you can have at once, **Raise a zombie** one at a time, as many as your Occult dots. They show on the Tracker under **Allies**, each with its own health levels to tap, as a Retainer's are, and **Dismiss**. Called up again, an ally comes back fresh. When every one you can have is out, the button is off. They are the game's, not the character's: **Reset for next game** sends them all away. One with no health levels, such as a Shadow Twin, immune to Physical harm, is only out or not.
+
+**Items a power makes.** A power that conjures an object for the game, such as Summon the Simple Form, Magic of the Smith or Shadowcrafting, is a switch: the object is yours while it's on, so switch it off when it vanishes. Permanency makes one last for good: ask your storytellers to add it to your equipment. Twisted Metal gives a Deathly Device one quality you pick, kept until you use it again (Vol. 2 p. 130). Breaking a Dark Vessel you hold gives 2 Blood (**Soul Food**) or settles a Beast trait (**Dark Offering**, Vol. 2 p. 128).
+
 #### Equipment at game
 
 The **Equipment** tab shows what the character carries, weapons first, each with what its qualities do in play. You can give an item to another character or discard it from here; it's listed under what was given or discarded this game, with **Undo**.

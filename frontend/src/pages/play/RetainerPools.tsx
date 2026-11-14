@@ -105,7 +105,7 @@ function RetainerBlock({ retainer: r, track, tap }: { retainer: RetainerOut; tra
   );
 }
 
-function Track({ label, title, tracker, value, most, tap, off = false }: { label: string; title: string; tracker: string; value: number; most: number; tap: Tap; off?: boolean }) {
+export function Track({ label, title, tracker, value, most, tap, off = false }: { label: string; title: string; tracker: string; value: number; most: number; tap: Tap; off?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-sm">

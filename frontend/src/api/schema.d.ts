@@ -13646,6 +13646,26 @@ export interface components {
             /** Rules */
             rules: components["schemas"]["AllowanceOut"][];
         };
+        /**
+         * AllyOut
+         * @description One ally a power can call up at this game (issue #827), out or not: tapped as
+         *     "<key>" to call it up or dismiss it, "<key>/health" and "<key>/blood" while out.
+         */
+        AllyOut: {
+            blood: components["schemas"]["Tracker"] | null;
+            health: components["schemas"]["Tracker"] | null;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Order
+             * @default 0
+             */
+            order: number;
+            /** Out */
+            out: boolean;
+        };
         /** AnswerIn */
         AnswerIn: {
             /** Body */
@@ -27880,6 +27900,11 @@ export interface components {
             status?: components["schemas"]["PlayStatusOut"] | null;
             stock?: components["schemas"]["StockNpcOut"] | null;
             /**
+             * Summons
+             * @default []
+             */
+            summons: components["schemas"]["SummonOut"][];
+            /**
              * Tabs
              * @default [
              *       "sheet",
@@ -28621,6 +28646,13 @@ export interface components {
              * @default 0
              */
             retainer: number;
+            /** Summon */
+            summon?: string | null;
+            /**
+             * Summon All
+             * @default false
+             */
+            summon_all: boolean;
             /**
              * Target
              * @default self
@@ -33176,6 +33208,26 @@ export interface components {
             options: (components["schemas"]["TraitNeed"] | components["schemas"]["AspectNeed"] | components["schemas"]["InfluenceSpend"] | components["schemas"]["BackgroundSpend"] | components["schemas"]["StatusSpend"] | components["schemas"]["PoolSpend"] | components["schemas"]["ActionSpend"] | components["schemas"]["ItemSpend"] | components["schemas"]["TextNeed"])[];
             /** Source */
             source: string;
+        };
+        /**
+         * SummonOut
+         * @description What a power can call up (issue #827), and the allies it can have out at once.
+         */
+        SummonOut: {
+            /** Allies */
+            allies: components["schemas"]["AllyOut"][];
+            /** Key */
+            key: string;
+            /** Most */
+            most: number;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
+            /** Origin */
+            origin: string;
+            /** Page */
+            page: string;
         };
         /** SuppressIn */
         SuppressIn: {

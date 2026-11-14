@@ -5,7 +5,7 @@ import { Button } from "../../components/ui";
 import { OnOtherPicker, type Picked } from "./OnOthers";
 import { switchKey } from "./powers";
 import type { makeTap } from "./tracker";
-import { canPay, canSpend, costText, counterOf, ghouls, marked, offered, effectTaps, spendAmounts, unitsText, type UseView } from "./uses";
+import { canPay, canSpend, costText, counterOf, ghouls, marked, offered, effectTaps, spendAmounts, toCallUp, unitsText, type UseView } from "./uses";
 
 type TapWhat = Parameters<typeof makeTap>[0];
 
@@ -276,7 +276,13 @@ function UseEffect({ power, u, view, use }: { power: string; u: PowerUse; view: 
   const charged = (n?: number) => (n && counter ? ` · ${unitsText(counter, n)}` : "");
   const suffix = (u.cost ? ` · ${costText(view, u)}` : "") + charged(spends.length === 1 ? spends[0] : undefined);
   const said = [u.once ? `${u.once}.` : null, u.note].filter(Boolean).join(" ");
-  const short = !canPay(view, u) ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}` : !canSpend(view, u) && counter ? `Not enough ${counter.units}` : "Nothing to change now";
+  const short = !canPay(view, u)
+    ? `Not enough ${u.cost!.tracker === "blood" ? view.blood_name : "Willpower"}`
+    : u.summon && toCallUp(view, u).length === 0
+      ? "All of them are out already"
+      : !canSpend(view, u) && counter
+        ? `Not enough ${counter.units}`
+        : "Nothing to change now";
   const button = (label: string, taps: ReturnType<typeof effectTaps>, key?: string, end: string = suffix) => (
     <Button
       key={key ?? label}

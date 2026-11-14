@@ -1535,6 +1535,11 @@ page = "229"
 # From MET: VTM Volume 2 Issue 1 (pp. 56–85) and Volume 2 (pp. 75–91), plus the
 # core book's Quickened Blood and Radiant Gaze. Where the catalogue spells a name
 # differently from the book, the message uses the book's.
+#
+# Count the dots on the page, not in text copied from the PDF: Volume 2 Issue 1 draws
+# them with a font whose third dot comes out as a private-use character (U+F06C) that
+# most terminals don't show, so "Vicissitude ●●●" can read as "Vicissitude ll" (#873).
+# Every technique here was checked against its page on 14 Nov 2026 and matches.
 
 [[checks]]
 category = "techniques"
