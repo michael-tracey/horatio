@@ -51,4 +51,4 @@ ENV HORATIO_COMMIT=$HORATIO_COMMIT \
 USER horatio
 EXPOSE 8000
 # Behind the host's nginx, which terminates TLS and says so in X-Forwarded-*.
-CMD ["uvicorn", "horatio.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["uvicorn", "horatio.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

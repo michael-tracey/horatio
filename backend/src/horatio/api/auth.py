@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from horatio import handles, notifications, preferences, suspensions
 from horatio.audit import record
+from horatio.auth import attempts
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
 from horatio.auth.resets import (
@@ -131,7 +132,11 @@ def user_by_login(db: DbSession, login: str) -> User | None:
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
-def sign_up(body: SignUp, db: DbSession, response: Response) -> Me:
+def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -> Me:
+    ip = request.client.host if request.client else None
+    if not attempts.check_signup(db, ip):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, attempts.SIGNUP_WAIT)
+    attempts.signup_attempt(db, ip)
     if user_by_email(db, body.email) is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "An account with that email already exists.")
     user = User(
@@ -153,11 +158,17 @@ def sign_up(body: SignUp, db: DbSession, response: Response) -> Me:
 
 
 @router.post("/login")
-def sign_in(body: SignIn, db: DbSession, response: Response) -> Me:
+def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -> Me:
+    ip = request.client.host if request.client else None
+    attempt_id = attempts.begin_login(db, body.login, ip)
+    if ip is not None and attempt_id is None:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, attempts.LOGIN_WAIT)
     user = user_by_login(db, body.login)
     ok, new_hash = verify_password(body.password, user.password_hash if user else None)
     if user is None or not ok:
+        attempts.failed_login(db, attempt_id)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email, handle or password.")
+    attempts.successful_login(db, attempt_id, body.login, ip)
     if new_hash is not None:
         user.password_hash = new_hash
     set_session_cookie(response, start_session(db, user))
