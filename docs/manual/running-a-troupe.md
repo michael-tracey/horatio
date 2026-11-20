@@ -453,7 +453,7 @@ Publishing, editing a published announcement, pinning and unpinning, unpublishin
 - **Find items** searches by words, holder, kind, quality, grade, who gave it and when, held or discarded.
 - **Export CSV** downloads the list; **Find these characters** opens the Roster on the holders.
 
-> **If your troupe uses this:** with **Items that expire** switched on in the Features list of Troupe settings, you can give an item an expiry: on a day, after a number of the holder's games, or at the end of the downtime cycle. An expired item is taken back, and its history kept.
+> **If your troupe uses this:** with **Items that expire** switched on in the Features list of Troupe settings, you can give an item an expiry: on a day, after a number of the holder's games, or at the end of the downtime cycle. A player character's games are the ones it checks in to; an NPC never checks in, so its games are the troupe's. An expired item is taken back, and its history kept.
 
 ## Locations and quests
 

@@ -1,7 +1,8 @@
 """Items that expire (issue #443): a troupe's setting, off by default; an expiry on a
 date, after a number of the holder's games, or at the end of the open downtime cycle,
 set when an item is given and extended or removed later; a warning before it comes;
-and the take-back when it does, kept in the item's history."""
+and the take-back when it does, kept in the item's history. An NPC never checks in,
+so its games are its troupe's (issue #1045)."""
 
 import uuid
 from collections.abc import Callable
@@ -17,8 +18,12 @@ from horatio.models import EquipmentItem, GameAttendance
 from tests.api_helpers import Troupe
 from tests.test_api_checkin import check_in, game, past_game
 from tests.test_api_downtimes import member_character, new_cycle, open_cycle
+from tests.test_api_equipment_passing import npc
+from tests.test_api_play import view
+from tests.test_api_play_stock import stock_npc
 from tests.test_api_renames import character_log, summaries
-from tests.test_api_troupe_equipment import change, give, given, path
+from tests.test_api_stock_groups import carried_by, shovelheads, stock
+from tests.test_api_troupe_equipment import DAGGER, RIFLE, change, give, given, path
 
 BLESSING = {
     "name": "Blessing of Saulot",
@@ -53,6 +58,12 @@ def switch(troupe: Troupe, *, on: bool) -> dict[str, Any]:
 
 def held(troupe: Troupe, character_id: str) -> list[dict[str, Any]]:
     response = troupe.player.client.get(f"/characters/{character_id}/equipment")
+    assert response.status_code == 200, response.text
+    return response.json()["items"]
+
+
+def npc_holds(troupe: Troupe, character_id: str) -> list[dict[str, Any]]:
+    response = troupe.storyteller.client.get(f"/characters/{character_id}/equipment")
     assert response.status_code == 200, response.text
     return response.json()["items"]
 
@@ -223,6 +234,81 @@ def test_an_absentee_game_does_not_count(expiring: Troupe, agnes: str, session: 
     session.flush()
     assert item_expiry.check_due(session) == 0
     assert held(expiring, agnes)[0]["expiry"]["games_left"] == 1
+
+
+# --- an NPC's games (issue #1045) ----------------------------------------------------------
+
+
+def test_an_npcs_item_expires_after_the_troupes_games(
+    expiring: Troupe, agnes: str, session: Session
+) -> None:
+    prince = npc(expiring, "Prince Vasquez")
+    crown = given(expiring, prince, **BLESSING, expiry={"kind": "games", "games": 1})
+    assert crown["expiry"]["games_left"] == 1
+    # A player character's games are still the ones it comes to.
+    kept = given(expiring, agnes, **BLESSING, expiry={"kind": "games", "games": 1})
+    game(expiring)
+
+    # Held all night: the NPC's goes once the game is over, without a check-in.
+    assert item_expiry.check_due(session) == 0
+    later = datetime.now(UTC) + timedelta(hours=7)
+    assert item_expiry.check_due(session, later) == 1
+    assert record(session, crown).status == "taken_back"
+    assert npc_holds(expiring, prince) == []
+    assert record(session, kept).status == "held"
+    assert held(expiring, agnes)[0]["expiry"]["games_left"] == 1
+    staff_told = "Prince Vasquez's Blessing of Saulot has expired, and was taken back."
+    assert staff_told in summaries(expiring.storyteller)
+    last = detail(expiring, crown["id"])["history"][-1]
+    assert (last["action"], last["reason"]) == ("taken_back", "Expired")
+
+
+def test_a_stock_npc_groups_item_expires_after_the_troupes_games(
+    expiring: Troupe, session: Session
+) -> None:
+    group = shovelheads(expiring)
+    rifle = given(expiring, group, **RIFLE, expiry={"kind": "games", "games": 2})
+    dagger = given(expiring, group, **DAGGER)
+    assert carried_by(expiring, group, rifle["id"], 2).status_code == 200
+    # Given a week and a half ago, so the past games count.
+    record(session, rifle).expiry_from = datetime.now(UTC) - timedelta(days=10)
+    session.flush()
+    # A game before the expiry was set doesn't count.
+    past_game(expiring, session, days_ago=12)
+    assert npc_holds(expiring, group)[0]["expiry"]["games_left"] == 2
+
+    past_game(expiring, session, days_ago=8)
+    assert item_expiry.check_due(session) == 0
+    rifle_now = next(i for i in npc_holds(expiring, group) if i["id"] == rifle["id"])
+    assert rifle_now["expiry"]["games_left"] == 1
+
+    past_game(expiring, session, days_ago=3)
+    assert item_expiry.check_due(session) == 1
+    assert record(session, rifle).status == "taken_back"
+    # The member no longer carries it; the group keeps the rest.
+    assert stock(expiring, group)["item_members"] == {}
+    state = view(expiring.storyteller, group)
+    assert [i["name"] for i in state["stock_items"]] == ["Silver Dagger"]
+    assert record(session, dagger).status == "held"
+
+
+def test_an_npcs_date_and_cycle_expiries_are_as_before(expiring: Troupe, session: Session) -> None:
+    prince = npc(expiring, "Prince Vasquez")
+    wolf = stock_npc(expiring, "werewolf", 3)
+    today = datetime.now(UTC).date()
+    dated = given(expiring, prince, **BLESSING, expiry={"kind": "date", "on": today.isoformat()})
+    cycle = open_cycle(expiring, new_cycle(expiring, closes_in=timedelta(days=14)))
+    cycled = given(expiring, wolf, **DAGGER, expiry={"kind": "cycle"})
+
+    assert item_expiry.check_due(session, tomorrow_utc() - timedelta(minutes=1)) == 0
+    # The day over where the lead storyteller is (UTC, with none chosen).
+    assert item_expiry.check_due(session, tomorrow_utc()) == 1
+    assert record(session, dated).status == "taken_back"
+    assert record(session, cycled).status == "held"
+
+    closed = expiring.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    assert closed.status_code == 200, closed.text
+    assert record(session, cycled).status == "taken_back"
 
 
 # --- the cycle -----------------------------------------------------------------------------
