@@ -11,7 +11,13 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select, update
 
-from horatio import audit, discord_channels, discord_emoji, discord_webhooks
+from horatio import (
+    audit,
+    discord_channels,
+    discord_emoji,
+    discord_webhooks,
+    notification_choices,
+)
 from horatio.api import discord_account
 from horatio.api.connectors import connector_row
 from horatio.api.downtimes import staff_troupe
@@ -40,6 +46,8 @@ class ChannelOut(BaseModel):
 class CharacterRef(BaseModel):
     id: uuid.UUID
     name: str
+    # Its player turned off what the connector posts to its channel (#1077).
+    channel_off: bool = False
 
 
 class RoleOut(BaseModel):
@@ -252,7 +260,17 @@ def discord_setup(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Dis
         except SendError as failure:
             raise HTTPException(status.HTTP_502_BAD_GATEWAY, failure.reason) from None
     listed = discord_channels.characters(db, troupe.id)
-    characters = [CharacterRef(id=c.id, name=c.name) for c in listed]
+    players = {
+        u.id: u for u in db.scalars(select(User).where(User.id.in_({c.player_id for c in listed})))
+    }
+    characters = [
+        CharacterRef(
+            id=c.id,
+            name=c.name,
+            channel_off=not notification_choices.own_channel_on(players[c.player_id], c.id),
+        )
+        for c in listed
+    ]
     return DiscordSetup(
         guild_id=guild_id,
         guild_name=row.settings.get("guild_name") if row else None,

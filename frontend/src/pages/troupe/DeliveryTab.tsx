@@ -77,7 +77,7 @@ export function DeliveryTab({ cycle }: { cycle: CycleOut }) {
                     </td>
                     {channels.map((c) => (
                       <td key={c} className="py-2.5 pr-4 align-top">
-                        <DeliveryCell delivery={p.deliveries[c]} who={p.character_name} channel={c} />
+                        <DeliveryCell delivery={p.deliveries[c]} who={p.character_name} channel={c} off={p.turned_off.includes(c)} />
                       </td>
                     ))}
                   </tr>
@@ -226,11 +226,13 @@ function DeliverCard({ cycle, participants, testing }: { cycle: CycleOut; partic
   );
 }
 
-function DeliveryCell({ delivery, who, channel }: { delivery: DeliveryOut | undefined; who: string; channel: string }) {
+function DeliveryCell({ delivery, who, channel, off }: { delivery: DeliveryOut | undefined; who: string; channel: string; off: boolean }) {
   const path = { params: { path: { delivery_id: delivery?.id ?? "" } } };
   const retry = useAction(() => unwrap(api.POST("/api/deliveries/{delivery_id}/retry", path)));
   const mark = useAction(() => unwrap(api.POST("/api/deliveries/{delivery_id}/mark-sent", path)));
   const dates = useDates();
+  // The player turned off their character's own channel (#1077): nothing goes there.
+  if (!delivery && off) return <span className="text-xs text-mist">Turned off by the player</span>;
   if (!delivery) return <span className="text-mist">—</span>;
   const label = `${who}'s ${channelName(channel)} delivery`;
   return (

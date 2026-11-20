@@ -1,6 +1,7 @@
 """Account › Notifications (#1053): every kind of notification Horatio sends the
 signed-in person, grouped, with where each comes, and the choices that go with a
-role (horatio.notification_choices). Each person reads and changes only their own."""
+role (horatio.notification_choices), and their characters' own Discord channels
+(#1077). Each person reads and changes only their own."""
 
 import uuid
 from typing import Literal
@@ -9,10 +10,10 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import exists, or_, select
 
-from horatio import boon_reports_told, delivery, notification_choices, preferences
+from horatio import boon_reports_told, delivery, discord_channels, notification_choices, preferences
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.connectors import CONNECTORS, email
-from horatio.models import Character, Troupe, TroupeStaff, User
+from horatio.models import Character, Troupe, TroupeConnector, TroupeStaff, User
 from horatio.notification_choices import Audience, Group, Topic, Way
 
 router = APIRouter(prefix="/notification-settings", tags=["preferences"])
@@ -40,6 +41,16 @@ class NotificationRoleOut(BaseModel):
     office: str | None = None
 
 
+class NotificationOwnChannelOut(BaseModel):
+    """A character of the person's with its own channel on the troupe's Discord: whether
+    the connector posts there (#1077), changed with `PUT
+    /notification-settings/own-channel`."""
+
+    character_id: uuid.UUID
+    character_name: str
+    on: bool
+
+
 class NotificationTroupeOut(BaseModel):
     """A troupe that also sends it through its own connectors: its choice."""
 
@@ -47,6 +58,9 @@ class NotificationTroupeOut(BaseModel):
     troupe_name: str
     # "Discord", "Email".
     connectors: list[str]
+    # The person's characters with their own channel on its Discord, on the topic that
+    # shows their switches (Topic.own_channels); empty on the others.
+    own_channels: list[NotificationOwnChannelOut] = []
 
 
 class NotificationTopicOut(BaseModel):
@@ -80,6 +94,11 @@ class NotificationSettingsOut(BaseModel):
 class NotificationChoiceIn(BaseModel):
     topic: str
     way: Way
+    on: bool
+
+
+class OwnChannelChoiceIn(BaseModel):
+    character_id: uuid.UUID
     on: bool
 
 
@@ -124,14 +143,34 @@ def troupes_sending(db: DbSession, user: User) -> list[NotificationTroupeOut]:
     )
     found: list[NotificationTroupeOut] = []
     for troupe in homes:
-        names = [CONNECTORS[c.kind].name for c in delivery.enabled_connectors(db, troupe.id)]
-        if names:
+        connectors = delivery.enabled_connectors(db, troupe.id)
+        if connectors:
             found.append(
                 NotificationTroupeOut(
-                    troupe_id=troupe.id, troupe_name=troupe.name, connectors=names
+                    troupe_id=troupe.id,
+                    troupe_name=troupe.name,
+                    connectors=[CONNECTORS[c.kind].name for c in connectors],
+                    own_channels=own_channels(db, user, troupe, connectors),
                 )
             )
     return found
+
+
+def own_channels(
+    db: DbSession, user: User, troupe: Troupe, connectors: list[TroupeConnector]
+) -> list[NotificationOwnChannelOut]:
+    """The person's characters the troupe's Discord connector has a channel for."""
+    found = next((c for c in connectors if c.kind == "discord"), None)
+    channels = (found.settings.get("channels") or {}) if found else {}
+    return [
+        NotificationOwnChannelOut(
+            character_id=c.id,
+            character_name=c.name,
+            on=notification_choices.own_channel_on(user, c.id),
+        )
+        for c in discord_channels.characters(db, troupe.id)
+        if c.player_id == user.id and channels.get(str(c.id))
+    ]
 
 
 def topic_out(
@@ -163,7 +202,11 @@ def topic_out(
             )
             for way, route in topic.routes.items()
         ],
-        troupes_send=sending if topic.connectors else [],
+        troupes_send=[
+            t if topic.own_channels else t.model_copy(update={"own_channels": []}) for t in sending
+        ]
+        if topic.connectors
+        else [],
         roles=roles,
     )
 
@@ -214,5 +257,20 @@ def choose_notification(
     if route.always:
         raise HTTPException(status.HTTP_409_CONFLICT, f"{topic.title}: these always come that way.")
     preferences.change(user, {topic.setting(body.way): body.on})
+    db.commit()
+    return settings_out(db, user)
+
+
+@router.put("/own-channel")
+def choose_own_channel(
+    body: OwnChannelChoiceIn, db: DbSession, user: CurrentUser
+) -> NotificationSettingsOut:
+    """Turn on or off what a troupe's Discord connector posts to your character's own
+    channel: its downtime results and quest news. They still come in Horatio, and the
+    troupe's shared channels are unchanged."""
+    character = db.get(Character, body.character_id)
+    if character is None or character.player_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character of yours.")
+    notification_choices.choose_own_channel(user, character.id, body.on)
     db.commit()
     return settings_out(db, user)
