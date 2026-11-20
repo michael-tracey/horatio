@@ -16,6 +16,7 @@ from horatio import (
     domitors,
     downtimes,
     leaving,
+    next_steps,
     pictures,
     play_tabs,
     pronouns,
@@ -102,6 +103,41 @@ class CharacterListOut(CharacterOut):
     # When each cycle's results last reached the player, newest first; the page judges
     # which are new to them.
     delivered: list[datetime]
+
+
+class NextStepOut(BaseModel):
+    """One thing next for a character (horatio.next_steps)."""
+
+    # What kind of step it is, such as "downtime_due" or "approval_discipline".
+    kind: str
+    # Its player's to do; waiting on staff; or coming up.
+    who: next_steps.Who
+    label: str
+    # The page of the app where it is done.
+    link: str
+    # Since when it has waited on staff; for new results, when the newest came (the page
+    # judges whether its player has opened them).
+    since: datetime | None
+    # When it is due, starts or ends.
+    at: datetime | None
+
+
+class CharacterNextOut(BaseModel):
+    """What is next for one character: its player's steps, then staff's, then what is
+    coming up. No steps when there is nothing."""
+
+    character_id: uuid.UUID
+    steps: list[NextStepOut]
+
+
+def next_out(character_id: uuid.UUID, steps: list[next_steps.Step]) -> CharacterNextOut:
+    return CharacterNextOut(
+        character_id=character_id,
+        steps=[
+            NextStepOut(kind=s.kind, who=s.who, label=s.label, link=s.link, since=s.since, at=s.at)
+            for s in steps
+        ],
+    )
 
 
 class PlacedDots(BaseModel):
@@ -333,9 +369,39 @@ def create_character(body: NewCharacter, db: DbSession, user: CurrentUser) -> Ch
     return character_out(db, character)
 
 
+# Before /{character_id}, which would take "next" for an id.
+@router.get("/next")
+def my_next_steps(db: DbSession, user: CurrentUser) -> list[CharacterNextOut]:
+    """What is next for each of the player's characters, for the Characters page, in a
+    few queries for all of them. Those with nothing next are left out."""
+    found = list(
+        db.scalars(
+            select(Character).where(
+                Character.player_id == user.id,
+                Character.kind == "pc",
+                Character.status == "active",
+            )
+        )
+    )
+    steps = next_steps.next_steps(db, found)
+    return [next_out(c.id, steps[c.id]) for c in found if c.id in steps]
+
+
 @router.get("/{character_id}")
 def read_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CharacterOut:
     return character_out(db, visible_character(db, user, character_id))
+
+
+@router.get("/{character_id}/next")
+def character_next_steps(
+    character_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> CharacterNextOut:
+    """What is next for the character, for the card at the top of its page: its
+    player's alone to see."""
+    character = visible_character(db, user, character_id)
+    if character.player_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player sees this.")
+    return next_out(character.id, next_steps.next_steps(db, [character]).get(character.id, []))
 
 
 @router.patch("/{character_id}")

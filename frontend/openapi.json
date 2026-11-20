@@ -11716,6 +11716,29 @@
         "title": "CharacterListOut",
         "type": "object"
       },
+      "CharacterNextOut": {
+        "description": "What is next for one character: its player's steps, then staff's, then what is\ncoming up. No steps when there is nothing.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/NextStepOut"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "steps"
+        ],
+        "title": "CharacterNextOut",
+        "type": "object"
+      },
       "CharacterOut": {
         "properties": {
           "asking_troupe_id": {
@@ -12078,6 +12101,11 @@
       },
       "CharacterRef": {
         "properties": {
+          "channel_off": {
+            "default": false,
+            "title": "Channel Off",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -34221,6 +34249,66 @@
         "title": "NewsAgencyItem",
         "type": "object"
       },
+      "NextStepOut": {
+        "description": "One thing next for a character (horatio.next_steps).",
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "link": {
+            "title": "Link",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "who": {
+            "enum": [
+              "player",
+              "staff",
+              "coming"
+            ],
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "who",
+          "label",
+          "link",
+          "since",
+          "at"
+        ],
+        "title": "NextStepOut",
+        "type": "object"
+      },
       "NominationIn": {
         "properties": {
           "about_character_id": {
@@ -34466,6 +34554,31 @@
         "title": "NotificationOut",
         "type": "object"
       },
+      "NotificationOwnChannelOut": {
+        "description": "A character of the person's with its own channel on the troupe's Discord: whether\nthe connector posts there (#1077), changed with `PUT\n/notification-settings/own-channel`.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "on"
+        ],
+        "title": "NotificationOwnChannelOut",
+        "type": "object"
+      },
       "NotificationRoleOut": {
         "description": "Whether the person is told at all in one troupe, as a role (#1018): changed with\n`PUT /troupes/{troupe_id}/boon-reports-told`, as beside the role.",
         "properties": {
@@ -34636,6 +34749,14 @@
               "type": "string"
             },
             "title": "Connectors",
+            "type": "array"
+          },
+          "own_channels": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/NotificationOwnChannelOut"
+            },
+            "title": "Own Channels",
             "type": "array"
           },
           "troupe_id": {
@@ -35973,6 +36094,25 @@
         "title": "OwedOut",
         "type": "object"
       },
+      "OwnChannelChoiceIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "on"
+        ],
+        "title": "OwnChannelChoiceIn",
+        "type": "object"
+      },
       "OwnCheckIn": {
         "properties": {
           "category": {
@@ -36807,6 +36947,14 @@
           "to_answer": {
             "title": "To Answer",
             "type": "integer"
+          },
+          "turned_off": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Turned Off",
+            "type": "array"
           },
           "unreachable": {
             "items": {
@@ -64799,6 +64947,32 @@
         ]
       }
     },
+    "/api/characters/next": {
+      "get": {
+        "description": "What is next for each of the player's characters, for the Characters page, in a\nfew queries for all of them. Those with nothing next are left out.",
+        "operationId": "my_next_steps_api_characters_next_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CharacterNextOut"
+                  },
+                  "title": "Response My Next Steps Api Characters Next Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Next Steps",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
     "/api/characters/{character_id}": {
       "delete": {
         "description": "Delete a character for good. It must be in no troupe: leaving each one first\nis what tells those troupes' storytellers.",
@@ -70175,6 +70349,50 @@
         "summary": "Move Character",
         "tags": [
           "custodian"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/next": {
+      "get": {
+        "description": "What is next for the character, for the card at the top of its page: its\nplayer's alone to see.",
+        "operationId": "character_next_steps_api_characters__character_id__next_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterNextOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Next Steps",
+        "tags": [
+          "characters"
         ]
       }
     },
@@ -79816,6 +80034,48 @@
           }
         },
         "summary": "Choose Notification",
+        "tags": [
+          "preferences"
+        ]
+      }
+    },
+    "/api/notification-settings/own-channel": {
+      "put": {
+        "description": "Turn on or off what a troupe's Discord connector posts to your character's own\nchannel: its downtime results and quest news. They still come in Horatio, and the\ntroupe's shared channels are unchanged.",
+        "operationId": "choose_own_channel_api_notification_settings_own_channel_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnChannelChoiceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choose Own Channel",
         "tags": [
           "preferences"
         ]

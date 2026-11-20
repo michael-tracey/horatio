@@ -36,13 +36,15 @@ delivery worker, for dates (`close_due_now`); and when the troupe changes its se
 """
 
 import uuid
-from collections.abc import Sequence
+from collections import defaultdict
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session
 
 from horatio import audit, notifications
@@ -101,74 +103,110 @@ def setting_text(troupe: Troupe) -> str:
     return LOCKED_TEXT
 
 
-def accepted_at(db: Session, character: Character, troupe: Troupe) -> datetime | None:
-    """When `troupe` accepted the character, if it gets free changes from that: it is
-    a PC whose home troupe it is, that was its first acceptance, and the troupe gave
-    free changes then."""
-    if (
-        character.kind != "pc"
-        or character.home_troupe_id != troupe.id
-        or troupe.free_changes_since is None
-    ):
-        return None
-    first = db.scalar(
-        select(SheetVersion)
-        .where(SheetVersion.character_id == character.id)
-        .order_by(SheetVersion.approved_at, SheetVersion.number)
-        .limit(1)
-    )
-    if first is None or first.troupe_id != troupe.id:
-        return None
-    if first.approved_at < troupe.free_changes_since:
-        return None
-    return first.approved_at
-
-
-def attended(db: Session, character_id: uuid.UUID, troupe_id: uuid.UUID, since: datetime) -> int:
-    """The troupe's games the character has attended, checked in, that were not over
-    before `since`. An absentee game is not one attended."""
-    return (
-        db.scalar(
-            select(func.count())
-            .select_from(GameAttendance)
-            .join(ScheduledGame, GameAttendance.game_id == ScheduledGame.id)
-            .where(
-                GameAttendance.character_id == character_id,
-                GameAttendance.kind == "attended",
-                ScheduledGame.troupe_id == troupe_id,
-                ScheduledGame.ends_at > since,
-            )
+def acceptances(
+    db: Session, characters: Sequence[Character], troupes: Mapping[uuid.UUID, Troupe]
+) -> dict[uuid.UUID, datetime]:
+    """When each character's home troupe, one of `troupes`, accepted it, if it gets
+    free changes from that: it is a PC whose home troupe it is, that was its first
+    acceptance, and the troupe gave free changes then. In one query for all of them."""
+    asked = [
+        (c, troupes[c.home_troupe_id])
+        for c in characters
+        if c.kind == "pc" and c.home_troupe_id is not None and c.home_troupe_id in troupes
+    ]
+    asked = [(c, t) for c, t in asked if t.free_changes_since is not None]
+    if not asked:
+        return {}
+    first = {
+        character_id: (troupe_id, approved_at)
+        for character_id, troupe_id, approved_at in db.execute(
+            select(SheetVersion.character_id, SheetVersion.troupe_id, SheetVersion.approved_at)
+            .where(SheetVersion.character_id.in_([c.id for c, _ in asked]))
+            .order_by(SheetVersion.character_id, SheetVersion.approved_at, SheetVersion.number)
+            .ext(distinct_on(SheetVersion.character_id))
         )
-        or 0
-    )
+    }
+    found: dict[uuid.UUID, datetime] = {}
+    for character, troupe in asked:
+        troupe_id, approved_at = first.get(character.id, (None, None))
+        since = troupe.free_changes_since
+        if troupe_id == troupe.id and approved_at and since and approved_at >= since:
+            found[character.id] = approved_at
+    return found
 
 
-def terms(
-    db: Session, character: Character, troupe: Troupe, accepted: datetime, at: datetime
-) -> Window | None:
-    """The character's free changes under the troupe's setting as it stands, if they
+def attendance(
+    db: Session, since: Mapping[uuid.UUID, tuple[uuid.UUID, datetime]]
+) -> dict[uuid.UUID, int]:
+    """For each character, `{character: (troupe, since)}`, the troupe's games it has
+    attended, checked in, that were not over before `since`. An absentee game is not
+    one attended. In one query for all of them."""
+    if not since:
+        return {}
+    counts: dict[uuid.UUID, int] = defaultdict(int)
+    for character_id, troupe_id, ends_at in db.execute(
+        select(GameAttendance.character_id, ScheduledGame.troupe_id, ScheduledGame.ends_at)
+        .join(ScheduledGame, GameAttendance.game_id == ScheduledGame.id)
+        .where(
+            GameAttendance.character_id.in_(list(since)),
+            GameAttendance.kind == "attended",
+            ScheduledGame.troupe_id.in_({troupe_id for troupe_id, _ in since.values()}),
+        )
+    ):
+        troupe, after = since[character_id]
+        if troupe_id == troupe and ends_at > after:
+            counts[character_id] += 1
+    return counts
+
+
+def terms(troupe: Troupe, accepted: datetime, at: datetime, attended: int) -> Window | None:
+    """Free changes under the troupe's setting as it stands, for a character it
+    accepted at `accepted` that has since attended `attended` of its games, if they
     are still open at `at`."""
     if troupe.free_changes == "date":
         ends = accepted + timedelta(days=troupe.free_changes_days)
         return Window("date", ends, None, excluded(troupe)) if at < ends else None
     if troupe.free_changes == "games":
-        left = troupe.free_changes_games - attended(db, character.id, troupe.id, accepted)
+        left = troupe.free_changes_games - attended
         return Window("games", None, left, excluded(troupe)) if left > 0 else None
     return None
+
+
+def windows(
+    db: Session, characters: Sequence[Character], at: datetime | None = None
+) -> dict[uuid.UUID, Window]:
+    """The characters' free changes that are open, as `window` gives each, in a few
+    queries for all of them (for "Next for this character", horatio.next_steps). A
+    character whose free changes are not open is left out."""
+    asked = [c for c in characters if c.free_changes_ended_at is None and c.home_troupe_id]
+    homes = (db.get(Troupe, troupe_id) for troupe_id in {c.home_troupe_id for c in asked})
+    troupes = {
+        t.id: t
+        for t in homes
+        if t is not None and t.archived_at is None and t.free_changes != "none"
+    }
+    accepted = acceptances(db, asked, troupes)
+    home = {c.id: troupes[c.home_troupe_id] for c in asked if c.id in accepted and c.home_troupe_id}
+    played = attendance(
+        db,
+        {
+            character_id: (troupe.id, accepted[character_id])
+            for character_id, troupe in home.items()
+            if troupe.free_changes == "games"
+        },
+    )
+    found: dict[uuid.UUID, Window] = {}
+    for character_id, troupe in home.items():
+        open_now = terms(troupe, accepted[character_id], at or now(), played.get(character_id, 0))
+        if open_now is not None:
+            found[character_id] = open_now
+    return found
 
 
 def window(db: Session, character: Character, at: datetime | None = None) -> Window | None:
     """The character's free changes, if they are open: what is left of them, from its
     home troupe's setting. None if it has none, or they have ended."""
-    if character.free_changes_ended_at is not None or character.home_troupe_id is None:
-        return None
-    troupe = db.get(Troupe, character.home_troupe_id)
-    if troupe is None or troupe.archived_at is not None or troupe.free_changes == "none":
-        return None
-    accepted = accepted_at(db, character, troupe)
-    if accepted is None:
-        return None
-    return terms(db, character, troupe, accepted, at or now())
+    return windows(db, [character], at).get(character.id)
 
 
 def refunds(db: Session, character: Character, category: str, name: str) -> bool:
@@ -220,8 +258,15 @@ def notice(db: Session, character: Character, at: datetime | None = None) -> boo
     troupe = db.get(Troupe, character.home_troupe_id)
     if troupe is None or troupe.free_changes == "none":
         return False
-    accepted = accepted_at(db, character, troupe)
-    if accepted is None or terms(db, character, troupe, accepted, at or now()) is not None:
+    accepted = acceptances(db, [character], {troupe.id: troupe}).get(character.id)
+    if accepted is None:
+        return False
+    played = (
+        attendance(db, {character.id: (troupe.id, accepted)}).get(character.id, 0)
+        if troupe.free_changes == "games"
+        else 0
+    )
+    if terms(troupe, accepted, at or now(), played) is not None:
         return False
     end(db, character, passed(troupe))
     return True

@@ -40,6 +40,7 @@ import { ChoiceInfo } from "./Info";
 import { useClanName } from "../../components/ClanNames";
 import { SheetTab } from "./SheetTab";
 import { rulesTroupe } from "./rules";
+import { NextForCharacter } from "./NextSteps";
 import { NominationsAbout } from "../nominations/NominationsAbout";
 import { RemembrancesCard } from "../nominations/Remembrances";
 import { StatusTitlesTab } from "./StatusTitlesTab";
@@ -260,6 +261,8 @@ export function CharacterPage() {
       {c.status === "retired" && c.kind === "pc" && <RemembrancesCard character={c} />}
       {pronouns}
       {sire}
+      {/* What is next for it (#1051), for its player; not in the wizard, which is the one thing next. */}
+      {mine && c.status === "active" && !onCreate && <NextForCharacter characterId={c.id} />}
       <CharacterTabs
         groups={characterTabGroups({
           base,

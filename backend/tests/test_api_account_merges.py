@@ -496,6 +496,37 @@ def test_it_is_logged_and_the_people_it_affects_are_told(
     assert "Agnes Moreau" in text
 
 
+def test_the_lead_can_turn_off_their_copy_but_not_the_persons_own(
+    troupe: Troupe, twin: Person, mail: FakeSMTP
+) -> None:
+    """The lead's copy is staff work (#1077); the person's own is their account's safety."""
+    at_home(troupe, "Agnes Moreau", twin)
+    choose = {"topic": "merges", "way": "bell", "on": False}
+    assert troupe.lead.client.put("/notification-settings", json=choose).status_code == 200
+    locked = {"topic": "security", "way": "bell", "on": False}
+    assert troupe.player.client.put("/notification-settings", json=locked).status_code == 409
+
+    merged(troupe, troupe.player, twin)
+
+    assert summaries(troupe.lead) == []
+    assert len(summaries(troupe.player)) == 1
+
+
+def test_its_characters_own_discord_channels_stay_off(troupe: Troupe, twin: Person) -> None:
+    agnes = at_home(troupe, "Agnes Moreau", twin)
+    bram = at_home(troupe, "Bram Holt", troupe.player)
+    for person, character in ((twin, agnes), (troupe.player, bram)):
+        off = person.client.put(
+            "/notification-settings/own-channel", json={"character_id": character, "on": False}
+        )
+        assert off.status_code == 200, off.text
+
+    merged(troupe, troupe.player, twin)
+
+    kept = account(troupe, troupe.player).preferences["own_channels_off"]
+    assert kept == sorted([agnes, bram])
+
+
 def test_its_messages_move_to_the_bell_of_the_account_that_stays(
     troupe: Troupe, twin: Person
 ) -> None:

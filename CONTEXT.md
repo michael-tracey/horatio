@@ -346,7 +346,7 @@ Something in a person's bell. A task is work waiting on them, such as an approva
 _Avoid_: Alert, inbox item
 
 **Notification Settings**:
-Each person's own choice, on Account › Notifications, of where each kind of notification comes to them: the bell, email, both or neither, with emails at once or gathered into one a day. Some always come: a task stays in the bell until its work is done, and word about their account's safety always comes. Whether they're told at all of some goes with a role, and is chosen beside it, such as staff, the Harpy and Lesser Harpies choosing to be told of reported boons; the page shows those choices too. What a troupe also sends through its connectors is the troupe's choice, not theirs.
+Each person's own choice, on Account › Notifications, of where each kind of notification comes to them: the bell, email, both or neither, with emails at once or gathered into one a day. Some always come: a task stays in the bell until its work is done, and word about their account's safety always comes. Whether they're told at all of some goes with a role, and is chosen beside it, such as staff, the Harpy and Lesser Harpies choosing to be told of reported boons; the page shows those choices too. What a troupe also sends through its connectors is the troupe's choice, not theirs, but for their character's own channel on the troupe's Discord, which a player can turn off for each character.
 _Avoid_: Subscriptions, alert settings, notification preferences
 
 **Discipline Purchase**:

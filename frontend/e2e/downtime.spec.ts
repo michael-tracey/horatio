@@ -874,6 +874,122 @@ test("staff use the Discord channels names suggest, and delivering warns of a ch
 });
 
 /**
+ * A player's own Discord channel (#1077). The e2e server has no Discord, so each browser is
+ * shown the troupe's Discord connector as on, with a channel for the character; the choice
+ * itself is the real one. The player turns their character's channel off on Account ›
+ * Notifications, beside the line saying the troupe sends to Discord, and staff see that on
+ * the connector screen.
+ */
+test("a player turns off their character's own Discord channel, and staff see it (#1077)", async ({ browser }) => {
+  const custodian = await person(browser, "chanoff-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "chanoff-lead");
+  const player = await person(browser, "chanoff-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data: method === "GET" ? undefined : (data ?? {}) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupeName = `Own Channels ${run}`;
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  const { id: vesna } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Vesna Kral" });
+  await send(player.page, "PUT", `/api/characters/${vesna}/traits`, { category: "clan", name: "Brujah", rating: null });
+  for (const [category, list] of Object.entries(picks))
+    await send(player.page, "PUT", `/api/characters/${vesna}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(player.page, "POST", `/api/characters/${vesna}/creation/complete`);
+  const asked = await send(player.page, "POST", `/api/characters/${vesna}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+
+  // The player's page, as with the troupe's Discord on: the switch sits under downtime
+  // results, beside the troupe's line, once for results and quest news alike.
+  const p = player.page;
+  let on = true;
+  type Settings = { groups: { topics: { name: string; troupes_send: unknown[] }[] }[] };
+  const withDiscord = (page: Settings) => ({
+    ...page,
+    groups: page.groups.map((g) => ({
+      ...g,
+      topics: g.topics.map((t) =>
+        ["downtime", "quests"].includes(t.name)
+          ? {
+              ...t,
+              troupes_send: [
+                {
+                  troupe_id: troupe.id,
+                  troupe_name: troupeName,
+                  connectors: ["Discord"],
+                  own_channels: t.name === "downtime" ? [{ character_id: vesna, character_name: "Vesna Kral", on }] : [],
+                },
+              ],
+            }
+          : t,
+      ),
+    })),
+  });
+  await p.route("**/api/notification-settings", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: withDiscord(await response.json()) });
+  });
+  await p.route("**/api/notification-settings/own-channel", async (route) => {
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    on = route.request().postDataJSON().on;
+    await route.fulfill({ response, json: withDiscord(await response.json()) });
+  });
+  await p.goto("/account/notifications");
+  const downtimes = p.getByRole("region", { name: "Downtimes" });
+  await expect(downtimes.getByText(`${troupeName} also sends them to Discord: the troupe's choice.`)).toBeVisible();
+  const own = downtimes.getByRole("switch", { name: `${troupeName}: post to Vesna Kral's own Discord channel` });
+  await expect(own).toBeChecked();
+  await expect(p.getByRole("switch", { name: /own Discord channel/ })).toHaveCount(1);
+  await own.uncheck();
+  await expect(p.getByText("Discord won't post to Vesna Kral's channel.")).toBeVisible();
+  await expect(own).not.toBeChecked();
+  await p.screenshot(shots("own-discord-channel"));
+
+  // Staff see it on the connector screen, from the real choice.
+  const l = lead.page;
+  const settings = { guild_id: "111", guild_name: "Court of Ash", channels: { [vesna]: "201" }, test_channel: null };
+  await l.route(`**/api/troupes/${troupe.id}/connectors`, async (route) => {
+    const real = await (await route.fetch()).json();
+    await route.fulfill({
+      json: real.map((c: { kind: string }) => (c.kind === "discord" ? { ...c, unavailable: null, needs: [], enabled: true, mode: "alert", test_mode: false, settings } : c)),
+    });
+  });
+  await l.route(`**/api/troupes/${troupe.id}/discord`, async (route) => {
+    const real = await (await route.fetch()).json();
+    await route.fulfill({
+      json: { ...real, guild_id: "111", guild_name: "Court of Ash", channels: [{ id: "201", name: "vesna-kral", category: "Players", private: true }], suggestions: {} },
+    });
+  });
+  await l.goto(`/troupes/${troupe.id}/connectors`);
+  const row = l.getByRole("listitem").filter({ has: l.getByLabel("Discord channel for Vesna Kral") });
+  await expect(row.getByText("Player turned it off")).toBeVisible();
+  await expect(l.getByText(/A player can turn off what Horatio posts to their character's channel/)).toBeVisible();
+
+  // Turned on again, the badge goes.
+  await own.check();
+  await expect(p.getByText("Discord posts to Vesna Kral's channel again.")).toBeVisible();
+  await l.reload();
+  await expect(l.getByLabel("Discord channel for Vesna Kral")).toHaveValue("201");
+  await expect(row.getByText("Player turned it off")).toHaveCount(0);
+  await l.unrouteAll({ behavior: "ignoreErrors" });
+  await p.unrouteAll({ behavior: "ignoreErrors" });
+});
+
+/**
  * Sharing out a cycle's responses (#376): they come by character, each folding
  * away; filtered by who has them; and several ticked are assigned in one go.
  */

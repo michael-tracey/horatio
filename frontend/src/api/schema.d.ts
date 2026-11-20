@@ -908,6 +908,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Next Steps
+         * @description What is next for each of the player's characters, for the Characters page, in a
+         *     few queries for all of them. Those with nothing next are left out.
+         */
+        get: operations["my_next_steps_api_characters_next_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}": {
         parameters: {
             query?: never;
@@ -2667,6 +2688,27 @@ export interface paths {
          *     only with a reason.
          */
         post: operations["move_character_api_characters__character_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Next Steps
+         * @description What is next for the character, for the card at the top of its page: its
+         *     player's alone to see.
+         */
+        get: operations["character_next_steps_api_characters__character_id__next_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5886,6 +5928,28 @@ export interface paths {
          *     email. Some always come, and can't be turned off.
          */
         put: operations["choose_notification_api_notification_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification-settings/own-channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose Own Channel
+         * @description Turn on or off what a troupe's Discord connector posts to your character's own
+         *     channel: its downtime results and quest news. They still come in Horatio, and the
+         *     troupe's shared channels are unchanged.
+         */
+        put: operations["choose_own_channel_api_notification_settings_own_channel_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -18469,6 +18533,20 @@ export interface components {
             /** Status */
             status: string;
         };
+        /**
+         * CharacterNextOut
+         * @description What is next for one character: its player's steps, then staff's, then what is
+         *     coming up. No steps when there is nothing.
+         */
+        CharacterNextOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Steps */
+            steps: components["schemas"]["NextStepOut"][];
+        };
         /** CharacterOut */
         CharacterOut: {
             /** Asking Troupe Id */
@@ -18576,6 +18654,11 @@ export interface components {
         };
         /** CharacterRef */
         CharacterRef: {
+            /**
+             * Channel Off
+             * @default false
+             */
+            channel_off: boolean;
             /**
              * Id
              * Format: uuid
@@ -27251,6 +27334,27 @@ export interface components {
              */
             type: "news_agency";
         };
+        /**
+         * NextStepOut
+         * @description One thing next for a character (horatio.next_steps).
+         */
+        NextStepOut: {
+            /** At */
+            at: string | null;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Link */
+            link: string;
+            /** Since */
+            since: string | null;
+            /**
+             * Who
+             * @enum {string}
+             */
+            who: "player" | "staff" | "coming";
+        };
         /** NominationIn */
         NominationIn: {
             /** About Character Id */
@@ -27343,6 +27447,23 @@ export interface components {
             troupe_name: string | null;
         };
         /**
+         * NotificationOwnChannelOut
+         * @description A character of the person's with its own channel on the troupe's Discord: whether
+         *     the connector posts there (#1077), changed with `PUT
+         *     /notification-settings/own-channel`.
+         */
+        NotificationOwnChannelOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** On */
+            on: boolean;
+        };
+        /**
          * NotificationRoleOut
          * @description Whether the person is told at all in one troupe, as a role (#1018): changed with
          *     `PUT /troupes/{troupe_id}/boon-reports-told`, as beside the role.
@@ -27410,6 +27531,11 @@ export interface components {
         NotificationTroupeOut: {
             /** Connectors */
             connectors: string[];
+            /**
+             * Own Channels
+             * @default []
+             */
+            own_channels: components["schemas"]["NotificationOwnChannelOut"][];
             /**
              * Troupe Id
              * Format: uuid
@@ -27884,6 +28010,16 @@ export interface components {
              */
             type: "elite" | "underworld";
         };
+        /** OwnChannelChoiceIn */
+        OwnChannelChoiceIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** On */
+            on: boolean;
+        };
         /** OwnCheckIn */
         OwnCheckIn: {
             /** Category */
@@ -28240,6 +28376,11 @@ export interface components {
             test_only: string[];
             /** To Answer */
             to_answer: number;
+            /**
+             * Turned Off
+             * @default []
+             */
+            turned_off: string[];
             /** Unreachable */
             unreachable: string[];
         };
@@ -39915,6 +40056,26 @@ export interface operations {
             };
         };
     };
+    my_next_steps_api_characters_next_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterNextOut"][];
+                };
+            };
+        };
+    };
     read_character_api_characters__character_id__get: {
         parameters: {
             query?: never;
@@ -43371,6 +43532,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_next_steps_api_characters__character_id__next_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterNextOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -49521,6 +49713,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["NotificationChoiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    choose_own_channel_api_notification_settings_own_channel_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnChannelChoiceIn"];
             };
         };
         responses: {

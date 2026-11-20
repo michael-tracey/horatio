@@ -6,6 +6,7 @@ import { Checkbox } from "../../components/Checkbox";
 import { SettingCard } from "../../components/SettingCard";
 import { SettingRow } from "../../components/SettingRow";
 import { useToast } from "../../components/Toast";
+import { Toggle } from "../../components/Toggle";
 import { ErrorText, Loading, Notice } from "../../components/ui";
 import { useAction, usePreferences } from "../../hooks";
 import { ToldOfReports } from "../troupe/BoonReportsTold";
@@ -22,7 +23,8 @@ const WAYS: Record<Way, string> = { bell: "Bell", email: "Email" };
  * and where each comes, the bell or email (horatio.notification_choices). Some always
  * come, and say so. Reported boons go with a role: each troupe's switch is the one beside
  * the role (#1018), shown here too. What a troupe also sends to Discord or by its own email
- * is the troupe's choice, and is said, not chosen. A way not listed never carries it.
+ * is the troupe's choice, and is said, not chosen, but for each character's own channel on
+ * its Discord, which its player can turn off (#1077). A way not listed never carries it.
  */
 export function NotificationsPage() {
   useScrollToHash();
@@ -116,6 +118,47 @@ function TopicRow({ topic, email }: { topic: NotificationTopicOut; email: boolea
       </SettingRow>
       <ErrorText error={choose.error} />
       {topic.roles && <Roles topic={topic} />}
+      <OwnChannels topic={topic} />
+    </div>
+  );
+}
+
+/**
+ * Each of your characters' own channels on a troupe's Discord (#1077): on until you turn it
+ * off, for results and quest news alike. Off, nothing is posted there; the troupe's shared
+ * channels are unchanged, and the results still come here.
+ */
+function OwnChannels({ topic }: { topic: NotificationTopicOut }) {
+  const toast = useToast();
+  const client = useQueryClient();
+  const [chosen, setChosen] = useState<{ id: string; on: boolean } | null>(null);
+  const save = useAction(
+    async ({ id, on, name }: { id: string; on: boolean; name: string }) => {
+      const done = await unwrap(api.PUT("/api/notification-settings/own-channel", { body: { character_id: id, on } }));
+      client.setQueryData<NotificationSettingsOut>(NOTIFICATION_SETTINGS, done);
+      toast({ message: on ? `Discord posts to ${name}'s channel again.` : `Discord won't post to ${name}'s channel.` });
+    },
+    [],
+    { answered: [NOTIFICATION_SETTINGS] },
+  );
+  const channels = topic.troupes_send.flatMap((t) => t.own_channels.map((c) => ({ ...c, troupe: t.troupe_name })));
+  if (!channels.length) return null;
+  return (
+    <div className="pb-2 pl-4 text-sm">
+      {channels.map((c) => (
+        <Toggle
+          key={c.character_id}
+          label={`${c.troupe}: post to ${c.character_name}'s own Discord channel`}
+          hint="Results and quest news. Off, they still come here, as you choose above, and the troupe's own channels are unchanged."
+          checked={chosen?.id === c.character_id ? chosen.on : c.on}
+          disabled={save.isPending}
+          onChange={(on) => {
+            setChosen({ id: c.character_id, on });
+            save.mutate({ id: c.character_id, on, name: c.character_name }, { onSettled: () => setChosen(null) });
+          }}
+        />
+      ))}
+      <ErrorText error={save.error} />
     </div>
   );
 }

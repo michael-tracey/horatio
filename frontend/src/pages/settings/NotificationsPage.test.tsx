@@ -37,7 +37,16 @@ const PAGE: NotificationSettingsOut = {
             { way: "bell", on: true, always: false },
             { way: "email", on: false, always: false },
           ],
-          { troupes_send: [{ troupe_id: "t1", troupe_name: "Lords of the Night", connectors: ["Discord", "Email"] }] },
+          {
+            troupes_send: [
+              {
+                troupe_id: "t1",
+                troupe_name: "Lords of the Night",
+                connectors: ["Discord", "Email"],
+                own_channels: [{ character_id: "c1", character_name: "Agnes", on: true }],
+              },
+            ],
+          },
         ),
       ],
     },
@@ -79,6 +88,16 @@ describe("Account › Notifications", () => {
 
     fireEvent.click(email);
     await vi.waitFor(() => expect(put).toHaveBeenCalledWith("/api/notification-settings", { body: { topic: "downtime", way: "email", on: true } }));
+  });
+
+  it("lets the player turn off their character's own Discord channel", async () => {
+    const put = show();
+    const downtimes = await screen.findByRole("region", { name: "Downtimes" });
+    const own = within(downtimes).getByRole("switch", { name: "Lords of the Night: post to Agnes's own Discord channel" });
+    expect(own).toHaveProperty("checked", true);
+
+    fireEvent.click(own);
+    await vi.waitFor(() => expect(put).toHaveBeenCalledWith("/api/notification-settings/own-channel", { body: { character_id: "c1", on: false } }));
   });
 
   it("shows the ones that always come as locked, with nothing to tick", async () => {
