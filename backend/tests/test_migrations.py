@@ -1051,3 +1051,39 @@ def test_the_boon_log_migration_sorts_who_each_line_was_done_as(
                 ("users", "id", user),
             ):
                 connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})
+
+
+def test_the_troupe_join_migration_makes_visiting_info_again(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0243 (#1066): 0239 made a character starting to visit a troupe a
+    debug event; it is info again, and only it changes."""
+    command.downgrade(alembic_config, "0239")
+    joined, signed_in = uuid.uuid4(), uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into audit_events (id, action, level)"
+                    " values (:j, 'troupe.join', 'debug'), (:s, 'account.signed_in', 'debug')"
+                ),
+                {"j": joined, "s": signed_in},
+            )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            levels = dict(
+                connection.execute(
+                    text("select id, level from audit_events where id in (:j, :s)"),
+                    {"j": joined, "s": signed_in},
+                ).all()
+            )
+        assert levels == {joined: "info", signed_in: "debug"}
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            connection.execute(
+                text("delete from audit_events where id in (:j, :s)"),
+                {"j": joined, "s": signed_in},
+            )

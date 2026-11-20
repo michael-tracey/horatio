@@ -2391,12 +2391,17 @@
             ],
             "title": "Record",
             "type": "string"
+          },
+          "sign_in_ips": {
+            "title": "Sign In Ips",
+            "type": "boolean"
           }
         },
         "required": [
           "record",
           "keep_debug",
-          "keep_info"
+          "keep_info",
+          "sign_in_ips"
         ],
         "title": "AuditSettingsIn",
         "type": "object"
@@ -2442,12 +2447,17 @@
             ],
             "title": "Record",
             "type": "string"
+          },
+          "sign_in_ips": {
+            "title": "Sign In Ips",
+            "type": "boolean"
           }
         },
         "required": [
           "record",
           "keep_debug",
           "keep_info",
+          "sign_in_ips",
           "last_purge"
         ],
         "title": "AuditSettingsOut",
@@ -62788,7 +62798,7 @@
     },
     "/api/audit/settings": {
       "get": {
-        "description": "For the custodian: what the log records, how long it keeps each level, and\nwhat the last purge deleted.",
+        "description": "For the custodian: what the log records, how long it keeps each level, whether\nsign-in events keep IP addresses, and what the last purge deleted.",
         "operationId": "log_settings_api_audit_settings_get",
         "responses": {
           "200": {

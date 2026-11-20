@@ -4,7 +4,7 @@ Every action has a level, set here and nowhere else: `DEBUG` and `NOTICE` name
 theirs, and every other action is `info`.
 
 - **debug**: routine events, many a day, such as signing in. Recorded only while
-  the custodian asks for them (Custodian › Site), and never shown in a troupe's,
+  the custodian asks for them (Custodian › Audit), and never shown in a troupe's,
   a character's or a location's log: only in the custodian's search.
 - **info**: most changes, shown in the logs as ever.
 - **notice**: kept forever. What features read back from the log as their
@@ -20,8 +20,9 @@ import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
+from fastapi import Request
 from sqlalchemy.orm import Session
 
 from horatio.models import AuditEvent, Character, ServerSetting, User
@@ -38,8 +39,6 @@ DEBUG: frozenset[str] = frozenset(
         "account.sign_in_failed",
         "account.signed_out",
         "account.signed_up",
-        # A character started visiting a troupe.
-        "troupe.join",
     }
 )
 
@@ -151,7 +150,7 @@ def at_least(least: Level) -> tuple[Level, ...]:
     return LEVELS[LEVELS.index(least) :]
 
 
-# --- what the custodian chooses (Custodian › Site) -----------------------------------------
+# --- what the custodian chooses (Custodian › Audit) ----------------------------------------
 
 SETTINGS = "audit_log"
 # The least level recorded can be debug, or info to skip debug events. Info and
@@ -165,6 +164,8 @@ class LogSettings:
     # Days debug and info events are kept; None for forever. Notice is kept forever.
     keep_debug: int | None = 30
     keep_info: int | None = 365
+    # Whether sign-in events keep the client's IP address (#1066).
+    sign_in_ips: bool = True
 
     def days(self, of: Level) -> int | None:
         """Days events of this level are kept; None for forever."""
@@ -178,10 +179,12 @@ def settings(db: Session) -> LogSettings:
     value = row.value if row is not None and isinstance(row.value, dict) else {}
     default = LogSettings()
     record = value.get("record")
+    ips = value.get("sign_in_ips")
     return LogSettings(
         record=record if record in RECORDABLE else default.record,
         keep_debug=value.get("keep_debug", default.keep_debug),
         keep_info=value.get("keep_info", default.keep_info),
+        sign_in_ips=ips if isinstance(ips, bool) else default.sign_in_ips,
     )
 
 
@@ -190,6 +193,7 @@ def save_settings(db: Session, chosen: LogSettings) -> None:
         "record": chosen.record,
         "keep_debug": chosen.keep_debug,
         "keep_info": chosen.keep_info,
+        "sign_in_ips": chosen.sign_in_ips,
     }
     row = db.get(ServerSetting, SETTINGS)
     if row is None:
@@ -204,6 +208,25 @@ def recorded(db: Session, of: Level) -> bool:
     if LEVELS.index(of) >= LEVELS.index("info"):
         return True
     return LEVELS.index(of) >= LEVELS.index(settings(db).record)
+
+
+def client_ip(request: Request) -> str | None:
+    """The address a request came from. Behind nginx it is the client's own: nginx
+    sets X-Forwarded-For to the address that reached it (deploy/nginx-horatio.conf.j2),
+    and uvicorn's --proxy-headers takes the client from it."""
+    return request.client.host if request.client else None
+
+
+class SignInIp(TypedDict, total=False):
+    ip: str
+
+
+def sign_in_ip(db: Session, request: Request) -> SignInIp:
+    """The client's IP address to keep with a sign-in event, as {"ip": ...}, while the
+    custodian records them (#1066); otherwise nothing. For any event of signing in,
+    `record(..., **sign_in_ip(db, request))`."""
+    ip = client_ip(request)
+    return {"ip": ip} if ip and settings(db).sign_in_ips else {}
 
 
 # --- writing -------------------------------------------------------------------------------

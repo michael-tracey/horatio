@@ -38,11 +38,14 @@ server {
     gzip_vary on;
     gzip_proxied any;
 
+    # X-Forwarded-For is the address that reached nginx, not added to one the client
+    # sent: uvicorn takes the client from it, so a made-up one would pass for theirs
+    # (the reset limits and the audit log's IP addresses, #1066).
     location / {
         proxy_pass http://127.0.0.1:{{ api_port }};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         # Portraits are the largest uploads, but for a Yorick page (below).
         client_max_body_size 10m;
@@ -55,7 +58,7 @@ server {
         proxy_pass http://127.0.0.1:{{ api_port }};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         client_max_body_size 50m;
         proxy_read_timeout 60s;
@@ -67,7 +70,7 @@ server {
         proxy_pass http://127.0.0.1:{{ api_port }};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         client_max_body_size 60m;
         proxy_read_timeout 120s;

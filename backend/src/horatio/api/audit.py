@@ -515,6 +515,8 @@ class AuditSettingsOut(BaseModel):
     # Days debug and info events are kept; None for forever. Notice is kept forever.
     keep_debug: int | None
     keep_info: int | None
+    # Whether sign-in events keep the client's IP address (#1066).
+    sign_in_ips: bool
     last_purge: AuditPurgeOut | None
 
 
@@ -522,6 +524,7 @@ class AuditSettingsIn(BaseModel):
     record: Literal["debug", "info"]
     keep_debug: KeepDays
     keep_info: KeepDays
+    sign_in_ips: bool
 
 
 def kept_for(days: int | None) -> str:
@@ -536,6 +539,7 @@ def settings_out(db: DbSession) -> AuditSettingsOut:
         record=record,
         keep_debug=chosen.keep_debug,
         keep_info=chosen.keep_info,
+        sign_in_ips=chosen.sign_in_ips,
         last_purge=AuditPurgeOut(
             at=last.at,
             debug=last.deleted.get("debug", 0),
@@ -549,8 +553,8 @@ def settings_out(db: DbSession) -> AuditSettingsOut:
 
 @router.get("/settings")
 def log_settings(db: DbSession, user: CurrentUser) -> AuditSettingsOut:
-    """For the custodian: what the log records, how long it keeps each level, and
-    what the last purge deleted."""
+    """For the custodian: what the log records, how long it keeps each level, whether
+    sign-in events keep IP addresses, and what the last purge deleted."""
     require_custodian(user)
     return settings_out(db)
 
@@ -564,7 +568,10 @@ def change_log_settings(
     require_custodian(user)
     before = audit.settings(db)
     after = audit.LogSettings(
-        record=body.record, keep_debug=body.keep_debug, keep_info=body.keep_info
+        record=body.record,
+        keep_debug=body.keep_debug,
+        keep_info=body.keep_info,
+        sign_in_ips=body.sign_in_ips,
     )
     changes: list[str] = []
     if after.record != before.record:
@@ -576,6 +583,12 @@ def change_log_settings(
             changes.append(
                 f"{of} events kept {kept_for(after.days(of))} (was {kept_for(before.days(of))})"
             )
+    if after.sign_in_ips != before.sign_in_ips:
+        changes.append(
+            "IP addresses recorded with sign-in events"
+            if after.sign_in_ips
+            else "IP addresses not recorded with sign-in events"
+        )
     if changes:
         audit.save_settings(db, after)
         audit.record(db, user, "audit.settings_changed", changes="; ".join(changes))
