@@ -749,6 +749,8 @@ test("a power kept until undone: Heart of Darkness's heart stays out through Res
   );
   const headers = { "X-Horatio": "1" };
   const reset = async () => {
+    // The page sends its taps in the background: Reset only once the server has them (#1085).
+    await expect(p.getByRole("status")).toHaveText("Saved");
     const response = await p.request.post(`/api/characters/${id}/play/reset`, { headers, data: {} });
     expect(response.status(), await response.text()).toBe(200);
     await p.reload();
@@ -1000,7 +1002,9 @@ test("Malleable Visage's alien beauty: -2 Social and the Appearance focus, kept 
   await drawer.getByRole("button", { name: "Close" }).first().click();
   await expect(social.locator("strong").first()).toHaveText(String(before - 3));
 
-  // Reset ends the form; the new face stays.
+  // Reset ends the form; the new face stays. The switch is saved in the background:
+  // Reset only once the server has it, as the Play View's own Reset waits (#1085).
+  await expect(p.getByRole("status")).toHaveText("Saved");
   const response = await p.request.post(`/api/characters/${id}/play/reset`, { headers, data: {} });
   expect(response.status(), await response.text()).toBe(200);
   await p.reload();
@@ -1039,7 +1043,8 @@ test("Bonecraft on yourself: Tough gives Physical for Healthy levels, kept throu
   const banner = p.getByRole("region", { name: "Switched on now" });
   await expect(banner).toContainText("Kept: Bonecraft: remade (Tough: 2)");
 
-  // Reset keeps it: what it gave up comes back only when it's undone.
+  // Reset keeps it: what it gave up comes back only when it's undone. Only once the pick is saved (#1085).
+  await expect(p.getByRole("status")).toHaveText("Saved");
   const response = await p.request.post(`/api/characters/${id}/play/reset`, { headers, data: {} });
   expect(response.status(), await response.text()).toBe(200);
   await p.reload();
