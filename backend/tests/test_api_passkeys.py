@@ -123,7 +123,9 @@ def sign_with(client: TestClient, device: Authenticator, **how: Any) -> Any:
 def events(session: Session, action: str) -> list[AuditEvent]:
     return list(
         session.scalars(
-            select(AuditEvent).where(AuditEvent.action == action).order_by(AuditEvent.created_at)
+            select(AuditEvent)
+            .where(AuditEvent.action == action)
+            .order_by(AuditEvent.created_at, AuditEvent.id)
         )
     )
 

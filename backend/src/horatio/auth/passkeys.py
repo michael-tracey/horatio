@@ -64,7 +64,11 @@ def _transports(names: list[Any]) -> list[AuthenticatorTransport]:
 
 def mine(db: Session, user: User) -> list[Passkey]:
     return list(
-        db.scalars(select(Passkey).where(Passkey.user_id == user.id).order_by(Passkey.created_at))
+        db.scalars(
+            select(Passkey)
+            .where(Passkey.user_id == user.id)
+            .order_by(Passkey.created_at, Passkey.id)
+        )
     )
 
 
