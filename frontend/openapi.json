@@ -23792,6 +23792,40 @@
         "title": "GeneratedOut",
         "type": "object"
       },
+      "GettingReadyChange": {
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
+        ],
+        "title": "GettingReadyChange",
+        "type": "object"
+      },
+      "GettingReadyOut": {
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ReadyStepOut"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "hidden",
+          "steps"
+        ],
+        "title": "GettingReadyOut",
+        "type": "object"
+      },
       "GiftIn": {
         "properties": {
           "amount": {
@@ -44249,6 +44283,34 @@
           }
         },
         "title": "ReadIds",
+        "type": "object"
+      },
+      "ReadyStepOut": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "step": {
+            "enum": [
+              "profile",
+              "features",
+              "joining",
+              "starting",
+              "house_rules",
+              "staff",
+              "first_game",
+              "players"
+            ],
+            "title": "Step",
+            "type": "string"
+          }
+        },
+        "required": [
+          "step",
+          "done"
+        ],
+        "title": "ReadyStepOut",
         "type": "object"
       },
       "Reason": {
@@ -94939,6 +95001,102 @@
         "summary": "Award Game Xp",
         "tags": [
           "check-in"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/getting-ready": {
+      "get": {
+        "description": "The steps of getting the troupe ready, for its running staff.",
+        "operationId": "read_getting_ready_api_troupes__troupe_id__getting_ready_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Getting Ready",
+        "tags": [
+          "troupes"
+        ]
+      },
+      "put": {
+        "description": "Hide Getting your troupe ready from the Overview, or bring it back: its storytellers'.",
+        "operationId": "change_getting_ready_api_troupes__troupe_id__getting_ready_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GettingReadyChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Getting Ready",
+        "tags": [
+          "troupes"
         ]
       }
     },
