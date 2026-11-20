@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { backstoryOptional, characterTab, chooseDots, closeContextsAfterEach, makeCustodian, openNewTroupe, person, run, shots, topBar, undoInHeader } from "./support";
+import { backstoryOptional, characterTab, chooseDots, closeContextsAfterEach, makeCustodian, openNewTroupe, person, run, shots, topBar, undoInHeader, chooseIn } from "./support";
 
 /** Influence: the troupe's log, Gossip, and attacks. */
 
@@ -29,8 +29,8 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
   const corvin = new URL(p.url()).pathname.split("/")[2]!;
-  await p.getByLabel("Clan").selectOption("Brujah");
-  await p.getByLabel("Sect").selectOption("Camarilla");
+  await chooseIn(p, "Clan", "Brujah");
+  await chooseIn(p, "Sect", "Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
@@ -196,9 +196,9 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   await p.getByLabel("Name").fill("Iris");
   await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
-  await p.getByLabel("Clan").selectOption("Brujah");
+  await chooseIn(p, "Clan", "Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
-  await p.getByLabel("Sect").selectOption("Camarilla");
+  await chooseIn(p, "Sect", "Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
@@ -334,9 +334,9 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await p.getByLabel("Name").fill("Agnes");
   await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
-  await p.getByLabel("Clan").selectOption("Brujah");
+  await chooseIn(p, "Clan", "Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
-  await p.getByLabel("Sect").selectOption("Camarilla");
+  await chooseIn(p, "Sect", "Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });

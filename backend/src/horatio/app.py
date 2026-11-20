@@ -101,6 +101,7 @@ from horatio.api import (
     roster,
     rules,
     scenes,
+    search,
     sect_status,
     setting_style,
     setup,
@@ -132,6 +133,7 @@ from horatio.api import (
     whos_who,
     written_rules,
     xp_awards,
+    xp_plans,
     xp_range,
     yorick_imports,
 )
@@ -226,6 +228,7 @@ for module in (
     sheets,
     power_choices,
     cart,
+    xp_plans,
     trait_exceptions,
     embrace,
     membership,
@@ -333,6 +336,7 @@ for module in (
     tools,
     vtes_symbols,
     jyhad_card,
+    search,
 ):
     api.include_router(module.router)
 # The signed-in person's choice of throw pictures (#671), beside the troupe's own.

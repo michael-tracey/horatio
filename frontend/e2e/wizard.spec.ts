@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, characterTab, shots, person, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES, choiceIn, choosePick, choosePicks, openSlot, pickedAt, slotsAt, goToStep, inSteps } from "./support";
+import { closeContextsAfterEach, characterTab, shots, person, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES, choiceIn, choosePick, choosePicks, openSlot, pickedAt, slotsAt, goToStep, inSteps, chooseIn, aboutChoice } from "./support";
 
 /** The creation wizard: merits and flaws, and what each step lets a character take. */
 
@@ -191,7 +191,7 @@ test("a bloodline's clan takes its merit from the merit points on Merits & flaws
   // Concept says what the clan takes; a plain Gangrel gives it back.
   await p.goto(`/characters/${id}/create/concept`);
   await expect(p.getByText("The clan takes Bloodline: Coyote (2 points) from your merit points.")).toBeVisible();
-  await p.getByLabel("Clan").selectOption("Gangrel");
+  await chooseIn(p, "Clan", "Gangrel");
   await expect(p.getByText("The clan takes Bloodline: Coyote (2 points) from your merit points.")).toHaveCount(0);
   await p.goto(`/characters/${id}/create/merits`);
   await expect(p.getByRole("region", { name: "From the clan" })).toHaveCount(0);
@@ -204,7 +204,7 @@ test("a bloodline's clan takes its merit from the merit points on Merits & flaws
   });
   expect(filled.status(), await filled.text()).toBe(200);
   await p.goto(`/characters/${id}/create/concept`);
-  await p.getByLabel("Clan").selectOption("Tzimisce: Koldun");
+  await chooseIn(p, "Clan", "Tzimisce: Koldun");
   await expect(p.getByText(/Tzimisce: Koldun needs Bloodline: Koldun \(4 points\), which does not fit: 7 of the 7 merit points are spent/)).toBeVisible();
   await expect(p.getByLabel("Clan")).toHaveValue("Gangrel");
 });
@@ -589,7 +589,7 @@ test("a player makes up an archetype in the creation wizard, and it shows on the
   await page.getByRole("button", { name: "Create" }).click();
   await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
   const id = page.url().match(/characters\/([0-9a-f-]{36})/)![1];
-  await page.getByLabel("Archetype", { exact: true }).selectOption("Other…");
+  await chooseIn(page, "Archetype", "Other…");
   // It waits for a name before it can be saved.
   await expect(page.getByRole("button", { name: "Save archetype" })).toBeDisabled();
   await page.getByLabel("Archetype's name").fill("The Penitent Thief");
@@ -613,7 +613,7 @@ test("a merit taken in the creation wizard gives the traits it grants", async ({
   await p.getByLabel("Name").fill("Grub");
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
-  await p.getByLabel("Clan").selectOption("Nosferatu: Creeps");
+  await chooseIn(p, "Clan", "Nosferatu: Creeps");
   await expect(p.getByLabel("Clan")).toHaveValue("Nosferatu: Creeps");
   // Every pick but the merits placed through the API.
   const id = new URL(p.url()).pathname.split("/")[2]!;
@@ -678,16 +678,25 @@ test("a new player picks the clan first and sees its disciplines and weakness, a
   // The clan comes before the troupe question, and its card says what it brings.
   const top = async (label: string) => (await p.getByLabel(label).boundingBox())!.y;
   expect(await top("Clan")).toBeLessThan(await top("Which troupe will you play in?"));
-  await p.getByLabel("Clan").selectOption("Brujah");
+  // Its drop-down says what each clan brings before one is chosen (#1076): its in-clan
+  // disciplines under its name, and its weakness, with the page, in the detail.
+  const clan = p.getByRole("combobox", { name: "Clan", exact: true });
+  await clan.fill("Brujah");
+  const brujah = p.getByRole("option", { name: "Brujah", exact: true });
+  await expect(brujah).toHaveAccessibleDescription(/In-clan: Celerity, Potence, Presence/);
+  await clan.press("ArrowDown");
+  await expect(aboutChoice(p)).toContainText("Weakness: Quick to rage: resisting frenzy is 2 harder. (p. 45)");
+  await brujah.click();
+  await expect(clan).toHaveValue("Brujah");
   const card = p.getByRole("region", { name: "About Brujah" });
   await expect(card).toContainText("In-clan now: Celerity, Potence and Presence.");
   await expect(card).toContainText("Weakness: Quick to rage: resisting frenzy is 2 harder. (p. 45)");
   // A bloodline with no weakness of its own has its clan's.
-  await p.getByLabel("Clan").selectOption("Gangrel: Coyote");
+  await chooseIn(p, "Clan", "Gangrel: Coyote");
   const coyote = p.getByRole("region", { name: "About Gangrel: Coyote" });
   await expect(coyote).toContainText("Weakness: One animal feature for good");
   await expect(coyote).toContainText("The clan takes Bloodline: Coyote (2 points) from your merit points.");
-  await p.getByLabel("Clan").selectOption("Brujah");
+  await chooseIn(p, "Clan", "Brujah");
   await expect(card).toContainText("In-clan now: Celerity, Potence and Presence.");
   await expect(card).not.toContainText("Bloodline: Coyote");
 
@@ -963,7 +972,7 @@ test("Crafts, Performance and Science take a field in the wizard, kept through B
   await p.getByLabel("Name").fill("Lark");
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
-  await p.getByLabel("Clan").selectOption("Brujah");
+  await chooseIn(p, "Clan", "Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();

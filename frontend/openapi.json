@@ -24190,6 +24190,37 @@
         "title": "GolcondaIn",
         "type": "object"
       },
+      "GroupOut": {
+        "properties": {
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/HitOut"
+            },
+            "title": "Hits",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "more": {
+            "title": "More",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "hits",
+          "more"
+        ],
+        "title": "GroupOut",
+        "type": "object"
+      },
       "Guidance": {
         "properties": {
           "requirements": {
@@ -25193,6 +25224,60 @@
           "findable"
         ],
         "title": "HistoryEntryOut",
+        "type": "object"
+      },
+      "HitOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "detail",
+          "to",
+          "troupe_id",
+          "troupe"
+        ],
+        "title": "HitOut",
         "type": "object"
       },
       "HolderOut": {
@@ -48047,6 +48132,22 @@
         "title": "ScheduledGameOut",
         "type": "object"
       },
+      "SearchOut": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "SearchOut",
+        "type": "object"
+      },
       "Seats": {
         "properties": {
           "clans": {
@@ -61028,6 +61129,243 @@
           "used"
         ],
         "title": "XpLine",
+        "type": "object"
+      },
+      "XpPlanAwardOut": {
+        "properties": {
+          "per_game": {
+            "title": "Per Game",
+            "type": "integer"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "per_game",
+          "source"
+        ],
+        "title": "XpPlanAwardOut",
+        "type": "object"
+      },
+      "XpPlanIn": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/XpPlanLineIn"
+            },
+            "maxItems": 50,
+            "title": "Lines",
+            "type": "array"
+          },
+          "shared": {
+            "default": false,
+            "title": "Shared",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "title": "XpPlanIn",
+        "type": "object"
+      },
+      "XpPlanLineIn": {
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "rating"
+        ],
+        "title": "XpPlanLineIn",
+        "type": "object"
+      },
+      "XpPlanLineOut": {
+        "properties": {
+          "affordable": {
+            "title": "Affordable",
+            "type": "boolean"
+          },
+          "because": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Because"
+          },
+          "buyable": {
+            "title": "Buyable",
+            "type": "boolean"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "from_rating": {
+            "title": "From Rating",
+            "type": "integer"
+          },
+          "games": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Games"
+          },
+          "held": {
+            "title": "Held",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_approval": {
+            "title": "Needs Approval",
+            "type": "boolean"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused"
+          },
+          "teacher": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeacherNeedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "detail",
+          "rating",
+          "from_rating",
+          "cost",
+          "refused",
+          "held",
+          "total",
+          "affordable",
+          "games",
+          "buyable",
+          "needs_approval",
+          "because",
+          "teacher"
+        ],
+        "title": "XpPlanLineOut",
+        "type": "object"
+      },
+      "XpPlanOut": {
+        "properties": {
+          "award": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/XpPlanAwardOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "balance": {
+            "title": "Balance",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/XpPlanLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "mine": {
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "priced": {
+            "title": "Priced",
+            "type": "boolean"
+          },
+          "shared": {
+            "title": "Shared",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shared",
+          "mine",
+          "balance",
+          "award",
+          "priced",
+          "lines"
+        ],
+        "title": "XpPlanOut",
         "type": "object"
       },
       "XpRangeChange": {
@@ -75789,6 +76127,102 @@
         ]
       }
     },
+    "/api/characters/{character_id}/xp-plan": {
+      "get": {
+        "description": "The character's plan, each line priced as the cart would price it. Its player's\nown: anyone else who sees the sheet sees it only while it is shared.",
+        "operationId": "read_plan_api_characters__character_id__xp_plan_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpPlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Plan",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "put": {
+        "description": "Keep the plan's lines, in order, and whether it is shared. Its player's alone.",
+        "operationId": "save_plan_api_characters__character_id__xp_plan_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/XpPlanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpPlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Plan",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
     "/api/characters/{character_id}/xp/debt": {
       "get": {
         "operationId": "xp_debt_of_api_characters__character_id__xp_debt_get",
@@ -83834,6 +84268,68 @@
         "summary": "Power Notes",
         "tags": [
           "rules"
+        ]
+      }
+    },
+    "/api/search": {
+      "get": {
+        "description": "What `q` finds among what the person may see, each kind a group, the hits of\n`troupe_id` (the troupe they are in now) first. Nothing for fewer than two letters.",
+        "operationId": "search_everything_api_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Everything",
+        "tags": [
+          "search"
         ]
       }
     },

@@ -37,7 +37,7 @@ const catalogue = {
   traits: ["Brujah", "Toreador", "Ventrue"].map((name) => ({ category: "clan", name })),
 } as unknown as CatalogueOut;
 
-/** The select as the wizard shows it: with the sheet, and the catalogue, read through queries. */
+/** The box as the wizard shows it: with the sheet, and the catalogue, read through queries. */
 function Page() {
   const sheet = useQuery({ queryKey: ["sheet", "agnes"], queryFn: async () => (asked.push("sheet"), sheetWith("Brujah")) });
   useQuery({ queryKey: ["catalogue", "vampire", "lords"], meta: RULES_QUERY, queryFn: async () => (asked.push("catalogue"), catalogue) });
@@ -51,37 +51,43 @@ async function shown() {
       <Page />
     </QueryClientProvider>,
   );
-  const select = (await screen.findByLabelText("Clan")) as HTMLSelectElement;
+  const box = (await screen.findByRole("combobox", { name: "Clan" })) as HTMLInputElement;
   await waitFor(() => expect(asked).toContain("catalogue"));
   asked.length = 0;
-  return select;
+  return box;
+}
+
+/** Opens the box's list and taps a clan in it. */
+function pick(box: HTMLInputElement, clan: string) {
+  fireEvent.focus(box);
+  fireEvent.click(screen.getByRole("option", { name: clan }));
 }
 
 describe("a clan picked in creation", () => {
   it("shows at once, saying it is saving, and stays once saved, without the sheet or the catalogue asked again", async () => {
-    const select = await shown();
-    expect(select.value).toBe("Brujah");
+    const box = await shown();
+    expect(box.value).toBe("Brujah");
 
-    fireEvent.change(select, { target: { value: "Toreador" } });
+    pick(box, "Toreador");
 
-    expect(select.value).toBe("Toreador");
+    expect(box.value).toBe("Toreador");
     await screen.findByText("Saving…");
     await waitFor(() => expect(answer).not.toBeNull());
     await act(async () => answer!.keep());
     await waitFor(() => expect(screen.queryByText("Saving…")).toBeNull());
-    expect(select.value).toBe("Toreador");
+    expect(box.value).toBe("Toreador");
     expect(asked).toEqual([]);
   });
 
   it("goes back to what is saved, saying why, when the server refuses it", async () => {
-    const select = await shown();
+    const box = await shown();
 
-    fireEvent.change(select, { target: { value: "Ventrue" } });
-    expect(select.value).toBe("Ventrue");
+    pick(box, "Ventrue");
+    expect(box.value).toBe("Ventrue");
     await waitFor(() => expect(answer).not.toBeNull());
     await act(async () => answer!.refuse("Ventrue is not played in this troupe."));
 
-    await waitFor(() => expect(select.value).toBe("Brujah"));
+    await waitFor(() => expect(box.value).toBe("Brujah"));
     expect(screen.getByText("Ventrue is not played in this troupe.")).not.toBeNull();
     expect(screen.queryByText("Saving…")).toBeNull();
   });

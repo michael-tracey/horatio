@@ -635,8 +635,13 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   await l.goto(`/characters/${id}`);
   const merits = l.locator("section").filter({ has: l.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
   await merits.getByRole("button", { name: "Give Merits and Flaws" }).click();
-  await l.getByLabel("Search Merits to give").fill("Calm Heart");
-  await l.getByRole("button", { name: /^Calm Heart/ }).click();
+  // The merits to give are a drop-down that says what each does (#1076).
+  await l.getByRole("combobox", { name: "Search Merits to give", exact: true }).fill("Calm Heart");
+  const calm = l.getByRole("option", { name: "Calm Heart", exact: true });
+  await expect(calm).toHaveAccessibleDescription(/resisting frenzy/);
+  await expect(calm).toContainText("p. 249");
+  await calm.click();
+  await expect(l.getByRole("combobox", { name: "Search Merits to give", exact: true })).toHaveValue("Calm Heart");
   const giving = l.getByRole("form", { name: "Give Calm Heart" });
   await giving.getByLabel("Free: at no XP cost").check();
   await giving.getByLabel("Reason").fill("Raised by a True Brujah");

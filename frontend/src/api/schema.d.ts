@@ -4660,6 +4660,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/xp-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Plan
+         * @description The character's plan, each line priced as the cart would price it. Its player's
+         *     own: anyone else who sees the sheet sees it only while it is shared.
+         */
+        get: operations["read_plan_api_characters__character_id__xp_plan_get"];
+        /**
+         * Save Plan
+         * @description Keep the plan's lines, in order, and whether it is shared. Its player's alone.
+         */
+        put: operations["save_plan_api_characters__character_id__xp_plan_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/xp/debt": {
         parameters: {
             query?: never;
@@ -7462,6 +7487,27 @@ export interface paths {
          *     Read from the power reference, which no troupe changes; its ETag is the rules'.
          */
         get: operations["power_notes_api_rules__splat__powers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Everything
+         * @description What `q` finds among what the person may see, each kind a group, the hits of
+         *     `troupe_id` (the troupe they are in now) first. Nothing for fewer than two letters.
+         */
+        get: operations["search_everything_api_search_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -23145,6 +23191,17 @@ export interface components {
             /** On */
             on: boolean;
         };
+        /** GroupOut */
+        GroupOut: {
+            /** Hits */
+            hits: components["schemas"]["HitOut"][];
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** More */
+            more: boolean;
+        };
         /** Guidance */
         Guidance: {
             /** Requirements */
@@ -23569,6 +23626,24 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /** HitOut */
+        HitOut: {
+            /** Detail */
+            detail: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** To */
+            to: string;
+            /** Troupe */
+            troupe: string | null;
+            /** Troupe Id */
+            troupe_id: string | null;
         };
         /** HolderOut */
         HolderOut: {
@@ -32664,6 +32739,11 @@ export interface components {
              */
             starts_at: string;
         };
+        /** SearchOut */
+        SearchOut: {
+            /** Groups */
+            groups: components["schemas"]["GroupOut"][];
+        };
         /** Seats */
         Seats: {
             /** Clans */
@@ -37730,6 +37810,83 @@ export interface components {
             used: {
                 [key: string]: number;
             };
+        };
+        /** XpPlanAwardOut */
+        XpPlanAwardOut: {
+            /** Per Game */
+            per_game: number;
+            /** Source */
+            source: string;
+        };
+        /** XpPlanIn */
+        XpPlanIn: {
+            /** Lines */
+            lines: components["schemas"]["XpPlanLineIn"][];
+            /**
+             * Shared
+             * @default false
+             */
+            shared: boolean;
+        };
+        /** XpPlanLineIn */
+        XpPlanLineIn: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+        };
+        /** XpPlanLineOut */
+        XpPlanLineOut: {
+            /** Affordable */
+            affordable: boolean;
+            /** Because */
+            because: string | null;
+            /** Buyable */
+            buyable: boolean;
+            /** Category */
+            category: string;
+            /** Cost */
+            cost: number | null;
+            /** Detail */
+            detail: string;
+            /** From Rating */
+            from_rating: number;
+            /** Games */
+            games: number | null;
+            /** Held */
+            held: boolean;
+            /** Name */
+            name: string;
+            /** Needs Approval */
+            needs_approval: boolean;
+            /** Rating */
+            rating: number;
+            /** Refused */
+            refused: string | null;
+            teacher: components["schemas"]["TeacherNeedOut"] | null;
+            /** Total */
+            total: number;
+        };
+        /** XpPlanOut */
+        XpPlanOut: {
+            award: components["schemas"]["XpPlanAwardOut"] | null;
+            /** Balance */
+            balance: number;
+            /** Lines */
+            lines: components["schemas"]["XpPlanLineOut"][];
+            /** Mine */
+            mine: boolean;
+            /** Priced */
+            priced: boolean;
+            /** Shared */
+            shared: boolean;
         };
         /** XpRangeChange */
         XpRangeChange: {
@@ -46952,6 +47109,72 @@ export interface operations {
             };
         };
     };
+    read_plan_api_characters__character_id__xp_plan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpPlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_plan_api_characters__character_id__xp_plan_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["XpPlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpPlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     xp_debt_of_api_characters__character_id__xp_debt_get: {
         parameters: {
             query?: never;
@@ -52316,6 +52539,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PowerNotesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_everything_api_search_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                troupe_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchOut"];
                 };
             };
             /** @description Validation Error */

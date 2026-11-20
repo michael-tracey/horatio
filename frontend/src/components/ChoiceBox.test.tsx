@@ -114,6 +114,17 @@ describe("ChoiceBox", () => {
     expect(screen.getByRole("option", { name: "Auspex" }).getAttribute("aria-selected")).toBe("true");
     expect(input.getAttribute("aria-activedescendant")).toBe(screen.getByRole("option", { name: "Auspex" }).id);
   });
+
+  it("says what a clan highlighted brings: its in-clan disciplines and its weakness, with the weakness's page", () => {
+    const brujah: TraitOut = { category: "clan", name: "Brujah", in_clan: ["Celerity", "Potence", "Presence"], weakness: "Quick to rage.", weakness_page: "45" };
+    const input = box(vi.fn(), undefined, [{ value: "Brujah", label: "Brujah", trait: brujah }]);
+    fireEvent.focus(input);
+    expect(screen.getByRole("option", { name: "Brujah" }).textContent).toContain("In-clan: Celerity, Potence, Presence");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    const about = screen.getByRole("region", { name: "About the highlighted choice" });
+    expect(about.textContent).toContain("In-clan disciplines: Celerity, Potence, Presence.");
+    expect(about.textContent).toContain("Weakness: Quick to rage. (p. 45)");
+  });
 });
 
 describe("oneLine", () => {
