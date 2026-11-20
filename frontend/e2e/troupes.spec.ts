@@ -2098,8 +2098,9 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit", exact: true }).click();
   await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
-  // Home troupe comes first, then the visiting troupes, each with what it means behind its (i).
-  await expect(p.locator("main section h2")).toHaveText(["Home troupe", "Visiting troupes"]);
+  // Home troupe comes first, then the visiting troupes, each with what it means behind its (i),
+  // below the Next card above the tabs (#1051).
+  await expect(p.locator('main section:not([aria-label="Next for this character"]) h2')).toHaveText(["Home troupe", "Visiting troupes"]);
   const card = (title: string) => p.locator("main section").filter({ has: p.getByRole("heading", { name: title }) });
   await expect(card("Home troupe").getByText("The one troupe that holds this character's sheet.")).toHaveCount(0);
   await card("Home troupe").getByRole("button", { name: "What a home troupe is" }).click();
@@ -2396,6 +2397,67 @@ test("the characters list and each Troupes tab say where a character stands: in 
   await expect(homeCard).toContainText(`then ask ${hearths} here`);
   await homeCard.getByRole("link", { name: "Create tab" }).click();
   await expect(p).toHaveURL(new RegExp(`/characters/${halfway}/create`));
+});
+
+test("a new character's Next card changes as it is built, asks to join and is accepted, and the Characters page lists the same (#1051)", async ({ browser }) => {
+  const custodian = await person(browser, "nextstep-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "nextstep-lead");
+  const player = await person(browser, "nextstep-play");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data: method === "GET" ? undefined : (data ?? {}) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupeName = `Court of Next Steps ${run}`;
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Quillon Next", building_troupe_id: troupe.id });
+  const card = p.getByRole("region", { name: "Next for this character" });
+  const row = p.getByRole("listitem").filter({ hasText: "Quillon Next" });
+
+  // Being built: finishing it is the player's.
+  await p.goto(`/characters/${id}/sheet`);
+  await expect(card.getByRole("list", { name: "For you" }).getByRole("link", { name: "Finish character creation" })).toHaveAttribute("href", `/characters/${id}/create`);
+  await p.goto("/characters");
+  await expect(row.getByRole("list", { name: "Next" }).getByRole("link", { name: "Finish character creation" })).toBeVisible();
+
+  // Finished: asking its troupe to be its home is next, and the link asks it.
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(p, "POST", `/api/characters/${id}/creation/complete`);
+  await p.goto(`/characters/${id}`);
+  await expect(card.getByRole("link", { name: "Finish character creation" })).toHaveCount(0);
+  await card.getByRole("link", { name: `Ask ${troupeName} to be its home` }).click();
+  await expect(p.getByRole("combobox", { name: "Troupe", exact: true })).toHaveValue(troupe.id);
+  await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
+
+  // Asked: now it waits on the troupe's staff, since today.
+  const waiting = card.getByRole("list", { name: "Waiting on staff" });
+  await expect(waiting.getByRole("listitem")).toHaveText(new RegExp(`^Asked ${troupeName} to be its home, since \\w{3} \\d{1,2} \\w{3}$`));
+  await expect(card.getByRole("list", { name: "For you" })).toHaveCount(0);
+  await p.screenshot(shots("next-for-character"));
+  await p.goto("/characters");
+  await expect(row.getByRole("list", { name: "Next" })).toContainText(`Waiting on staff: Asked ${troupeName} to be its home, since`);
+
+  // Accepted, with nothing next: the card is gone, and so is its line.
+  const [asked] = await send(lead.page, "GET", `/api/troupes/${troupe.id}/approvals`);
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  await p.goto(`/characters/${id}`);
+  await expect(p.getByRole("heading", { name: "Quillon Next" })).toBeVisible();
+  await expect(card).toHaveCount(0);
+  await p.goto("/characters");
+  await expect(row).toContainText(`Home: ${troupeName}`);
+  await expect(row.getByRole("list", { name: "Next" })).toHaveCount(0);
 });
 
 test("a player leaves the home troupe after a dialog naming the title that ends, and the card says there is none (#459)", async ({ browser }) => {
