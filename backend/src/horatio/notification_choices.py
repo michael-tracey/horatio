@@ -225,7 +225,8 @@ GROUPS = (
                 "Teaching asked of your character, at the cost of their Willpower. Always in"
                 " the bell until you answer.",
                 ("teaching",),
-                TASK_BELL,
+                # Pushed as it is asked, to those who tick it (#1097).
+                {"bell": ALWAYS, "push": OFF},
                 task=True,
             ),
             Topic(
