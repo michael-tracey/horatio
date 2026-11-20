@@ -7,13 +7,15 @@ import { PersonPicker } from "../../components/PersonPicker";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useWidePage } from "../../components/widePage";
 import { useDates } from "../../dates";
+import { AuditLogCard } from "./AuditLogCard";
 import { auditQuery, exportHref, filtersFrom, NO_FILTERS, toParams, type AuditCharacter, type AuditEntry, type AuditFilters } from "./audit";
 
 /**
  * The whole audit log, for the custodian: every change in every troupe and outside
  * them, newest first, found by who made it, the character, the troupe, the kind of
  * change, the days and the words. The filters live in the page's address, so a
- * search can be shared or come back to. It only reads the log.
+ * search can be shared or come back to. It only reads the log; what the log records
+ * and keeps is set on its card at the top (#1062).
  */
 export function AuditTab() {
   useWidePage();
@@ -31,6 +33,7 @@ export function AuditTab() {
 
   return (
     <div className="flex flex-col gap-6">
+      <AuditLogCard />
       {/* Filled in afresh whenever the address changes, by a search or by Back. */}
       <SearchForm key={params.toString()} applied={applied} onSearch={(filters) => setParams(toParams(filters))} />
       <Card

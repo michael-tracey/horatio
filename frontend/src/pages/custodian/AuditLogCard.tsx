@@ -52,15 +52,15 @@ function AuditLogForm({ settings }: { settings: Settings }) {
 
   return (
     <Card title="Audit log" actions={<Badge tone={recording ? "gold" : "mist"}>{recording ? "Recording debug events" : "Debug events off"}</Badge>}>
-      {/* What it keeps and the last purge stay in sight; the levels and the settings fold away (#944). */}
+      {/* What it keeps and the last purge stay in sight; the levels and the settings fold away, as on Site (#944). */}
       <div className="flex flex-col gap-4 text-sm">
         <p className="text-parchment">
-          Keeps debug events {kept(settings.keep_debug)}, info events {kept(settings.keep_info)}, and notice events forever.
-        </p>
-        <p className="text-xs text-mist">
-          {last
-            ? `Last cleared ${dates.dateTime(last.at)}: ${last.debug.toLocaleString()} debug and ${last.info.toLocaleString()} info events deleted${last.finished ? "" : ", with more still to delete"}.`
-            : "Not cleared yet."}
+          Keeps debug events {kept(settings.keep_debug)}, info events {kept(settings.keep_info)}, and notice events forever.{" "}
+          <span className="text-mist">
+            {last
+              ? `Last cleared ${dates.dateTime(last.at)}: ${last.debug.toLocaleString()} debug and ${last.info.toLocaleString()} info events deleted${last.finished ? "" : ", with more still to delete"}.`
+              : "Not cleared yet."}
+          </span>
         </p>
         <SiteFold summary="Levels, and what it records and keeps">
           <form onSubmit={submit} className="flex flex-col gap-4">

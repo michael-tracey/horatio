@@ -8,13 +8,12 @@ import { LoaderMark, loaders } from "../../loaders/art";
 import { MOTIFS, motifFor, rememberMotif, type Motif, type MotifsBySplat } from "../../loaders/motifs";
 import { SplashScreen } from "../../loaders/splash";
 import { useAppearance } from "../../loaders/useMotif";
-import { AuditLogCard } from "./AuditLogCard";
 import { EmailDesignCard } from "./EmailDesign";
 import { DiscordCard, MailCard } from "./SiteServices";
 
 /** The site as a whole (#790): what everyone sees that only the custodian chooses,
- * mail, its design and Discord (#833, #830, #834), the audit log (#1062), and what is
- * running. Was the Settings and System tabs. */
+ * mail, its design and Discord (#833, #830, #834), and what is running. Was the Settings
+ * and System tabs. */
 export function SiteTab() {
   const appearance = useAppearance();
   return (
@@ -23,7 +22,6 @@ export function SiteTab() {
       <MailCard />
       <EmailDesignCard />
       <DiscordCard />
-      <AuditLogCard />
       <WhatIsRunningCard />
     </div>
   );

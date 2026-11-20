@@ -77,7 +77,7 @@ def purge(db: Session, at: datetime) -> Purge:
                     AuditEvent.created_at < cutoff,
                     AuditEvent.action.not_in(audit.NOTICE),
                 )
-                .order_by(AuditEvent.created_at)
+                .order_by(AuditEvent.created_at, AuditEvent.id)
                 .limit(size)
             )
             gone = db.execute(delete(AuditEvent).where(AuditEvent.id.in_(due.scalar_subquery())))

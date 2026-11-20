@@ -962,9 +962,9 @@ test("the custodian sets how long the audit log keeps each level, and finds the 
   const custodian = await person(browser, "auditkeep-cust");
   makeCustodian(custodian.email);
   const c = custodian.page;
-  await c.goto("/custodian/site");
+  await c.goto("/custodian/audit");
 
-  // What it records and keeps is in sight; the settings are folded away (#944).
+  // At the top of the audit log, what it records and keeps is in sight; the settings are folded away (#944).
   const card = c.locator("section").filter({ has: c.getByRole("heading", { name: "Audit log", exact: true }) });
   await expect(card.getByText("Debug events off", { exact: true })).toBeVisible();
   await expect(card.getByText(/^Keeps debug events for \d+ days?, info events for/)).toBeVisible();
@@ -981,7 +981,6 @@ test("the custodian sets how long the audit log keeps each level, and finds the 
   await expect(card.getByText("Keeps debug events for 14 days, info events for 2 years, and notice events forever.")).toBeVisible();
 
   // The change is itself in the log, as a notice.
-  await c.goto("/custodian/audit");
   await c.getByLabel("Level", { exact: true }).selectOption({ label: "Notice only" });
   await c.getByLabel("Words").fill("audit log's settings");
   await c.getByRole("button", { name: "Search", exact: true }).click();
@@ -990,8 +989,6 @@ test("the custodian sets how long the audit log keeps each level, and finds the 
   await expect(found.first().getByText("notice", { exact: true })).toBeVisible();
   await expect(c).toHaveURL(/level=notice/);
 
-  await c.goto("/custodian/site");
-  await card.getByText("Levels, and what it records and keeps", { exact: true }).click();
   await card.getByLabel("Keep debug events for").selectOption({ label: "30 days" });
   await card.getByLabel("Keep info events for").selectOption({ label: "1 year" });
   await card.getByRole("button", { name: "Save audit log settings" }).click();
