@@ -160,6 +160,37 @@ export function retainerTracker(view: PlayView, tracker: string) {
   return { retainer, what, track: what === "blood" ? retainer.blood : what === "health" ? retainer.health : null };
 }
 
+/** A member of a group of Stock NPCs (#1056): "member:2/health", marked as health is, and "member:2/blood". */
+export const MEMBER = "member:";
+
+/** "Member 2", as the server names a member. */
+export function memberName(number: number | string): string {
+  return `Member ${number}`;
+}
+
+/** The member of a group a tap names, and which of its trackers; undefined for another tracker, or a member it hasn't. */
+export function memberTracker(view: Pick<PlayView, "stock_members">, tracker: string) {
+  if (!tracker.startsWith(MEMBER)) return undefined;
+  const [number, what] = tracker.slice(MEMBER.length).split("/");
+  const member = (view.stock_members ?? []).find((m) => String(m.number) === number);
+  return member && (what === "health" || what === "blood") ? { member, what } : undefined;
+}
+
+/** A tracker of health levels, marked with damage: the character's own, or a member's of a group. */
+export function isHealth(tracker: string): boolean {
+  return tracker === "health" || (tracker.startsWith(MEMBER) && tracker.endsWith("/health"));
+}
+
+/** A member's health levels: the group's stat block's. */
+export function memberHealth(view: Pick<PlayView, "stock">): number {
+  return view.stock?.stats.health ?? 0;
+}
+
+/** Out of the fight: a member with every health level marked (MET: VTM p. 490). */
+export function memberDown(view: Pick<PlayView, "stock">, member: { marks: string[] }): boolean {
+  return member.marks.length >= memberHealth(view);
+}
+
 /** An ally a power calls up (issue #827): "ally:Arms of the Abyss#2", and ".../health". */
 export const ALLY = "ally:";
 
@@ -192,6 +223,10 @@ export function trackerName(view: PlayView, tracker: string): string {
   if (kept) return `${kept.retainer.name || "Retainer"}: ${kept.what === "blood" ? "Blood" : "health"}`;
   const ally = allyTracker(view, tracker);
   if (ally) return ally.what ? `${ally.ally.name}: ${ally.what === "blood" ? "Blood" : "health"}` : ally.ally.name;
+  if (tracker.startsWith(MEMBER)) {
+    const [number, what] = tracker.slice(MEMBER.length).split("/");
+    return `${/^\d+$/.test(number ?? "") ? memberName(number!) : "A member"}: ${what === "blood" ? view.blood_name : "health"}`;
+  }
   const charge = chargeOf(view, tracker);
   if (charge) return charge.name;
   const status = statusEntry(view, tracker);
@@ -225,6 +260,10 @@ function most(view: PlayView, tracker: string): number | undefined {
   if (tracker.startsWith(ALLY)) {
     const found = allyTracker(view, tracker);
     return found && (found.what ? (found.track ?? undefined)?.most : 1);
+  }
+  if (tracker.startsWith(MEMBER)) {
+    const found = memberTracker(view, tracker);
+    return found && (found.what === "health" ? memberHealth(view) : found.member.blood.most);
   }
   if (tracker.startsWith(CHARGE)) return chargeOf(view, tracker)?.most;
   if (isStatus(tracker)) return statusEntry(view, tracker) ? 1 : undefined;
@@ -275,8 +314,8 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
   }
   const top = most(view, tracker);
   if (top === undefined) return null;
-  if (tracker === "health") {
-    const marks = view.health.marks;
+  if (isHealth(tracker)) {
+    const marks = tracker === "health" ? view.health.marks : memberTracker(view, tracker)!.member.marks;
     const before = marks.length;
     const kind = damage ?? "normal";
     if (amount > 0) {
@@ -326,7 +365,7 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
     charge.value = clamp(before + amount, top);
     return [before, charge.value];
   }
-  const kept = retainerTracker(view, tracker)?.track;
+  const kept = retainerTracker(view, tracker)?.track ?? memberTracker(view, tracker)?.member.blood;
   if (kept) {
     const before = kept.value;
     kept.value = clamp(before + amount, top);
@@ -357,9 +396,10 @@ export function describe(
     const text = `Drank ${tap.amount} vitae`;
     return change ? `${text}: Vitae ${change[0]} → ${change[1]}` : text;
   }
-  if (tap.tracker === "health") {
-    const text = `Health: ${tap.amount > 0 ? "took" : "healed"} ${Math.abs(tap.amount)} ${tap.damage ?? "normal"}`;
-    return change ? `${text} (${change[0]} → ${change[1]} marked)` : text;
+  if (isHealth(tap.tracker)) {
+    const whose = tap.tracker === "health" ? "Health" : trackerName(view, tap.tracker).replace(/: health$/, "");
+    const text = `${whose}: ${tap.amount > 0 ? "took" : "healed"} ${Math.abs(tap.amount)} ${tap.damage ?? "normal"}`;
+    return change ? `${text} (${change[0]} → ${change[1]} marked)` : `${text} (not on the sheet now)`;
   }
   const name = trackerName(view, tap.tracker);
   if (isStatus(tap.tracker)) {
@@ -384,6 +424,7 @@ function copy(view: PlayView): Shown {
     expendables: view.expendables.map((e) => ({ ...e })),
     retainers: (view.retainers ?? []).map((r) => ({ ...r, health: { ...r.health }, blood: r.blood ? { ...r.blood } : null })),
     summons: (view.summons ?? []).map((s) => ({ ...s, allies: s.allies.map((a) => ({ ...a, health: a.health ? { ...a.health } : null, blood: a.blood ? { ...a.blood } : null })) })),
+    stock_members: (view.stock_members ?? []).map((m) => ({ ...m, marks: [...m.marks], blood: { ...m.blood } })),
     charges: (view.charges ?? []).map((c) => ({ ...c })),
     powers: view.powers.map((p) => ({ ...p })),
     equipment: [...view.equipment],
@@ -465,6 +506,8 @@ export function latestUndoable(log: ShownEntry[]): ShownEntry | undefined {
 /** Where a tracker stands, for a toast: "5/6", "1/9 marked", "1 of 2 left"; null for one with no count. */
 function level(view: PlayView, tracker: string): string | null {
   if (tracker === "health") return `${view.health.marks.length}/${healthMost(view)} marked`;
+  const member = memberTracker(view, tracker);
+  if (member) return member.what === "health" ? `${member.member.marks.length}/${memberHealth(view)} marked` : `${member.member.blood.value}/${member.member.blood.most}`;
   if (tracker === DRANK) return view.vitae ? `${view.blood.value}/${view.blood.most}` : null;
   if (isFixed(tracker)) {
     const t = tracker === "morality" ? view.morality : view[tracker];
@@ -498,6 +541,10 @@ export function tapToast(view: Shown, tap: Tap): string {
   const tail = now ? ` · ${now}` : "";
   const name = trackerName(view, tracker);
   if (tracker === "health") return `${amount > 0 ? "Took" : "Healed"} ${n} ${tap.damage ?? "normal"}${tail}`;
+  // A member of a group (#1056): "Member 2 took 1 normal · 1/2 marked", "Member 2 spent 1 Rage · 9/10".
+  const member = memberTracker(view, tracker);
+  if (member?.what === "health") return `${member.member.name} ${amount > 0 ? "took" : "healed"} ${n} ${tap.damage ?? "normal"}${tail}`;
+  if (member) return `${member.member.name} ${amount < 0 ? "spent" : "restored"} ${n} ${view.blood_name}${tail}`;
   if (tracker === DRANK) return `Drank ${n} vitae${tail}`;
   // A power's Use button names the power the spend was for, as its note.
   if (tracker === "blood" || tracker === "willpower") return `${amount < 0 ? "Spent" : "Restored"} ${n} ${name}${amount < 0 && tap.note ? ` on ${tap.note}` : ""}${tail}`;

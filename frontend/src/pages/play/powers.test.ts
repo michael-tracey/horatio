@@ -88,6 +88,7 @@ function view(powers: PowerSwitch[], marks: string[] = [], forms = 1): PlayView 
     expendables: [],
     equipment: [],
     stock_items: [],
+    stock_members: [],
     equipped: [],
     influence: [],
     powers: powers.map((p) => ({ ...p })),

@@ -249,10 +249,12 @@ class BackupIdentity(Strict):
 
 
 class BackupStock(Strict):
-    """What a Stock NPC has in place of a sheet: its rating and specializations."""
+    """What a Stock NPC has in place of a sheet: its rating and specializations, and
+    how many it stands for (issue #1056)."""
 
     rating: int = Field(ge=1, le=20)
     specializations: list[dict[str, str]] = Field(default=[], max_length=100)
+    count: int = Field(default=1, ge=1, le=20)
 
 
 class BackupPlayer(Strict):
@@ -508,11 +510,14 @@ def picture_of(
 
 
 def stock_of(db: Session, character: Character) -> BackupStock | None:
-    """A Stock NPC's rating and specializations; never staff's notes on it."""
+    """A Stock NPC's rating, specializations and count; never staff's notes on it, or
+    which member carries what."""
     found = db.scalar(select(StockNpc).where(StockNpc.character_id == character.id))
     if found is None:
         return None
-    return BackupStock(rating=found.rating, specializations=found.specializations)
+    return BackupStock(
+        rating=found.rating, specializations=found.specializations, count=found.count
+    )
 
 
 def equipment_of(db: Session, character: Character) -> list[BackupEquipment]:
