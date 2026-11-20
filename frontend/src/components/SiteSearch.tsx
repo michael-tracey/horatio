@@ -34,7 +34,8 @@ export function SiteSearch() {
         aria-keyshortcuts="/ Control+K Meta+K"
         title="Search (/)"
         onClick={() => setOpen(true)}
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-mist hover:bg-ash/60 hover:text-parchment pointer-coarse:h-11 pointer-coarse:w-11 print:hidden"
+        // As big as the bell and the menu, so the bar keeps its height; a finger's 44 px to tap, around it.
+        className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-mist before:absolute before:-inset-1 before:content-[''] hover:bg-ash/60 hover:text-parchment print:hidden"
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
           <circle cx="11" cy="11" r="6.5" />
