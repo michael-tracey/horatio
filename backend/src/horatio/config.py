@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # Sign-in sessions.
     session_cookie_name: str = "horatio_session"
     session_days: int = 30
+    # Limits on failed sign-ins and on sign-ups (horatio.auth.attempts). Off only for
+    # the e2e suite, which signs up hundreds of people from one address.
+    auth_limits: bool = True
     # Secure cookies are only sent over HTTPS. Turn off only for local HTTP development.
     cookie_secure: bool = True
 
