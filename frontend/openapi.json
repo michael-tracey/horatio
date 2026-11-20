@@ -61198,6 +61198,21 @@
       },
       "XpPlanAwardOut": {
         "properties": {
+          "downtime": {
+            "title": "Downtime",
+            "type": "number"
+          },
+          "downtime_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downtime Source"
+          },
           "per_game": {
             "title": "Per Game",
             "type": "integer"
@@ -61209,13 +61224,46 @@
         },
         "required": [
           "per_game",
-          "source"
+          "source",
+          "downtime",
+          "downtime_source"
         ],
         "title": "XpPlanAwardOut",
         "type": "object"
       },
       "XpPlanIn": {
         "properties": {
+          "cart": {
+            "default": [],
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "pick": "#/components/schemas/PickChangeIn",
+                  "set": "#/components/schemas/SetChangeIn",
+                  "swap": "#/components/schemas/SwapChangeIn",
+                  "unpick": "#/components/schemas/UnpickChangeIn"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SetChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/SwapChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/PickChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/UnpickChangeIn"
+                }
+              ]
+            },
+            "maxItems": 100,
+            "title": "Cart",
+            "type": "array"
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/XpPlanLineIn"
@@ -61328,6 +61376,10 @@
             "title": "Held",
             "type": "boolean"
           },
+          "in_cart": {
+            "title": "In Cart",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -61375,6 +61427,7 @@
           "cost",
           "refused",
           "held",
+          "in_cart",
           "total",
           "affordable",
           "games",
@@ -61402,6 +61455,10 @@
             "title": "Balance",
             "type": "integer"
           },
+          "cart_cost": {
+            "title": "Cart Cost",
+            "type": "integer"
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/XpPlanLineOut"
@@ -61426,11 +61483,49 @@
           "shared",
           "mine",
           "balance",
+          "cart_cost",
           "award",
           "priced",
           "lines"
         ],
         "title": "XpPlanOut",
+        "type": "object"
+      },
+      "XpPlanPriceIn": {
+        "properties": {
+          "cart": {
+            "default": [],
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "pick": "#/components/schemas/PickChangeIn",
+                  "set": "#/components/schemas/SetChangeIn",
+                  "swap": "#/components/schemas/SwapChangeIn",
+                  "unpick": "#/components/schemas/UnpickChangeIn"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SetChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/SwapChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/PickChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/UnpickChangeIn"
+                }
+              ]
+            },
+            "maxItems": 100,
+            "title": "Cart",
+            "type": "array"
+          }
+        },
+        "title": "XpPlanPriceIn",
         "type": "object"
       },
       "XpRangeChange": {
@@ -76236,7 +76331,7 @@
         ]
       },
       "put": {
-        "description": "Keep the plan's lines, in order, and whether it is shared. Its player's alone.",
+        "description": "Keep the plan's lines, in order, and whether it is shared. Its player's alone,\nand not once the character is retired. It comes back priced after the cart sent.",
         "operationId": "save_plan_api_characters__character_id__xp_plan_put",
         "parameters": [
           {
@@ -76283,6 +76378,60 @@
           }
         },
         "summary": "Save Plan",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/xp-plan/price": {
+      "post": {
+        "description": "The plan, as `GET /xp-plan` gives it, but priced as if the cart's changes were\nbought first: the cart is kept in the browser, so it is sent. Nothing is saved.",
+        "operationId": "price_plan_api_characters__character_id__xp_plan_price_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/XpPlanPriceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpPlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Price Plan",
         "tags": [
           "sheets"
         ]

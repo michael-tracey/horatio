@@ -4675,10 +4675,32 @@ export interface paths {
         get: operations["read_plan_api_characters__character_id__xp_plan_get"];
         /**
          * Save Plan
-         * @description Keep the plan's lines, in order, and whether it is shared. Its player's alone.
+         * @description Keep the plan's lines, in order, and whether it is shared. Its player's alone,
+         *     and not once the character is retired. It comes back priced after the cart sent.
          */
         put: operations["save_plan_api_characters__character_id__xp_plan_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/xp-plan/price": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Price Plan
+         * @description The plan, as `GET /xp-plan` gives it, but priced as if the cart's changes were
+         *     bought first: the cart is kept in the browser, so it is sent. Nothing is saved.
+         */
+        post: operations["price_plan_api_characters__character_id__xp_plan_price_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -37877,6 +37899,10 @@ export interface components {
         };
         /** XpPlanAwardOut */
         XpPlanAwardOut: {
+            /** Downtime */
+            downtime: number;
+            /** Downtime Source */
+            downtime_source: string | null;
             /** Per Game */
             per_game: number;
             /** Source */
@@ -37884,6 +37910,11 @@ export interface components {
         };
         /** XpPlanIn */
         XpPlanIn: {
+            /**
+             * Cart
+             * @default []
+             */
+            cart: (components["schemas"]["SetChangeIn"] | components["schemas"]["SwapChangeIn"] | components["schemas"]["PickChangeIn"] | components["schemas"]["UnpickChangeIn"])[];
             /** Lines */
             lines: components["schemas"]["XpPlanLineIn"][];
             /**
@@ -37926,6 +37957,8 @@ export interface components {
             games: number | null;
             /** Held */
             held: boolean;
+            /** In Cart */
+            in_cart: boolean;
             /** Name */
             name: string;
             /** Needs Approval */
@@ -37943,6 +37976,8 @@ export interface components {
             award: components["schemas"]["XpPlanAwardOut"] | null;
             /** Balance */
             balance: number;
+            /** Cart Cost */
+            cart_cost: number;
             /** Lines */
             lines: components["schemas"]["XpPlanLineOut"][];
             /** Mine */
@@ -37951,6 +37986,14 @@ export interface components {
             priced: boolean;
             /** Shared */
             shared: boolean;
+        };
+        /** XpPlanPriceIn */
+        XpPlanPriceIn: {
+            /**
+             * Cart
+             * @default []
+             */
+            cart: (components["schemas"]["SetChangeIn"] | components["schemas"]["SwapChangeIn"] | components["schemas"]["PickChangeIn"] | components["schemas"]["UnpickChangeIn"])[];
         };
         /** XpRangeChange */
         XpRangeChange: {
@@ -47216,6 +47259,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["XpPlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpPlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    price_plan_api_characters__character_id__xp_plan_price_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["XpPlanPriceIn"];
             };
         };
         responses: {
