@@ -2,14 +2,17 @@ import { useMutation } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, GiveOut, SheetTraitOut, TraitOut } from "../../api/types";
+import { ChoiceBox, type BoxChoice } from "../../components/ChoiceBox";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { detailNeed, fieldSkills } from "./fields";
 import { ChoiceSelect } from "./ChoiceSelect";
+import { rulesTroupe } from "./rules";
 
 /**
  * Staff give a player's character a trait, or raise one, by exception: free,
- * despite the rules, or both, always with a reason. Check says what it would
+ * despite the rules, or both, always with a reason. The trait is chosen in a
+ * `ChoiceBox`, each with what it does and its page. Check says what it would
  * cost and which rules it breaks; giving it despite them needs a tick. Nothing
  * waits on approval, and the player is told.
  */
@@ -28,7 +31,6 @@ export function GivePanel({
   onClose: () => void;
 }) {
   const [category, setCategory] = useState(categories[0] ?? "");
-  const [query, setQuery] = useState("");
   const [name, setName] = useState("");
   const [detail, setDetail] = useState("");
   const [rating, setRating] = useState(1);
@@ -39,8 +41,6 @@ export function GivePanel({
   const cat = catalogue.categories.find((c) => c.key === category);
   // A house merit is applied from the sheet's House merits and flaws card instead.
   const all = useMemo(() => catalogue.traits.filter((t) => t.category === category && !t.house), [catalogue, category]);
-  const q = query.trim().toLowerCase();
-  const matching = all.filter((t) => !q || t.name.toLowerCase().includes(q));
   const trait = all.find((t) => t.name === name);
   const fixed = trait?.fixed_rating ?? null;
   const now = held.find((h) => h.category === category && h.name === name && h.detail === detail)?.rating ?? 0;
@@ -90,35 +90,36 @@ export function GivePanel({
             ))}
           </Select>
         )}
-        <Input
-          aria-label={`Search ${cat?.name ?? ""} to give`}
-          placeholder={`Search ${matching.length} ${cat?.name.toLowerCase() ?? ""}…`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+        <ChoiceBox
+          label={`Search ${cat?.name ?? ""} to give`}
+          placeholder={`Search ${all.length} ${cat?.name.toLowerCase() ?? ""}…`}
+          value={trait?.name}
+          choices={all.map((t): BoxChoice => {
+            const has = held.find((h) => h.category === category && h.name === t.name);
+            return {
+              value: t.name,
+              label: t.name,
+              trait: t,
+              hint: (
+                <>
+                  {t.fixed_rating ? <span className="text-gold">({t.fixed_rating})</span> : null}
+                  {has && <span className={t.fixed_rating ? "ml-2" : undefined}>has {has.rating}</span>}
+                </>
+              ),
+              // For a discipline, the power its next dot gives.
+              dots: { from: (has?.rating ?? 0) + 1 },
+            };
+          })}
+          onChoose={(chosen) => {
+            const t = all.find((x) => x.name === chosen);
+            if (t) choose(t);
+          }}
+          splat={character.splat}
+          troupeId={rulesTroupe(character)}
+          empty="Nothing matches."
           className="min-w-40 flex-1"
         />
       </div>
-      <ul className="flex max-h-60 flex-col overflow-y-auto">
-        {matching.map((t) => {
-          const has = held.find((h) => h.category === category && h.name === t.name);
-          return (
-            <li key={t.name}>
-              <button
-                type="button"
-                onClick={() => choose(t)}
-                className={`flex w-full justify-between rounded px-2 py-1.5 text-left text-sm ${t.name === name ? "bg-ash/60" : "hover:bg-ash/40"}`}
-              >
-                <span>
-                  {t.name}
-                  {t.fixed_rating ? <span className="text-gold"> ({t.fixed_rating})</span> : null}
-                </span>
-                {has && <span className="text-xs text-mist">has {has.rating}</span>}
-              </button>
-            </li>
-          );
-        })}
-        {matching.length === 0 && <li className="px-2 text-sm text-mist">Nothing matches.</li>}
-      </ul>
       {trait && (
         <form
           aria-label={`Give ${trait.name}`}

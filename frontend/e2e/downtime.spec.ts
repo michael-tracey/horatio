@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { backstoryOptional, characterTab, inSteps, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, openSections, pagePart, settingsPart, addList, aboutChoice } from "./support";
+import { backstoryOptional, characterTab, inSteps, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, openSections, pagePart, settingsPart, addList, aboutChoice, chooseIn } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -61,14 +61,14 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
-  await p.getByLabel("Clan").selectOption("Brujah");
+  await chooseIn(p, "Clan", "Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
   // Only the Sabbat have a faction, and leaving the Sabbat drops it.
   await expect(p.getByLabel("Faction")).toHaveCount(0);
-  await p.getByLabel("Sect").selectOption("Sabbat");
-  await p.getByLabel("Faction").selectOption("Orthodox");
+  await chooseIn(p, "Sect", "Sabbat");
+  await chooseIn(p, "Faction", "Orthodox");
   await expect(p.getByLabel("Faction")).toHaveValue("Orthodox");
-  await p.getByLabel("Sect").selectOption("Camarilla");
+  await chooseIn(p, "Sect", "Camarilla");
   await expect(p.getByLabel("Faction")).toHaveCount(0);
   // Saving a step reloads what can be taken, which can take several seconds on a busy server.
   const next = async (heading: string) => {

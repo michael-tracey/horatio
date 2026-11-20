@@ -393,6 +393,20 @@ export function aboutChoice(p: Page) {
 }
 
 /**
+ * Chooses `option` in a drop-down that explains its choices (ChoiceBox) named `label`,
+ * such as Concept's "Clan" in the creation wizard. Typing narrows the list, as a player
+ * would on a long one. The choice may still be refused once saved: the caller checks it.
+ */
+export async function chooseIn(p: Page, label: string, option: string) {
+  const box = p.getByRole("combobox", { name: label, exact: true });
+  await box.scrollIntoViewIfNeeded();
+  await box.fill(option);
+  const list = p.locator(`[id="${await box.getAttribute("aria-controls")}"]`);
+  await list.getByRole("option", { name: option, exact: true }).click();
+  await expect(list).toBeHidden();
+}
+
+/**
  * Opens the sheet's Add panel's list of a category ("Merits", "Elder Disciplines"),
  * returning it: a tap on its search box, which a choice made outside it (a chip, the
  * Show filter) has closed. Typing in the box opens it too.

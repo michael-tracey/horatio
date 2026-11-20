@@ -2,15 +2,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CategoryOut, CharacterOut, SheetOut } from "../../../api/types";
-import { useClanName } from "../../../components/ClanNames";
-import { ErrorText, Field, Select } from "../../../components/ui";
+import { ChoiceBox, type BoxChoice } from "../../../components/ChoiceBox";
+import { ErrorText, Field } from "../../../components/ui";
 import { useAction } from "../../../hooks";
+import { rulesTroupe } from "../rules";
 import { CUSTOM_ARCHETYPE } from "./logic";
 
 /**
- * One of Concept's choices made from a list: clan, archetype, sect… What is picked
- * shows at once, saying "Saving…", while it is saved and the page read again; if the
- * server refuses it, the list goes back to what is saved and says why (#638).
+ * One of Concept's choices made from a list: clan, archetype, sect… A `ChoiceBox`,
+ * each choice with what it is in a line (a clan's in-clan disciplines, an archetype's
+ * summary) and its detail (a clan's weakness) under the list. What is picked shows
+ * at once, saying "Saving…", while it is saved and the page read again; if the
+ * server refuses it, the box goes back to what is saved and says why (#638).
  * "Other…" for the archetype is not saved here: `onOwn` says it was picked, or left.
  */
 export function IdentitySelect({
@@ -28,7 +31,6 @@ export function IdentitySelect({
   own?: boolean;
   onOwn?: (own: boolean) => void;
 }) {
-  const named = useClanName();
   const client = useQueryClient();
   const sheetKey = ["sheet", character.id];
   // The one picked, shown in place of what is saved until saving it is done, or refused.
@@ -53,28 +55,22 @@ export function IdentitySelect({
   return (
     <div className="flex flex-col gap-1">
       <Field label={choice.name} hint={choose.isPending ? "Saving…" : undefined}>
-        <Select
+        <ChoiceBox
+          label={choice.name}
+          placeholder="Choose…"
           value={own ? CUSTOM_ARCHETYPE : (picked ?? saved)}
           disabled={choose.isPending}
-          onChange={(e) => {
-            const name = e.target.value;
-            if (!name) return;
+          choices={catalogue.traits.filter((t) => t.category === choice.key).map((t): BoxChoice => ({ value: t.name, label: t.name, trait: t }))}
+          splat={character.splat}
+          troupeId={rulesTroupe(character)}
+          onChoose={(name) => {
             const mine = choice.key === "archetype" && name === CUSTOM_ARCHETYPE;
             if (choice.key === "archetype") onOwn?.(mine);
             if (mine) return;
             setPicked(name);
             choose.mutate(name, { onSettled: () => setPicked(null) });
           }}
-        >
-          <option value="">Choose…</option>
-          {catalogue.traits
-            .filter((t) => t.category === choice.key)
-            .map((t) => (
-              <option key={t.name} value={t.name}>
-                {named(t.name)}
-              </option>
-            ))}
-        </Select>
+        />
       </Field>
       <ErrorText error={choose.error} />
     </div>
