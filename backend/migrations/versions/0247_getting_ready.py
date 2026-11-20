@@ -4,7 +4,7 @@ under way, so they start with it hidden; their storytellers can bring it back fr
 Customise › Setup.
 
 Revision ID: 0247
-Revises: 0241
+Revises: 0242
 Create Date: 2026-11-20 12:00:00.000000
 """
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0247"
-down_revision: str | None = "0241"
+down_revision: str | None = "0242"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
