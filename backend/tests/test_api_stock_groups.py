@@ -2,10 +2,14 @@
 member has the group's stat block and its own health levels and resource, tapped
 as "member:<n>/health" and "member:<n>/blood", undone and reset like anyone's.
 The book has no rule for groups: each member is a Stock NPC (MET: VTM p. 490),
-like the four Blood Brothers with an identical sheet (p. 504). Staff choose which
-member carries each item, or leave it with the group."""
+like the four Blood Brothers with an identical sheet (p. 504). Staff strike a
+member off by hand, "member:<n>/struck" (issue #1075), and choose which member
+carries each item, or leave it with the group, which backups keep."""
 
+import io
+import json
 import uuid
+import zipfile
 from collections.abc import Callable
 from typing import Any
 
@@ -18,7 +22,7 @@ from tests.test_api_play import send, tap, texts, view
 from tests.test_api_play_stock import stock_npc
 from tests.test_api_renames import character_log
 from tests.test_api_troupe_equipment import DAGGER, RIFLE, given
-from tests.test_api_troupe_import import by_name, run, troupe_zip
+from tests.test_api_troupe_import import by_name, review, run, troupe_zip
 
 
 @pytest.fixture
@@ -141,6 +145,57 @@ def test_members_take_damage_separately_and_are_out_at_no_health_left(troupe: Tr
         "Undid: Member 2: Blood 10 → 9",
         "Member 3: healed 1 aggravated (2 → 1 marked)",
     ]
+
+
+def test_staff_strike_a_member_off_and_bring_it_back(troupe: Troupe) -> None:
+    group = shovelheads(troupe)
+    strike = tap("member:2/struck", 1)
+    state = send(
+        troupe.storyteller,
+        group,
+        strike,
+        tap("member:3/health", 1, at=1, damage="normal"),
+        tap("member:2/struck", 1, at=2),
+    )
+
+    # Struck off with every level left, and once is enough.
+    assert [m["struck"] for m in state["stock_members"]] == [False, True, False, False]
+    assert state["stock_members"][1]["marks"] == []
+    assert texts(state) == [
+        "Member 2: struck off",
+        "Member 3: took 1 normal (0 → 1 marked)",
+        "Member 2: struck off",
+    ]
+    assert [(e["before"], e["after"]) for e in state["log"]][::2] == [(1, 1), (0, 1)]
+
+    # Brought back, and a strike undone.
+    state = send(troupe.storyteller, group, tap("member:2/struck", -1, at=3))
+    assert [m["struck"] for m in state["stock_members"]] == [False] * 4
+    assert texts(state)[0] == "Member 2: back in the fight"
+    state = send(
+        troupe.storyteller,
+        group,
+        tap("member:4/struck", 1, at=4),
+        {
+            "id": str(uuid.uuid4()),
+            "happened_at": tap(at=5)["happened_at"],
+            "kind": "undo",
+            "undoes": strike["id"],
+        },
+    )
+    assert [m["struck"] for m in state["stock_members"]] == [False, False, False, True]
+    assert texts(state)[0] == "Undid: Member 2: struck off"
+
+    # Reset brings every member back; a member past the count, or a single Stock
+    # NPC's, is no one.
+    response = troupe.storyteller.client.post(f"/characters/{group}/play/reset", json={})
+    assert response.status_code == 200, response.text
+    assert [m["struck"] for m in response.json()["stock_members"]] == [False] * 4
+    state = send(troupe.storyteller, group, tap("member:5/struck", 1))
+    assert texts(state)[0] == "Member 5: struck off (not on the sheet now)"
+    wolf = stock_npc(troupe, "werewolf", 3)
+    state = send(troupe.storyteller, wolf, tap("member:1/struck", 1))
+    assert texts(state)[0] == "Member 1: struck off (not on the sheet now)"
 
 
 def test_a_group_has_no_health_or_blood_of_its_own_and_no_fifth_member(troupe: Troupe) -> None:
@@ -277,3 +332,53 @@ def test_a_group_comes_into_another_troupe_with_its_count(troupe: Troupe, sessio
     copy = by_name(done.json())["Bites-the-Hand"]["character_id"]
 
     assert stock(troupe, copy)["count"] == 4
+
+
+def test_a_groups_backup_keeps_who_carries_what(troupe: Troupe, session: Session) -> None:
+    group = shovelheads(troupe)
+    rifle = given(troupe, group, **RIFLE)["id"]
+    given(troupe, group, **DAGGER)
+    carried_by(troupe, group, rifle, 3)
+    made = troupe.custodian.client.post(
+        "/troupes", json={"name": "Court of Ashes", "lead_handle": troupe.storyteller.handle}
+    )
+    assert made.status_code == 201, made.text
+    other = made.json()["id"]
+    backstory_optional(session, other)
+    content = troupe_zip(troupe, sections=["equipment"])
+
+    # The file names the member on the item, as it names no item by its id.
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        (name,) = [n for n in archive.namelist() if n.endswith(".horatio-character.json")]
+        document = json.loads(archive.read(name))
+    assert [(i["name"], i["member"]) for i in document["equipment"]] == [
+        ("Hunting rifle", 3),
+        ("Silver Dagger", None),
+    ]
+
+    parts = by_name(review(troupe.storyteller, other, content))["Bites-the-Hand"]["review"]["parts"]
+    (items,) = [p["items"] for p in parts if p["key"] == "equipment"]
+    assert [(i["label"], i["status"], i["reason"]) for i in items] == [
+        ("Hunting rifle", "new", "Given from the troupe's equipment: Member 3 carries it."),
+        ("Silver Dagger", "new", "Given from the troupe's equipment."),
+    ]
+    done = run(troupe.storyteller, other, content)
+    assert done.status_code == 201, done.text
+    copy = by_name(done.json())["Bites-the-Hand"]["character_id"]
+
+    # Its items are new ones, given here, and the rifle's new id is member 3's.
+    state = view(troupe.storyteller, copy)
+    ids = {i["name"]: i["id"] for i in state["stock_items"]}
+    assert set(ids) == {"Hunting rifle", "Silver Dagger"}
+    assert rifle not in ids.values()
+    assert stock(troupe, copy)["item_members"] == {ids["Hunting rifle"]: 3}
+
+    # Without the Equipment section there is nothing to carry.
+    bare = run(
+        troupe.storyteller, other, troupe_zip(troupe), **{"Bites-the-Hand": {"choice": "copy"}}
+    )
+    assert bare.status_code == 201, bare.text
+    second = by_name(bare.json())["Bites-the-Hand"]["character_id"]
+    assert view(troupe.storyteller, second)["stock_items"] == []
+    kept = stock(troupe, second)
+    assert (kept["count"], kept["item_members"]) == (4, {})

@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import type { TraitOut } from "../api/types";
 import { withClanNames } from "../clanNames";
 import { bookSummary, wordingOf } from "../houseWording";
@@ -9,20 +9,40 @@ import { pageLabel } from "./TraitInfo";
 
 /**
  * One choice in a `ChoiceBox`. `note` says why the character can't usually take it:
- * the choice is greyed, saying so, and can still be made (staff building an NPC need
- * no one's approval). `mark` is a short word beside it, such as "in-clan".
+ * the choice is greyed, saying so under its name. A `disabled` one can't be chosen
+ * (a player's); one that isn't still can be (staff building an NPC need no one's
+ * approval). `mark` is a short word beside it, such as "in-clan".
  */
 export type BoxChoice = {
   value: string;
   label: string;
+  /** The trait's own name, which typing finds it by too, where the label is more ("Performance: Singing"). */
+  name?: string;
   /** The trait, for its line under the name and its detail. */
   trait?: TraitOut;
   /** Its line under the name, in place of the trait's. */
   summary?: string | null;
   group?: string | null;
   mark?: string;
-  note?: string;
+  /** Why it can't usually be taken, under its name; it may link to where (the step a refusal is because of). */
+  note?: ReactNode;
+  disabled?: boolean;
+  /** The choice made, where the label alone doesn't say (two picks of one trait). */
+  current?: boolean;
+  /** The rating it is picked at elsewhere, for one that moves from there: "Brawl (at 3)". */
+  at?: number;
+  /** A short aside after its name: a fixed rating, what it needs, the troupe's mark. */
+  hint?: ReactNode;
+  /** What opens it to the character, in gold in place of its line: "Hard as Steel: 20 XP". */
+  offer?: string;
+  /** Something to do with one that can't be chosen, under its note: "Ask staff". Enter does it too. */
+  action?: { label: string; run: () => void };
+  /** The discipline dots its detail gives the powers of: the next dot, or those a pick at a rating gives. */
+  dots?: { from: number; to?: number };
 };
+
+/** A choice's name as the list shows it and a screen reader says it: "Brawl (at 3)". */
+const nameOf = (c: BoxChoice, named: (name: string) => string) => (c.at === undefined ? named(c.label) : `${named(c.label)} (at ${c.at})`);
 
 /**
  * What a trait does in one line, for the list to choose from: the troupe's own
@@ -45,7 +65,8 @@ export function oneLine(trait: TraitOut | undefined): string | null {
  * it. The list is as wide as a phone's screen allows.
  *
  * With `value`, it shows the choice made, as a select does; without, it is a search
- * to add, emptied once a choice is made.
+ * to add, emptied once a choice is made. It is the one way of choosing a trait from
+ * a list: the NPC editor's, the creation wizard's slots and the sheet's Add panel.
  */
 export function ChoiceBox({
   id,
@@ -57,7 +78,14 @@ export function ChoiceBox({
   onOpen,
   splat,
   troupeId,
+  notice,
+  footer,
+  empty = "Nothing by that name here.",
+  onType,
+  trailing,
+  disabled = false,
   className = "",
+  inputClassName = "",
   "aria-describedby": describedBy,
 }: {
   id?: string;
@@ -74,7 +102,19 @@ export function ChoiceBox({
   splat?: string;
   /** The troupe whose written rules about a trait are linked. */
   troupeId?: string | null;
+  /** A line above the list, such as why the choice made can't change now. */
+  notice?: ReactNode;
+  /** What goes under the list, in it: a search's "found in another category", or that it is still checking. */
+  footer?: ReactNode;
+  /** What shows when nothing matches; null for nothing, where `footer` says it. */
+  empty?: ReactNode;
+  /** Told what is typed as it is, and "" once the list closes. */
+  onType?: (typed: string) => void;
+  /** In place of the ▾ at the box's right: a button to clear the choice made. */
+  trailing?: ReactNode;
+  disabled?: boolean;
   className?: string;
+  inputClassName?: string;
   "aria-describedby"?: string;
 }) {
   const named = useClanName();
@@ -93,39 +133,56 @@ export function ChoiceBox({
   const [place, setPlace] = useState<CSSProperties>({});
   const closing = useRef<ReturnType<typeof setTimeout>>(undefined);
   const q = (typed ?? "").trim().toLowerCase();
-  const shown = choices.filter((c) => !q || withClanNames(c.label).toLowerCase().includes(q) || named(c.label).toLowerCase().includes(q));
-  const groups = [...new Set(shown.map((c) => c.group ?? null))];
+  const finds = (text: string) => withClanNames(text).toLowerCase().includes(q) || named(text).toLowerCase().includes(q);
+  const shown = choices.filter((c) => !q || finds(c.label) || (!!c.name && finds(c.name)));
+  const groupsOf = (list: BoxChoice[]) => [...new Set(list.map((c) => c.group ?? null))];
+  const groups = groupsOf(shown);
   // In the order the list shows them, for the arrow keys.
-  const ordered = groups.flatMap((g) => shown.filter((c) => (c.group ?? null) === g));
+  const inOrder = (list: BoxChoice[]) => groupsOf(list).flatMap((g) => list.filter((c) => (c.group ?? null) === g));
+  const ordered = inOrder(shown);
   const lit = ordered[active];
+  const isCurrent = (c: BoxChoice) => c.current ?? (!!value && c.label === value);
 
   const show = () => {
     clearTimeout(closing.current);
     if (open) return;
     setOpen(true);
     onOpen?.(true);
-    // The choice made is highlighted, its detail showing.
-    setActive(value ? choices.findIndex((c) => c.label === value) : -1);
+    // The choice made is highlighted, its detail showing: nothing is typed yet, so every choice is listed.
+    setActive(inOrder(choices).findIndex(isCurrent));
   };
   const close = () => {
     setOpen(false);
     setTyped(null);
     setActive(-1);
     onOpen?.(false);
+    onType?.("");
   };
   const choose = (c: BoxChoice) => {
+    if (c.disabled) return;
     close();
-    onChoose(c.value);
+    if (!isCurrent(c)) onChoose(c.value);
+  };
+  const act = (c: BoxChoice) => {
+    close();
+    c.action?.run();
   };
 
   // As wide as the screen allows, and kept on it: a box at the right of a card opens leftwards.
+  // Placed again if the screen changes while it is open (a phone turned on its side).
   useLayoutEffect(() => {
-    const box = open ? document.getElementById(inputId)?.getBoundingClientRect() : undefined;
-    if (!box) return;
-    // The page's own width: a phone's innerWidth grows with anything that overflows it.
-    const screen = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
-    const width = Math.min(Math.max(box.width, 448), screen - 32);
-    setPlace({ width, left: Math.max(16 - box.left, Math.min(0, screen - 16 - (box.left + width))) });
+    if (!open) return;
+    const fit = () => {
+      const box = document.getElementById(inputId)?.getBoundingClientRect();
+      if (!box) return;
+      // The page's own width: a phone's innerWidth grows with anything that overflows it.
+      const screen = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
+      const width = Math.min(Math.max(box.width, 448), screen - 32);
+      setPlace({ width, left: Math.max(16 - box.left, Math.min(0, screen - 16 - (box.left + width))) });
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
   }, [open, inputId]);
   useEffect(() => {
     if (open) popup.current?.scrollIntoView?.({ block: "nearest" });
@@ -152,8 +209,10 @@ export function ChoiceBox({
       setActive((active + step + ordered.length) % ordered.length);
     } else if (e.key === "Enter" && open) {
       e.preventDefault();
-      const c = lit ?? (ordered.length === 1 ? ordered[0] : undefined);
-      if (c) choose(c);
+      const pickable = ordered.filter((c) => !c.disabled);
+      const c = lit ?? (pickable.length === 1 ? pickable[0] : undefined);
+      if (c?.disabled && c.action) act(c);
+      else if (c) choose(c);
     } else if (e.key === "Escape" && open) {
       e.preventDefault();
       close();
@@ -176,10 +235,12 @@ export function ChoiceBox({
         enterKeyHint="done"
         placeholder={placeholder}
         value={typed ?? (value ? named(value) : "")}
-        className="pr-8 text-sm"
+        disabled={disabled}
+        className={`text-sm ${trailing ? "pr-10" : "pr-8"} ${inputClassName}`}
         onChange={(e) => {
           setTyped(e.target.value);
           setActive(-1);
+          onType?.(e.target.value);
           show();
         }}
         onFocus={(e) => {
@@ -193,9 +254,13 @@ export function ChoiceBox({
         }}
         onKeyDown={onKeyDown}
       />
-      <span aria-hidden className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-mist">
-        ▾
-      </span>
+      {trailing ? (
+        <span className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center">{trailing}</span>
+      ) : (
+        <span aria-hidden className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-mist">
+          ▾
+        </span>
+      )}
       {open && (
         <div
           ref={popup}
@@ -205,6 +270,7 @@ export function ChoiceBox({
           // The box's width until it is measured, so its one-line summaries never widen the page.
           className="absolute z-20 mt-1 flex w-full flex-col overflow-hidden rounded-md border border-ash bg-dusk shadow-lg"
         >
+          {notice && <p className="border-b border-ash px-3 py-2 text-xs text-blood-bright">{notice}</p>}
           <ul ref={listbox} id={listId} role="listbox" aria-label={label ?? placeholder} className="relative max-h-64 overflow-y-auto py-1">
             {groups.map((group) => (
               <li key={group ?? "all"} role="presentation">
@@ -214,32 +280,57 @@ export function ChoiceBox({
                     .filter((c) => (c.group ?? null) === group)
                     .map((c) => {
                       const index = ordered.indexOf(c);
+                      const optionId = `${listId}-${index}`;
                       const line = c.summary !== undefined ? c.summary : oneLine(c.trait);
                       const page = pageLabel(c.trait?.page_reference);
-                      const current = !!value && c.label === value;
+                      const current = isCurrent(c);
+                      const said = [c.mark && `${optionId}-mark`, c.note ? `${optionId}-note` : `${optionId}-line`].filter(Boolean).join(" ");
                       return (
-                        <li key={c.value} role="presentation" data-choice={c.label} className="flex items-start">
+                        <li key={c.value} role="presentation" data-choice={c.name ?? c.label} className="flex flex-wrap items-start">
                           <div
-                            id={`${listId}-${index}`}
+                            id={optionId}
                             role="option"
-                            aria-label={named(c.label)}
+                            aria-label={nameOf(c, named)}
                             aria-selected={current}
-                            aria-describedby={`${c.mark ? `${listId}-${index}-mark ` : ""}${listId}-${index}-line`}
+                            aria-disabled={c.disabled || undefined}
+                            aria-describedby={said}
                             onClick={() => choose(c)}
                             onMouseEnter={() => setActive(index)}
-                            className={`min-w-0 flex-1 cursor-pointer px-3 py-1.5 pointer-coarse:py-2 ${index === active ? "bg-gold/15" : "hover:bg-night"}`}
+                            className={`min-w-0 flex-1 px-3 py-1.5 pointer-coarse:min-h-10 pointer-coarse:py-2 ${c.disabled ? "cursor-not-allowed" : "cursor-pointer"} ${index === active ? "bg-gold/15" : "hover:bg-night"}`}
                           >
                             <span className="flex items-baseline gap-2">
-                              <span className={`text-sm ${current ? "text-gold" : c.note ? "text-mist" : "text-parchment"}`}>{named(c.label)}</span>
-                              {c.mark && <span id={`${listId}-${index}-mark`} className="rounded border border-gold/50 px-1 text-[0.7rem] leading-4 text-gold">{c.mark}</span>}
+                              <span className={`text-sm ${current ? "text-gold" : c.disabled ? "text-line" : c.note ? "text-mist" : "text-parchment"}`}>
+                                {named(c.label)}
+                                {c.at !== undefined && <span className={c.disabled ? "" : "text-mist"}> (at {c.at})</span>}
+                                {current && <span className="sr-only"> (chosen)</span>}
+                              </span>
+                              {c.hint && <span className="text-xs text-mist">{c.hint}</span>}
+                              {c.mark && <span id={`${optionId}-mark`} className="rounded border border-gold/50 px-1 text-[0.7rem] leading-4 text-gold">{c.mark}</span>}
                               {page && <span className="ml-auto shrink-0 text-[0.7rem] text-mist">{page}</span>}
                             </span>
-                            <span id={`${listId}-${index}-line`} className="block truncate text-xs text-mist">
-                              {c.note ? <span className="text-blood-bright/80">{named(c.note)}</span> : named(line)}
-                            </span>
+                            {!c.note && (
+                              <span id={`${optionId}-line`} className={`block truncate text-xs ${c.offer ? "text-gold" : "text-mist"}`}>
+                                {c.offer ?? named(line)}
+                              </span>
+                            )}
                           </div>
                           {c.trait && hasAbout(c.trait, splat) && (
-                            <AboutButton name={named(c.label)} open={index === active} controls={detailId} onToggle={() => setActive(index === active ? -1 : index)} className="mt-1 mr-1" />
+                            <AboutButton name={nameOf(c, named)} open={index === active} controls={detailId} onToggle={() => setActive(index === active ? -1 : index)} className="mt-1 mr-1" />
+                          )}
+                          {/* Beside the option, not in it: its links (to the step a refusal is because of) stay links. */}
+                          {c.note && (
+                            <p id={`${optionId}-note`} className="-mt-1 basis-full px-3 pb-1.5 text-xs text-blood-bright/90">
+                              {typeof c.note === "string" ? named(c.note) : c.note}
+                            </p>
+                          )}
+                          {c.disabled && c.action && (
+                            <button
+                              type="button"
+                              onClick={() => act(c)}
+                              className="mb-1.5 ml-3 text-xs text-gold underline hover:text-parchment pointer-coarse:min-h-10"
+                            >
+                              {c.action.label}
+                            </button>
                           )}
                         </li>
                       );
@@ -248,21 +339,28 @@ export function ChoiceBox({
               </li>
             ))}
           </ul>
-          {shown.length === 0 && <p className="px-3 py-2 text-sm text-mist">Nothing by that name here.</p>}
-          <div id={detailId} aria-live="polite" className="max-h-56 overflow-y-auto border-t border-ash px-3 py-2">
+          {shown.length === 0 && empty !== null && <p className="px-3 py-2 text-sm text-mist">{empty}</p>}
+          {footer && <div className="border-t border-ash px-1 py-1">{footer}</div>}
+          <div id={detailId} role="region" aria-label="About the highlighted choice" aria-live="polite" className="max-h-56 overflow-y-auto border-t border-ash px-3 py-2">
             {lit ? (
               <>
                 <p className="text-sm text-gold">
-                  {named(lit.label)}
+                  {nameOf(lit, named)}
                   {lit.mark && <span className="ml-2 text-xs text-mist">({lit.mark})</span>}
                 </p>
-                {lit.note && <p className="text-xs text-blood-bright">{named(lit.note)} Staff can give it all the same.</p>}
+                {/* One that can't be chosen says why in its row; one staff can choose all the same says so here. */}
+                {lit.note && !lit.disabled && (
+                  <p className="text-xs text-blood-bright">
+                    {typeof lit.note === "string" ? named(lit.note) : lit.note} Staff can give it all the same.
+                  </p>
+                )}
                 {lit.trait ? (
                   <AboutTrait
                     id={`${detailId}-about`}
                     trait={lit.trait}
                     splat={splat}
-                    to={lit.trait.category === "disciplines" ? 5 : 1}
+                    from={lit.dots?.from ?? 1}
+                    to={lit.dots ? (lit.dots.to ?? lit.dots.from) : lit.trait.category === "disciplines" ? 5 : 1}
                     troupeId={troupeId}
                     className="mt-0.5"
                   />

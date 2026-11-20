@@ -46,6 +46,7 @@ from horatio import (
     email_changes,
     email_design,
     mail_sender,
+    notification_choices,
     preferences,
     suspensions,
 )
@@ -72,7 +73,6 @@ from horatio.models import (
 from horatio.models import Session as SignInSession
 from horatio.models.base import Record
 from horatio.notifications import notify
-from horatio.preferences import Preferences
 from horatio.renames import troupes_of
 from horatio.sheets import conflict, unprocessable
 
@@ -86,7 +86,8 @@ ROLE_NAMES = {
     "storyteller": "storyteller",
     "lead_storyteller": "lead storyteller",
 }
-NOTIFICATION_SETTINGS = {name for name in Preferences.model_fields if name.startswith("email_")}
+# Where each kind of notification comes (horatio.notification_choices), and the digest.
+NOTIFICATION_SETTINGS = {*notification_choices.SETTINGS, "email_digest"}
 # The profile's own parts that move where the staying account has none, by name.
 PROFILE = (
     ("bio", "bio"),

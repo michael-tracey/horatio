@@ -11,9 +11,11 @@ Two kinds of item come through one list:
   stay until the person reads them.
 
 A new kind of task is a new function in `TASK_SOURCES`; a new kind of message
-is a call to `notify` wherever the event happens. Either may also come by email
-to those who choose it (horatio.notification_emails): `notify` sees to that for
-messages; a task emails when its work arrives (`approval_waiting`,
+is a call to `notify` wherever the event happens. Either kind needs a topic in
+horatio.notification_choices, which says where it comes: a message comes to the
+bell unless the person turns it off there, a task always. Either may also come by
+email to those who choose it (horatio.notification_emails): `notify` sees to that
+for messages; a task emails when its work arrives (`approval_waiting`,
 `troupe_request_waiting`).
 """
 
@@ -25,7 +27,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
-from horatio import clan_names, notification_emails
+from horatio import clan_names, notification_choices, notification_emails
 from horatio.announcement_emails import ANNOUNCEMENT_LINK
 from horatio.models import (
     Approval,
@@ -459,14 +461,21 @@ def notify(
     character_id: uuid.UUID | None = None,
     email: bool = True,
 ) -> None:
-    """Leave a message for each of `user_ids`, in the same transaction as the event,
-    and an email for those who want this kind by email (unless `email` is False: the
-    caller emails apart from the bell, as horatio.posts does). The clan stored as
-    Assamite is named as the troupe calls it then, and stays so (horatio.clan_names)."""
+    """Leave a message for each of `user_ids` who has this kind come to the bell, in
+    the same transaction as the event, and an email for those who want it by email
+    (horatio.notification_choices; unless `email` is False: the caller emails apart
+    from the bell, as horatio.posts does). A kind no topic there covers is refused.
+    The clan stored as Assamite is named as the troupe calls it then, and stays so
+    (horatio.clan_names)."""
+    topic = notification_choices.topic_for(kind)
     user_ids = list(dict.fromkeys(user_ids))
     troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
     summary = clan_names.shown(summary, clan_names.troupe_name(troupe))
+    people = {u.id: u for u in db.scalars(select(User).where(User.id.in_(user_ids)))}
     for user_id in user_ids:
+        person = people.get(user_id)
+        if person is None or not notification_choices.chosen(person, topic, "bell"):
+            continue
         db.add(
             Notification(
                 user_id=user_id,

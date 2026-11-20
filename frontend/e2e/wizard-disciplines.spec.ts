@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES, choiceIn, choosePick, choosePicks, openSlot, pickedAt, slotsAt, goToStep, inSteps } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES, choiceIn, choosePick, choosePicks, openSlot, pickedAt, slotsAt, goToStep, inSteps, aboutChoice } from "./support";
 
 /** The creation wizard's in-clan disciplines: Caitiff, Vestiges of Greatness and the merits that change them. */
 
@@ -511,16 +511,17 @@ test("a fourth in-clan discipline from a merit shows on Disciplines as taking no
   await expect(auspex).toContainText("Additional Common Discipline: Auspex starts without a free dot.");
   await expect(at1.getByRole("option", { name: "Celerity", exact: true })).not.toHaveAttribute("aria-disabled");
 
-  // What each does opens from the list, greyed or not, several at once, choosing none (#1000):
+  // What each does shows under the list from its chevron, greyed or not, choosing none (#1000):
   // the power the slot's dot gives, and the discipline's test.
+  const about = aboutChoice(p);
   await auspex.getByRole("button", { name: "About Auspex" }).click();
-  await expect(auspex).toContainText("Dot 1 gives:");
-  await expect(auspex).toContainText("Heightened Senses");
-  await expect(auspex).toContainText("Test: Mental + Investigation against Mental + Willpower.");
+  await expect(about).toContainText("Dot 1 gives:");
+  await expect(about).toContainText("Heightened Senses");
+  await expect(about).toContainText("Test: Mental + Investigation against Mental + Willpower.");
   const celerity = choiceIn(at1, "Celerity");
   await celerity.getByRole("button", { name: "About Celerity" }).click();
-  await expect(celerity).toContainText("Alacrity");
-  await expect(auspex).toContainText("Heightened Senses");
+  await expect(about).toContainText("Alacrity");
+  await expect(about).not.toContainText("Heightened Senses");
   await expect(slotsAt(p, "Disciplines", 1).getByRole("combobox").first()).toHaveValue("");
 });
 

@@ -554,7 +554,7 @@ The **Audit log** card at the top of **Custodian › Audit** sets what the log r
 
 - **Notice**: kept forever. Suspensions, merges, moves, deletions, password resets, changes to the site's settings, and everything Horatio reads back from the log as history, such as title history, the chronicle and a location's log.
 - **Info**: most changes, as each troupe sees them on its **Log** tab.
-- **Debug**: routine events, many a day: signing in and out, failed sign-ins, signing up, and a character starting to visit a troupe. Only you see them, here in the audit log; never a troupe's or a character's log.
+- **Debug**: routine events, many a day: signing in and out, failed sign-ins, signing up, someone turned away for too many failed sign-ins or sign-ups from one place, and a character starting to visit a troupe. Only you see them, here in the audit log; never a troupe's or a character's log.
 
 Tick **Record debug events** to record them, for instance while you look into a question such as "where did my new character go?". Untick it again when you're done; nothing is recorded below info while it's off.
 

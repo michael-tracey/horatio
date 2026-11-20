@@ -82,11 +82,14 @@ test("manual: getting started", async ({ browser }, info) => {
   await expect(card("Sheets")).toBeVisible();
   await shotAround(p, [card("Sheets"), card("Dates and times")], "settings");
 
-  // Notifications by email, as on a server that can send it (this suite's can't).
-  await p.route("**/api/preferences/email", (route) => route.fulfill({ json: { available: true } }));
-  await p.goto("/account/sign-in");
-  await expect(p.getByRole("switch", { name: "Downtime results" })).toBeVisible();
-  await shot(card("Notifications by email"), "email-notifications");
+  // Account › Notifications, as on a server that can send email (this suite's can't).
+  await p.route("**/api/notification-settings", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), email: true } });
+  });
+  await p.goto("/account/notifications");
+  await expect(p.getByRole("checkbox", { name: "Downtime results: email" })).toBeVisible();
+  await shot(card("Downtimes"), "email-notifications");
 
   // The bell, with the custodian's answer in it.
   await p.goto("/characters");

@@ -68,11 +68,11 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   await p.goto(`/characters/${lune}`);
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Merits").fill("Favour of the");
-  await expect(p.getByRole("button", { name: /^Favour of the Crossroads/ })).toHaveCount(0);
-  await p.getByLabel("Search Merits").fill("Child of the");
-  await expect(p.getByRole("button", { name: /^Child of the Stars/ })).toContainText(mark);
-  await p.getByRole("button", { name: /^Child of the Stars/ }).click();
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Favour of the");
+  await expect(p.getByRole("option", { name: /^Favour of the Crossroads/ })).toHaveCount(0);
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Child of the");
+  await expect(p.getByRole("option", { name: /^Child of the Stars/ })).toContainText(mark);
+  await p.getByRole("option", { name: /^Child of the Stars/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(part("Merits and Flaws")).toContainText("Child of the Stars");
@@ -97,8 +97,8 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   const visitor = await build("Isaure", null);
   await p.goto(`/characters/${visitor}`);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Merits").fill("Child of the");
-  await expect(p.getByRole("button", { name: /^Child of the Stars/ })).toHaveCount(0);
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Child of the");
+  await expect(p.getByRole("option", { name: /^Child of the Stars/ })).toHaveCount(0);
   await l.goto(`/characters/${visitor}`);
   await expect(l.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
   await expect(l.getByRole("heading", { name: "House merits and flaws", exact: true })).toHaveCount(0);
@@ -204,12 +204,13 @@ test("a house merit's effects: the ST builds Old Money from blocks, previews it,
   await p.goto(`/characters/${id}`);
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Merits").fill("Old Money");
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Old Money");
   // Listed once checked, as one she can take: its free dots meet its own "needs Resources 1".
-  await expect(p.getByRole("button", { name: /^Old Money/ })).toContainText(`What it does: ${summary}`);
-  await expect(p.getByRole("button", { name: /^Old Money/ })).toBeEnabled();
+  // Its line in the list is the troupe's summary of what it does.
+  await expect(p.getByRole("option", { name: /^Old Money/ })).toContainText(summary);
+  await expect(p.getByRole("option", { name: /^Old Money/ })).toBeEnabled();
   await expect(p.getByText(/you can't/)).toHaveCount(0);
-  await p.getByRole("button", { name: /^Old Money/ }).click();
+  await p.getByRole("option", { name: /^Old Money/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await p.getByRole("button", { name: "Spend XP" }).click();
 

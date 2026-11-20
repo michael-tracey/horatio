@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, closeContextsAfterEach, makeCustodian, openNewTroupe, person, run, shots, settingsPart } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, aboutChoice, addList, backstoryOptional, builtVampire, characterTab, closeContextsAfterEach, makeCustodian, openNewTroupe, person, run, shots, settingsPart } from "./support";
 
 /** A character's page and sheet, and what a player asks staff for from it. */
 
@@ -318,8 +318,8 @@ test("the sheet shows XP first on a phone, lists a discipline's powers, counts h
 
   // The Add panel prices a trait as soon as it is chosen, and again when its rating changes.
   await part("Skills").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Skills").fill("Computer");
-  await p.getByRole("button", { name: /^Computer/ }).click();
+  await p.getByRole("combobox", { name: "Search Skills", exact: true }).fill("Computer");
+  await p.getByRole("option", { name: /^Computer/ }).click();
   await expect(p.getByText(/^Costs \d+ XP\.$/)).toBeVisible();
   const one = await p.getByText(/^Costs \d+ XP\.$/).textContent();
   await p.getByLabel("Rating").fill("2");
@@ -424,26 +424,28 @@ test("the sheet points to the techniques and elder powers a character can take",
   // What this character can take, by default: Celerity's elder powers, not Animalism's.
   await expect(p.getByLabel("Show")).toHaveValue("can");
   await expect(p.getByPlaceholder(/you can take…$/)).toBeVisible();
-  await expect(p.getByRole("button", { name: "Celerity: Projectile", exact: true })).toBeVisible();
-  await expect(p.getByRole("button", { name: /^Animalism: / })).toHaveCount(0);
+  const elder = await addList(p, "Elder Disciplines");
+  await expect(elder.getByRole("option", { name: "Celerity: Projectile", exact: true })).toBeVisible();
+  await expect(elder.getByRole("option", { name: /^Animalism: / })).toHaveCount(0);
   await expect(p.getByText(/^\d+ more you can't take:/)).toBeVisible();
   await p.getByLabel("Show").selectOption({ label: "Everything" });
-  await expect(p.getByRole("button", { name: /^Animalism: / }).first()).toBeDisabled();
+  await expect((await addList(p, "Elder Disciplines")).getByRole("option", { name: /^Animalism: / }).first()).toBeDisabled();
   await expect(p.getByText("An elder power needs all 5 dots of its discipline first.", { exact: false }).first()).toBeVisible();
   await p.screenshot(shots("elder-powers"));
 
   // A power's name finds it in whichever category it lives.
-  await p.getByLabel("Search Elder Disciplines").fill("Fearful");
+  await p.getByRole("combobox", { name: "Search Elder Disciplines", exact: true }).fill("Fearful");
   await p.getByRole("button", { name: "Found in Techniques: Fearful Blow" }).click();
   await expect(chips.getByRole("button", { name: /^Techniques/ })).toHaveAttribute("aria-pressed", "true");
-  await expect(p.getByRole("button", { name: /^Fearful Blow/ })).toBeDisabled();
+  await expect(p.getByRole("option", { name: /^Fearful Blow/ })).toBeDisabled();
   await expect(p.getByText("Fearful Blow needs Potence 2 and Presence 2.", { exact: false })).toBeVisible();
 
   // Dots in the cart open the technique straight away, before spending.
+  await p.keyboard.press("Escape");
   await p.getByRole("button", { name: "Raise Potence" }).click();
   await p.getByRole("button", { name: "Raise Presence" }).click();
   await p.getByLabel("Show").selectOption({ label: "What this character can take" });
-  await p.getByRole("button", { name: /^Fearful Blow/ }).click();
+  await (await addList(p, "Techniques")).getByRole("option", { name: /^Fearful Blow/ }).click();
   // Pricing the cart is slow work for the server, the more so with the dry runs
   // for each dot still going: wait for the one that prices all three lines.
   const priced = p.waitForResponse((r) => r.url().endsWith(`/api/characters/${id}/cart`) && r.request().postDataJSON()?.changes?.length === 3);
@@ -455,11 +457,12 @@ test("the sheet points to the techniques and elder powers a character can take",
   // A Pretender Elder learns one elder power: with one in the cart, none are left to take.
   await disciplines.getByRole("button", { name: "Add" }).click();
   await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
-  await p.getByRole("button", { name: "Celerity: Projectile", exact: true }).click();
+  await (await addList(p, "Elder Disciplines")).getByRole("option", { name: "Celerity: Projectile", exact: true }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await disciplines.getByRole("button", { name: "Add" }).click();
   await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
   await expect(chips.getByRole("button", { name: "Elder Disciplines", exact: true })).toBeVisible();
+  await addList(p, "Elder Disciplines");
   await expect(p.getByText(/^None you can take\. \d+ you can't:/)).toBeVisible();
   await p.getByRole("button", { name: "show", exact: true }).click();
   await expect(p.getByLabel("Show")).toHaveValue("all");
@@ -482,20 +485,20 @@ test("only a character with a ritual discipline sees rituals, up to its path's l
   await expect(disciplines.getByRole("button", { name: /^\d+ Rituals$/ })).toBeVisible();
   await disciplines.getByRole("button", { name: /^\d+ Rituals$/ }).click();
   await expect(chips.getByRole("button", { name: /^Rituals/ })).toHaveAttribute("aria-pressed", "true");
-  await p.getByLabel("Search Rituals").fill(ritual(1));
-  await expect(p.getByRole("button", { name: new RegExp(`^${ritual(1)}`) })).toBeEnabled();
-  // What a ritual does opens under its row, with its page, choosing nothing (#1024).
-  await p.getByLabel("Search Rituals").fill("Blood Mastery");
+  await p.getByRole("combobox", { name: "Search Rituals", exact: true }).fill(ritual(1));
+  await expect(p.getByRole("option", { name: new RegExp(`^${ritual(1)}`) })).toBeEnabled();
+  // What a ritual does opens under the list, with its page, choosing nothing (#1024).
+  await p.getByRole("combobox", { name: "Search Rituals", exact: true }).fill("Blood Mastery");
   await p.getByRole("button", { name: "About Thaumaturgy: Blood Mastery" }).click();
-  await expect(p.getByText("you win the first test of your next opposed challenge against them")).toBeVisible();
-  await expect(p.getByText("MET: VTM p. 202")).toBeVisible();
+  await expect(aboutChoice(p)).toContainText("you win the first test of your next opposed challenge against them");
+  await expect(aboutChoice(p).getByText("MET: VTM p. 202")).toBeVisible();
   await expect(p.getByRole("button", { name: "Add to cart" })).toHaveCount(0);
   // A ritual of each level comes before one of the next.
-  await p.getByLabel("Search Rituals").fill(ritual(2));
+  await p.getByRole("combobox", { name: "Search Rituals", exact: true }).fill(ritual(2));
   await expect(p.getByText("None you can take. 1 you can't:")).toBeVisible();
   await p.getByRole("button", { name: "show", exact: true }).click();
   await expect(p.getByText("A thaumaturge learns a ritual of each level before one of the next.", { exact: false })).toBeVisible();
-  await p.getByLabel("Search Rituals").fill(ritual(3));
+  await p.getByRole("combobox", { name: "Search Rituals", exact: true }).fill(ritual(3));
   // Left out of what the character can take, but a tap away, with the reason.
   await expect(p.getByText("A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more.", { exact: false })).toBeVisible();
 });
@@ -577,12 +580,12 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   await part("Disciplines").getByRole("button", { name: "Add" }).click();
   await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Elder Disciplines/ }).click();
-  await p.getByLabel("Search Elder Disciplines").fill("Celerity: Zephyr");
+  await p.getByRole("combobox", { name: "Search Elder Disciplines", exact: true }).fill("Celerity: Zephyr");
   // Left out of what Wren can take: shown greyed, with the reason, a tap away.
   await expect(p.getByText("None you can take. 1 you can't:")).toBeVisible();
   await p.getByRole("button", { name: "show", exact: true }).click();
-  const row = p.getByRole("listitem").filter({ has: p.getByRole("button", { name: /^Celerity: Zephyr/ }) });
-  await expect(row.getByRole("button", { name: /^Celerity: Zephyr/ })).toBeDisabled();
+  const row = p.locator('[data-choice="Celerity: Zephyr"]');
+  await expect(row.getByRole("option", { name: /^Celerity: Zephyr/ })).toBeDisabled();
   await expect(row).toContainText("An elder power needs all 5 dots of its discipline first.");
   await row.getByRole("button", { name: "Ask staff" }).click();
   const ask = p.getByRole("form", { name: "Ask staff for Celerity: Zephyr" });

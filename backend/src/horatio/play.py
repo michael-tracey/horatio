@@ -56,7 +56,9 @@ traits (MET: VTM p. 490), so taps on those change nothing. A group of Stock NPCs
 (issue #1056) has no tracker of its own but a pair for each member, from 1:
 "member:<n>/health", marked as "health" is, and "member:<n>/blood", counting down
 from full as a Retainer's do. A member whose every level is marked is out of the
-fight (p. 490).
+fight (p. 490). Staff strike a member off by hand, out of the fight with levels
+left (fled, surrendered, gone), with "member:<n>/struck" (issue #1075): +1 strikes
+it off, -1 brings it back.
 
 A splat's Blood and panels follow its properties (horatio.rules.splats.Splat).
 A ghoul's Blood is part vitae and part human (core p. 297): "blood" is its vitae,
@@ -153,8 +155,10 @@ RETAINER = "retainer:"
 ALLY = "ally:"
 # Equipping an item: +1 equips it, -1 takes it off.
 EQUIP = "equip:"
-# A member of a group of Stock NPCs (issue #1056): "member:2/health", "member:2/blood".
+# A member of a group of Stock NPCs (issue #1056): "member:2/health", "member:2/blood",
+# and "member:2/struck", struck off by hand (issue #1075).
 MEMBER = "member:"
+MEMBER_TRACKERS = ("health", "blood", "struck")
 # Weapons in hand take at most two hands (MET: VTM p. 516).
 HANDS = 2
 WEAPONS = ("melee", "ranged")
@@ -257,6 +261,11 @@ def member_key(number: int, what: str) -> str:
 def member_number(tracker: str) -> str:
     """The member a tap names, as its state keeps it: "2" for "member:2/health"."""
     return tracker.removeprefix(MEMBER).partition("/")[0]
+
+
+def struck(tracker: str) -> bool:
+    """A member of a group struck off by hand, or brought back (issue #1075)."""
+    return tracker.startswith(MEMBER) and tracker.endswith("/struck")
 
 
 def marked(tracker: str) -> bool:
@@ -433,15 +442,22 @@ class Limits:
 
     def member(self, tracker: str) -> tuple[int, str] | None:
         """The member of a group a tap names, and which of its trackers ("health",
-        "blood"); None for a member it hasn't."""
+        "blood", "struck"); None for a member it hasn't."""
         number, _, what = tracker.removeprefix(MEMBER).partition("/")
-        if not number.isdigit() or what not in ("health", "blood"):
+        if not number.isdigit() or what not in MEMBER_TRACKERS:
             return None
         return (int(number), what) if 1 <= int(number) <= self.members else None
 
     def member_trackers(self) -> dict[str, int]:
-        """Each member's resource, full as a game starts."""
-        return {member_key(n, "blood"): self.starting_blood for n in range(1, self.members + 1)}
+        """Each member's resource, full as a game starts, and none struck off."""
+        return {
+            key: value
+            for n in range(1, self.members + 1)
+            for key, value in (
+                (member_key(n, "blood"), self.starting_blood),
+                (member_key(n, "struck"), 0),
+            )
+        }
 
     @property
     def health_boxes(self) -> int:
@@ -574,7 +590,7 @@ class Limits:
             member = self.member(tracker)
             if member is None:
                 return None
-            return self.health_boxes if member[1] == "health" else self.blood
+            return {"health": self.health_boxes, "blood": self.blood}.get(member[1], 1)
         if tracker.startswith(reference.CHARGE):
             counter = self.charge(tracker)
             return counter.most if counter else None
@@ -681,8 +697,9 @@ class Limits:
             return f"{name}: {'Blood' if what == 'blood' else 'health'}" if what else name
         if tracker.startswith(MEMBER):
             number, _, what = tracker.removeprefix(MEMBER).partition("/")
-            return f"{npcs.member_name(int(number)) if number.isdigit() else 'A member'}: " + (
-                self.blood_name if what == "blood" else "health"
+            whose = npcs.member_name(int(number)) if number.isdigit() else "A member"
+            return f"{whose}: " + {"blood": self.blood_name, "struck": "struck off"}.get(
+                what, "health"
             )
         # A trait no longer on the sheet: "trait:backgrounds/Herd/" reads "Herd".
         parts = tracker.removeprefix("trait:").split("/")
@@ -1446,6 +1463,11 @@ def apply(
                     break
                 del marks[len(marks) - 1 - marks[::-1].index(damage)]
         return before, len(marks)
+    if struck(event.tracker):
+        # Not struck off unless a tap did it, whatever the state was started with.
+        before = state["uses"].get(event.tracker, 0)
+        state["uses"][event.tracker] = max(0, min(before + event.amount, most))
+        return before, state["uses"][event.tracker]
     if event.tracker.startswith(TEMPORARY):
         before = state["held"].get(event.tracker, 0)
         state["held"][event.tracker] = max(0, min(before + event.amount, most))
@@ -1629,6 +1651,10 @@ def describe(
         if event.before is not None and event.after is not None:
             text += f": Vitae {event.before} → {event.after}"
         return text
+    if struck(event.tracker):
+        whose = name.removesuffix(": struck off")
+        text = f"{whose}: struck off" if event.amount > 0 else f"{whose}: back in the fight"
+        return text if event.before is not None else f"{text} (not on the sheet now)"
     if marked(event.tracker):
         verb = "took" if event.amount > 0 else "healed"
         whose = "Health" if event.tracker == "health" else name.removesuffix(": health")
