@@ -138,6 +138,24 @@ def player_name(user: User) -> str:
     return f"@{user.handle}" if preferences.read(user).whos_who_handle else user.display_name
 
 
+def titles_held(db: Session, troupe: Troupe) -> dict[uuid.UUID, list[str]]:
+    """The titles each character holds in the troupe, in no order."""
+    held: dict[uuid.UUID, list[str]] = defaultdict(list)
+    for who, name in db.execute(
+        select(CharacterTitle.character_id, CharacterTitle.name).where(
+            CharacterTitle.troupe_id == troupe.id
+        )
+    ):
+        held[who].append(name)
+    return held
+
+
+def listed(db: Session, troupe: Troupe) -> list[Character]:
+    """Every character the troupe's Who's Who shows: those at court, and those no longer
+    with us, without the rest of what it says of them (horatio.search)."""
+    return members(db, troupe, titles_held(db, troupe)) + departed(db, troupe)
+
+
 def members(db: Session, troupe: Troupe, held: dict[uuid.UUID, list[str]]) -> list[Character]:
     """The troupe's active characters on its Who's Who, by name."""
     found = db.scalars(
@@ -264,13 +282,7 @@ def set_represented_by(
 
 def whos_who(db: Session, troupe: Troupe) -> WhosWho:
     order = titles.court_order(db, troupe.id)
-    held: dict[uuid.UUID, list[str]] = defaultdict(list)
-    for who, name in db.execute(
-        select(CharacterTitle.character_id, CharacterTitle.name).where(
-            CharacterTitle.troupe_id == troupe.id
-        )
-    ):
-        held[who].append(name)
+    held = titles_held(db, troupe)
     for names in held.values():
         names.sort(key=lambda n: titles.court_key(order, n))
     active = titles.active_titles(db, troupe.id)

@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 // count). A new one fails this test until it has been checked the same way.
 const CHECKED: Record<string, number> = {
   "components/PatronPicker.tsx": 1, // the picker's `loading`
+  "components/SiteSearch.tsx": 1, // "Searching…" until both have answered
   "pages/CharactersPage.tsx": 2, // shown once the troupes are in
   "pages/TroupesPage.tsx": 1, // isPending first
   "pages/character/AddTraitPanel.tsx": 1, // free choices: the loader, and no adding, until answered (#576)
