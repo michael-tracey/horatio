@@ -30,7 +30,7 @@ export function SiteSearch() {
     <>
       <button
         type="button"
-        aria-label="Search"
+        aria-label="Search everything"
         aria-keyshortcuts="/ Control+K Meta+K"
         title="Search (/)"
         onClick={() => setOpen(true)}
@@ -100,7 +100,7 @@ export function SearchPanel({ onPick }: { onPick: () => void }) {
     <div ref={list} onKeyDown={onKeyDown} className="flex flex-col gap-4">
       <Input
         type="search"
-        aria-label="Search everything"
+        aria-label="Search for"
         placeholder="Characters, boons, help…"
         autoFocus
         // The attribute itself, which the dialog's opening looks for: else it focuses its × first.

@@ -66,12 +66,12 @@ describe("SiteSearch", () => {
     setup();
     expect(screen.queryByRole("searchbox")).toBeNull();
     fireEvent.keyDown(document.body, { key: "/" });
-    expect(screen.getByRole("searchbox", { name: "Search everything" })).toBeTruthy();
+    expect(screen.getByRole("searchbox", { name: "Search for" })).toBeTruthy();
   });
 
   it("asks once the typing stops, for the troupe the page is of, and shows the hits by kind", async () => {
     const { asked } = setup();
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.click(screen.getByRole("button", { name: "Search everything" }));
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "raven" } });
 
     expect(await screen.findByRole("heading", { name: "Characters" })).toBeTruthy();
@@ -85,7 +85,7 @@ describe("SiteSearch", () => {
 
   it("opens the first hit on Enter, and a hit on choosing it, closing", async () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.click(screen.getByRole("button", { name: "Search everything" }));
     const box = screen.getByRole("searchbox");
     fireEvent.change(box, { target: { value: "raven" } });
     await screen.findByRole("heading", { name: "Characters" });
@@ -98,7 +98,7 @@ describe("SiteSearch", () => {
 
   it("goes down through the hits with the arrow keys", async () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.click(screen.getByRole("button", { name: "Search everything" }));
     const box = screen.getByRole("searchbox");
     fireEvent.change(box, { target: { value: "raven" } });
     await screen.findByRole("heading", { name: "Characters" });

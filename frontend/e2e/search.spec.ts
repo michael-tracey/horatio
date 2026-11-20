@@ -37,13 +37,13 @@ test("the top bar finds a character and a boon, each opening its page (#1046)", 
   await l.goto(`/troupes/${troupe.id}`);
   const open = async () => {
     // A tap on its button on a phone; at a desk, the shortcut, once the bar is there.
-    const button = l.getByRole("banner").getByRole("button", { name: "Search", exact: true });
+    const button = l.getByRole("banner").getByRole("button", { name: "Search everything" });
     if (onPhone()) await button.click();
     else {
       await expect(button).toBeVisible();
       await l.keyboard.press("/");
     }
-    const box = l.getByRole("searchbox", { name: "Search everything" });
+    const box = l.getByRole("searchbox", { name: "Search for" });
     await expect(box).toBeFocused();
     await box.fill(word);
     return l.getByRole("dialog", { name: "Search" });
