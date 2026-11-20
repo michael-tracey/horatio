@@ -56,3 +56,45 @@ class EmailNotice(Record):
     # Sent whether or not the person wants this kind by email: an important
     # announcement (horatio.posts).
     forced: Mapped[bool] = mapped_column(default=False, server_default="false")
+
+
+class PushDevice(Record):
+    """A phone or computer where the person turned on push notifications (#1054): its
+    browser's subscription with a push service, which Horatio sends to through the
+    delivery worker (horatio.web_push). Gone once they turn it off there, sign out
+    there, or the push service says the subscription is gone."""
+
+    __tablename__ = "push_devices"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    # Where the push service takes messages for this browser: its own address, a
+    # secret of the browser's. One device, one subscription.
+    endpoint: Mapped[str] = mapped_column(unique=True)
+    # The browser's keys, base64url: what each message is encrypted to.
+    p256dh: Mapped[str]
+    auth: Mapped[str]
+    # As the person sees it in their list of devices, such as "Chrome on Android".
+    name: Mapped[str]
+
+
+class PushNotice(Record):
+    """A notification waiting to go to one device by push (horatio.web_push): the line
+    and link the bell shows. Gone once sent, or once it can't be."""
+
+    __tablename__ = "push_notices"
+
+    device_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("push_devices.id", ondelete="CASCADE"), index=True
+    )
+    # Which topic it comes under (horatio.notification_choices), e.g. "downtime".
+    topic: Mapped[str]
+    troupe: Mapped[str | None]
+    summary: Mapped[str]
+    link: Mapped[str]
+    # When it may go: at once, or after a failure worth trying again.
+    due_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    attempts: Mapped[int] = mapped_column(default=0, server_default="0")

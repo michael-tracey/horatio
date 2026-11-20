@@ -5946,12 +5946,53 @@ export interface paths {
         get: operations["read_notification_settings_api_notification_settings_get"];
         /**
          * Choose Notification
-         * @description Choose whether one kind of notification comes to you one way: in the bell, or by
-         *     email. Some always come, and can't be turned off.
+         * @description Choose whether one kind of notification comes to you one way: in the bell, by
+         *     email, or by push to your devices. Some always come, and can't be turned off.
          */
         put: operations["choose_notification_api_notification_settings_put"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification-settings/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Turn On Push
+         * @description Turn on push notifications on this device: its browser's subscription. Which
+         *     kinds come by push is chosen per kind, as for the bell and email.
+         */
+        put: operations["turn_on_push_api_notification_settings_devices_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification-settings/devices/{device_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Turn Off Push
+         * @description Turn off push notifications on one of your devices: nothing more goes to it.
+         */
+        delete: operations["turn_off_push_api_notification_settings_devices__device_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -27389,7 +27430,7 @@ export interface components {
              * Way
              * @enum {string}
              */
-            way: "bell" | "email";
+            way: "bell" | "email" | "push";
         };
         /** NotificationGroupOut */
         NotificationGroupOut: {
@@ -27478,14 +27519,20 @@ export interface components {
              * Way
              * @enum {string}
              */
-            way: "bell" | "email";
+            way: "bell" | "email" | "push";
         };
         /** NotificationSettingsOut */
         NotificationSettingsOut: {
+            /** Devices */
+            devices: components["schemas"]["PushDeviceOut"][];
             /** Email */
             email: boolean;
             /** Groups */
             groups: components["schemas"]["NotificationGroupOut"][];
+            /** Push */
+            push: boolean;
+            /** Push Key */
+            push_key: string | null;
         };
         /** NotificationTopicOut */
         NotificationTopicOut: {
@@ -30672,6 +30719,39 @@ export interface components {
         PublishedOut: {
             /** Count */
             count: number;
+        };
+        /**
+         * PushDeviceIn
+         * @description A browser's push subscription (`PushSubscription.toJSON()`): where its push
+         *     service takes messages for it, and its keys, base64url.
+         */
+        PushDeviceIn: {
+            /** Auth */
+            auth: string;
+            /** Endpoint */
+            endpoint: string;
+            /** P256Dh */
+            p256dh: string;
+        };
+        /**
+         * PushDeviceOut
+         * @description A phone or computer where the person turned on push.
+         */
+        PushDeviceOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Endpoint */
+            endpoint: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /**
          * QuestActionOut
@@ -49721,6 +49801,70 @@ export interface operations {
                 "application/json": components["schemas"]["NotificationChoiceIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    turn_on_push_api_notification_settings_devices_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushDeviceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    turn_off_push_api_notification_settings_devices__device_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

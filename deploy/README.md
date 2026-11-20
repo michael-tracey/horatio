@@ -43,8 +43,10 @@ host nginx :443 ── Let's Encrypt certificate, renewed by certbot's timer
      `https://horatio.lotslarp.org`) and `HORATIO_LETSENCRYPT_EMAIL`. `deploy.sh`
      stops if any of them is empty. Never change the database password after the
      first deploy.
-   - **Optional:** email (SMTP) and Discord stay off until their settings are
-     filled in. The sample walks through making the Discord app and bot, including
+   - **Optional:** email (SMTP), Discord and phone notifications stay off until
+     their settings are filled in. For phone notifications, make the key with
+     `cd backend && uv run python -m horatio.web_push` and paste the line it
+     prints (`HORATIO_VAPID_PRIVATE_KEY=...`). The sample walks through making the Discord app and bot, including
      the OAuth2 redirect to register (`<HORATIO_PUBLIC_URL>/api/discord/callback`).
      The custodian manual has the same steps: [Setting up Discord and
      email](../docs/manual/custodian.md#setting-up-discord-and-email).

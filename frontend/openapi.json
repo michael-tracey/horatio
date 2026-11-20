@@ -34433,7 +34433,8 @@
           "way": {
             "enum": [
               "bell",
-              "email"
+              "email",
+              "push"
             ],
             "title": "Way",
             "type": "string"
@@ -34648,7 +34649,8 @@
           "way": {
             "enum": [
               "bell",
-              "email"
+              "email",
+              "push"
             ],
             "title": "Way",
             "type": "string"
@@ -34664,6 +34666,13 @@
       },
       "NotificationSettingsOut": {
         "properties": {
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/PushDeviceOut"
+            },
+            "title": "Devices",
+            "type": "array"
+          },
           "email": {
             "title": "Email",
             "type": "boolean"
@@ -34674,10 +34683,28 @@
             },
             "title": "Groups",
             "type": "array"
+          },
+          "push": {
+            "title": "Push",
+            "type": "boolean"
+          },
+          "push_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Push Key"
           }
         },
         "required": [
           "email",
+          "push",
+          "push_key",
+          "devices",
           "groups"
         ],
         "title": "NotificationSettingsOut",
@@ -42575,6 +42602,64 @@
           "count"
         ],
         "title": "PublishedOut",
+        "type": "object"
+      },
+      "PushDeviceIn": {
+        "description": "A browser's push subscription (`PushSubscription.toJSON()`): where its push\nservice takes messages for it, and its keys, base64url.",
+        "properties": {
+          "auth": {
+            "maxLength": 100,
+            "title": "Auth",
+            "type": "string"
+          },
+          "endpoint": {
+            "maxLength": 2048,
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "p256dh": {
+            "maxLength": 200,
+            "title": "P256Dh",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "p256dh",
+          "auth"
+        ],
+        "title": "PushDeviceIn",
+        "type": "object"
+      },
+      "PushDeviceOut": {
+        "description": "A phone or computer where the person turned on push.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "endpoint": {
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "endpoint",
+          "created_at"
+        ],
+        "title": "PushDeviceOut",
         "type": "object"
       },
       "QuestActionOut": {
@@ -80068,7 +80153,7 @@
         ]
       },
       "put": {
-        "description": "Choose whether one kind of notification comes to you one way: in the bell, or by\nemail. Some always come, and can't be turned off.",
+        "description": "Choose whether one kind of notification comes to you one way: in the bell, by\nemail, or by push to your devices. Some always come, and can't be turned off.",
         "operationId": "choose_notification_api_notification_settings_put",
         "requestBody": {
           "content": {
@@ -80103,6 +80188,92 @@
           }
         },
         "summary": "Choose Notification",
+        "tags": [
+          "preferences"
+        ]
+      }
+    },
+    "/api/notification-settings/devices": {
+      "put": {
+        "description": "Turn on push notifications on this device: its browser's subscription. Which\nkinds come by push is chosen per kind, as for the bell and email.",
+        "operationId": "turn_on_push_api_notification_settings_devices_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushDeviceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Turn On Push",
+        "tags": [
+          "preferences"
+        ]
+      }
+    },
+    "/api/notification-settings/devices/{device_id}": {
+      "delete": {
+        "description": "Turn off push notifications on one of your devices: nothing more goes to it.",
+        "operationId": "turn_off_push_api_notification_settings_devices__device_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Turn Off Push",
         "tags": [
           "preferences"
         ]

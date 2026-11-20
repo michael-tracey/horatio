@@ -40,6 +40,7 @@ export default defineConfig({
     // player's own characters are kept by the app (src/offline), and nothing that
     // changes something is ever answered from what is kept. Only in a build: the dev
     // server has none, and the e2e suite blocks it but for the tests that ask for it.
+    // It also shows push notifications (#1054): public/push-sw.js, imported into it.
     VitePWA({
       registerType: "prompt",
       injectRegister: false,
@@ -54,6 +55,7 @@ export default defineConfig({
         globIgnores: ["preview.jpg", "logo.png", "assets/d3-*.js", "assets/BoonStatisticsPage-*.js", "assets/ObligationWeb-*.js", "assets/boonStatistics-*.js"],
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/api\//],
+        importScripts: ["push-sw.js"],
         // The rules and the manual make some of the app's files big.
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         cleanupOutdatedCaches: true,

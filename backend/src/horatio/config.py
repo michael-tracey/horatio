@@ -67,6 +67,15 @@ class Settings(BaseSettings):
     smtp_ssl: bool = False
     mail_from: str | None = None
 
+    # Push notifications to people's phones (horatio.web_push): the server's own key,
+    # a VAPID private key, made with `python -m horatio.web_push`. Unset, push isn't
+    # available and Account › Notifications says so. Changing it stops every device
+    # turned on with the old one, until its person turns it on there again.
+    vapid_private_key: str | None = None
+    # Who the push services may contact about Horatio's pushes: a mailto: address or
+    # a web page. Unset, the site's address (public_url).
+    vapid_subject: str | None = None
+
     @field_validator("commit", "built_at", mode="before")
     @classmethod
     def unset_when_blank(cls, value: object) -> object:

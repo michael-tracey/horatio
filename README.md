@@ -136,6 +136,22 @@ from the sending domain is delivered rather than marked as spam, publish:
 Locally, `./start-local.sh` starts Mailpit and points Horatio at it: mail
 appears at <http://localhost:8025>.
 
+**Phone notifications** (web push). People turn them on per device on
+Account › Notifications; the delivery worker sends them through each
+browser's push service. Set:
+
+- `HORATIO_VAPID_PRIVATE_KEY`: the server's key. Make one with
+  `cd backend && uv run python -m horatio.web_push`, which prints the line.
+  Keep it in the settings, never the database; a new key stops pushes to every
+  device until it is turned on again there.
+- `HORATIO_VAPID_SUBJECT` (optional): a `mailto:` address the push services can
+  reach you at; the site's address by default.
+
+Unset, phone notifications aren't available, and the page says so. Browsers
+only allow push over HTTPS or on `localhost`, and only with the service worker,
+which the dev server doesn't run: try it on a build served by the API
+(`npm run build`, then `HORATIO_FRONTEND_DIST=../frontend/dist`).
+
 Model changes need a migration: `uv run alembic revision --autogenerate -m "..."`,
 then read what it generated. `tests/test_migrations.py` fails if the models and
 migrations disagree.

@@ -3,20 +3,21 @@
 
 Each notification kind (`Notification.kind`, such as downtime.delivered) belongs to
 one `Topic`, and topics come in `GROUPS` as the page shows them. A topic says, for
-each way it can come (`Route`): the bell, or email, whether the person chooses it
-(and what it is until they do) or it always comes. Work waiting on someone (a task:
-an approval to decide) is always in the bell, and goes when the work is done; so is
-word about their account's safety. A topic with no route for a way never comes that
-way. `horatio.notifications.notify` and `horatio.notification_emails.queue` honour
-each person's choice; a kind no topic covers is refused there, so a new kind can't
-be sent without a line on the page.
+each way it can come (`Route`): the bell, email, or push to the person's phones
+(#1054), whether the person chooses it (and what it is until they do) or it always
+comes. Work waiting on someone (a task: an approval to decide) is always in the
+bell, and goes when the work is done; so is word about their account's safety. A
+topic with no route for a way never comes that way. `horatio.notifications.notify`,
+`horatio.notification_emails.queue` and `horatio.web_push.queue` honour each
+person's choice; a kind no topic covers is refused there, so a new kind can't be
+sent without a line on the page.
 
 A choice is kept with the person's other settings (`users.preferences`, only where
 it differs from the default), named `<way>_<topic>`: `email_downtime`,
 `bell_news`. Those are the names the settings had before this page (#106, #510,
 #511), so what people chose then, and the unsubscribe links in emails already sent
-(by topic name), still hold. A new way, such as push (#1054), is a new `Way` and a
-route on the topics it carries.
+(by topic name), still hold. Push came later (#1054): `push_downtime`. Which devices
+it goes to is kept apart, a row for each (horatio.web_push).
 
 Two things the person doesn't choose here, and the page says so:
 - Whether they're told at all, for a notification that goes with a role: reported
@@ -36,9 +37,10 @@ from typing import Any, Literal
 
 from horatio.models import User
 
-# The ways a notification can come to a person. The bell is Horatio's own.
-Way = Literal["bell", "email"]
-WAYS: tuple[Way, ...] = ("bell", "email")
+# The ways a notification can come to a person. The bell is Horatio's own; push is
+# to the phones and computers where they turned it on (#1054, horatio.web_push).
+Way = Literal["bell", "email", "push"]
+WAYS: tuple[Way, ...] = ("bell", "email", "push")
 
 # Who a topic is for: anyone, the staff of a troupe, or the custodian.
 Audience = Literal["everyone", "staff", "custodian"]
@@ -68,7 +70,9 @@ class Topic:
     # The notification kinds it covers: a kind, or "approval.*" for every kind under
     # approval.
     kinds: tuple[str, ...]
-    routes: dict[Way, Route] = field(default_factory=lambda: {"bell": ON, "email": OFF})
+    routes: dict[Way, Route] = field(
+        default_factory=lambda: {"bell": ON, "email": OFF, "push": OFF}
+    )
     # Work waiting on the person, worked out from what waits (horatio.notifications
     # TASK_SOURCES): in the bell until it is done.
     task: bool = False
@@ -98,6 +102,10 @@ class Group:
 
 # Work waiting on someone: always in the bell; by email where it says so.
 TASK_BELL: dict[Way, Route] = {"bell": ALWAYS}
+# What someone at a game wants on their phone at once: pushed until they turn it off,
+# on each device where they turn push on (#1054). Everything else that can be pushed
+# isn't until they choose it.
+PUSHED: dict[Way, Route] = {"bell": ON, "email": OFF, "push": ON}
 
 GROUPS = (
     Group(
@@ -128,7 +136,7 @@ GROUPS = (
                 "The answer to a troupe you asked for and, for the custodian, each new"
                 " troupe people ask for.",
                 ("troupe_request", "troupe_request.approved", "troupe_request.declined"),
-                {"bell": ALWAYS, "email": OFF},
+                {"bell": ALWAYS, "email": OFF, "push": OFF},
             ),
         ),
     ),
@@ -173,6 +181,7 @@ GROUPS = (
                 "A drink to confirm, a bond weakening or fading, and the answer to one you"
                 " reported.",
                 ("sheet.bond",),
+                PUSHED,
             ),
             Topic(
                 "equipment",
@@ -202,6 +211,7 @@ GROUPS = (
                     "play.effect_acknowledged",
                     "play.effect_disputed",
                 ),
+                PUSHED,
             ),
             Topic(
                 "teaching",
@@ -264,6 +274,7 @@ GROUPS = (
                 "Downtime results",
                 "When your downtime results are ready, or updated.",
                 ("downtime.delivered",),
+                PUSHED,
                 connectors=True,
                 own_channels=True,
             ),
@@ -304,9 +315,10 @@ GROUPS = (
             Topic(
                 "boons",
                 "Your boons",
-                "A boon of yours traded, one you reported not accepted, and an audit given to"
-                " your character.",
-                ("boon.traded", "boon.rejected", "boon.audit"),
+                "A boon you reported accepted or not, one of yours traded, and an audit given"
+                " to your character.",
+                ("boon.accepted", "boon.rejected", "boon.traded", "boon.audit"),
+                PUSHED,
             ),
         ),
     ),
@@ -321,7 +333,7 @@ GROUPS = (
                 "Each announcement from your troupes' staff, such as a game moved. By email"
                 " too unless you turn it off; one they mark important is emailed anyway.",
                 ("announcement.published",),
-                {"bell": ON, "email": ON},
+                {"bell": ON, "email": ON, "push": ON},
             ),
             Topic(
                 "news",
@@ -366,7 +378,7 @@ GROUPS = (
                 "Approvals waiting",
                 "Requests in troupes where you approve changes. Always in the bell until decided.",
                 ("approval.*",),
-                {"bell": ALWAYS, "email": OFF},
+                {"bell": ALWAYS, "email": OFF, "push": OFF},
                 task=True,
             ),
             Topic(

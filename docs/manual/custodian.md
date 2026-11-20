@@ -637,6 +637,19 @@ Horatio sends email through one SMTP service, from one address of its own; repli
 
 Your mail provider may ask you to show you own the sending address's domain before it sends for it. Follow its instructions, or mail may land in spam.
 
+### Phone notifications: a push key
+
+People can have notifications come to their phones (see [Notifications on your phone](getting-started.md#notifications-on-your-phone)). Horatio sends them through each browser's own push service (Google's for Android, Apple's for an iPhone), signed with a key of the server's own. Until the key is set, phone notifications aren't available, and Account › Notifications says so.
+
+| Setting | Takes |
+|---|---|
+| `HORATIO_VAPID_PRIVATE_KEY` | The server's push key. Make one with `cd backend && uv run python -m horatio.web_push`, which prints the whole line. Needed |
+| `HORATIO_VAPID_SUBJECT` | How the push services can reach you about Horatio's notifications: a `mailto:` address, such as `mailto:custodian@example.org`. Left out, the site's address |
+
+The key is a secret, like the passwords above: keep it in `production.env` only. Make it once and keep it. A new key stops phone notifications on every device until each person turns them on there again. There is nothing to set up with Google or Apple.
+
+Phones only take notifications from a site over HTTPS, which a server deployed with `deploy/deploy.sh` is.
+
 ### Putting the settings live
 
 Horatio reads its settings when it starts, so redeploy after changing them: `deploy/deploy.sh --no-build` on the server (see [Updating the server](#updating-the-server)), or restart `./start-local.sh` on your own computer. Then open any troupe's **Customise › Connectors**: Discord and email no longer say they aren't set up, and the troupe's staff can [add the bot to their server](running-a-troupe.md#adding-the-horatio-bot).
