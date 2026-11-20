@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
-import type { XpEntryOut } from "../../api/types";
+import type { CharacterOut, XpEntryOut } from "../../api/types";
 import { DataTable } from "../../components/DataTable";
 import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { XpPlan } from "./XpPlan";
 
 const KINDS: Record<string, string> = { self_entered: "self-entered", cap: "above a ceiling", reprice: "repriced", debt: "XP debt" };
 // Lines whose reason says all there is: a purchase, creation XP lost when accepted, and
@@ -13,8 +14,10 @@ const KINDS: Record<string, string> = { self_entered: "self-entered", cap: "abov
 const UNLABELLED = new Set(["purchase", "lost", "creation"]);
 
 /** The character's XP history. `selfEntering`: its player, while it has no home
- * troupe, may add XP to it themselves; the troupe it joins accepts or removes it. */
-export function XpTab({ characterId, selfEntering = false }: { characterId: string; selfEntering?: boolean }) {
+ * troupe, may add XP to it themselves; the troupe it joins accepts or removes it.
+ * Above it, the player's plan of what to buy next (`XpPlan`), which staff see if shared. */
+export function XpTab({ character, mine = false, selfEntering = false }: { character: CharacterOut; mine?: boolean; selfEntering?: boolean }) {
+  const characterId = character.id;
   const history = useQuery({
     queryKey: ["xp", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/xp", { params: { path: { character_id: characterId } } })),
@@ -29,6 +32,7 @@ export function XpTab({ characterId, selfEntering = false }: { characterId: stri
     <div className="flex flex-col gap-6">
       {selfEntering && <SelfEntered characterId={characterId} />}
       <DebtCard characterId={characterId} />
+      {character.kind === "pc" && <XpPlan character={character} mine={mine} />}
       <Card title="Experience history">
         <DataTable
           label="Experience history"

@@ -78,7 +78,7 @@ import { xpTotal } from "./xpTotals";
 import { useCatalogue } from "../../catalogue";
 import { SectionLabel } from "../../components/Headings";
 
-function useSheet(characterId: string) {
+export function useSheet(characterId: string) {
   return useQuery({
     queryKey: ["sheet", characterId],
     queryFn: () =>

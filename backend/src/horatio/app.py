@@ -132,6 +132,7 @@ from horatio.api import (
     whos_who,
     written_rules,
     xp_awards,
+    xp_plans,
     xp_range,
     yorick_imports,
 )
@@ -226,6 +227,7 @@ for module in (
     sheets,
     power_choices,
     cart,
+    xp_plans,
     trait_exceptions,
     embrace,
     membership,
