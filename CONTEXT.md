@@ -48,7 +48,7 @@ The custodian seeing Horatio exactly as one person does, with their permissions,
 _Avoid_: Impersonate, log in as, masquerade
 
 **Two-step sign-in**:
-Signing in with a **second step** after the password: a passkey, or a code from an authenticator app on the person's phone, with one-time **recovery codes** for when it's lost. A password alone, or a reset link, never signs in an account that has one. The custodian must have it, and so must the staff of a troupe whose lead storyteller asks it; the custodian resets it for someone who has lost theirs.
+Signing in with a **second step** after the password: a passkey, or a code from an authenticator app on the person's phone, with one-time **recovery codes** for when it's lost. A password alone, or a reset link, never signs in an account that has one. A passkey can also sign in alone, with no password: it counts as both steps, as the device checks the person's face, finger or PIN. The custodian must have it, and so must the staff of a troupe whose lead storyteller asks it; the custodian resets it for someone who has lost theirs.
 _Avoid_: 2FA, MFA, two-factor (in UI text), OTP
 
 **Staff**:

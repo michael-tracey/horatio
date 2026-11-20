@@ -2848,7 +2848,7 @@ test("players check in at the door and land in their Play View, and staff award 
   expect(new URL(door.url()).searchParams.get("next")).toBe(`/check-in/${code}`);
   await door.getByLabel("Email or handle").fill(player.email);
   await door.getByLabel("Password").fill(PASSWORD);
-  await door.getByRole("button", { name: "Sign in" }).click();
+  await door.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(door.getByRole("heading", { name: "Check in" })).toBeVisible();
   await expect(door.getByText(troupeName)).toBeVisible();
   await door.getByLabel("Hester").check();

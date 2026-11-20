@@ -66,10 +66,12 @@ def masked(ip: str) -> str:
 
 def logins(db: DbSession, hashed: set[str]) -> dict[str, str]:
     """Whose each hashed login is: an account's "@handle" or email; for second steps,
-    counted by account, its "@handle"."""
+    counted by account, its "@handle"; for passkeys alone, "a passkey"."""
     found: dict[str, str] = {}
     if not hashed:
         return found
+    if attempts.PASSKEY in hashed:
+        found[attempts.PASSKEY] = "a passkey"
     users = db.execute(
         select(User.id, User.email, User.handle).where(User.merged_into_id.is_(None))
     )

@@ -736,6 +736,8 @@ MESSAGES: dict[str, str] = {
     "account.signed_in.app": "{actor} signed in{from_ip}, with their authenticator app.",
     "account.signed_in.recovery_code": "{actor} signed in{from_ip}, with a recovery code.",
     "account.signed_in.passkey": "{actor} signed in{from_ip}, with a passkey.",
+    "account.signed_in.passkey_alone": "{actor} signed in{from_ip} with a passkey alone, no"
+    " password.",
     "account.second_step_asked": "{actor} gave their password{from_ip}, and was asked for their"
     " second step.",
     "account.second_step_failed": "Someone signing in as {member}{from_ip} gave a wrong second"
@@ -763,6 +765,10 @@ MESSAGES: dict[str, str] = {
     "account.sign_in_failed": "Someone failed to sign in as {member}{from_ip}: wrong password.",
     "account.sign_in_failed.unknown": "Someone failed to sign in{from_ip} to an account that"
     " doesn't exist.",
+    "account.sign_in_failed.passkey": "Someone failed to sign in as {member}{from_ip} with a"
+    " passkey: it didn't check out.",
+    "account.sign_in_failed.passkey_unknown": "Someone failed to sign in{from_ip} with a passkey"
+    " no account here has.",
     "account.sign_in_throttled": "Someone was turned away from signing in as {member}{from_ip}:"
     " {too_many} from where they were.",
     "account.sign_in_throttled.unknown": "Someone was turned away from signing in{from_ip} to an"
@@ -771,6 +777,10 @@ MESSAGES: dict[str, str] = {
     " {member}{from_ip}: {too_many} from where they were.",
     "account.sign_in_throttled_again.unknown": "Someone was turned away again from signing"
     " in{from_ip} to an account that doesn't exist: {too_many} from where they were.",
+    "account.sign_in_throttled.passkey": "Someone was turned away from signing in with a"
+    " passkey{from_ip}: {too_many} from where they were.",
+    "account.sign_in_throttled_again.passkey": "Someone was turned away again from signing in"
+    " with a passkey{from_ip}: {too_many} from where they were.",
     "account.sign_up_throttled": "Someone was turned away from signing up{from_ip}: too many"
     " sign-ups from where they were.",
     "account.sign_up_throttled_again": "Someone was turned away again from signing up{from_ip}:"

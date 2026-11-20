@@ -33,6 +33,9 @@ class PasskeyOut(BaseModel):
     name: str
     created_at: datetime
     last_used_at: datetime | None
+    # It can sign in alone, with no password (#1098): True if so; False if the device
+    # said it can't; None if that isn't known, as for those made before it could.
+    discoverable: bool | None
 
 
 class TwoStepOut(BaseModel):
@@ -103,7 +106,13 @@ def state(db: DbSession, user: User) -> TwoStepOut:
         app=two_step.has_app(db, user),
         apps_available=two_step.apps_available(),
         passkeys=[
-            PasskeyOut(id=p.id, name=p.name, created_at=p.created_at, last_used_at=p.last_used_at)
+            PasskeyOut(
+                id=p.id,
+                name=p.name,
+                created_at=p.created_at,
+                last_used_at=p.last_used_at,
+                discoverable=p.discoverable,
+            )
             for p in passkeys.mine(db, user)
         ],
         passkeys_available=passkeys.available(),

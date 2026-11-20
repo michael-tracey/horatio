@@ -64,6 +64,10 @@ class Passkey(Record):
     # As the person named it, such as "Phone".
     name: Mapped[str]
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Whether the device keeps it so it can sign in alone, with no password (#1098): as
+    # the browser said when it was made, or learnt by doing so. None if it never said,
+    # as for those made before passkeys could sign in alone.
+    discoverable: Mapped[bool | None]
 
 
 class SecondStepSignIn(Record):
@@ -84,3 +88,18 @@ class SecondStepSignIn(Record):
     challenge: Mapped[bytes | None] = mapped_column(LargeBinary)
     failures: Mapped[int] = mapped_column(default=0, server_default="0")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class PasskeySignIn(Record):
+    """A sign-in with a passkey alone (#1098), waiting on the browser's answer: the
+    challenge it must sign, kept here, not in the browser. A cookie holds its token,
+    the table its hash. Taken by the answer, right or not, and good for 5 minutes."""
+
+    __tablename__ = "passkey_sign_ins"
+
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    challenge: Mapped[bytes] = mapped_column(LargeBinary)
+    # Where it was asked from (horatio.auth.attempts.source), so one place can't keep
+    # too many waiting.
+    ip_address: Mapped[str | None] = mapped_column(String(64), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

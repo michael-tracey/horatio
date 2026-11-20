@@ -292,6 +292,98 @@ def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -
     return me(user, db)
 
 
+@router.post("/passkey/options")
+@allowed_first
+def passkey_alone_options(request: Request, db: DbSession, response: Response) -> dict[str, Any]:
+    """What the browser needs to sign in with a passkey alone, no password (#1098):
+    WebAuthn's PublicKeyCredentialRequestOptions, as JSON, naming no account. Its
+    challenge is kept here, named by a cookie, and works once, for 5 minutes."""
+    if not passkeys.available():
+        raise HTTPException(status.HTTP_409_CONFLICT, "Passkeys need this site on https.")
+    token, options = passkeys.alone_options(db, attempts.source(request))
+    response.set_cookie(
+        passkeys.COOKIE,
+        token,
+        max_age=int(passkeys.CHALLENGE_FOR.total_seconds()),
+        httponly=True,
+        secure=get_settings().cookie_secure,
+        samesite="lax",
+        path="/api/auth",
+    )
+    db.commit()
+    return options
+
+
+@router.post("/passkey")
+@allowed_first
+def sign_in_with_passkey(
+    body: PasskeySigned, request: Request, db: DbSession, response: Response
+) -> Me:
+    """Sign in with a passkey alone (#1098): the browser's answer to the challenge from
+    /auth/passkey/options. The device checked the person's face, finger or PIN, so it
+    is both steps at once: no second step is asked for, even of someone who must have
+    one. Limited and logged as a password is, at a login of its own."""
+    ip = attempts.source(request)
+    from_ip = sign_in_ip(db, request)
+    if (held := attempts.passkey_held_back(db, ip)) is not None:
+        record(
+            db,
+            None,
+            "account.sign_in_throttled" if held.first else "account.sign_in_throttled_again",
+            kind="passkey",
+            limit=held.limit.key,
+            **from_ip,
+        )
+        db.commit()
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, held.wait)
+    # Used up, and committed, before the answer is checked: it works once either way.
+    challenge = passkeys.take_challenge(db, request.cookies.get(passkeys.COOKIE))
+    db.commit()
+    if challenge is None:
+        raise HTTPException(status.HTTP_410_GONE, "That took too long. Try again.")
+    passkey = passkeys.named(db, body.credential)
+    user = db.get_one(User, passkey.user_id) if passkey is not None else None
+    if (
+        passkey is None
+        or user is None
+        or not passkeys.check_alone(db, passkey, challenge, body.credential)
+    ):
+        if user is None:
+            record(db, None, "account.sign_in_failed", kind="passkey_unknown", **from_ip)
+        else:
+            record(
+                db,
+                user,
+                "account.sign_in_failed",
+                kind="passkey",
+                member=user.display_name,
+                user_id=user.id,
+                **from_ip,
+            )
+        db.commit()
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "That passkey didn't sign you in. Sign in with your password, and add a passkey"
+            " in Account.",
+        )
+    # Refused, with the suspension's message, while they are suspended.
+    suspensions.refuse(db, user)
+    attempts.signed_in_at(db, attempts.PASSKEY, ip)
+    record(
+        db,
+        user,
+        "account.signed_in",
+        kind="passkey_alone",
+        member=user.display_name,
+        user_id=user.id,
+        **from_ip,
+    )
+    set_session_cookie(response, start_session(db, user))
+    response.delete_cookie(passkeys.COOKIE, path="/api/auth")
+    db.commit()
+    return me(user, db)
+
+
 AGAIN = "Your sign-in has timed out. Sign in again."
 
 

@@ -37291,6 +37291,17 @@
             "title": "Created At",
             "type": "string"
           },
+          "discoverable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discoverable"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -37317,7 +37328,8 @@
           "id",
           "name",
           "created_at",
-          "last_used_at"
+          "last_used_at",
+          "discoverable"
         ],
         "title": "PasskeyOut",
         "type": "object"
@@ -64536,6 +64548,72 @@
           }
         },
         "summary": "Who Am I",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/passkey": {
+      "post": {
+        "description": "Sign in with a passkey alone (#1098): the browser's answer to the challenge from\n/auth/passkey/options. The device checked the person's face, finger or PIN, so it\nis both steps at once: no second step is asked for, even of someone who must have\none. Limited and logged as a password is, at a login of its own.",
+        "operationId": "sign_in_with_passkey_api_auth_passkey_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeySigned"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sign In With Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/passkey/options": {
+      "post": {
+        "description": "What the browser needs to sign in with a passkey alone, no password (#1098):\nWebAuthn's PublicKeyCredentialRequestOptions, as JSON, naming no account. Its\nchallenge is kept here, named by a cookie, and works once, for 5 minutes.",
+        "operationId": "passkey_alone_options_api_auth_passkey_options_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Passkey Alone Options Api Auth Passkey Options Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Passkey Alone Options",
         "tags": [
           "auth"
         ]

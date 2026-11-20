@@ -46,7 +46,7 @@ The repository's own deployment has a script for this, `deploy/custodian.sh you@
 
 ### Two-step sign-in for the custodian
 
-The custodian must sign in with two steps: after the password, a passkey or a code from an authenticator app on their phone. The first time you open Horatio as the custodian, it sends you to set this up, and nothing else opens until you have. Keep the recovery codes it gives you somewhere safe. See [Two-step sign-in](getting-started.md#two-step-sign-in) for how it works.
+The custodian must sign in with two steps: after the password, a passkey or a code from an authenticator app on their phone. A passkey alone, with no password, counts as both steps. The first time you open Horatio as the custodian, it sends you to set this up, and nothing else opens until you have. Keep the recovery codes it gives you somewhere safe. See [Two-step sign-in](getting-started.md#two-step-sign-in) for how it works.
 
 Authenticator apps need the server's key (`HORATIO_TOTP_KEY`, see deploy/README.md); without it, only passkeys can be set up. Passkeys need the site on https. With neither, the custodian isn't held to it.
 
@@ -591,6 +591,7 @@ Horatio limits how often anyone can try to sign in or sign up from one place (on
 - **Failed sign-ins**: 20 in a quarter of an hour and 100 a day from one address, and 5 in a quarter of an hour at one email or handle from it.
 - **All sign-ins**, right password or not: 60 in a quarter of an hour and 300 a day from one address, so that no one can keep the server busy checking passwords. A troupe signing in together on a venue's Wi-Fi stays well under it.
 - **Sign-ups**: 20 an hour and 50 a day from one address.
+- **Passkeys alone** ([signing in with no password](getting-started.md#signing-in)) count as sign-ins from the address, under the first two limits, and as tries at a login of their own, "a passkey", under the third: 5 failed in a quarter of an hour from one address hold back passkeys from there, never a password. The **Throttled now** card shows it as **at a passkey**. A passkey that doesn't check out is a failed sign-in ("Someone failed to sign in as Agnes from 203.0.113.7 with a passkey: it didn't check out."), and one that does is "Agnes signed in from 203.0.113.7 with a passkey alone, no password."
 - **Wrong second-step codes** ([two-step sign-in](getting-started.md#two-step-sign-in)): 20 in a quarter of an hour and 100 a day from one address, and 10 in a quarter of an hour and 30 a day at one account from anywhere. Only someone with the account's password gets that far, so the limit at the account can't be used to keep anyone else out. It shows as **Anywhere at @handle**.
 
 The **Throttled now** card, below the **Audit log** card, lists each address over a limit now (with the email or handle, for the limit at one login), which limit, and when it clears. Choose **Unblock** to let it try again at once, for instance when a whole troupe is held back at a game. Unblocking goes in the audit log, as a notice.

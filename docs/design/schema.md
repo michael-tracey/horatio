@@ -74,13 +74,20 @@ bound to the user; `confirmed_at`, null while being set up; `last_step`, the
 30-second step of the last code used, so none works twice), **`recovery_codes`**
 (`user_id`, `code_hash`: a SHA-256 of the user and the code, never the code;
 `used_at`), **`passkeys`** (WebAuthn: `credential_id` unique, `public_key`,
-`sign_count`, `transports`, `name`, `last_used_at`), and
+`sign_count`, `transports`, `name`, `last_used_at`, `discoverable`: whether it
+can sign in alone, null if unknown), and
 **`second_step_sign_ins`**: a sign-in whose password was right, waiting on its
 second step with no session yet (`token_hash` of its cookie, `login_hash` for the
 limits, `challenge` for a passkey, `failures`, `expires_at` 10 minutes on). Wrong
 codes are counted in `auth_attempts` as `second_step` (with `second_step_held`),
 by an account's hash rather than a login's. `troupes.staff_two_step` asks it of a
 troupe's staff.
+
+Signing in with a passkey alone (#1098, `horatio.auth.passkeys`):
+**`passkey_sign_ins`** keeps the challenge the browser must sign (`token_hash` of
+its cookie, `challenge`, `ip_address`, `expires_at` 5 minutes on), deleted by the
+answer, right or not. Its tries count in `auth_attempts` as sign-ins at a login of
+their own, "a passkey".
 
 **`password_resets`**: one-time links the custodian makes for someone locked out.
 `user_id`, `token_hash` (unique), `expires_at` (a day on), `created_by_id` →

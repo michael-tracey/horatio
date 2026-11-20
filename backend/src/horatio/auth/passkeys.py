@@ -8,15 +8,22 @@ Each challenge works once: adding a passkey keeps its challenge with the sign-in
 session adding it, and signing in keeps it with the sign-in waiting on its second
 step. A passkey's count of signatures only goes up; one that goes back was copied,
 and is refused.
+
+A passkey can also sign in alone, with no password (#1098). The browser then offers
+whichever passkeys it keeps for Horatio, so only discoverable ones (kept with the
+account they belong to) can, and the device must check the person's face, finger or
+PIN, which makes it both steps at once. Its challenge waits on the server, in
+`passkey_sign_ins`, named by a cookie: it works once, for 5 minutes.
 """
 
 import json
-from datetime import UTC, datetime
+import secrets
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlsplit
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 from webauthn import (
     generate_authentication_options,
@@ -35,8 +42,9 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
 )
 
+from horatio.auth.sessions import hash_token
 from horatio.config import get_settings
-from horatio.models import Passkey, SecondStepSignIn, User
+from horatio.models import Passkey, PasskeySignIn, SecondStepSignIn, User
 from horatio.models import Session as SignInSession
 
 NAME = "Horatio"
@@ -72,16 +80,21 @@ def mine(db: Session, user: User) -> list[Passkey]:
     )
 
 
-def _descriptors(db: Session, user: User) -> list[PublicKeyCredentialDescriptor]:
+def _descriptors(
+    db: Session, user: User, *, discoverable_only: bool = False
+) -> list[PublicKeyCredentialDescriptor]:
     return [
         PublicKeyCredentialDescriptor(id=p.credential_id, transports=_transports(p.transports))
         for p in mine(db, user)
+        if p.discoverable or not discoverable_only
     ]
 
 
 def adding_options(db: Session, session: SignInSession, user: User) -> dict[str, Any]:
     """What the browser needs to make a new passkey for `user`, as JSON; its challenge
-    is kept with the sign-in session making it."""
+    is kept with the sign-in session making it. Discoverable where the device can, so
+    it can sign in alone, and the browser is asked to say whether it is (credProps).
+    A device holding one that may not be discoverable may make a new one in its place."""
     rp_id, _ = relying_party()
     options = generate_registration_options(
         rp_id=rp_id,
@@ -89,7 +102,7 @@ def adding_options(db: Session, session: SignInSession, user: User) -> dict[str,
         user_id=user.id.bytes,
         user_name=f"@{user.handle}",
         user_display_name=user.display_name,
-        exclude_credentials=_descriptors(db, user),
+        exclude_credentials=_descriptors(db, user, discoverable_only=True),
         authenticator_selection=AuthenticatorSelectionCriteria(
             resident_key=ResidentKeyRequirement.PREFERRED,
             user_verification=UserVerificationRequirement.PREFERRED,
@@ -97,7 +110,17 @@ def adding_options(db: Session, session: SignInSession, user: User) -> dict[str,
     )
     session.passkey_challenge = options.challenge
     db.flush()
-    return json.loads(options_to_json(options))
+    made: dict[str, Any] = json.loads(options_to_json(options))
+    made["extensions"] = {"credProps": True}
+    return made
+
+
+def _discoverable(credential: dict[str, Any]) -> bool | None:
+    """Whether the browser said the passkey it made is discoverable; None if it didn't."""
+    results = credential.get("clientExtensionResults")
+    props = results.get("credProps") if isinstance(results, dict) else None
+    rk = props.get("rk") if isinstance(props, dict) else None
+    return rk if isinstance(rk, bool) else None
 
 
 def add(
@@ -132,6 +155,7 @@ def add(
         sign_count=made.sign_count,
         transports=[t.value for t in _transports(transports)],
         name=name.strip() or "Passkey",
+        discoverable=_discoverable(credential),
     )
     db.add(passkey)
     db.flush()
@@ -172,6 +196,14 @@ def check(db: Session, waiting: SecondStepSignIn, user: User, credential: dict[s
     )
     if passkey is None:
         return False
+    return _signed(db, passkey, challenge, credential, verified=False)
+
+
+def _signed(
+    db: Session, passkey: Passkey, challenge: bytes, credential: dict[str, Any], *, verified: bool
+) -> bool:
+    """Whether `credential` is `passkey` signing `challenge`, with the person verified
+    (face, finger or PIN) if `verified`. If so, its count and last use are kept."""
     rp_id, origin = relying_party()
     try:
         signed = verify_authentication_response(
@@ -181,10 +213,96 @@ def check(db: Session, waiting: SecondStepSignIn, user: User, credential: dict[s
             expected_origin=origin,
             credential_public_key=passkey.public_key,
             credential_current_sign_count=passkey.sign_count,
+            require_user_verification=verified,
         )
     except (WebAuthnException, ValueError, KeyError, TypeError):
         return False
     passkey.sign_count = signed.new_sign_count
     passkey.last_used_at = datetime.now(UTC)
+    db.flush()
+    return True
+
+
+# --- signing in with a passkey alone (#1098) ------------------------------------------------
+
+COOKIE = "horatio_passkey_sign_in"
+CHALLENGE_FOR = timedelta(minutes=5)
+# How many may wait from one place at once: each sign-in page open there asks for one,
+# and a whole troupe may sign in together on a venue's Wi-Fi.
+WAITING_FROM_ONE_PLACE = 60
+
+
+def alone_options(db: Session, ip: str | None) -> tuple[str, dict[str, Any]]:
+    """What the browser needs to sign in with a passkey alone, as JSON, naming no
+    account, so the browser offers any of its passkeys for Horatio; and the token for
+    the cookie naming its challenge, kept here. 429 if too many wait from `ip`."""
+    db.execute(delete(PasskeySignIn).where(PasskeySignIn.expires_at <= func.now()))
+    from_there = PasskeySignIn.ip_address == ip if ip else PasskeySignIn.ip_address.is_(None)
+    if (db.scalar(select(func.count()).where(from_there)) or 0) >= WAITING_FROM_ONE_PLACE:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS, "Too many sign-ins from here. Try again later."
+        )
+    rp_id, _ = relying_party()
+    options = generate_authentication_options(
+        rp_id=rp_id, user_verification=UserVerificationRequirement.REQUIRED
+    )
+    token = secrets.token_urlsafe(32)
+    db.add(
+        PasskeySignIn(
+            token_hash=hash_token(token),
+            challenge=options.challenge,
+            ip_address=ip,
+            expires_at=datetime.now(UTC) + CHALLENGE_FOR,
+        )
+    )
+    db.flush()
+    return token, json.loads(options_to_json(options))
+
+
+def take_challenge(db: Session, token: str | None) -> bytes | None:
+    """The challenge the cookie's token names, if it hasn't timed out: used up, so it
+    works once, whether the answer is right or not."""
+    if not token:
+        return None
+    return db.scalar(
+        delete(PasskeySignIn)
+        .where(PasskeySignIn.token_hash == hash_token(token), PasskeySignIn.expires_at > func.now())
+        .returning(PasskeySignIn.challenge)
+    )
+
+
+def named(db: Session, credential: dict[str, Any]) -> Passkey | None:
+    """The passkey a browser's answer names, locked for this request: never one of a
+    merged account's."""
+    raw = credential.get("rawId") or credential.get("id")
+    if not isinstance(raw, str):
+        return None
+    try:
+        credential_id = base64url_to_bytes(raw)
+    except ValueError:
+        return None
+    return db.scalar(
+        select(Passkey)
+        .join(User, Passkey.user_id == User.id)
+        .where(Passkey.credential_id == credential_id, User.merged_into_id.is_(None))
+        .with_for_update(of=Passkey)
+    )
+
+
+def check_alone(
+    db: Session, passkey: Passkey, challenge: bytes, credential: dict[str, Any]
+) -> bool:
+    """Whether `credential` is `passkey` signing `challenge` by itself: for the account
+    it was made for (the user handle the device keeps with it), and with the person
+    verified. A passkey that does this is discoverable, if that wasn't known."""
+    response = credential.get("response")
+    handle = response.get("userHandle") if isinstance(response, dict) else None
+    try:
+        theirs = isinstance(handle, str) and base64url_to_bytes(handle) == passkey.user_id.bytes
+    except ValueError:
+        theirs = False
+    if not theirs or not _signed(db, passkey, challenge, credential, verified=True):
+        return False
+    passkey.discoverable = True
     db.flush()
     return True

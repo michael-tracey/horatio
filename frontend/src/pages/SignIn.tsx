@@ -1,13 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router";
-import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
+import { browserSupportsWebAuthn, browserSupportsWebAuthnAutofill, startAuthentication, WebAuthnAbortService } from "@simplewebauthn/browser";
 import { api, ApiError, unwrap } from "../api/client";
 import type { components } from "../api/schema";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice } from "../components/ui";
 import { useAction, useMe } from "../hooks";
 import { manualLink } from "../manualLink";
 import { useNext, withNext } from "../next";
+import { passkeyAborted, passkeyProblem } from "../passkeys";
 import { useTitle } from "../title";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
@@ -32,15 +33,60 @@ function useAfterPassword() {
   return (answer: object) => ("second_step" in answer ? navigate(withNext("/sign-in/second-step", next), { state: answer }) : navigate(next ?? "/characters"));
 }
 
+/** Sign in with a passkey alone, no password (#1098): the server's challenge, which
+ * names no account, signed by whichever passkey the person picks. The device checks
+ * their face, finger or PIN, so no second step follows. With `autofill`, the browser
+ * offers their passkeys from the login box rather than at once. */
+async function signInWithPasskey(autofill: boolean) {
+  const optionsJSON = await unwrap(api.POST("/api/auth/passkey/options"));
+  const credential = await startAuthentication({ optionsJSON: optionsJSON as never, useBrowserAutofill: autofill });
+  await unwrap(api.POST("/api/auth/passkey", { body: { credential: credential as never } }));
+}
+
 export function SignInPage() {
   const me = useMe();
   const next = useNext();
+  const navigate = useNavigate();
+  const client = useQueryClient();
   const afterPassword = useAfterPassword();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const signIn = useAction(async () => {
     afterPassword(await unwrap(api.POST("/api/auth/login", { body: { login, password } })));
   });
+  const withPasskey = browserSupportsWebAuthn();
+  const passkey = useAction(async () => {
+    await signInWithPasskey(false);
+    navigate(next ?? "/characters");
+  });
+  // The browser offers passkeys from the login box too (conditional UI), until one is
+  // picked; again after the button's request ends, which took its place.
+  const [offered, setOffered] = useState(0);
+  const [autofillError, setAutofillError] = useState<unknown>(null);
+  useEffect(() => {
+    let on = true;
+    void (async () => {
+      if (!(await browserSupportsWebAuthnAutofill())) return;
+      while (on) {
+        try {
+          await signInWithPasskey(true);
+          if (!on) return;
+          await client.invalidateQueries();
+          navigate(next ?? "/characters");
+          return;
+        } catch (error) {
+          if (!on || passkeyAborted(error)) return;
+          setAutofillError(error);
+          // Its challenge timed out: offer them again with a new one.
+          if (!(error instanceof ApiError && error.status === 410)) return;
+        }
+      }
+    })();
+    return () => {
+      on = false;
+      WebAuthnAbortService.cancelCeremony();
+    };
+  }, [offered, client, navigate, next]);
 
   if (me.data) return <Navigate to={next ?? "/characters"} replace />;
   const submit = (e: FormEvent) => {
@@ -51,7 +97,8 @@ export function SignInPage() {
     <Shell title="Sign in">
       <form onSubmit={submit} className="flex flex-col gap-4">
         <Field label="Email or handle">
-          <Input autoComplete="username" autoCapitalize="none" spellCheck={false} required value={login} onChange={(e) => setLogin(e.target.value)} />
+          {/* "webauthn" lets the browser offer passkeys here (#1098). */}
+          <Input autoComplete="username webauthn" autoCapitalize="none" spellCheck={false} required value={login} onChange={(e) => setLogin(e.target.value)} />
         </Field>
         <Field label="Password">
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -63,6 +110,23 @@ export function SignInPage() {
         <Button type="submit" disabled={signIn.isPending}>
           Sign in
         </Button>
+        {withPasskey && (
+          <>
+            <p className="text-center text-sm text-mist">or</p>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={passkey.isPending}
+              onClick={() => {
+                setAutofillError(null);
+                passkey.mutate(undefined, { onError: () => setOffered((n) => n + 1) });
+              }}
+            >
+              Sign in with a passkey
+            </Button>
+            <ErrorText error={passkeyProblem(passkey.error ?? autofillError)} />
+          </>
+        )}
         <p className="text-center text-sm text-mist">
           New here?{" "}
           <Link to={withNext("/sign-up", next)} className="text-gold underline">
