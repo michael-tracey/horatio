@@ -945,6 +945,8 @@ Where a channel's name matches a character's, Horatio suggests it: **Suggested: 
 
 The list above the characters names any with no channel yet. They still get their results in Horatio, and by email if it's on, but nothing on Discord until one is chosen. Delivering a cycle warns of them too (see [Delivering results](#delivering-results)).
 
+A player can turn off what Horatio posts to their character's channel, on their Account › Notifications. The character's row then says **Player turned it off**. Nothing goes to that channel while it's off: you deliver as usual, the cycle's **Delivery** tab says **Turned off by the player** in that character's Discord column, and the player still gets their results in Horatio. The troupe's own channels for news and announcements still post, and test mode still sends to the test channel.
+
 #### Trying it in test mode
 
 Before the first real delivery, tick **Send downtime results through Discord** and **Test mode**, and save. Delivered results then go to the test channel, each naming its character, and you can see how they look without any player seeing them on Discord. Test mode only changes where the Discord copy goes: players still get their results in Horatio as usual. When it looks right, untick **Test mode** and save. Results delivered from then on go to each character's channel. Switching test mode off sends nothing by itself: results that went only to the test channel wait on the cycle's **Delivery** tab, listed under **Deliver results** as **Sent to the test channel only**. Choose **Send to players' channels** there to send them to players as they were delivered. It sends only those copies: players don't get the results again in Horatio, or a new notification.

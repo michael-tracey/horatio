@@ -12,7 +12,8 @@ accounts. The custodian picks which one stays, and merges the other into it:
 - its notification settings, and its profile's bio, links, Discord username and
   pronouns, each only where the staying account has none of its own; so too its
   lines and veils with its choice to share them, and its choice to be named by
-  its handle in troupes' Who's Who;
+  its handle in troupes' Who's Who; and its characters' own Discord channels it
+  turned off (#1077) stay off;
 - its bell messages, the scenes it made, the responses assigned to it and not yet
   written, and its troupe requests still waiting;
 - its handle, and the former handles it still holds, become the staying
@@ -397,7 +398,8 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
     """Merge `other` into `keep`, as the custodian `actor`, for `reason`, and close
     it. Logged in the audit log and in each troupe it touches; the person is told
     in the bell and at both addresses, and those troupes' lead storytellers in the
-    bell. Callers check that `actor` is the custodian."""
+    bell, unless they turned it off (Staff work: Accounts merged, #1077). Callers
+    check that `actor` is the custodian."""
     reason = reason.strip()
     if not reason:
         raise unprocessable("Give a reason for the merge.")
@@ -472,6 +474,13 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
         keep.share_lines_veils = other.share_lines_veils
     if WHOS_WHO in found.settings:
         keep.preferences = {**(keep.preferences or {}), "whos_who_handle": True}
+    # Its characters' own Discord channels stay as their player left them (#1077).
+    off = notification_choices.OWN_CHANNELS_OFF
+    if (other.preferences or {}).get(off):
+        keep.preferences = {
+            **(keep.preferences or {}),
+            off: sorted({*(keep.preferences or {}).get(off, []), *other.preferences[off]}),
+        }
 
     _suspension(db, actor, keep, other, found)
     # Its change of email waiting is cancelled, so its link no longer works; the
@@ -571,7 +580,7 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
         notify(
             db,
             [troupe.lead_user_id],
-            "account.merged",
+            "troupe.accounts_merged",
             f"The custodian merged @{found.handles[0]} into @{keep.handle}, the same person,"
             f" moving {', '.join(moved)}: {reason}",
             f"/troupes/{troupe.id}",

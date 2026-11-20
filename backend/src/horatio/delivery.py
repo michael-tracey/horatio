@@ -10,6 +10,11 @@ workers never send it twice. A failure worth retrying is tried again later,
 backing off each time; after `MAX_ATTEMPTS`, or a failure that is not worth
 retrying, the delivery is `failed` for storytellers to retry or mark as sent
 by hand.
+
+A player can turn off what the troupe's Discord connector posts to their
+character's own channel (#1077, horatio.notification_choices): nothing is queued
+there while it is off, outside test mode. The troupe's shared channels, the
+delivery in Horatio and the player's notification are unchanged.
 """
 
 import asyncio
@@ -23,7 +28,7 @@ from sqlalchemy.orm import Session
 
 import horatio.connectors.discord
 import horatio.connectors.email
-from horatio import email_design, mail_sender, suspensions
+from horatio import email_design, mail_sender, notification_choices, suspensions
 from horatio.config import get_settings
 from horatio.connectors import CONNECTORS, Message, Recipient, SendError
 from horatio.models import (
@@ -77,6 +82,34 @@ def enabled_connectors(db: Session, troupe_id: uuid.UUID) -> list[TroupeConnecto
     ]
 
 
+def to_own_channel(db: Session, connector: TroupeConnector, character: Character) -> bool:
+    """Whether the connector sends to the character: anything but Discord outside test
+    mode does; Discord, to the character's own channel, unless its player turned that
+    off (#1077)."""
+    if connector.kind != "discord" or connector.test_mode:
+        return True
+    player = db.get_one(User, character.player_id)
+    return notification_choices.own_channel_on(player, character.id)
+
+
+def turned_off(
+    db: Session, connectors: Sequence[TroupeConnector], character_ids: Collection[uuid.UUID]
+) -> dict[uuid.UUID, list[str]]:
+    """Of these characters, those whose player turned off their own channel on one of
+    these connectors (#1077), with the connectors, for staff to see."""
+    if not any(c.kind == "discord" and not c.test_mode for c in connectors):
+        return {}
+    found: dict[uuid.UUID, list[str]] = {}
+    for character, player in db.execute(
+        select(Character, User)
+        .join(User, Character.player_id == User.id)
+        .where(Character.id.in_(list(character_ids)))
+    ):
+        if not notification_choices.own_channel_on(player, character.id):
+            found[character.id] = ["discord"]
+    return found
+
+
 def queue(
     db: Session,
     staff: User,
@@ -89,12 +122,14 @@ def queue(
     revision: int,
 ) -> int:
     """Queue this revision of the submission's results on each connector that has
-    not had it (in the connector's current test mode). On a channel that already
-    sent an earlier one, it goes as an update; one still waiting there is replaced,
-    so the player gets the results once, as they now stand. Returns how many were
-    queued."""
+    not had it (in the connector's current test mode) and sends to the character
+    (`to_own_channel`). On a channel that already sent an earlier one, it goes as an
+    update; one still waiting there is replaced, so the player gets the results
+    once, as they now stand. Returns how many were queued."""
     queued = 0
     for connector in connectors:
+        if not to_own_channel(db, connector, character):
+            continue
         earlier = db.scalars(
             select(Delivery).where(
                 Delivery.submission_id == submission.id,
@@ -175,9 +210,9 @@ def queue_quest(
     full_text: str,
 ) -> int:
     """Queue a quest's news for one of its characters (horatio.quests) on each of the
-    troupe's connectors: the whole of it, or an alert with the link. Returns how
-    many were queued."""
-    connectors = enabled_connectors(db, troupe_id)
+    troupe's connectors that send to the character (`to_own_channel`): the whole of
+    it, or an alert with the link. Returns how many were queued."""
+    connectors = [c for c in enabled_connectors(db, troupe_id) if to_own_channel(db, c, character)]
     for connector in connectors:
         alert_text = f"{subject}, for {character.name}: {quest_link(character.id, quest_id)}"
         db.add(

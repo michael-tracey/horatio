@@ -125,5 +125,8 @@ def change(user: User, changes: dict[str, Any]) -> Preferences:
             if value != getattr(defaults, name)
         },
         **notices,
+        # And the characters' own Discord channels turned off (#1077), changed only
+        # through Account › Notifications.
+        **{k: v for k, v in stored.items() if k == notification_choices.OWN_CHANNELS_OFF},
     }
     return merged

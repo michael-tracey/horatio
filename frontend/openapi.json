@@ -12078,6 +12078,11 @@
       },
       "CharacterRef": {
         "properties": {
+          "channel_off": {
+            "default": false,
+            "title": "Channel Off",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -34466,6 +34471,31 @@
         "title": "NotificationOut",
         "type": "object"
       },
+      "NotificationOwnChannelOut": {
+        "description": "A character of the person's with its own channel on the troupe's Discord: whether\nthe connector posts there (#1077), changed with `PUT\n/notification-settings/own-channel`.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "on"
+        ],
+        "title": "NotificationOwnChannelOut",
+        "type": "object"
+      },
       "NotificationRoleOut": {
         "description": "Whether the person is told at all in one troupe, as a role (#1018): changed with\n`PUT /troupes/{troupe_id}/boon-reports-told`, as beside the role.",
         "properties": {
@@ -34636,6 +34666,14 @@
               "type": "string"
             },
             "title": "Connectors",
+            "type": "array"
+          },
+          "own_channels": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/NotificationOwnChannelOut"
+            },
+            "title": "Own Channels",
             "type": "array"
           },
           "troupe_id": {
@@ -35973,6 +36011,25 @@
         "title": "OwedOut",
         "type": "object"
       },
+      "OwnChannelChoiceIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "on"
+        ],
+        "title": "OwnChannelChoiceIn",
+        "type": "object"
+      },
       "OwnCheckIn": {
         "properties": {
           "category": {
@@ -36807,6 +36864,14 @@
           "to_answer": {
             "title": "To Answer",
             "type": "integer"
+          },
+          "turned_off": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Turned Off",
+            "type": "array"
           },
           "unreachable": {
             "items": {
@@ -79736,6 +79801,48 @@
           }
         },
         "summary": "Choose Notification",
+        "tags": [
+          "preferences"
+        ]
+      }
+    },
+    "/api/notification-settings/own-channel": {
+      "put": {
+        "description": "Turn on or off what a troupe's Discord connector posts to your character's own\nchannel: its downtime results and quest news. They still come in Horatio, and the\ntroupe's shared channels are unchanged.",
+        "operationId": "choose_own_channel_api_notification_settings_own_channel_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnChannelChoiceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choose Own Channel",
         "tags": [
           "preferences"
         ]
