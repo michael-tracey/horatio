@@ -210,8 +210,9 @@ class RetainerTrackOut(BaseModel):
 
 class StockMemberOut(BaseModel):
     """One member of a group of Stock NPCs at this game (issue #1056), tapped as
-    "member:<n>/health" and "member:<n>/blood". Its health levels are the stat
-    block's; with every one marked it is out of the fight (MET: VTM p. 490)."""
+    "member:<n>/health", "member:<n>/blood" and "member:<n>/struck". Its health
+    levels are the stat block's; with every one marked, or struck off by hand, it is
+    out of the fight (MET: VTM p. 490)."""
 
     number: int
     # "Member 2".
@@ -220,6 +221,8 @@ class StockMemberOut(BaseModel):
     marks: list[str]
     # Its kind's resource, in Blood's place.
     blood: Tracker
+    # Struck off by hand (issue #1075): fled, surrendered or gone, with levels left.
+    struck: bool = False
 
 
 class AllyOut(BaseModel):
@@ -981,6 +984,7 @@ def play_view(db: Session, character: Character) -> PlayView:
                     most=limits.blood,
                     start=limits.starting_blood,
                 ),
+                struck=state["uses"].get(play.member_key(n, "struck"), 0) > 0,
             )
             for n in range(1, limits.members + 1)
         ],

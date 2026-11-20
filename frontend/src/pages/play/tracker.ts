@@ -160,7 +160,7 @@ export function retainerTracker(view: PlayView, tracker: string) {
   return { retainer, what, track: what === "blood" ? retainer.blood : what === "health" ? retainer.health : null };
 }
 
-/** A member of a group of Stock NPCs (#1056): "member:2/health", marked as health is, and "member:2/blood". */
+/** A member of a group of Stock NPCs (#1056): "member:2/health", marked as health is, "member:2/blood", and "member:2/struck", struck off by hand (#1075). */
 export const MEMBER = "member:";
 
 /** "Member 2", as the server names a member. */
@@ -173,7 +173,7 @@ export function memberTracker(view: Pick<PlayView, "stock_members">, tracker: st
   if (!tracker.startsWith(MEMBER)) return undefined;
   const [number, what] = tracker.slice(MEMBER.length).split("/");
   const member = (view.stock_members ?? []).find((m) => String(m.number) === number);
-  return member && (what === "health" || what === "blood") ? { member, what } : undefined;
+  return member && (what === "health" || what === "blood" || what === "struck") ? { member, what } : undefined;
 }
 
 /** A tracker of health levels, marked with damage: the character's own, or a member's of a group. */
@@ -186,9 +186,9 @@ export function memberHealth(view: Pick<PlayView, "stock">): number {
   return view.stock?.stats.health ?? 0;
 }
 
-/** Out of the fight: a member with every health level marked (MET: VTM p. 490). */
-export function memberDown(view: Pick<PlayView, "stock">, member: { marks: string[] }): boolean {
-  return member.marks.length >= memberHealth(view);
+/** Out of the fight: a member with every health level marked (MET: VTM p. 490), or struck off by hand (#1075). */
+export function memberDown(view: Pick<PlayView, "stock">, member: { marks: string[]; struck?: boolean }): boolean {
+  return !!member.struck || member.marks.length >= memberHealth(view);
 }
 
 /** An ally a power calls up (issue #827): "ally:Arms of the Abyss#2", and ".../health". */
@@ -225,7 +225,7 @@ export function trackerName(view: PlayView, tracker: string): string {
   if (ally) return ally.what ? `${ally.ally.name}: ${ally.what === "blood" ? "Blood" : "health"}` : ally.ally.name;
   if (tracker.startsWith(MEMBER)) {
     const [number, what] = tracker.slice(MEMBER.length).split("/");
-    return `${/^\d+$/.test(number ?? "") ? memberName(number!) : "A member"}: ${what === "blood" ? view.blood_name : "health"}`;
+    return `${/^\d+$/.test(number ?? "") ? memberName(number!) : "A member"}: ${what === "blood" ? view.blood_name : what === "struck" ? "struck off" : "health"}`;
   }
   const charge = chargeOf(view, tracker);
   if (charge) return charge.name;
@@ -263,7 +263,7 @@ function most(view: PlayView, tracker: string): number | undefined {
   }
   if (tracker.startsWith(MEMBER)) {
     const found = memberTracker(view, tracker);
-    return found && (found.what === "health" ? memberHealth(view) : found.member.blood.most);
+    return found && (found.what === "health" ? memberHealth(view) : found.what === "struck" ? 1 : found.member.blood.most);
   }
   if (tracker.startsWith(CHARGE)) return chargeOf(view, tracker)?.most;
   if (isStatus(tracker)) return statusEntry(view, tracker) ? 1 : undefined;
@@ -365,7 +365,13 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
     charge.value = clamp(before + amount, top);
     return [before, charge.value];
   }
-  const kept = retainerTracker(view, tracker)?.track ?? memberTracker(view, tracker)?.member.blood;
+  const member = memberTracker(view, tracker);
+  if (member?.what === "struck") {
+    const before = member.member.struck ? 1 : 0;
+    member.member.struck = clamp(before + amount, top) > 0;
+    return [before, member.member.struck ? 1 : 0];
+  }
+  const kept = retainerTracker(view, tracker)?.track ?? member?.member.blood;
   if (kept) {
     const before = kept.value;
     kept.value = clamp(before + amount, top);
@@ -395,6 +401,11 @@ export function describe(
   if (tap.tracker === DRANK) {
     const text = `Drank ${tap.amount} vitae`;
     return change ? `${text}: Vitae ${change[0]} → ${change[1]}` : text;
+  }
+  if (tap.tracker.startsWith(MEMBER) && tap.tracker.endsWith("/struck")) {
+    const whose = trackerName(view, tap.tracker).replace(/: struck off$/, "");
+    const text = `${whose}: ${tap.amount > 0 ? "struck off" : "back in the fight"}`;
+    return change ? text : `${text} (not on the sheet now)`;
   }
   if (isHealth(tap.tracker)) {
     const whose = tap.tracker === "health" ? "Health" : trackerName(view, tap.tracker).replace(/: health$/, "");
@@ -507,6 +518,7 @@ export function latestUndoable(log: ShownEntry[]): ShownEntry | undefined {
 function level(view: PlayView, tracker: string): string | null {
   if (tracker === "health") return `${view.health.marks.length}/${healthMost(view)} marked`;
   const member = memberTracker(view, tracker);
+  if (member?.what === "struck") return null;
   if (member) return member.what === "health" ? `${member.member.marks.length}/${memberHealth(view)} marked` : `${member.member.blood.value}/${member.member.blood.most}`;
   if (tracker === DRANK) return view.vitae ? `${view.blood.value}/${view.blood.most}` : null;
   if (isFixed(tracker)) {
@@ -541,9 +553,10 @@ export function tapToast(view: Shown, tap: Tap): string {
   const tail = now ? ` · ${now}` : "";
   const name = trackerName(view, tracker);
   if (tracker === "health") return `${amount > 0 ? "Took" : "Healed"} ${n} ${tap.damage ?? "normal"}${tail}`;
-  // A member of a group (#1056): "Member 2 took 1 normal · 1/2 marked", "Member 2 spent 1 Rage · 9/10".
+  // A member of a group (#1056): "Member 2 took 1 normal · 1/2 marked", "Member 2 spent 1 Rage · 9/10", "Member 2 struck off".
   const member = memberTracker(view, tracker);
   if (member?.what === "health") return `${member.member.name} ${amount > 0 ? "took" : "healed"} ${n} ${tap.damage ?? "normal"}${tail}`;
+  if (member?.what === "struck") return `${member.member.name} ${amount > 0 ? "struck off" : "back in the fight"}`;
   if (member) return `${member.member.name} ${amount < 0 ? "spent" : "restored"} ${n} ${view.blood_name}${tail}`;
   if (tracker === DRANK) return `Drank ${n} vitae${tail}`;
   // A power's Use button names the power the spend was for, as its note.

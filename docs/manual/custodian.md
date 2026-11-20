@@ -554,9 +554,11 @@ The **Audit log** card at the top of **Custodian › Audit** sets what the log r
 
 - **Notice**: kept forever. Suspensions, merges, moves, deletions, password resets, changes to the site's settings, and everything Horatio reads back from the log as history, such as title history, the chronicle and a location's log.
 - **Info**: most changes, as each troupe sees them on its **Log** tab.
-- **Debug**: routine events, many a day: signing in and out, failed sign-ins, signing up, someone turned away for too many failed sign-ins or sign-ups from one place, and a character starting to visit a troupe. Only you see them, here in the audit log; never a troupe's or a character's log.
+- **Debug**: routine events, many a day: signing in and out, failed sign-ins, signing up, and someone turned away for too many failed sign-ins or sign-ups from one place. Only you see them, here in the audit log; never a troupe's or a character's log.
 
-Tick **Record debug events** to record them, for instance while you look into a question such as "where did my new character go?". Untick it again when you're done; nothing is recorded below info while it's off.
+Tick **Record debug events** to record them, for instance while you look into a question such as "who has been trying to sign in as this player?". Untick it again when you're done; nothing is recorded below info while it's off.
+
+**Record IP addresses with sign-in events**, ticked until you untick it, keeps the IP address each sign-in, failed sign-in, sign-out, sign-up and attempt turned away came from, and the search shows it: "Agnes signed in from 203.0.113.7." These are debug events, so an address is kept only while **Record debug events** is ticked too, and only as long as **Keep debug events for** says: after that the purge deletes it with its event. Unticking it keeps no address from then on; the ones already kept go when their events do. A request for a password reset link keeps its address either way, as it always has, because the limits on asking for links count by it; the search shows that too: "Agnes asked for a password reset link from 203.0.113.7." It is a notice event, so it is kept forever.
 
 **Keep debug events for** and **Keep info events for** say how long each is kept. Once a day Horatio deletes the debug and info events older than that, a little at a time; the card says when it last did and how many it deleted. Notice events are never deleted. A failed sign-in never records what was typed, nor the password.
 

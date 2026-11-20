@@ -24,7 +24,8 @@ export function itemsByMember(view: Pick<PlayView, "stock" | "stock_items">): { 
  * A group of Stock NPCs' members (#1056) on its Scene card or Play View: a row
  * each, with its kind's resource and its health levels to tap, and what it
  * carries. A member with every level marked is struck off: out of the fight
- * (MET: VTM p. 490). They share the stat block shown beside them.
+ * (MET: VTM p. 490). Staff strike one off by hand too, fled or surrendered with
+ * levels left, and bring it back (#1075). They share the stat block shown beside them.
  */
 export function StockMembers({ view, change, big }: { view: PlayView; change: Change; big?: boolean }) {
   const members = view.stock_members ?? [];
@@ -51,6 +52,7 @@ export function StockMembers({ view, change, big }: { view: PlayView; change: Ch
 function MemberRow({ view, member, change, big, carries }: { view: PlayView; member: Member; change: Change; big?: boolean; carries: EquipmentItemOut[] }) {
   const health = `${MEMBER}${member.number}/health`;
   const blood = `${MEMBER}${member.number}/blood`;
+  const struck = `${MEMBER}${member.number}/struck`;
   const total = memberHealth(view);
   const marks = member.marks;
   const down = memberDown(view, member);
@@ -86,6 +88,14 @@ function MemberRow({ view, member, change, big, carries }: { view: PlayView; mem
         </Button>
         <Button variant="secondary" className={size} disabled={!has("aggravated")} onClick={() => change(health, -1, "aggravated")}>
           Heal aggravated
+        </Button>
+        <Button
+          variant="secondary"
+          className={cx(size, "col-span-2")}
+          aria-label={`${member.struck ? "Bring back" : "Strike off"} ${member.name}`}
+          onClick={() => change(struck, member.struck ? -1 : 1)}
+        >
+          {member.struck ? "Bring back" : "Strike off"}
         </Button>
       </div>
       <div className="flex items-center gap-2 text-sm">

@@ -1,13 +1,11 @@
 """A character's own log: when, who, and what."""
 
-import uuid
 from collections.abc import Callable
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from horatio import audit
 from tests.api_helpers import Person, Troupe, new_character
 
 
@@ -39,8 +37,8 @@ def test_the_log_says_who_did_what(troupe: Troupe) -> None:
     )
     client.post(f"/characters/{character_id}/troupes", json={"troupe_id": troupe.id})
 
-    # Starting to visit is a debug event (#1062), never in a character's log.
     assert log(troupe.player, character_id) == [
+        ("player", "Agnes (player) started visiting the troupe."),
         ("player", "player lowered Agnes's Brawl from 2 to 1 (2 XP back)."),
         ("player", "player bought Brawl 2 for Agnes (3 XP)."),
         ("player", "player chose Camarilla as Agnes's sect."),
@@ -69,28 +67,16 @@ def test_the_log_names_categories_as_the_rules_do(troupe: Troupe) -> None:
 
 def test_staff_see_their_own_troupes_part(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
-    troupe.player.client.post(
-        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
-    )
+    troupe.player.client.post(f"/characters/{character_id}/troupes", json={"troupe_id": troupe.id})
     other = troupe.custodian.client.post(
         "/troupes", json={"name": "Elsewhere", "lead_handle": troupe.stranger.handle}
     ).json()["id"]
     troupe.player.client.post(f"/characters/{character_id}/troupes", json={"troupe_id": other})
-    # Something in the other troupe: starting to visit it is a debug event (#1062).
-    audit.record(
-        troupe.session,
-        None,
-        "troupe.leave",
-        troupe_id=uuid.UUID(other),
-        character_id=uuid.UUID(character_id),
-        kind="visit",
-        troupe="Elsewhere",
-    )
 
     assert len(log(troupe.player, character_id)) == 2
     assert len(log(troupe.custodian, character_id)) == 2
     assert [m for _, m in log(troupe.assistant, character_id)] == [
-        "player asked for Lords of the Night to be Agnes's home troupe, and it started visiting."
+        "Agnes (player) started visiting the troupe."
     ]
     assert len(log(troupe.stranger, character_id)) == 1
     assert troupe.narrator.client.get(f"/characters/{character_id}/log").status_code == 404

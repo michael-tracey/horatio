@@ -55,7 +55,7 @@ test("a troupe changes what new characters start with and their downtime actions
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
 
-test("Customise opens on Setup, a setup checklist, the features and the house rules that differ, and Checks come in folded groups that a search looks through (#377)", async ({ browser }) => {
+test("Customise opens on Setup, the steps of getting ready, the features and the house rules that differ, and Checks come in folded groups that a search looks through (#377)", async ({ browser }) => {
   const custodian = await person(browser, "tally-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "tally-lead");
@@ -70,9 +70,9 @@ test("Customise opens on Setup, a setup checklist, the features and the house ru
   await l.goto(`/troupes/${troupeId}`);
   await troupeTab(l, "Setup");
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/customise$`));
-  const steps = l.getByRole("list", { name: "Setting up" });
-  await expect(steps.getByRole("listitem")).toHaveCount(4);
-  await expect(l.getByText("0 of 4 done")).toBeVisible();
+  const steps = l.getByRole("list", { name: "Getting your troupe ready" });
+  await expect(steps.getByRole("listitem")).toHaveCount(8);
+  await expect(l.getByText("0 of 8 done")).toBeVisible();
   // Then the features, on or off, each pointing to its tab or to Troupe settings, and nothing to change here.
   const featuresCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Features", exact: true }) });
   await expect(featuresCard.getByRole("list", { name: "Features at a glance" }).getByRole("listitem").first()).toBeVisible();
@@ -114,6 +114,66 @@ test("Customise opens on Setup, a setup checklist, the features and the house ru
   const differently = houseRules.getByRole("list", { name: "Played differently" });
   await expect(differently.getByRole("listitem")).toHaveCount(1);
   await expect(differently.getByRole("link", { name: /^Checks\s*1 of \d+ played differently$/ })).toHaveAttribute("href", `/troupes/${troupeId}/house-rules/checks`);
+});
+
+test("a new troupe's Overview shows its storytellers getting it ready, each step ticking itself as it is done, and the card hides and comes back from Setup (#1049)", async ({ browser }) => {
+  const custodian = await person(browser, "ready-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "ready-lead");
+  const troupeName = `House of First Nights ${run}`;
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // A new troupe: the card is there with nothing done, the next step first, and every step folded away.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Getting your troupe ready" }) });
+  await expect(card.getByText("0 of 8 done")).toBeVisible();
+  await expect(card.getByRole("link", { name: "Profile", exact: true })).toBeVisible();
+  const steps = card.getByRole("list", { name: "Getting your troupe ready" });
+  await expect(steps).toHaveCount(0);
+  await card.getByRole("button", { name: "Every step" }).click();
+  await expect(steps.getByRole("listitem")).toHaveCount(8);
+  await expect(steps.getByRole("link", { name: /\Wto do\./ })).toHaveCount(8);
+  await l.screenshot(shots("getting-ready"));
+
+  // Who may join: the step's link opens it; choosing a sect ticks it, back on the Overview.
+  await steps.getByRole("link", { name: /^Who may join\W+to do/ }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings/joining$`));
+  // The box follows the troupe as saved, so it ticks once the change is in.
+  const camarilla = l.locator("section").filter({ has: l.getByRole("heading", { name: "Sects", exact: true }) }).getByRole("checkbox", { name: "Camarilla" });
+  await camarilla.click();
+  await expect(camarilla).toBeChecked();
+  await expect(camarilla).toBeEnabled();
+  await troupeTab(l, "Overview");
+  await expect(card.getByText("1 of 8 done")).toBeVisible();
+
+  // The first game, added on the profile on this same page, ticks without a reload.
+  const profile = l.getByRole("region", { name: "Profile" });
+  await profile.getByRole("button", { name: "Edit profile" }).click();
+  await profile.getByRole("button", { name: "Edit when it plays" }).click();
+  await l.getByLabel("Game starts").fill("2030-02-09T19:00");
+  await l.getByRole("button", { name: "Add game" }).click();
+  await expect(l.getByRole("list", { name: "Upcoming games to edit" }).getByRole("listitem")).toHaveCount(1);
+  await expect(card.getByText("2 of 8 done")).toBeVisible();
+  await card.getByRole("button", { name: "Every step" }).click();
+  await expect(steps.getByRole("link", { name: /^First game\W+done/ })).toBeVisible();
+  await expect(steps.getByRole("link", { name: /^Who may join\W+done/ })).toBeVisible();
+  await expect(steps.getByRole("link", { name: /^Staff\W+to do/ })).toBeVisible();
+
+  // Hidden, it is gone from the Overview, and Setup brings it back.
+  await card.getByRole("button", { name: "Hide", exact: true }).click();
+  await expect(l.getByText("Hidden. Bring it back from Customise › Setup.")).toBeVisible();
+  await expect(card).toHaveCount(0);
+  await troupeTab(l, "Setup");
+  await expect(l.getByText("Hidden from the Overview.")).toBeVisible();
+  await expect(l.getByRole("list", { name: "Getting your troupe ready" }).getByRole("link", { name: /^First game\W+done/ })).toBeVisible();
+  await l.getByRole("button", { name: "Show on the Overview" }).click();
+  await expect(l.getByRole("button", { name: "Hide from the Overview" })).toBeVisible();
+  await troupeTab(l, "Overview");
+  await expect(card.getByText("2 of 8 done")).toBeVisible();
 });
 
 test("a troupe's or character's tab that isn't there, or isn't open to them, says so with the way back (#907)", async ({ browser }) => {

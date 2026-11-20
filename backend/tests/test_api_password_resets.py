@@ -356,8 +356,10 @@ def test_the_custodian_reads_who_reset_and_when(
     assert [e["message"] for e in resets_now["log"]] == [
         "custodian made a password reset link for stranger.",
         "Horatio emailed player the reset link they asked for.",
-        "player asked for a password reset link.",
-        "Someone asked for a reset link for nobody@example.com; no account uses it.",
+        # Where each asked from (#1066): the test client's address.
+        "player asked for a password reset link from testclient.",
+        "Someone asked for a reset link for nobody@example.com from testclient; no account"
+        " uses it.",
         "custodian made a password reset link for player.",
     ]
 
