@@ -16,6 +16,11 @@ place, and at one account from anywhere. Only someone who has given the account'
 password gets that far, so the account's own limit can't be used to lock out anyone
 who hasn't, and spreading the guesses over many addresses doesn't help.
 
+Changing a password while signed in (#1095) is limited at the account, from
+anywhere: only someone signed in as it can try, so no one else can use the limit
+to keep its owner out. Every try counts, the right password or not, as each runs
+Argon2.
+
 Each sign-in is counted as it starts, under a lock, so requests made at once
 cannot all slip under a limit; signing in stops that login's tries from there
 counting as failed. Nothing typed is kept, only a hash of the login, and nothing
@@ -48,9 +53,16 @@ SIGNED_IN = "signed_in"
 SIGN_UP = "sign_up"
 # A code given for a second step, counted as wrong until it signs in.
 SECOND_STEP = "second_step"
+# A password change tried while signed in, right or wrong.
+PASSWORD_CHANGE = "password_change"
 # The first try a limit turned away in its window, from one place (at one login, for
 # a limit at one login), so the ones after it are logged at debug. Never counted.
-HELD = {SIGN_IN: "sign_in_held", SIGN_UP: "sign_up_held", SECOND_STEP: "second_step_held"}
+HELD = {
+    SIGN_IN: "sign_in_held",
+    SIGN_UP: "sign_up_held",
+    SECOND_STEP: "second_step_held",
+    PASSWORD_CHANGE: "password_change_held",
+}
 LOCK = "auth_attempts"
 KEPT = timedelta(days=1)
 
@@ -69,11 +81,16 @@ SIGN_UP_LIMITS = ((timedelta(hours=1), 20), (timedelta(days=1), 50))
 # authenticator app's code is one of a million, three of them good at once, so 30 a
 # day leaves a guesser about one chance in ten thousand.
 SECOND_STEP_ACCOUNT_LIMITS = ((timedelta(minutes=15), 10), (timedelta(days=1), 30))
+# How many password changes may be tried at one account, from anywhere, right or
+# wrong. Someone unsure of their password may try a few; past that, a reset link
+# serves them better. Each try runs Argon2 once or twice.
+PASSWORD_CHANGE_LIMITS = ((timedelta(minutes=15), 10), (timedelta(days=1), 30))
 
 SIGN_IN_WAIT = "Too many failed sign-ins from here. Try again later, or reset your password."
 SIGN_INS_WAIT = "Too many sign-ins from here. Try again later."
 SIGN_UP_WAIT = "Too many sign-ups from here. Try again later."
 SECOND_STEP_WAIT = "Too many wrong codes. Try again later, or ask the custodian."
+PASSWORD_CHANGE_WAIT = "Too many tries at changing your password. Try again later."
 
 
 def within(window: timedelta) -> str:
@@ -91,7 +108,8 @@ class Limit:
     one login if `per_login`; at one login from anywhere if `anywhere`. It holds back
     tries at `action`."""
 
-    # Names it in the audit log: failed, failed_at_login, sign_ins or sign_ups.
+    # Names it in the audit log: failed, failed_at_login, sign_ins, sign_ups,
+    # wrong_codes, wrong_codes_at_account or password_changes.
     key: str
     # What it counts, as the custodian reads it: "failed sign-ins".
     what: str
@@ -166,6 +184,15 @@ LIMITS: dict[str, tuple[Limit, ...]] = {
             anywhere=True,
         ),
     ),
+    PASSWORD_CHANGE: limits(
+        "password_changes",
+        "password changes tried at one account",
+        PASSWORD_CHANGE,
+        (PASSWORD_CHANGE,),
+        PASSWORD_CHANGE_LIMITS,
+        per_login=True,
+        anywhere=True,
+    ),
 }
 
 
@@ -184,6 +211,8 @@ class Held:
             return SIGN_UP_WAIT
         if self.limit.action == SECOND_STEP:
             return SECOND_STEP_WAIT
+        if self.limit.action == PASSWORD_CHANGE:
+            return PASSWORD_CHANGE_WAIT
         return SIGN_INS_WAIT if self.limit.key == "sign_ins" else SIGN_IN_WAIT
 
 
@@ -212,7 +241,8 @@ def login_key(login: str) -> str:
 
 
 def account_key(user_id: UUID) -> str:
-    """An account's hash, for its second steps: counted by account, not by login."""
+    """An account's hash, for its second steps and password changes: counted by
+    account, not by login."""
     return sha256(f"account:{user_id}".encode()).hexdigest()
 
 
@@ -335,6 +365,22 @@ def second_step_passed(db: Session, user_id: UUID, ip: str | None) -> None:
             at(ip),
         )
     )
+
+
+def password_change_held_back(db: Session, user_id: UUID) -> Held | None:
+    """What holds back the account `user_id` from trying to change its password now,
+    if anything. If nothing, the try is counted, right or wrong, and committed, which
+    lets go of the lock before the password is checked. If something, the lock is
+    held until the caller commits."""
+    if not get_settings().auth_limits:
+        return None
+    lock(db)
+    identity = account_key(user_id)
+    held = held_back(db, PASSWORD_CHANGE, None, identity)
+    if held is None:
+        db.add(AuthAttempt(action=PASSWORD_CHANGE, identity_hash=identity))
+        db.commit()
+    return held
 
 
 def sign_up_held_back(db: Session, ip: str | None) -> Held | None:

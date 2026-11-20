@@ -15,12 +15,12 @@ the troupe sees it when it reviews the sheet.
 
 A rule can ask downtime actions for the learning, owed when the purchase is made or
 approved, and Willpower of the teacher. Then the teacher's player is asked to
-confirm (a task in their bell); confirming spends the Willpower on their Play View,
-and it does not come back with rest until they have attended the rule's number of
-games since: each game they start before then starts that much lower. Staff cannot
-approve the purchase until the teacher's player has confirmed; an NPC of the troupe
-spends its Willpower when staff approve. If the purchase is declined or withdrawn,
-the Willpower is given back.
+confirm (a task in their bell, and pushed to their phone if they choose that, #1097);
+confirming spends the Willpower on their Play View, and it does not come back with
+rest until they have attended the rule's number of games since: each game they start
+before then starts that much lower. Staff cannot approve the purchase until the
+teacher's player has confirmed; an NPC of the troupe spends its Willpower when staff
+approve. If the purchase is declined or withdrawn, the Willpower is given back.
 
 Games attended are those the teacher checked in to (horatio.checkin) that have
 ended. `games_attended` is the one place that says so.
@@ -35,7 +35,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, play, sheets
+from horatio import audit, notifications, play, sheets
 from horatio.models import (
     Approval,
     Character,
@@ -351,6 +351,7 @@ def record(
             teaching.actions,
             f"Learning {labelled(definition.name, detail)} {rating} from {teacher.name}",
         )
+    notifications.teaching_asked(db, teaching, player)
     return teaching
 
 

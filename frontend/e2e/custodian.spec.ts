@@ -1036,7 +1036,24 @@ function heldBackAt(login: string, address: string) {
   execFileSync("uv", ["run", "python", "-c", script, login, address], { cwd: "../backend", stdio: "ignore" });
 }
 
-test("the custodian unblocks a login held back for too many failed sign-ins, and finds it among the notice events (#1074)", async ({ browser }) => {
+/** Holds the account with `handle` back from changing its password, as the limit at
+ * the account would (#1095). */
+function passwordChangesHeldBack(handle: string) {
+  const script = [
+    "import sys",
+    "from sqlalchemy import select",
+    "from horatio.auth import attempts",
+    "from horatio.db import get_sessionmaker",
+    "from horatio.models import AuthAttempt, User",
+    "with get_sessionmaker()() as db, db.begin():",
+    "    user_id = db.scalar(select(User.id).where(User.handle == sys.argv[1]))",
+    "    for _ in range(10):",
+    "        db.add(AuthAttempt(action=attempts.PASSWORD_CHANGE, identity_hash=attempts.account_key(user_id)))",
+  ].join("\n");
+  execFileSync("uv", ["run", "python", "-c", script, handle], { cwd: "../backend", stdio: "ignore" });
+}
+
+test("the custodian unblocks a login held back for too many failed sign-ins, and an account held back from changing its password, and finds them among the notice events (#1074, #1095)", async ({ browser }) => {
   const custodian = await person(browser, "unblock-cust");
   makeCustodian(custodian.email);
   const player = await person(browser, "unblock-player");
@@ -1053,13 +1070,24 @@ test("the custodian unblocks a login held back for too many failed sign-ins, and
   await expect(c.getByText("Unblocked. It may try again now.")).toBeVisible();
   await expect(row).toHaveCount(0);
 
+  // The card asks again by itself when the window comes back into focus (#1095).
+  // Changing a password is held back at the account, so it shows the account alone.
+  passwordChangesHeldBack(player.handle);
+  await c.evaluate(() => window.dispatchEvent(new Event("visibilitychange")));
+  const account = card.getByRole("listitem").filter({ hasText: `@${player.handle}` });
+  await expect(account.locator("p").first()).toHaveText(`@${player.handle}`);
+  await expect(account).toContainText("Password changes over the limit of 10 password changes tried at one account in 15 minutes.");
+  await account.getByRole("button", { name: `Unblock @${player.handle}` }).click();
+  await expect(account).toHaveCount(0);
+
   // Unblocking is kept forever.
   await c.getByLabel("Level", { exact: true }).selectOption({ label: "Notice only" });
   await c.getByLabel("Words").fill(`unblocked ${player.handle}`);
   await c.getByRole("button", { name: "Search", exact: true }).click();
   const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem").filter({ hasText: "unblock-cust" });
-  await expect(found.first()).toContainText(`unblock-cust unblocked sign-ins at @${player.handle}`);
-  await expect(found.first()).toContainText(": over the limit of 5 failed sign-ins at one login in 15 minutes.");
+  await expect(found.first()).toContainText(`unblock-cust unblocked password changes at @${player.handle}: over the limit of 10 password changes tried at one account in 15 minutes.`);
+  await expect(found.nth(1)).toContainText(`unblock-cust unblocked sign-ins at @${player.handle}`);
+  await expect(found.nth(1)).toContainText(": over the limit of 5 failed sign-ins at one login in 15 minutes.");
   await expect(found.first().getByText("notice", { exact: true })).toBeVisible();
 });
 

@@ -1,5 +1,7 @@
 """Who the limits on sign-ins and sign-ups hold back now, for the custodian, and
-unblocking them (#1074): the Throttled now card on Custodian › Audit.
+unblocking them (#1074): the Throttled now card on Custodian › Audit. Wrong
+second-step codes (#1057) are limited at an account from anywhere too, and password
+changes (#1095) only there.
 
 An address is shown only while the custodian records IP addresses with sign-in
 events (#1066); otherwise only its start, as 198.51.x.x. Unblocking works either
@@ -22,11 +24,14 @@ from horatio.permissions import require_custodian
 
 router = APIRouter(prefix="/throttled", tags=["custodian"])
 
+# What is held back: sign-ins, sign-ups, second steps or password changes (#1095).
+Kind = Literal["sign_in", "sign_up", "second_step", "password_change"]
+
 
 class ThrottledOut(BaseModel):
     # Names it to unblock.
     id: str
-    held: Literal["sign_in", "sign_up", "second_step"]
+    held: Kind
     # The IP address (an IPv6 /64), or its start while sign-in events keep no IP
     # addresses; None for requests that came with none.
     address: str | None
@@ -34,7 +39,8 @@ class ThrottledOut(BaseModel):
     # For a limit at one login: whose it is, "@agnes" or an email, or None for a
     # login no account uses.
     per_login: bool
-    # For a limit at one account from anywhere (wrong second-step codes): no address.
+    # For a limit at one account from anywhere (wrong second-step codes, password
+    # changes): no address.
     anywhere: bool
     login: str | None
     # "20 failed sign-ins in 15 minutes".
@@ -42,10 +48,11 @@ class ThrottledOut(BaseModel):
     clears: datetime
 
 
-HELD: dict[str, Literal["sign_in", "sign_up", "second_step"]] = {
+HELD: dict[str, Kind] = {
     attempts.SIGN_IN: "sign_in",
     attempts.SIGN_UP: "sign_up",
     attempts.SECOND_STEP: "second_step",
+    attempts.PASSWORD_CHANGE: "password_change",
 }
 
 
@@ -65,8 +72,9 @@ def masked(ip: str) -> str:
 
 
 def logins(db: DbSession, hashed: set[str]) -> dict[str, str]:
-    """Whose each hashed login is: an account's "@handle" or email; for second steps,
-    counted by account, its "@handle"; for passkeys alone, "a passkey"."""
+    """Whose each hashed login is: an account's "@handle" or email; for second steps
+    and password changes, counted by account, its "@handle"; for passkeys alone, "a
+    passkey"."""
     found: dict[str, str] = {}
     if not hashed:
         return found
@@ -131,6 +139,9 @@ def unblock(body: Unblock, db: DbSession, user: CurrentUser) -> None:
         if limit.per_login:
             data["kind"] = "second_step_account"
             data["login"] = whose.get(throttle.identity or "", "an account no longer here")
+    elif limit.action == attempts.PASSWORD_CHANGE:
+        data["kind"] = "password_change"
+        data["login"] = whose.get(throttle.identity or "", "an account no longer here")
     elif limit.per_login:
         data["kind"] = "login"
         data["login"] = whose.get(throttle.identity or "", "a login no account uses")

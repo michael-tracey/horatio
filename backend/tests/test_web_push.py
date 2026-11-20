@@ -192,9 +192,10 @@ def test_each_kind_pushes_as_the_person_chose(
     }
     assert shown["boons"] == {"bell": True, "email": False, "push": False}
     assert shown["renames"] == {"bell": True, "email": False, "push": True}
-    # Never pushed: the account's safety, and the tasks with nowhere to send them from.
+    # Never pushed: the account's safety. Teaching asked of your character is, once
+    # ticked (#1097).
     assert "push" not in shown["security"]
-    assert "push" not in shown["teaching"]
+    assert shown["teaching"] == {"bell": True, "push": False}
     tell(session, person, "boon.accepted")
     tell(session, person, "character.renamed")
     assert [n.topic for n in waiting(session)] == ["renames"]

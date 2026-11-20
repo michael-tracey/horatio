@@ -60,13 +60,16 @@ handles are unique.
 `user_id`, `token_hash`, `expires_at`, `revoked_at`.
 
 **`auth_attempts`**: sign-ins and sign-ups tried, counted against the limits on
-them (`horatio.auth.attempts`). `action` (`sign_in` | `signed_in` | `sign_up`, or
-`sign_in_held` | `sign_up_held` for the first try a limit turned away in its
-window, which is logged at info and the rest at debug), `identity_hash` (a
+them (`horatio.auth.attempts`). `action` (`sign_in` | `signed_in` | `sign_up` |
+`password_change`, or `sign_in_held` | `sign_up_held` | `password_change_held` for
+the first try a limit turned away in its window, which is logged at info and the
+rest at debug), `identity_hash` (a
 sign-in's login, hashed; never what was typed), `ip_address` (an IP address, or
 an IPv6 /64). A successful sign-in marks its login's tries from that address
 `signed_in`: counted among all sign-ins, no longer as failed. The custodian's
-Unblock deletes an address's rows. Every row is deleted once a day old.
+Unblock deletes an address's rows. A password change tried while signed in
+(#1095), right or wrong, is counted by an account's hash, as a second step is, with
+no address. Every row is deleted once a day old.
 
 Two-step sign-in (#1057, `horatio.auth.two_step`): **`authenticator_apps`** (one
 per user: `secret`, sealed with AES-GCM under the server's `HORATIO_TOTP_KEY` and

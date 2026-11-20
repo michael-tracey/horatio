@@ -103,6 +103,8 @@ The **Handle** card changes your [handle](glossary.md#handle): write the new one
 
 In the **Password** card, give your **Current password** and a **New password** of at least 10 characters, then choose **Save new password**. You stay signed in on this device, and are signed out on every other.
 
+After many tries at changing it, right or wrong, Horatio stops taking them for a while: "Too many tries at changing your password." Wait a quarter of an hour, or sign out and [reset your password](#forgotten-your-password).
+
 ### Setting up two-step sign-in
 
 The **Two-step sign-in** card offers two kinds of second step. You can have both, and several passkeys.
@@ -143,7 +145,7 @@ The **Notifications** tab of your account lists every kind of notification Horat
 
 - **Bell**: in the bell. Every kind comes to the bell until you untick it.
 - **Email**: by email as well. Every kind is off until you tick it, but troupe announcements, which are on because they're often practical. One the staff mark **Important** is emailed to everyone in the troupe even so.
-- **Phone**: as a notification on your phone, on each device where you turn them on (see [Notifications on your phone](#notifications-on-your-phone)). Downtime results, your boons (one you reported accepted or not), powers used on your character, blood bonds and troupe announcements are ticked to begin with; the rest are off until you tick them.
+- **Phone**: as a notification on your phone, on each device where you turn them on (see [Notifications on your phone](#notifications-on-your-phone)). Downtime results, your boons (one you reported accepted or not), powers used on your character, blood bonds and troupe announcements are ticked to begin with; the rest are off until you tick them. Tick it for **Teaching to confirm** to hear on your phone, as it's asked, when another player asks your character to teach theirs: it says who would learn what, and the Willpower it costs, and a tap opens your character's Play View to confirm or refuse.
 
 Untick them all and that kind doesn't come at all. Some always come, and show **Bell, always** or **Email, always** with a lock instead of a tick: work waiting on you, such as an approval to decide or teaching to confirm, stays in the bell until it's done; word that the custodian viewed Horatio as you, merged your accounts or moved a character to or from you always comes to the bell; and emails to set a new password, confirm a new email, or say your account is suspended or let back in always come.
 
