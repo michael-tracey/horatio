@@ -2,13 +2,16 @@
 
 Only a character in no troupe can be deleted, so its player must first leave
 every troupe, and each of those troupes' logs records that it left. Deletion
-then records one last entry in every troupe the character was ever in, and
-removes the character and everything that is only about it: its sheet, XP,
-approvals, diableries, equipment, backstory, its downtime submissions and their
-responses, the scheduled games it checked in to, and its games on the Play View
-with their taps, counters, modifiers and derangements.
+then records one last entry in every troupe the character was ever in (or one
+outside them, for a character never in a troupe), and removes the character and
+everything that is only about it: its sheet, XP, approvals, diableries,
+equipment, backstory, its downtime submissions and their responses, the
+scheduled games it checked in to, and its games on the Play View with their
+taps, counters, modifiers and derangements.
 The troupe logs keep their entries, with the character's name.
 """
+
+import uuid
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
@@ -75,11 +78,17 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         raise conflict("Remove the character from every troupe before deleting it.")
 
     name = character.name
-    for troupe_id in db.scalars(
-        select(TroupeMembership.troupe_id)
-        .where(TroupeMembership.character_id == character.id)
-        .distinct()
-    ):
+    troupe_ids: list[uuid.UUID | None] = list(
+        db.scalars(
+            select(TroupeMembership.troupe_id)
+            .where(TroupeMembership.character_id == character.id)
+            .distinct()
+        )
+    )
+    # Every troupe it was in gets an entry for its log, and the custodian's search of
+    # the whole log finds each. One that was never in a troupe gets one outside them,
+    # so its deletion is still on record (#1063).
+    for troupe_id in troupe_ids or [None]:
         audit.record(
             db,
             player,
@@ -87,6 +96,10 @@ def delete_character(db: Session, player: User, character: Character) -> None:
             troupe_id=troupe_id,
             character_id=character.id,
             character_name=name,
+            splat=character.splat,
+            kind=character.kind,
+            creation_complete=character.creation_completed_at is not None,
+            created_at=character.created_at.isoformat(),
         )
     db.flush()
 

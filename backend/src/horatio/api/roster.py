@@ -315,7 +315,7 @@ MESSAGES: dict[str, str] = {
     "troupe.leave.home": "{character} left {troupe} as its home troupe, and has no home troupe"
     " now.",
     "troupe.leave.visit": "{character} stopped visiting {troupe}.",
-    "character.deleted": "{character} was deleted by its player.",
+    "character.deleted": "{actor} deleted {character}.",
     "character.imported": "{actor} imported {character} from a backup file {whence}; parts"
     " left out: {left_out}.",
     "approval.request": "{actor} asked for {character} to be approved.",
