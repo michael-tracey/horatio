@@ -7818,6 +7818,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/throttled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Throttled
+         * @description For the custodian: every address a limit on sign-ins or sign-ups holds back
+         *     now, and when each clears, the soonest first.
+         */
+        get: operations["throttled_api_throttled_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/throttled/unblock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unblock
+         * @description For the custodian: forget the tries that hold an address back (at a login, for
+         *     a limit at one login), so it may try again at once. Recorded as a notice.
+         */
+        post: operations["unblock_api_throttled_unblock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/throw-images": {
         parameters: {
             query?: never;
@@ -35628,6 +35670,31 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** ThrottledOut */
+        ThrottledOut: {
+            /** Address */
+            address: string | null;
+            /**
+             * Clears
+             * Format: date-time
+             */
+            clears: string;
+            /**
+             * Held
+             * @enum {string}
+             */
+            held: "sign_in" | "sign_up";
+            /** Id */
+            id: string;
+            /** Limit */
+            limit: string;
+            /** Login */
+            login: string | null;
+            /** Masked */
+            masked: boolean;
+            /** Per Login */
+            per_login: boolean;
+        };
         /** ThrowImagesNameIn */
         ThrowImagesNameIn: {
             /** Name */
@@ -36751,6 +36818,11 @@ export interface components {
             categories: string[];
             /** Changes */
             changes?: (components["schemas"]["SetChangeIn"] | components["schemas"]["SwapChangeIn"] | components["schemas"]["PickChangeIn"] | components["schemas"]["UnpickChangeIn"])[];
+        };
+        /** Unblock */
+        Unblock: {
+            /** Id */
+            id: string;
         };
         /** UnmatchedOut */
         UnmatchedOut: {
@@ -53036,6 +53108,57 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["horatio__api__teachers__TeachingOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    throttled_api_throttled_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrottledOut"][];
+                };
+            };
+        };
+    };
+    unblock_api_throttled_unblock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Unblock"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

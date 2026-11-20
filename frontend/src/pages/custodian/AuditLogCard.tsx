@@ -76,7 +76,8 @@ function AuditLogForm({ settings }: { settings: Settings }) {
               Each change in the log has a level. <strong className="text-parchment">Notice</strong> ones, such as suspensions, merges, deletions and what Horatio
               reads back as history, are kept forever. <strong className="text-parchment">Info</strong> ones are most changes, as troupes see them in their logs.{" "}
               <strong className="text-parchment">Debug</strong> ones are routine: signing in and out, failed sign-ins, signing up, and attempts turned away for too
-              many from one place. They show only in Custodian › Audit. Once a day Horatio deletes the debug and info events older than you keep them.
+              many from one place after the first, which is info. They show only in Custodian › Audit. Once a day Horatio deletes the debug and info events older than you
+              keep them.
             </p>
             <label className="flex items-start gap-2">
               <input type="checkbox" className="mt-1" checked={debug} onChange={(e) => setDebug(e.target.checked)} />
@@ -88,8 +89,8 @@ function AuditLogForm({ settings }: { settings: Settings }) {
                 <span>Record IP addresses with sign-in events</span>
               </label>
               <p id="audit-ips-hint" className="ml-6 text-mist">
-                Where each sign-in, failed sign-in, sign-out, sign-up and attempt turned away came from. These are debug events, so an address is kept only while debug events are
-                recorded, and only as long as debug events are kept.
+                Where each sign-in, failed sign-in, sign-out, sign-up and attempt turned away came from. Most are debug events, so their addresses are kept only while debug
+                events are recorded, and only as long as debug events are kept. The first attempt a limit turns away is info, so its address is kept as long as info events are.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">

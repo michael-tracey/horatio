@@ -1,13 +1,14 @@
-"""Limits on failed sign-ins and on sign-ups (#1059)."""
+"""Limits on sign-ins and on sign-ups (#1059), and the custodian unblocking them (#1074)."""
 
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
+from datetime import datetime, timedelta
 from threading import Barrier
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, delete, select, update
+from sqlalchemy import Engine, delete, func, select, update
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
@@ -19,7 +20,7 @@ from horatio.auth import attempts
 from horatio.auth.passwords import verify_password
 from horatio.config import get_settings
 from horatio.models import AuditEvent, AuthAttempt
-from tests.api_helpers import PASSWORD, sign_up
+from tests.api_helpers import PASSWORD, Person, sign_up
 
 HOME = "198.51.100.7"
 ELSEWHERE = "203.0.113.20"
@@ -158,6 +159,53 @@ def test_one_place_is_held_back_however_many_accounts_it_tries(
     assert (set(kept), len(kept)) == ({HOME}, 61)
 
 
+def test_every_sign_in_from_one_place_counts_towards_a_bigger_limit(
+    client_for: Callable[[], TestClient],
+    at: Callable[[str], TestClient],
+    session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Signing in correctly checks a password too, so it is limited, by more (#1074)."""
+    sign_up(client_for, "agnes")
+    home = at(HOME)
+    # Some fail, most succeed: sixty in a quarter of an hour.
+    for _ in range(4):
+        assert sign_in(home, "agnes") == 401
+    for _ in range(56):
+        assert sign_in(home, "agnes", PASSWORD) == 200
+    checked: list[str] = []
+
+    def verify(password: str, password_hash: str | None) -> tuple[bool, str | None]:
+        checked.append(password)
+        return verify_password(password, password_hash)
+
+    monkeypatch.setattr(auth, "verify_password", verify)
+    held = home.post("/auth/login", json={"login": "agnes", "password": PASSWORD})
+    assert held.status_code == 429
+    assert held.json() == {"detail": attempts.SIGN_INS_WAIT}
+    # Whoever the login is, and whether an account uses it: the place is held back.
+    assert sign_in(home, "nobody@example.com") == 429
+    assert checked == []
+    [event] = throttled_events(session)
+    assert event.data["limit"] == "sign_ins"
+    assert message(event.action, "agnes", None, event.data) == (
+        f"Someone was turned away from signing in as agnes from {HOME}: too many sign-ins"
+        " from where they were."
+    )
+    assert sign_in(at(ELSEWHERE), "agnes", PASSWORD) == 200
+
+    # Sixty a quarter of an hour, but only three hundred a day.
+    for _ in range(4):
+        later(session, QUARTER_HOUR)
+        for _ in range(60):
+            session.add(AuthAttempt(action=attempts.SIGNED_IN, ip_address=HOME))
+        session.flush()
+    later(session, QUARTER_HOUR)
+    assert sign_in(home, "agnes", PASSWORD) == 429
+    later(session, timedelta(hours=23))
+    assert sign_in(home, "agnes", PASSWORD) == 200
+
+
 def test_sign_ups_from_one_place_are_limited(
     at: Callable[[str], TestClient], session: Session
 ) -> None:
@@ -192,30 +240,40 @@ def test_sign_ups_from_one_place_are_limited(
     assert sign_up_as(home, "carla") == 201
 
 
-def test_being_held_back_is_a_debug_event_and_keeps_nothing_typed(
+def throttled_events(session: Session) -> list[AuditEvent]:
+    session.flush()
+    return list(
+        session.scalars(
+            select(AuditEvent)
+            .where(AuditEvent.action.like("account.sign_%_throttled%"))
+            .order_by(AuditEvent.created_at, AuditEvent.id)
+        )
+    )
+
+
+def test_being_held_back_is_logged_at_info_once_a_window_and_keeps_nothing_typed(
     client_for: Callable[[], TestClient], at: Callable[[str], TestClient], session: Session
 ) -> None:
+    """Always recorded, debug events or not, but only the first a limit turns away in
+    its window, from one place (and login, for a limit at one login), at info; the
+    rest at debug, so a flood can't fill the log (#1074)."""
     agnes = sign_up(client_for, "agnes")
     # Without the IP addresses the custodian may keep with them (#1066): see below.
-    audit.save_settings(session, audit.LogSettings(record="debug", sign_in_ips=False))
+    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
     session.flush()
     home = at(HOME)
     for _ in range(5):
         sign_in(home, "agnes@example.com", "hunter2 typed here")
         sign_in(home, "nobody_here@example.com", "hunter2 typed here")
-    assert sign_in(home, "agnes@example.com", "hunter2 typed here") == 429
-    assert sign_in(home, "nobody_here@example.com", "hunter2 typed here") == 429
+    for _ in range(3):
+        assert sign_in(home, "agnes@example.com", "hunter2 typed here") == 429
+        assert sign_in(home, "nobody_here@example.com", "hunter2 typed here") == 429
 
-    held = list(
-        session.scalars(
-            select(AuditEvent)
-            .where(AuditEvent.action == "account.sign_in_throttled")
-            .order_by(AuditEvent.created_at, AuditEvent.id)
-        )
-    )
-    assert [(str(e.actor_id) if e.actor_id else None, e.level) for e in held] == [
-        (agnes.id, "debug"),
-        (None, "debug"),
+    # Debug events aren't recorded: one each, at info.
+    held = throttled_events(session)
+    assert [(e.action, str(e.actor_id) if e.actor_id else None, e.level) for e in held] == [
+        ("account.sign_in_throttled", agnes.id, "info"),
+        ("account.sign_in_throttled", None, "info"),
     ]
     assert [message(e.action, "agnes", None, e.data) for e in held] == [
         "Someone was turned away from signing in as agnes: too many failed sign-ins from"
@@ -224,6 +282,7 @@ def test_being_held_back_is_a_debug_event_and_keeps_nothing_typed(
         " failed sign-ins from where they were.",
     ]
     for event in held:
+        assert event.data["limit"] == "failed_at_login"
         assert "hunter2" not in str(event.data)
         assert "nobody_here" not in str(event.data)
         assert HOME not in str(event.data)
@@ -233,15 +292,43 @@ def test_being_held_back_is_a_debug_event_and_keeps_nothing_typed(
     # A sign-up keeps no login at all.
     assert kept == {None, *tried}
 
+    # Recording debug events, the ones after the first are there too, at debug.
+    audit.save_settings(session, audit.LogSettings(record="debug", sign_in_ips=False))
+    session.flush()
+    assert sign_in(home, "agnes@example.com", "hunter2 typed here") == 429
+    [again] = throttled_events(session)[2:]
+    assert (again.action, again.level) == ("account.sign_in_throttled_again", "debug")
+    assert message(again.action, "agnes", None, again.data) == (
+        "Someone was turned away again from signing in as agnes: too many failed sign-ins"
+        " from where they were."
+    )
+
+    # A quarter of an hour on, the limit is a new window: its first is info again.
+    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
+    later(session, QUARTER_HOUR)
+    for _ in range(5):
+        sign_in(home, "agnes@example.com")
+    assert sign_in(home, "agnes@example.com") == 429
+    assert sign_in(home, "agnes@example.com") == 429
+    assert [(e.action, e.level) for e in throttled_events(session)[3:]] == [
+        ("account.sign_in_throttled", "info")
+    ]
+
     for n in range(20):
         body = {"email": f"s{n}@example.com", "password": PASSWORD, "display_name": f"s{n}"}
         home.post("/auth/signup", json=body)
     body = {"email": "spare@example.com", "password": PASSWORD, "display_name": "spare"}
-    assert home.post("/auth/signup", json=body).status_code == 429
+    for _ in range(3):
+        assert home.post("/auth/signup", json=body).status_code == 429
     [refused] = session.scalars(
-        select(AuditEvent).where(AuditEvent.action == "account.sign_up_throttled")
+        select(AuditEvent).where(AuditEvent.action.startswith("account.sign_up_throttled"))
     ).all()
-    assert (refused.actor_id, refused.level, refused.data) == (None, "debug", {})
+    assert (refused.action, refused.actor_id, refused.level) == (
+        "account.sign_up_throttled",
+        None,
+        "info",
+    )
+    assert refused.data == {"limit": "sign_ups"}
     assert message(refused.action, None, None, refused.data) == (
         "Someone was turned away from signing up: too many sign-ups from where they were."
     )
@@ -252,7 +339,7 @@ def test_being_held_back_is_a_debug_event_and_keeps_nothing_typed(
     session.flush()
     assert sign_in(home, "agnes@example.com", PASSWORD) == 429
     assert home.post("/auth/signup", json=body).status_code == 429
-    for action in ("account.sign_in_throttled", "account.sign_up_throttled"):
+    for action in ("account.sign_in_throttled_again", "account.sign_up_throttled_again"):
         newest = session.scalars(
             select(AuditEvent)
             .where(AuditEvent.action == action)
@@ -261,6 +348,18 @@ def test_being_held_back_is_a_debug_event_and_keeps_nothing_typed(
         assert newest is not None
         assert newest.data["ip"] == HOME, action
         assert f" from {HOME}:" in message(newest.action, "agnes", None, newest.data)
+
+
+def test_a_flood_from_one_place_is_logged_once_however_many_logins_it_tries(
+    at: Callable[[str], TestClient], session: Session
+) -> None:
+    """A limit on a place, not a login: one event at info for the place, not one a login."""
+    home = at(HOME)
+    for n in range(20):
+        assert sign_in(home, f"guess{n}@example.com") == 401
+    for n in range(10):
+        assert sign_in(home, f"more{n}@example.com") == 429
+    assert [(e.level, e.data["limit"]) for e in throttled_events(session)] == [("info", "failed")]
 
 
 def request_from(host: str | None) -> Request:
@@ -286,7 +385,7 @@ def test_tries_made_at_once_cannot_all_slip_under_a_limit(engine: Engine) -> Non
     def tried(_: int) -> bool:
         with Session(engine) as db:
             start.wait()
-            allowed = attempts.may_sign_in(db, "agnes@example.com", ip)
+            allowed = attempts.sign_in_held_back(db, "agnes@example.com", ip) is None
             db.commit()
             return allowed
 
@@ -298,3 +397,173 @@ def test_tries_made_at_once_cannot_all_slip_under_a_limit(engine: Engine) -> Non
         with Session(engine) as db:
             db.execute(delete(AuthAttempt).where(AuthAttempt.ip_address == ip))
             db.commit()
+
+
+# --- the custodian's Throttled now card (#1074) -------------------------------------------
+
+
+@pytest.fixture
+def custodian(client_for: Callable[[], TestClient], session: Session) -> Person:
+    return sign_up(client_for, "custodian", custodian=True, session=session)
+
+
+def held_back(client_for: Callable[[], TestClient], at: Callable[[str], TestClient]) -> None:
+    """Agnes's email held back at home, and elsewhere held back whatever it tries."""
+    sign_up(client_for, "agnes")
+    home = at(HOME)
+    for _ in range(5):
+        assert sign_in(home, "agnes@example.com") == 401
+    assert sign_in(home, "agnes@example.com") == 429
+    elsewhere = at(ELSEWHERE)
+    for n in range(20):
+        assert sign_in(elsewhere, f"guess{n}@example.com") == 401
+    assert sign_in(elsewhere, "agnes@example.com") == 429
+
+
+def unblock(custodian: Person, throttle: dict[str, Any]) -> int:
+    return custodian.client.post("/throttled/unblock", json={"id": throttle["id"]}).status_code
+
+
+def test_the_custodian_sees_who_is_held_back_and_when_it_clears(
+    client_for: Callable[[], TestClient],
+    at: Callable[[str], TestClient],
+    custodian: Person,
+    session: Session,
+) -> None:
+    held_back(client_for, at)
+    for _ in range(5):
+        assert sign_in(at("192.0.2.1"), "@nobody") == 401
+
+    found = custodian.client.get("/throttled")
+    assert found.status_code == 200, found.text
+    shown = {
+        (t["held"], t["address"], t["masked"], t["per_login"], t["login"], t["limit"])
+        for t in found.json()
+    }
+    at_login = "5 failed sign-ins at one login in 15 minutes"
+    assert shown == {
+        ("sign_in", HOME, False, True, "agnes@example.com", at_login),
+        ("sign_in", ELSEWHERE, False, False, None, "20 failed sign-ins in 15 minutes"),
+        # No account uses the login.
+        ("sign_in", "192.0.2.1", False, True, None, at_login),
+    }
+    # Each clears a quarter of an hour after the try that put it at its limit.
+    newest = session.scalar(select(func.max(AuthAttempt.created_at)))
+    assert newest is not None
+    for t in found.json():
+        clears = datetime.fromisoformat(t["clears"])
+        assert newest - timedelta(minutes=1) < clears - timedelta(minutes=15) <= newest
+
+    # While sign-in events keep no IP addresses, only the start of each shows.
+    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
+    session.flush()
+    masked = custodian.client.get("/throttled")
+    assert {(t["address"], t["masked"]) for t in masked.json()} == {
+        ("198.51.x.x", True),
+        ("203.0.x.x", True),
+        ("192.0.x.x", True),
+    }
+    for ip in (HOME, ELSEWHERE, "192.0.2.1"):
+        assert ip not in masked.text
+
+
+def test_the_custodian_unblocks_an_address_and_it_is_a_notice(
+    client_for: Callable[[], TestClient],
+    at: Callable[[str], TestClient],
+    custodian: Person,
+    session: Session,
+) -> None:
+    held_back(client_for, at)
+    # Unblocking works whether the address shows or not.
+    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
+    session.flush()
+    found = custodian.client.get("/throttled").json()
+    by_login = next(t for t in found if t["per_login"])
+    by_place = next(t for t in found if not t["per_login"])
+
+    # Agnes's email at home: elsewhere is still held back.
+    assert unblock(custodian, by_login) == 204
+    assert [t["id"] for t in custodian.client.get("/throttled").json()] == [by_place["id"]]
+    assert sign_in(at(HOME), "agnes@example.com") == 401
+    assert sign_in(at(ELSEWHERE), "agnes@example.com") == 429
+
+    audit.save_settings(session, audit.LogSettings())
+    session.flush()
+    assert unblock(custodian, by_place) == 204
+    assert custodian.client.get("/throttled").json() == []
+    assert sign_in(at(ELSEWHERE), "agnes@example.com") == 401
+    # Once unblocked, it isn't there to unblock again.
+    assert unblock(custodian, by_place) == 404
+
+    lifted = list(
+        session.scalars(
+            select(AuditEvent)
+            .where(AuditEvent.action == "account.throttle_lifted")
+            .order_by(AuditEvent.created_at, AuditEvent.id)
+        )
+    )
+    assert [(e.level, str(e.actor_id)) for e in lifted] == [("notice", custodian.id)] * 2
+    assert [message(e.action, "custodian", None, e.data) for e in lifted] == [
+        "custodian unblocked sign-ins at agnes@example.com: over the limit of 5 failed"
+        " sign-ins at one login in 15 minutes.",
+        f"custodian unblocked sign-ins from {ELSEWHERE}: over the limit of 20 failed sign-ins"
+        " in 15 minutes.",
+    ]
+
+
+def test_each_limit_a_place_is_over_is_unblocked_on_its_own(
+    client_for: Callable[[], TestClient],
+    at: Callable[[str], TestClient],
+    custodian: Person,
+    session: Session,
+) -> None:
+    """The last try home made put it over two limits at once."""
+    sign_up(client_for, "agnes")
+    home = at(HOME)
+    for n in range(15):
+        assert sign_in(home, f"guess{n}@example.com") == 401
+    for _ in range(5):
+        assert sign_in(home, "agnes@example.com") == 401
+    found = custodian.client.get("/throttled").json()
+    assert len({t["id"] for t in found}) == len(found) == 2
+
+    by_login = next(t for t in found if t["per_login"])
+    assert unblock(custodian, by_login) == 204
+    [lifted] = session.scalars(
+        select(AuditEvent).where(AuditEvent.action == "account.throttle_lifted")
+    ).all()
+    assert lifted.data["limit"] == "failed_at_login"
+    # Agnes's five were the ones home's limit counted too.
+    assert custodian.client.get("/throttled").json() == []
+
+
+def test_only_the_custodian_sees_or_unblocks_who_is_held_back(
+    client_for: Callable[[], TestClient], at: Callable[[str], TestClient], custodian: Person
+) -> None:
+    held_back(client_for, at)
+    player = sign_up(client_for, "bertha")
+    [first, *_] = custodian.client.get("/throttled").json()
+    assert player.client.get("/throttled").status_code == 403
+    assert unblock(player, first) == 403
+    assert len(custodian.client.get("/throttled").json()) == 2
+
+
+def test_sign_ups_held_back_can_be_unblocked(
+    at: Callable[[str], TestClient], custodian: Person, session: Session
+) -> None:
+    home = at(HOME)
+    for n in range(20):
+        body = {"email": f"s{n}@example.com", "password": PASSWORD, "display_name": f"s{n}"}
+        home.post("/auth/signup", json=body)
+    body = {"email": "spare@example.com", "password": PASSWORD, "display_name": "spare"}
+    assert home.post("/auth/signup", json=body).status_code == 429
+    [held] = custodian.client.get("/throttled").json()
+    assert (held["held"], held["limit"]) == ("sign_up", "20 sign-ups in an hour")
+    assert unblock(custodian, held) == 204
+    assert home.post("/auth/signup", json=body).status_code == 201
+    [lifted] = session.scalars(
+        select(AuditEvent).where(AuditEvent.action == "account.throttle_lifted")
+    ).all()
+    assert message(lifted.action, "custodian", None, lifted.data) == (
+        f"custodian unblocked sign-ups from {HOME}: over the limit of 20 sign-ups in an hour."
+    )

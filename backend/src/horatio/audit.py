@@ -37,9 +37,10 @@ DEBUG: frozenset[str] = frozenset(
     {
         "account.signed_in",
         "account.sign_in_failed",
-        # Turned away by horatio.auth.attempts before the password was checked.
-        "account.sign_in_throttled",
-        "account.sign_up_throttled",
+        # Turned away by horatio.auth.attempts before the password was checked, after
+        # the first in a limit's window: that one is info, so it is always recorded (#1074).
+        "account.sign_in_throttled_again",
+        "account.sign_up_throttled_again",
         "account.signed_out",
         "account.signed_up",
     }
@@ -108,6 +109,7 @@ NOTICE: frozenset[str] = frozenset(
         "account.suspended",
         "account.suspension_email_failed",
         "account.suspension_lifted",
+        "account.throttle_lifted",
         "account.view_as",
         "account.view_as_ended",
         # --- the custodian's work, and what stays with a troupe for good ---

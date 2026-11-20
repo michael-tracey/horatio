@@ -738,11 +738,22 @@ MESSAGES: dict[str, str] = {
     "account.sign_in_failed.unknown": "Someone failed to sign in{from_ip} to an account that"
     " doesn't exist.",
     "account.sign_in_throttled": "Someone was turned away from signing in as {member}{from_ip}:"
-    " too many failed sign-ins from where they were.",
+    " {too_many} from where they were.",
     "account.sign_in_throttled.unknown": "Someone was turned away from signing in{from_ip} to an"
-    " account that doesn't exist: too many failed sign-ins from where they were.",
+    " account that doesn't exist: {too_many} from where they were.",
+    "account.sign_in_throttled_again": "Someone was turned away again from signing in as"
+    " {member}{from_ip}: {too_many} from where they were.",
+    "account.sign_in_throttled_again.unknown": "Someone was turned away again from signing"
+    " in{from_ip} to an account that doesn't exist: {too_many} from where they were.",
     "account.sign_up_throttled": "Someone was turned away from signing up{from_ip}: too many"
     " sign-ups from where they were.",
+    "account.sign_up_throttled_again": "Someone was turned away again from signing up{from_ip}:"
+    " too many sign-ups from where they were.",
+    "account.throttle_lifted": "{actor} unblocked sign-ins{from_ip}: over the limit of {rule}.",
+    "account.throttle_lifted.login": "{actor} unblocked sign-ins at {login}{from_ip}: over the"
+    " limit of {rule}.",
+    "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups{from_ip}: over the limit of"
+    " {rule}.",
     "account.suspended": "{actor} suspended {member}{because}.",
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
@@ -1132,6 +1143,10 @@ def message(
     # Where a sign-in came from, while the custodian keeps it, or a reset request (#1066):
     # " from 203.0.113.7".
     values["from_ip"] = f" from {data['ip']}" if data.get("ip") else ""
+    # Which limit turned a sign-in away (#1074); before it was kept, a limit on failed ones.
+    values["too_many"] = (
+        "too many sign-ins" if data.get("limit") == "sign_ins" else "too many failed sign-ins"
+    )
     # Given at a Play View game: " at game 3".
     values["at_game"] = f" at game {data['game']}" if data.get("game") else ""
     if isinstance(values.get("picks"), dict):
