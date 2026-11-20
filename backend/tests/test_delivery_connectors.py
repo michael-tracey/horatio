@@ -1,6 +1,7 @@
 """Delivering downtime results through a troupe's connectors, with a fake one: the
 worker sends what is queued, retries failures with backoff, and never sends twice."""
 
+import uuid
 from collections.abc import Callable, Iterator, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -12,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from horatio import delivery
 from horatio.connectors import CONNECTORS, Connector, Message, Recipient, SendError
-from horatio.models import Delivery
+from horatio.models import Character, Delivery, Quest, User
 from tests.api_helpers import Troupe
 from tests.test_api_responses import Scene
 
@@ -372,3 +373,101 @@ def test_results_tried_in_test_mode_go_to_players_only_when_sent(
     # Only once.
     again = troupe.assistant.client.post(f"/cycles/{cycle}/send-test-only")
     assert again.json()["queued"] == 0
+
+
+# --- a player's own channel (#1077) -------------------------------------------------------
+
+
+def own_channel(scene: Scene, on: bool) -> Any:
+    chosen = scene.troupe.player.client.put(
+        "/notification-settings/own-channel", json={"character_id": scene.agnes, "on": on}
+    )
+    assert chosen.status_code == 200, chosen.text
+    return chosen.json()
+
+
+def troupes_send(page: dict[str, Any], topic: str) -> list[dict[str, Any]]:
+    return next(t for g in page["groups"] for t in g["topics"] if t["name"] == topic)[
+        "troupes_send"
+    ]
+
+
+def test_a_player_turns_off_their_characters_own_channel(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    troupe = scene.troupe
+    connect(
+        scene, mode="full", settings={"test_target": "#st-test", "channels": {scene.agnes: "1"}}
+    )
+    page = troupe.player.client.get("/notification-settings").json()
+    [sends] = troupes_send(page, "downtime")
+    assert sends["own_channels"] == [
+        {"character_id": scene.agnes, "character_name": "Agnes", "on": True}
+    ]
+    # One switch for results and quest news alike, shown once.
+    assert troupes_send(page, "quests")[0]["own_channels"] == []
+    # Only for the player's own characters.
+    refused = troupe.storyteller.client.put(
+        "/notification-settings/own-channel", json={"character_id": scene.agnes, "on": False}
+    )
+    assert refused.status_code == 404
+
+    page = own_channel(scene, on=False)
+    assert troupes_send(page, "downtime")[0]["own_channels"][0]["on"] is False
+    # Changing another setting keeps it.
+    assert troupe.player.client.patch("/preferences", json={"ratings": "pips"}).status_code == 200
+    page = troupe.player.client.get("/notification-settings").json()
+    assert troupes_send(page, "downtime")[0]["own_channels"][0]["on"] is False
+
+    # Nothing goes to her channel; she still has her results, and word of them.
+    assert deliver(scene) == {"delivered": 1, "updated": 0, "queued": 0}
+    [agnes] = status(scene)["participants"]
+    assert agnes["turned_off"] == ["discord"]
+    assert "discord" not in agnes["deliveries"]
+    assert agnes["deliveries"]["horatio"]["status"] == "sent"
+    kinds = [n["kind"] for n in troupe.player.client.get("/notifications").json()["items"]]
+    assert "downtime.delivered" in kinds
+    assert send_due(session) == 0
+    assert fake.sent == []
+
+    # Turned on again, the next delivery catches up.
+    own_channel(scene, on=True)
+    assert status(scene)["participants"][0]["turned_off"] == []
+    assert deliver(scene) == {"delivered": 0, "updated": 0, "queued": 1}
+    send_due(session)
+    assert [target for target, _ in fake.sent] == ["#agnes"]
+
+
+def test_test_mode_still_posts_to_the_test_target(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    connect(scene, test_mode=True)
+    own_channel(scene, on=False)
+
+    deliver(scene)
+    send_due(session)
+
+    assert [target for target, _ in fake.sent] == ["#st-test"]
+    assert status(scene)["participants"][0]["turned_off"] == []
+
+
+def test_quest_news_skips_a_channel_turned_off(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    connect(scene)
+    staff = session.get_one(User, uuid.UUID(scene.troupe.storyteller.id))
+    quest = Quest(
+        troupe_id=uuid.UUID(scene.troupe.id), name="The Lost Journal", created_by=staff.id
+    )
+    session.add(quest)
+    session.flush()
+    agnes = session.get_one(Character, uuid.UUID(scene.agnes))
+    player = session.get_one(User, agnes.player_id)
+    own_channel(scene, on=False)
+    session.refresh(player)
+
+    assert delivery.queue_quest(session, staff, quest.troupe_id, quest.id, agnes, "Sent", "") == 0
+
+    own_channel(scene, on=True)
+    session.refresh(player)
+    assert delivery.queue_quest(session, staff, quest.troupe_id, quest.id, agnes, "Sent", "") == 1

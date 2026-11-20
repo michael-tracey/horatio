@@ -28,7 +28,8 @@ type Settings = Record<string, unknown>;
  * choose the troupe's own channels for news, announcements and each news agency
  * (#882), then pick a private channel for each character and a test channel. A channel
  * named for a character is suggested, for storytellers to use or not; one already
- * chosen for someone else, or as the test channel, is not.
+ * chosen for someone else, or as the test channel, is not. A player can turn off what
+ * Horatio posts to their character's channel (#1077), and the row says so.
  */
 export function DiscordSettings({
   troupeId,
@@ -234,6 +235,14 @@ export function DiscordSettings({
             on), but nothing on Discord.
           </p>
         )}
+        {characters.some((c) => c.channel_off) && (
+          <p className="mb-2 text-xs text-mist">
+            A player can turn off what Horatio posts to their character's
+            channel, on their Account › Notifications. Those characters still
+            get their results in Horatio, and the troupe's own channels still
+            post. Test mode still sends to the test channel.
+          </p>
+        )}
         {canEdit && toSuggest.length > 0 && (
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <span className="text-xs text-mist">
@@ -260,6 +269,7 @@ export function DiscordSettings({
               className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2"
             >
               <span className="min-w-32 flex-1 text-parchment">{c.name}</span>
+              {c.channel_off && <Badge tone="gold">Player turned it off</Badge>}
               {chosen[c.id] &&
                 !channels.find((ch) => ch.id === chosen[c.id])?.private && (
                   <Badge tone="blood">Not private</Badge>

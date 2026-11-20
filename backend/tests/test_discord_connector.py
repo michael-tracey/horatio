@@ -926,6 +926,43 @@ def test_a_character_with_no_channel_fails_with_their_name(
     assert agnes_on(scene, "discord")["last_error"] == "Agnes has no Discord channel."
 
 
+def test_a_channel_its_player_turned_off_gets_nothing_but_the_troupes_channels_do(
+    scene: Scene,  # noqa: F811
+    fake_discord: FakeDiscord,
+    session: Session,
+) -> None:
+    """A player turns off their character's own channel (#1077): staff see it, results
+    stay in Horatio, and the troupe's news still posts to its shared channel."""
+    troupe = scene.troupe
+    connect_server(scene)
+    set_up(scene, channels={scene.agnes: AGNES_CHANNEL})
+    news = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/post-channels", json={"kind": "news", "channel": OPEN_CHANNEL}
+    )
+    assert news.status_code == 200, news.text
+    off = troupe.player.client.put(
+        "/notification-settings/own-channel", json={"character_id": scene.agnes, "on": False}
+    )
+    assert off.status_code == 200, off.text
+
+    setup = troupe.assistant.client.get(f"/troupes/{troupe.id}/discord").json()
+    assert [(c["name"], c["channel_off"]) for c in setup["characters"]] == [("Agnes", True)]
+    assert deliver(scene)["queued"] == 0
+    agency = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/agencies", json={"name": "The Boston Herald"}
+    ).json()["id"]
+    post = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/posts",
+        json={"agency_id": agency, "title": "Fire at the docks", "body": "Smoke."},
+    ).json()["id"]
+    assert troupe.storyteller.client.post(f"/posts/{post}/publish", json={}).status_code == 200
+
+    delivery.send_due(session, START)
+
+    assert [channel for channel, _ in fake_discord.posted] == [OPEN_CHANNEL]
+    assert agnes_on(scene, "horatio")["status"] == "sent"
+
+
 def test_test_mode_posts_in_the_test_channel(
     scene: Scene,  # noqa: F811
     fake_discord: FakeDiscord,

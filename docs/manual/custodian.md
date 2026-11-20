@@ -227,7 +227,7 @@ Someone who signed up twice, say once with Google and once with an email and pas
 1. Choose **⋯ › Merge…** on either account's row.
 2. Under **The same person's other account**, pick the other account.
 3. Under **Which account stays?**, choose the one to keep.
-4. Give a **Reason**. It's kept in the audit log and in the log of each troupe the merge touches, and told to the person and those troupes' lead storytellers.
+4. Give a **Reason**. It's kept in the audit log and in the log of each troupe the merge touches, and told to the person and those troupes' lead storytellers. The person is always told; a lead can turn off theirs, under **Staff work › Accounts merged** on their Account › Notifications.
 5. Choose **Continue**, read what will move, then choose **Merge into @handle**.
 
 What moves: the closed account's characters, its staff roles (where both accounts are on one troupe's staff, the higher role is kept), its ways of signing in, and its settings and profile details where the staying account has none of its own. Its handles still find the person. A suspension it's under carries over.

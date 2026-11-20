@@ -152,6 +152,9 @@ class ParticipantDeliveries(BaseModel):
     # The connectors on, outside test mode, with nowhere to send this character's
     # results (Discord, with no channel chosen), to warn about before delivering.
     unreachable: list[str]
+    # The connectors on, outside test mode, whose posts to the character's own
+    # channel its player turned off (Discord, #1077): nothing goes there.
+    turned_off: list[str] = []
     # The connectors on that have had its results only in test mode, waiting to be
     # sent to its player (horatio.delivery.test_only).
     test_only: list[str]
@@ -200,6 +203,7 @@ def cycle_deliveries(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> D
         )
         for character_id in missing:
             unreachable.setdefault(character_id, []).append(connector.kind)
+    off = delivery.turned_off(db, on, [r.character.id for r in rows])
     return DeliveryStatus(
         channels=channels,
         testing=[c.kind for c in on if c.test_mode],
@@ -218,6 +222,7 @@ def cycle_deliveries(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> D
                     if (d := latest.get((r.submission.id, channel))) is not None
                 },
                 unreachable=unreachable.get(r.character.id, []),
+                turned_off=off.get(r.character.id, []),
                 test_only=tested.get(r.submission.id, []),
             )
             for r in rows

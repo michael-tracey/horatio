@@ -24,9 +24,13 @@ Two things the person doesn't choose here, and the page says so:
   #1018). That choice is kept where #1018 keeps it, and the page changes it there.
 - A troupe's connectors (CONTEXT.md: Connector): downtime results and quest news
   that the troupe also sends to Discord, or by its own email. That's the troupe's
-  choice (`connectors`).
+  choice (`connectors`). The one part of it the player chooses is their character's
+  own channel on the troupe's Discord (#1077): they can turn off what the connector
+  posts there, character by character (`own_channel_on`). The troupe's shared
+  channels, and the result in Horatio, are unchanged.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -72,6 +76,9 @@ class Topic:
     connectors: bool = False
     # Whether the person is told at all depends on a role, chosen beside it (#1018).
     by_role: bool = False
+    # Where the switches for the characters' own Discord channels sit (#1077). They
+    # cover downtime results and quest news alike, so they're shown once.
+    own_channels: bool = False
 
     def setting(self, way: Way) -> str:
         return f"{way}_{self.name}"
@@ -258,6 +265,7 @@ GROUPS = (
                 "When your downtime results are ready, or updated.",
                 ("downtime.delivered",),
                 connectors=True,
+                own_channels=True,
             ),
             Topic(
                 "downtime_reminders",
@@ -425,6 +433,13 @@ GROUPS = (
                 ("news.missed", "announcement.missed"),
             ),
             Topic(
+                "merges",
+                "Accounts merged",
+                "The custodian merging two accounts of one person, moving their characters"
+                " or their place on staff in a troupe you lead.",
+                ("troupe.accounts_merged",),
+            ),
+            Topic(
                 "discord_problems",
                 "Discord channel problems",
                 "A character's Discord channel Horatio couldn't make or keep in step.",
@@ -495,3 +510,27 @@ def kept(changes: dict[str, Any]) -> dict[str, bool]:
             raise ValueError(f"{name} is on or off: true or false.")
         found[name] = value
     return found
+
+
+# The characters whose own Discord channel the person has turned off (#1077), by id:
+# what a troupe's Discord connector would post to that channel is skipped. On until
+# they turn it off; kept with their other settings, like the choices above.
+OWN_CHANNELS_OFF = "own_channels_off"
+
+
+def own_channel_on(user: User, character_id: uuid.UUID) -> bool:
+    """Whether the troupe's Discord connector may post to the character's own channel,
+    as its player chose."""
+    off: Any = (user.preferences or {}).get(OWN_CHANNELS_OFF)
+    return not (isinstance(off, list) and str(character_id) in off)
+
+
+def choose_own_channel(user: User, character_id: uuid.UUID, on: bool) -> None:
+    """Turn the character's own Discord channel on or off for its player."""
+    stored = dict(user.preferences or {})
+    off = {str(c) for c in stored.pop(OWN_CHANNELS_OFF, None) or []} - {str(character_id)}
+    if not on:
+        off.add(str(character_id))
+    if off:
+        stored[OWN_CHANNELS_OFF] = sorted(off)
+    user.preferences = stored

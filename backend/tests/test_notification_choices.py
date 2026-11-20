@@ -446,7 +446,15 @@ def test_where_the_troupe_sends_it_itself(
         )
     )
     topics = shown(troupe.player)
-    sends = [{"troupe_id": troupe.id, "troupe_name": "Lords of the Night", "connectors": ["Email"]}]
+    sends = [
+        {
+            "troupe_id": troupe.id,
+            "troupe_name": "Lords of the Night",
+            "connectors": ["Email"],
+            # No Discord, so no character's own channel to turn off (#1077).
+            "own_channels": [],
+        }
+    ]
     assert topics["downtime"]["troupes_send"] == sends
     assert topics["quests"]["troupes_send"] == sends
     assert topics["renames"]["troupes_send"] == []

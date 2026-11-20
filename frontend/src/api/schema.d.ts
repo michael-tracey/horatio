@@ -5868,6 +5868,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notification-settings/own-channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose Own Channel
+         * @description Turn on or off what a troupe's Discord connector posts to your character's own
+         *     channel: its downtime results and quest news. They still come in Horatio, and the
+         *     troupe's shared channels are unchanged.
+         */
+        put: operations["choose_own_channel_api_notification_settings_own_channel_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -18459,6 +18481,11 @@ export interface components {
         /** CharacterRef */
         CharacterRef: {
             /**
+             * Channel Off
+             * @default false
+             */
+            channel_off: boolean;
+            /**
              * Id
              * Format: uuid
              */
@@ -27184,6 +27211,23 @@ export interface components {
             troupe_name: string | null;
         };
         /**
+         * NotificationOwnChannelOut
+         * @description A character of the person's with its own channel on the troupe's Discord: whether
+         *     the connector posts there (#1077), changed with `PUT
+         *     /notification-settings/own-channel`.
+         */
+        NotificationOwnChannelOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** On */
+            on: boolean;
+        };
+        /**
          * NotificationRoleOut
          * @description Whether the person is told at all in one troupe, as a role (#1018): changed with
          *     `PUT /troupes/{troupe_id}/boon-reports-told`, as beside the role.
@@ -27251,6 +27295,11 @@ export interface components {
         NotificationTroupeOut: {
             /** Connectors */
             connectors: string[];
+            /**
+             * Own Channels
+             * @default []
+             */
+            own_channels: components["schemas"]["NotificationOwnChannelOut"][];
             /**
              * Troupe Id
              * Format: uuid
@@ -27725,6 +27774,16 @@ export interface components {
              */
             type: "elite" | "underworld";
         };
+        /** OwnChannelChoiceIn */
+        OwnChannelChoiceIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** On */
+            on: boolean;
+        };
         /** OwnCheckIn */
         OwnCheckIn: {
             /** Category */
@@ -28081,6 +28140,11 @@ export interface components {
             test_only: string[];
             /** To Answer */
             to_answer: number;
+            /**
+             * Turned Off
+             * @default []
+             */
+            turned_off: string[];
             /** Unreachable */
             unreachable: string[];
         };
@@ -49168,6 +49232,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["NotificationChoiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    choose_own_channel_api_notification_settings_own_channel_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnChannelChoiceIn"];
             };
         };
         responses: {
