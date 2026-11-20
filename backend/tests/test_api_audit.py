@@ -15,6 +15,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 import horatio
+from horatio import audit
 from horatio.api.audit import GROUPS
 from horatio.api.roster import MESSAGES
 from horatio.models import AuditEvent
@@ -53,6 +54,12 @@ def rename(person: Person, troupe_id: str, name: str) -> None:
 def dated(session: Session, action: str, at: datetime) -> None:
     """Move the events of `action` to `at`: every event in a test is made at once."""
     session.execute(update(AuditEvent).where(AuditEvent.action == action).values(created_at=at))
+    session.flush()
+
+
+def record_debug(session: Session) -> None:
+    """Record debug events too, such as a character starting to visit a troupe."""
+    audit.save_settings(session, audit.LogSettings(record="debug"))
     session.flush()
 
 
@@ -98,7 +105,8 @@ def test_one_persons_changes_across_two_troupes_in_a_date_range(
     assert response.json()["detail"] == "Nobody has the handle nobody_at_all."
 
 
-def test_every_event_for_one_character(troupe: Troupe) -> None:
+def test_every_event_for_one_character(troupe: Troupe, session: Session) -> None:
+    record_debug(session)
     agnes = new_character(troupe, troupe.player)
     bertha = new_character(troupe, troupe.player, "Bertha")
     for character in (agnes, bertha):
@@ -119,7 +127,8 @@ def test_every_event_for_one_character(troupe: Troupe) -> None:
     assert len(messages(troupe.custodian, character_id=agnes, troupe_id=other)) == 1
 
 
-def test_groups_and_words(troupe: Troupe) -> None:
+def test_groups_and_words(troupe: Troupe, session: Session) -> None:
+    record_debug(session)
     agnes = new_character(troupe, troupe.player)
     troupe.player.client.post(f"/characters/{agnes}/troupes", json={"troupe_id": troupe.id})
     troupe.player.client.put(
@@ -183,7 +192,16 @@ def test_export_is_a_csv_of_what_the_filters_find(troupe: Troupe, session: Sessi
     assert response.headers["content-type"].startswith("text/csv")
     assert "attachment" in response.headers["content-disposition"]
     rows = list(csv.reader(io.StringIO(response.text.removeprefix("\ufeff"))))
-    assert rows[0] == ["When (UTC)", "Who", "Troupe", "Character", "Player", "Action", "What"]
+    assert rows[0] == [
+        "When (UTC)",
+        "Who",
+        "Troupe",
+        "Character",
+        "Player",
+        "Action",
+        "Level",
+        "What",
+    ]
     assert [r[1:] for r in rows[1:]] == [
         [
             "lead",
@@ -191,6 +209,7 @@ def test_export_is_a_csv_of_what_the_filters_find(troupe: Troupe, session: Sessi
             "",
             "",
             "troupe.renamed",
+            "info",
             "lead renamed the troupe to Court of Cinders.",
         ],
         # A troupe named like a formula is not one in a spreadsheet.
@@ -200,6 +219,7 @@ def test_export_is_a_csv_of_what_the_filters_find(troupe: Troupe, session: Sessi
             "",
             "",
             "troupe.renamed",
+            "info",
             "lead renamed the troupe to Lords of the Long Night.",
         ],
     ]

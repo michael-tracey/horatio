@@ -2154,6 +2154,9 @@
             "title": "Id",
             "type": "string"
           },
+          "level": {
+            "$ref": "#/components/schemas/AuditLevel"
+          },
           "message": {
             "title": "Message",
             "type": "string"
@@ -2218,7 +2221,8 @@
           "player_name",
           "data",
           "troupe_id",
-          "troupe_name"
+          "troupe_name",
+          "level"
         ],
         "title": "AuditEntry",
         "type": "object"
@@ -2286,6 +2290,15 @@
         "title": "AuditGroupOut",
         "type": "object"
       },
+      "AuditLevel": {
+        "enum": [
+          "debug",
+          "info",
+          "notice"
+        ],
+        "title": "AuditLevel",
+        "type": "string"
+      },
       "AuditPage": {
         "properties": {
           "entries": {
@@ -2312,6 +2325,132 @@
           "next"
         ],
         "title": "AuditPage",
+        "type": "object"
+      },
+      "AuditPurgeOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "debug": {
+            "title": "Debug",
+            "type": "integer"
+          },
+          "finished": {
+            "title": "Finished",
+            "type": "boolean"
+          },
+          "info": {
+            "title": "Info",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "debug",
+          "info",
+          "finished"
+        ],
+        "title": "AuditPurgeOut",
+        "type": "object"
+      },
+      "AuditSettingsIn": {
+        "properties": {
+          "keep_debug": {
+            "anyOf": [
+              {
+                "maximum": 3650.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keep Debug"
+          },
+          "keep_info": {
+            "anyOf": [
+              {
+                "maximum": 3650.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keep Info"
+          },
+          "record": {
+            "enum": [
+              "debug",
+              "info"
+            ],
+            "title": "Record",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record",
+          "keep_debug",
+          "keep_info"
+        ],
+        "title": "AuditSettingsIn",
+        "type": "object"
+      },
+      "AuditSettingsOut": {
+        "properties": {
+          "keep_debug": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keep Debug"
+          },
+          "keep_info": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keep Info"
+          },
+          "last_purge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditPurgeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "record": {
+            "enum": [
+              "debug",
+              "info"
+            ],
+            "title": "Record",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record",
+          "keep_debug",
+          "keep_info",
+          "last_purge"
+        ],
+        "title": "AuditSettingsOut",
         "type": "object"
       },
       "AuditTroupe": {
@@ -62243,6 +62382,24 @@
             }
           },
           {
+            "description": "The least level: info finds info and notice.",
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The least level: info finds info and notice.",
+              "title": "Level"
+            }
+          },
+          {
             "description": "From this moment on.",
             "in": "query",
             "name": "since",
@@ -62486,6 +62643,24 @@
             }
           },
           {
+            "description": "The least level: info finds info and notice.",
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The least level: info finds info and notice.",
+              "title": "Level"
+            }
+          },
+          {
             "description": "From this moment on.",
             "in": "query",
             "name": "since",
@@ -62579,6 +62754,68 @@
           }
         },
         "summary": "Filters",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/audit/settings": {
+      "get": {
+        "description": "For the custodian: what the log records, how long it keeps each level, and\nwhat the last purge deleted.",
+        "operationId": "log_settings_api_audit_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Log Settings",
+        "tags": [
+          "audit"
+        ]
+      },
+      "put": {
+        "description": "For the custodian: change what the log records and how long it keeps each\nlevel. It takes effect at once, and goes in the log itself.",
+        "operationId": "change_log_settings_api_audit_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditSettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Log Settings",
         "tags": [
           "audit"
         ]
@@ -96514,7 +96751,7 @@
     },
     "/api/troupes/{troupe_id}/log": {
       "get": {
-        "description": "What has happened in the troupe, newest first.",
+        "description": "What has happened in the troupe, newest first. Never debug events\n(horatio.audit): those are for the custodian's search alone.",
         "operationId": "log_api_troupes__troupe_id__log_get",
         "parameters": [
           {

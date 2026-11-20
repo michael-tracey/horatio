@@ -391,6 +391,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/audit/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Log Settings
+         * @description For the custodian: what the log records, how long it keeps each level, and
+         *     what the last purge deleted.
+         */
+        get: operations["log_settings_api_audit_settings_get"];
+        /**
+         * Change Log Settings
+         * @description For the custodian: change what the log records and how long it keeps each
+         *     level. It takes effect at once, and goes in the log itself.
+         */
+        put: operations["change_log_settings_api_audit_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/email-change/{token}": {
         parameters: {
             query?: never;
@@ -11552,7 +11578,8 @@ export interface paths {
         };
         /**
          * Log
-         * @description What has happened in the troupe, newest first.
+         * @description What has happened in the troupe, newest first. Never debug events
+         *     (horatio.audit): those are for the custodian's search alone.
          */
         get: operations["log_api_troupes__troupe_id__log_get"];
         put?: never;
@@ -14689,6 +14716,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            level: components["schemas"]["AuditLevel"];
             /** Message */
             message: string;
             /** Player Id */
@@ -14718,12 +14746,56 @@ export interface components {
             /** Label */
             label: string;
         };
+        /**
+         * AuditLevel
+         * @enum {string}
+         */
+        AuditLevel: "debug" | "info" | "notice";
         /** AuditPage */
         AuditPage: {
             /** Entries */
             entries: components["schemas"]["AuditEntry"][];
             /** Next */
             next: string | null;
+        };
+        /** AuditPurgeOut */
+        AuditPurgeOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Debug */
+            debug: number;
+            /** Finished */
+            finished: boolean;
+            /** Info */
+            info: number;
+        };
+        /** AuditSettingsIn */
+        AuditSettingsIn: {
+            /** Keep Debug */
+            keep_debug: number | null;
+            /** Keep Info */
+            keep_info: number | null;
+            /**
+             * Record
+             * @enum {string}
+             */
+            record: "debug" | "info";
+        };
+        /** AuditSettingsOut */
+        AuditSettingsOut: {
+            /** Keep Debug */
+            keep_debug: number | null;
+            /** Keep Info */
+            keep_info: number | null;
+            last_purge: components["schemas"]["AuditPurgeOut"] | null;
+            /**
+             * Record
+             * @enum {string}
+             */
+            record: "debug" | "info";
         };
         /** AuditTroupe */
         AuditTroupe: {
@@ -38350,6 +38422,8 @@ export interface operations {
                 character_id?: string | null;
                 troupe_id?: string | null;
                 group?: components["schemas"]["AuditGroup"] | null;
+                /** @description The least level: info finds info and notice. */
+                level?: components["schemas"]["AuditLevel"] | null;
                 /** @description From this moment on. */
                 since?: string | null;
                 /** @description Before this moment. */
@@ -38424,6 +38498,8 @@ export interface operations {
                 character_id?: string | null;
                 troupe_id?: string | null;
                 group?: components["schemas"]["AuditGroup"] | null;
+                /** @description The least level: info finds info and notice. */
+                level?: components["schemas"]["AuditLevel"] | null;
                 /** @description From this moment on. */
                 since?: string | null;
                 /** @description Before this moment. */
@@ -38472,6 +38548,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditFilters"];
+                };
+            };
+        };
+    };
+    log_settings_api_audit_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditSettingsOut"];
+                };
+            };
+        };
+    };
+    change_log_settings_api_audit_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

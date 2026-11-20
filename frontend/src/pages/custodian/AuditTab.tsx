@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { DateInput } from "../../components/DateInput";
 import { PersonPicker } from "../../components/PersonPicker";
-import { Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useWidePage } from "../../components/widePage";
 import { useDates } from "../../dates";
 import { auditQuery, exportHref, filtersFrom, NO_FILTERS, toParams, type AuditCharacter, type AuditEntry, type AuditFilters } from "./audit";
@@ -114,6 +114,13 @@ function SearchForm({ applied, onSearch }: { applied: AuditFilters; onSearch: (f
           <Field label="To">
             <DateInput value={draft.to} min={draft.from || undefined} onChange={(e) => set({ to: e.target.value })} />
           </Field>
+          <Field label="Level" hint="Debug events are routine, such as signing in; notice ones are kept forever.">
+            <Select value={draft.level} onChange={(e) => set({ level: e.target.value })}>
+              <option value="">Any level</option>
+              <option value="info">Info and notice</option>
+              <option value="notice">Notice only</option>
+            </Select>
+          </Field>
         </div>
         <Field label="Words" hint="Each word somewhere in what the change says, such as a name, a trait or a reason.">
           <Input type="search" value={draft.words} onChange={(e) => set({ words: e.target.value })} />
@@ -154,6 +161,7 @@ function Entry({ entry }: { entry: AuditEntry }) {
             {entry.troupe_name}
           </Link>
         )}
+        {entry.level !== "info" && <Badge tone={entry.level === "notice" ? "gold" : "mist"}>{entry.level}</Badge>}
       </span>
       <span>
         {character ? (

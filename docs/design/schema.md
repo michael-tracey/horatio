@@ -512,8 +512,14 @@ herd, patrol, discipline), owned by a troupe. Placeholders such as
 ## 6. Cross-cutting
 
 **`audit_events`**: `actor_id`, `troupe_id` (nullable), `entity_type`,
-`entity_id`, `action`, `data` (JSONB), `at`. Append-only. Every permission-
-relevant change writes one, in the same transaction as the change.
+`entity_id`, `action`, `level`, `data` (JSONB), `at`. Never changed once written.
+Every permission-relevant change writes one, in the same transaction as the
+change. `level` is the action's level when recorded (`debug` | `info` | `notice`,
+set per action in `horatio.audit`); debug events are recorded only while the
+custodian asks for them. A daily purge (`horatio.audit_retention`) deletes debug
+and info events older than the custodian's retention for their level, and never a
+notice one, nor one whose action is notice now: every action a feature reads back
+as history is notice (`tests/test_audit_levels.py` checks the readers).
 
 **Permissions** are not stored beyond `users.is_custodian`, `troupes.lead_user_id`
 and `troupe_staff.role`. One module turns those into "can this user do this
