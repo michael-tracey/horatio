@@ -55978,7 +55978,8 @@
             "enum": [
               "sign_in",
               "sign_up",
-              "second_step"
+              "second_step",
+              "password_change"
             ],
             "title": "Held",
             "type": "string"
@@ -64543,7 +64544,7 @@
     },
     "/api/auth/password": {
       "post": {
-        "description": "Change your own password, giving the one you have now. Signs you out\neverywhere else, and cancels any reset link you had, but not here.",
+        "description": "Change your own password, giving the one you have now. Signs you out\neverywhere else, and cancels any reset link you had, but not here. Limited at the\naccount, every try counted, right or not (#1095).",
         "operationId": "change_password_api_auth_password_post",
         "requestBody": {
           "content": {
