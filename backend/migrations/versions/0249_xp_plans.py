@@ -1,7 +1,7 @@
 """A character's plan of XP purchases to come, its player's own (issue #1052).
 
 Revision ID: 0249
-Revises: 0243
+Revises: 0247
 Create Date: 2026-11-20 15:00:00.000000
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0249"
-down_revision: str | None = "0243"
+down_revision: str | None = "0247"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
