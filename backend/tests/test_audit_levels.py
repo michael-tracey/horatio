@@ -8,15 +8,17 @@ from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 import horatio
 from horatio import audit, audit_retention, locations
+from horatio.app import app
 from horatio.models import AuditEvent
 from tests.api_helpers import PASSWORD, Person, Troupe, new_character, sign_up
 
@@ -182,7 +184,9 @@ def test_each_level_names_real_actions() -> None:
                 continue
     read = {action for _, action in reads()}
     assert not (audit.DEBUG | audit.NOTICE) - recorded - read
-    assert audit.level("troupe.join") == "debug"
+    assert audit.level("account.signed_in") == "debug"
+    # Started visiting a troupe: in its log, as stopping is (#1066).
+    assert audit.level("troupe.join") == audit.level("troupe.leave") == "info"
     assert audit.level("sheet.purchase") == "info"
     assert audit.level("character.deleted") == "notice"
 
@@ -207,7 +211,13 @@ def events(session: Session, action: str) -> list[AuditEvent]:
 
 
 def set_log(custodian: Person, **settings: Any) -> dict[str, Any]:
-    body = {"record": "info", "keep_debug": 30, "keep_info": 365, **settings}
+    body = {
+        "record": "info",
+        "keep_debug": 30,
+        "keep_info": 365,
+        "sign_in_ips": True,
+        **settings,
+    }
     response = custodian.client.put("/audit/settings", json=body)
     assert response.status_code == 200, response.text
     return response.json()
@@ -241,15 +251,15 @@ def test_debug_events_are_not_recorded_unless_the_custodian_asks(
     sign_in_and_out(client_for, "quiet")
     agnes = new_character(troupe, troupe.player)
     troupe.player.client.post(f"/characters/{agnes}/troupes", json={"troupe_id": troupe.id})
-    for action in (*DEBUG_SIGNING, "troupe.join"):
+    for action in DEBUG_SIGNING:
         assert events(session, action) == [], action
     # Info and notice are, as ever.
+    assert [e.level for e in events(session, "troupe.join")] == ["info"]
     assert [e.level for e in events(session, "staff.assigned")] == ["notice"] * 3
     assert {e.level for e in events(session, "sheet.purchase")} <= {"info"}
 
     set_log(troupe.custodian, record="debug")
     sign_in_and_out(client_for, "chatty")
-    troupe.player.client.post(f"/characters/{agnes}/troupes", json={"troupe_id": troupe.id})
     for action in DEBUG_SIGNING:
         assert {e.level for e in events(session, action)} == {"debug"}, action
 
@@ -270,7 +280,92 @@ def test_debug_events_are_not_recorded_unless_the_custodian_asks(
     assert len(events(session, "account.signed_in")) == 1
 
 
-def test_debug_events_never_reach_a_troupes_log(troupe: Troupe, session: Session) -> None:
+# Where nginx says a request came from, and the docker network's gateway it reaches the
+# app through, as uvicorn sees them in production.
+CLIENT = "203.0.113.7"
+PROXY = "172.18.0.1"
+
+
+def behind_nginx(forwarded_for: str = CLIENT) -> TestClient:
+    """A client signing in through nginx, as production runs: uvicorn with
+    --proxy-headers (Dockerfile), believing X-Forwarded-For only from the docker
+    network's gateway (FORWARDED_ALLOW_IPS, deploy/playbook.yml), and nginx setting
+    the header to the address that reached it (deploy/nginx-horatio.conf.j2)."""
+    return TestClient(
+        cast(Any, ProxyHeadersMiddleware(cast(Any, app), trusted_hosts=PROXY)),
+        base_url="http://testserver/api",
+        headers={"X-Horatio": "1", "X-Forwarded-For": forwarded_for},
+        client=(PROXY, 50000),
+    )
+
+
+def test_sign_in_events_keep_the_clients_ip_address_while_the_custodian_says(
+    troupe: Troupe, client_for: Callable[[], TestClient], session: Session
+) -> None:
+    set_log(troupe.custodian, record="debug")
+    with behind_nginx() as client:
+        assert client.post("/auth/login", json={"login": "x", "password": "y"}).status_code == 401
+        body = {"email": "traced@example.com", "password": PASSWORD, "display_name": "traced"}
+        assert client.post("/auth/signup", json=body).status_code == 201
+        assert client.post("/auth/logout").status_code == 204
+        body = {"login": "traced@example.com", "password": "not my password"}
+        assert client.post("/auth/login", json=body).status_code == 401
+        body = {"login": "traced@example.com", "password": PASSWORD}
+        assert client.post("/auth/login", json=body).status_code == 200
+    for action in DEBUG_SIGNING:
+        # The client's own address, not the proxy's.
+        assert {e.data.get("ip") for e in events(session, action)} == {CLIENT}, action
+
+    found = troupe.custodian.client.get("/audit", params={"person": "traced"}).json()
+    assert [e["message"] for e in found["entries"]] == [
+        f"traced signed in from {CLIENT}.",
+        f"Someone failed to sign in as traced from {CLIENT}: wrong password.",
+        f"traced signed out from {CLIENT}.",
+        f"traced signed up from {CLIENT}.",
+    ]
+    unknown = troupe.custodian.client.get("/audit", params={"q": "doesn't exist"}).json()
+    assert [e["message"] for e in unknown["entries"]] == [
+        f"Someone failed to sign in from {CLIENT} to an account that doesn't exist."
+    ]
+
+    # Were nginx to add its address to one the client made up, the made-up one would
+    # still not be taken: only the gateway is believed, and the client is the last
+    # address not the gateway's.
+    with behind_nginx(f"192.0.2.66, {CLIENT}") as client:
+        body = {"login": "traced@example.com", "password": PASSWORD}
+        assert client.post("/auth/login", json=body).status_code == 200
+    assert events(session, "account.signed_in")[-1].data["ip"] == CLIENT
+
+    # Off: at once, and only sign-in events go without; a reset request keeps its own.
+    set_log(troupe.custodian, record="debug", sign_in_ips=False)
+    with behind_nginx() as client:
+        body = {"login": "traced@example.com", "password": PASSWORD}
+        assert client.post("/auth/login", json=body).status_code == 200
+    newest = events(session, "account.signed_in")[-1]
+    assert "ip" not in newest.data
+    found = troupe.custodian.client.get("/audit", params={"person": "traced"}).json()
+    assert found["entries"][0]["message"] == "traced signed in."
+
+
+def test_nginx_tells_the_app_who_the_client_is() -> None:
+    """nginx sets X-Forwarded-For to the address that reached it, rather than adding
+    it to one the client sent. uvicorn believes the header only from the gateway, so
+    takes the last address in it; with one address only, there is nothing else it
+    could take, even were it to believe everyone again (--forwarded-allow-ips "*",
+    when it takes the first)."""
+    conf = (Path(__file__).parents[2] / "deploy" / "nginx-horatio.conf.j2").read_text()
+    proxied = conf.count("proxy_pass ")
+    assert proxied >= 3
+    assert conf.count("proxy_set_header X-Forwarded-For $remote_addr;") == proxied
+    assert "$proxy_add_x_forwarded_for" not in conf
+
+
+def test_debug_events_never_reach_a_troupes_log(
+    troupe: Troupe, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No debug action is a troupe's or a character's now (#1066); as if starting to
+    # visit one were still debug, as #1062 had it.
+    monkeypatch.setattr(audit, "DEBUG", audit.DEBUG | {"troupe.join"})
     set_log(troupe.custodian, record="debug")
     agnes = new_character(troupe, troupe.player)
     troupe.player.client.post(f"/characters/{agnes}/troupes", json={"troupe_id": troupe.id})
@@ -308,15 +403,22 @@ def test_debug_events_never_reach_a_troupes_log(troupe: Troupe, session: Session
 def test_only_the_custodian_sees_or_changes_the_settings(troupe: Troupe) -> None:
     for person in (troupe.lead, troupe.player):
         assert person.client.get("/audit/settings").status_code == 403
-        body = {"record": "debug", "keep_debug": 30, "keep_info": 365}
+        body = {"record": "debug", "keep_debug": 30, "keep_info": 365, "sign_in_ips": False}
         assert person.client.put("/audit/settings", json=body).status_code == 403
     found = troupe.custodian.client.get("/audit/settings").json()
-    assert found == {"record": "info", "keep_debug": 30, "keep_info": 365, "last_purge": None}
+    assert found == {
+        "record": "info",
+        "keep_debug": 30,
+        "keep_info": 365,
+        # On until the custodian says otherwise (#1066).
+        "sign_in_ips": True,
+        "last_purge": None,
+    }
 
 
 def test_changing_the_settings_is_itself_recorded(troupe: Troupe, session: Session) -> None:
     for wrong in ({"keep_debug": 0}, {"keep_info": 4000}, {"record": "notice"}):
-        body = {"record": "info", "keep_debug": 30, "keep_info": 365, **wrong}
+        body = {"record": "info", "keep_debug": 30, "keep_info": 365, "sign_in_ips": True, **wrong}
         assert troupe.custodian.client.put("/audit/settings", json=body).status_code == 422
 
     # The same again changes nothing, and records nothing.
@@ -336,6 +438,20 @@ def test_changing_the_settings_is_itself_recorded(troupe: Troupe, session: Sessi
     assert audit.settings(session) == audit.LogSettings(
         record="debug", keep_debug=7, keep_info=None
     )
+
+    # IP addresses with sign-in events, off and on again (#1066).
+    off = set_log(troupe.custodian, record="debug", keep_debug=7, keep_info=None, sign_in_ips=False)
+    assert off["sign_in_ips"] is False
+    assert not audit.settings(session).sign_in_ips
+    set_log(troupe.custodian, record="debug", keep_debug=7, keep_info=None)
+    changed = events(session, "audit.settings_changed")
+    assert [e.level for e in changed] == ["notice"] * 3
+    found = troupe.custodian.client.get("/audit", params={"level": "notice"}).json()
+    assert [e["message"] for e in found["entries"][:2]] == [
+        "custodian changed the audit log's settings: IP addresses recorded with sign-in events.",
+        "custodian changed the audit log's settings: IP addresses not recorded with sign-in"
+        " events.",
+    ]
 
 
 # --- the purge -------------------------------------------------------------------------------
@@ -364,7 +480,7 @@ def kept(session: Session, ids: list[uuid.UUID]) -> list[uuid.UUID]:
 def test_the_purge_keeps_each_level_as_long_as_the_custodian_says(session: Session) -> None:
     gone = [
         old(session, "account.signed_in", 31),
-        old(session, "troupe.join", 400),
+        old(session, "account.signed_up", 400),
         old(session, "sheet.purchase", 366),
     ]
     stay = [
