@@ -595,7 +595,7 @@ At game, influence spent from **Uses this game** on the Play View asks for the d
 
 The troupe's page (its **Overview**) shows its upcoming **Games** to its members. For each, say whether you're **Coming**, **Maybe** or **Not coming**; tap your answer again to take it back. Everyone sees how many said each; the storytellers see who.
 
-**Subscribe to the calendar** gives you a link that puts the troupe's games and downtime dates in your own calendar app, and keeps itself up to date. [Getting started](getting-started.md) has more about it.
+**Subscribe to the calendar** gives you a link that puts the troupe's games and downtime dates in your own calendar app, each game with your answer, and keeps itself up to date. [Getting started](getting-started.md) has more about it.
 
 > **If your troupe uses this:** under **Missed a game?**, you can mark a character absentee for a game it missed, until the game's XP is awarded. An absentee game never counts as attended, and gets the troupe's absentee XP.
 

@@ -1284,7 +1284,7 @@ Storytellers and the lead add games on the [troupe's profile](#the-troupe-profil
 
 On the Overview, each game to come asks **Coming**, **Maybe** or **Not coming**; tapping your answer again takes it back. Players see how many said each; all staff can also **See who answered**, with the characters each plays here.
 
-**Subscribe to the calendar** gives a link for the troupe's games and downtime dates, for this troupe or all your troupes, with how to add it in Google Calendar, Apple Calendar and Outlook. Keep it to yourself: anyone with it can see those dates.
+**Subscribe to the calendar** gives a link for the troupe's games and downtime dates, for this troupe or all your troupes, with how to add it in Google Calendar, Apple Calendar and Outlook. Each game in it shows your own answer. Keep it to yourself: anyone with it can see those dates and your answers.
 
 ### Check-in at the door
 
