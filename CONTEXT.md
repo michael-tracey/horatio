@@ -47,6 +47,10 @@ _Avoid_: Admin, superuser, site owner
 The custodian seeing Horatio exactly as one person does, with their permissions, to help them with a question: read-only, for at most 30 minutes, with a reason they are told. Never as another custodian.
 _Avoid_: Impersonate, log in as, masquerade
 
+**Two-step sign-in**:
+Signing in with a **second step** after the password: a code from an authenticator app on the person's phone, with one-time **recovery codes** for when it's lost. A password alone, or a reset link, never signs in an account that has one. The custodian must have it, and resets it for someone who has lost theirs.
+_Avoid_: 2FA, MFA, two-factor (in UI text), OTP
+
 **Staff**:
 The people who run a troupe: its lead storyteller, storytellers, assistant storytellers and narrators.
 _Avoid_: Admins, ST team

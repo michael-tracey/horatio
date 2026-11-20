@@ -66,10 +66,13 @@ cd "$ROOT/backend"
 # Keep-alive: Playwright's request contexts keep idle connections open with no
 # timeout of their own, so with uvicorn's 5 s one, a call made just as the server
 # drops the connection fails with ECONNRESET. 300 s outlasts the longest test.
+# The custodian isn't held to two-step sign-in: tests make custodians partway through,
+# already signed in. Authenticator apps get a key of the suite's own.
+E2E_TOTP_KEY="ZTJlIG9ubHk6IG5vdCBhIHJlYWwga2V5ICEhISEhISE="
 UPLOADS="$ROOT/.local/e2e-uploads"
 rm -rf "$UPLOADS" && mkdir -p "$UPLOADS"
 HORATIO_COOKIE_SECURE=false HORATIO_FRONTEND_DIST="$ROOT/frontend/dist" HORATIO_UPLOAD_DIR="$UPLOADS" \
-  HORATIO_AUTH_LIMITS=false \
+  HORATIO_AUTH_LIMITS=false HORATIO_TWO_STEP_FOR_CUSTODIANS=false HORATIO_TOTP_KEY="$E2E_TOTP_KEY" \
   HORATIO_DISCORD_BOT_TOKEN= HORATIO_SMTP_HOST= HORATIO_DARK_PACK_DIR= \
   setsid uv run uvicorn horatio.app:app --port "$PORT" --timeout-keep-alive 300 >"$LOG" 2>&1 < /dev/null &
 api=$!

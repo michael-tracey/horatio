@@ -16,6 +16,7 @@ import { ChangeEmail, EmailChanges } from "./ChangeEmail";
 import { MergeAccounts } from "./MergeAccounts";
 import { PersonCharacters } from "./MoveCharacter";
 import { ResetPassword, useCancelReset } from "./ResetPassword";
+import { ResetTwoStep } from "./ResetTwoStep";
 import { SuspendedPeople, SuspendPerson } from "./Suspension";
 import { ViewAs } from "./ViewAs";
 import { SectionLabel } from "../../components/Headings";
@@ -135,7 +136,7 @@ function MemberSince({ person }: { person: PlayerSummary }) {
   return <>{memberSince(person.member_since, dates)}</>;
 }
 
-type Asked = "view" | "email" | "reset" | "suspend" | "merge";
+type Asked = "view" | "email" | "reset" | "two-step" | "suspend" | "merge";
 
 /** What the custodian can do with an account, behind its ⋯, each in a dialog. */
 function PersonActions({ person }: { person: PlayerSummary }) {
@@ -150,6 +151,7 @@ function PersonActions({ person }: { person: PlayerSummary }) {
           {!person.is_custodian && <MenuItem onSelect={() => setOpen("view")}>View as…</MenuItem>}
           <MenuItem onSelect={() => setOpen("email")}>Edit email…</MenuItem>
           <MenuItem onSelect={() => setOpen("reset")}>Reset password…</MenuItem>
+          {person.two_step && <MenuItem onSelect={() => setOpen("two-step")}>Reset two-step sign-in…</MenuItem>}
         </MenuGroup>
         <MenuGroup label="Suspend or merge">
           <MenuItem onSelect={() => setOpen("suspend")}>{person.suspended ? "Lift suspension…" : "Suspend…"}</MenuItem>
@@ -163,6 +165,15 @@ function PersonActions({ person }: { person: PlayerSummary }) {
       </Dialog>
       <Dialog title={`Reset ${name}'s password`} open={open === "reset"} onClose={close}>
         <ResetPassword player={person} />
+      </Dialog>
+      <Dialog title={`Reset ${name}'s two-step sign-in`} open={open === "two-step"} onClose={close}>
+        <ResetTwoStep
+          person={person}
+          onDone={() => {
+            toast({ message: `${name}'s password alone signs them in now.` });
+            close();
+          }}
+        />
       </Dialog>
       <Dialog title={person.suspended ? `Lift ${name}'s suspension` : `Suspend ${name}`} open={open === "suspend"} onClose={close}>
         <SuspendPerson

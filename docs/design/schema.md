@@ -68,6 +68,20 @@ an IPv6 /64). A successful sign-in marks its login's tries from that address
 `signed_in`: counted among all sign-ins, no longer as failed. The custodian's
 Unblock deletes an address's rows. Every row is deleted once a day old.
 
+Two-step sign-in (#1057, `horatio.auth.two_step`): **`authenticator_apps`** (one
+per user: `secret`, sealed with AES-GCM under the server's `HORATIO_TOTP_KEY` and
+bound to the user; `confirmed_at`, null while being set up; `last_step`, the
+30-second step of the last code used, so none works twice), **`recovery_codes`**
+(`user_id`, `code_hash`: a SHA-256 of the user and the code, never the code;
+`used_at`), **`passkeys`** (WebAuthn: `credential_id` unique, `public_key`,
+`sign_count`, `transports`, `name`, `last_used_at`), and
+**`second_step_sign_ins`**: a sign-in whose password was right, waiting on its
+second step with no session yet (`token_hash` of its cookie, `login_hash` for the
+limits, `challenge` for a passkey, `failures`, `expires_at` 10 minutes on). Wrong
+codes are counted in `auth_attempts` as `second_step` (with `second_step_held`),
+by an account's hash rather than a login's. `troupes.staff_two_step` asks it of a
+troupe's staff.
+
 **`password_resets`**: one-time links the custodian makes for someone locked out.
 `user_id`, `token_hash` (unique), `expires_at` (a day on), `created_by_id` →
 users. At most one per user: a new link deletes the old, and using it deletes

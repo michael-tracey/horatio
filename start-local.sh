@@ -89,6 +89,18 @@ if [[ -z "${HORATIO_UPLOAD_DIR:-}" ]] && ! grep -qs '^HORATIO_UPLOAD_DIR=' .env;
   mkdir -p "$HORATIO_UPLOAD_DIR"
 fi
 
+# Authenticator apps' secrets are sealed with a key made once and kept under .local/
+# (horatio.auth.two_step), unless backend/.env gives one. A new key would stop every
+# authenticator app set up here.
+if [[ -z "${HORATIO_TOTP_KEY:-}" ]] && ! grep -qs '^HORATIO_TOTP_KEY=' .env; then
+  if [[ ! -s "$STATE/totp-key" ]]; then
+    uv run python -m horatio.auth.two_step | cut -d= -f2- >"$STATE/totp-key"
+    chmod 600 "$STATE/totp-key"
+  fi
+  HORATIO_TOTP_KEY="$(cat "$STATE/totp-key")"
+  export HORATIO_TOTP_KEY
+fi
+
 # Paradox's Dark Pack resources and the VTES symbols, imported into dark-pack/ by the
 # command or fetched in Custodian › Tools (see its README).
 if [[ -z "${HORATIO_DARK_PACK_DIR:-}" ]] && ! grep -qs '^HORATIO_DARK_PACK_DIR=' .env; then

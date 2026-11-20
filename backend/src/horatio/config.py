@@ -19,6 +19,16 @@ class Settings(BaseSettings):
     # Limits on failed sign-ins and on sign-ups (horatio.auth.attempts). Off only for
     # the e2e suite, which signs up hundreds of people from one address.
     auth_limits: bool = True
+    # Whether the custodian must sign in with a second step (horatio.auth.two_step,
+    # #1057). Off only for tests and the e2e suite, whose custodians are made by a
+    # command partway through.
+    two_step_for_custodians: bool = True
+    # The key that encrypts the secret each authenticator app shares with Horatio
+    # (horatio.auth.two_step), made with `python -m horatio.auth.two_step`, so a copy of
+    # the database alone can't make anyone's codes. Unset, no authenticator app can be
+    # set up, and Account says so. Changing it stops every authenticator app set up
+    # with the old one, until its person sets it up again.
+    totp_key: str | None = None
     # Secure cookies are only sent over HTTPS. Turn off only for local HTTP development.
     cookie_secure: bool = True
 

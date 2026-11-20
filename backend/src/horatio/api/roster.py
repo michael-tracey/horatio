@@ -733,6 +733,31 @@ MESSAGES: dict[str, str] = {
     "account.password_changed": "{actor} changed their password.",
     "account.signed_up": "{actor} signed up{from_ip}.",
     "account.signed_in": "{actor} signed in{from_ip}.",
+    "account.signed_in.app": "{actor} signed in{from_ip}, with their authenticator app.",
+    "account.signed_in.recovery_code": "{actor} signed in{from_ip}, with a recovery code.",
+    "account.signed_in.passkey": "{actor} signed in{from_ip}, with a passkey.",
+    "account.second_step_asked": "{actor} gave their password{from_ip}, and was asked for their"
+    " second step.",
+    "account.second_step_failed": "Someone signing in as {member}{from_ip} gave a wrong second"
+    " step.",
+    "account.second_step_failed.app": "Someone signing in as {member}{from_ip} gave a wrong code"
+    " from an authenticator app.",
+    "account.second_step_failed.recovery_code": "Someone signing in as {member}{from_ip} gave a"
+    " recovery code that was wrong or used.",
+    "account.second_step_failed.passkey": "Someone signing in as {member}{from_ip} gave a passkey"
+    " that isn't theirs.",
+    "account.second_step_throttled": "Someone signing in as {member}{from_ip} was turned away:"
+    " {too_many_codes}.",
+    "account.second_step_throttled_again": "Someone signing in as {member}{from_ip} was turned"
+    " away again: {too_many_codes}.",
+    "account.two_step_added.app": "{actor} set up an authenticator app for two-step sign-in.",
+    "account.two_step_added.passkey": "{actor} added a passkey, {name}, for two-step sign-in.",
+    "account.two_step_removed.app": "{actor} turned off their authenticator app.",
+    "account.two_step_removed.passkey": "{actor} removed their passkey {name}.",
+    "account.recovery_codes_made": "{actor} made new recovery codes.",
+    "account.recovery_code_used": "{actor} signed in with a recovery code{from_ip}: {left} left.",
+    "account.two_step_reset": "{actor} reset {member}'s two-step sign-in{because}.",
+    "account.two_step_reset.server": "{member}'s two-step sign-in was reset on the server.",
     "account.signed_out": "{actor} signed out{from_ip}.",
     "account.sign_in_failed": "Someone failed to sign in as {member}{from_ip}: wrong password.",
     "account.sign_in_failed.unknown": "Someone failed to sign in{from_ip} to an account that"
@@ -752,6 +777,10 @@ MESSAGES: dict[str, str] = {
     "account.throttle_lifted": "{actor} unblocked sign-ins{from_ip}: over the limit of {rule}.",
     "account.throttle_lifted.login": "{actor} unblocked sign-ins at {login}{from_ip}: over the"
     " limit of {rule}.",
+    "account.throttle_lifted.second_step": "{actor} unblocked second steps{from_ip}: over the"
+    " limit of {rule}.",
+    "account.throttle_lifted.second_step_account": "{actor} unblocked second steps at {login}:"
+    " over the limit of {rule}.",
     "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups{from_ip}: over the limit of"
     " {rule}.",
     "account.suspended": "{actor} suspended {member}{because}.",
@@ -1146,6 +1175,12 @@ def message(
     # Which limit turned a sign-in away (#1074); before it was kept, a limit on failed ones.
     values["too_many"] = (
         "too many sign-ins" if data.get("limit") == "sign_ins" else "too many failed sign-ins"
+    )
+    # Which limit turned a second step away (#1057).
+    values["too_many_codes"] = (
+        "too many wrong codes at the account"
+        if data.get("limit") == "wrong_codes_at_account"
+        else "too many wrong codes from where they were"
     )
     # Given at a Play View game: " at game 3".
     values["at_game"] = f" at game {data['game']}" if data.get("game") else ""

@@ -13,6 +13,7 @@ from horatio.api.players import player
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.sessions import hash_token
+from horatio.auth.two_step import allowed_first
 from horatio.auth.viewing import VIEW_FOR, allowed_while_viewing, end, viewing_for
 from horatio.config import get_settings
 from horatio.models import Session as SignInSession
@@ -114,6 +115,7 @@ def view_as(
 
 @router.post("/view-as/stop", status_code=status.HTTP_204_NO_CONTENT)
 @allowed_while_viewing
+@allowed_first
 def stop_viewing(request: Request, db: DbSession) -> None:
     """Stop viewing as someone, and be the custodian again."""
     viewing = viewing_for(request, db)

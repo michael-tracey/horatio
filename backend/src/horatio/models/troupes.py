@@ -230,6 +230,10 @@ class Troupe(Imported, Record):
     # characters accepted since the troupe last turned it on (`free_changes_since`)
     # have one, and the traits in `free_changes_excluded` ([{category, name}]) are
     # never refunded in it.
+    # Whether its staff must sign in with a second step (horatio.auth.two_step,
+    # #1057): its lead storyteller chooses. Staff of several troupes need one if any
+    # of them asks.
+    staff_two_step: Mapped[bool] = mapped_column(default=False, server_default="false")
     free_changes: Mapped[str] = mapped_column(default="none", server_default="none")
     free_changes_days: Mapped[int] = mapped_column(default=30, server_default="30")
     free_changes_games: Mapped[int] = mapped_column(default=3, server_default="3")

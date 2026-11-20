@@ -20,6 +20,7 @@ from horatio.api.email_changes import PendingEmail, pending
 from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
+from horatio.auth import two_step
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.resets import cancel_reset, email_reset, issue_reset, live_reset, reset_url
 from horatio.connectors import email
@@ -124,6 +125,8 @@ class PlayerSummary(BaseModel):
     email_change_to: str | None = None
     # Their account is suspended now (horatio.suspensions).
     suspended: bool = False
+    # They have two-step sign-in (horatio.auth.two_step), which the custodian can reset.
+    two_step: bool = False
 
 
 class ProfileIn(BaseModel):
@@ -371,6 +374,7 @@ def find_players(
         )
     }
     suspended = suspensions.suspended_ids(db, [u.id for u in found])
+    two_steps = two_step.with_second_step(db, [u.id for u in found])
     return [
         PlayerSummary(
             id=u.id,
@@ -382,6 +386,7 @@ def find_players(
             is_custodian=u.is_custodian,
             email_change_to=changing.get(u.id),
             suspended=u.id in suspended,
+            two_step=u.id in two_steps,
         )
         for u in found
     ]

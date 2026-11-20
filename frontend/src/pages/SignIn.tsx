@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router";
-import { api, unwrap } from "../api/client";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router";
+import { api, ApiError, unwrap } from "../api/client";
+import type { components } from "../api/schema";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice } from "../components/ui";
 import { useAction, useMe } from "../hooks";
 import { manualLink } from "../manualLink";
@@ -21,15 +22,24 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-export function SignInPage() {
-  const me = useMe();
+type SecondStep = components["schemas"]["SecondStep"];
+
+/** Where a right password goes: on, or to give the account's second step (#1057). */
+function useAfterPassword() {
   const navigate = useNavigate();
   const next = useNext();
+  return (answer: object) =>
+    "second_step" in answer ? navigate(withNext("/sign-in/second-step", next), { state: answer }) : navigate(next ?? "/characters");
+}
+
+export function SignInPage() {
+  const me = useMe();
+  const next = useNext();
+  const afterPassword = useAfterPassword();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const signIn = useAction(async () => {
-    await unwrap(api.POST("/api/auth/login", { body: { login, password } }));
-    navigate(next ?? "/characters");
+    afterPassword(await unwrap(api.POST("/api/auth/login", { body: { login, password } })));
   });
 
   if (me.data) return <Navigate to={next ?? "/characters"} replace />;
@@ -116,6 +126,92 @@ export function SignUpPage() {
   );
 }
 
+/**
+ * The second step of signing in (#1057), once the password was right: a code from
+ * their authenticator app, or one of their recovery codes. Five wrong, or ten
+ * minutes, and the sign-in is over: back to the password.
+ */
+export function SecondStepPage() {
+  const me = useMe();
+  const navigate = useNavigate();
+  const next = useNext();
+  const [code, setCode] = useState("");
+  const [recovery, setRecovery] = useState(false);
+  // The ways in come with the password's answer; asked of the server only on a reload.
+  const { state } = useLocation() as { state: SecondStep | null };
+  const waiting = useQuery({
+    queryKey: ["second-step"],
+    queryFn: () => unwrap(api.GET("/api/auth/second-step")),
+    enabled: !state?.second_step,
+    retry: false,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+  });
+  const give = useAction(async () => {
+    await unwrap(api.POST("/api/auth/second-step", { body: { code } }));
+    navigate(next ?? "/characters");
+  });
+  // Timed out, or too many wrong codes: start again from the password.
+  const failed = (state?.second_step ? null : waiting.error) ?? give.error;
+  const over = failed instanceof ApiError && failed.status === 410;
+  const ways = state?.second_step ?? waiting.data?.second_step ?? [];
+
+  if (me.data) return <Navigate to={next ?? "/characters"} replace />;
+  return (
+    <Shell title="Two-step sign-in">
+      {!state?.second_step && waiting.isPending ? (
+        <Loading />
+      ) : over ? (
+        <div className="flex flex-col gap-4">
+          <ErrorText error={failed} />
+          <Link to={withNext("/sign-in", next)} className="text-center text-sm text-gold underline">
+            Sign in again
+          </Link>
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            give.mutate(undefined);
+          }}
+          className="flex flex-col gap-4"
+        >
+          <p className="text-sm text-mist">{recovery ? "Give one of the recovery codes you kept when you set up two-step sign-in. Each works once." : "Open your authenticator app and give the 6-digit code it shows for Horatio."}</p>
+          <Field label={recovery ? "Recovery code" : "Code from your app"}>
+            <Input
+              required
+              autoFocus
+              autoComplete="one-time-code"
+              autoCapitalize="none"
+              spellCheck={false}
+              inputMode={recovery ? "text" : "numeric"}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+          </Field>
+          <ErrorText error={give.error} />
+          <Button type="submit" disabled={give.isPending}>
+            Sign in
+          </Button>
+          {ways.includes("app") && ways.includes("recovery_code") && (
+            <button
+              type="button"
+              className="self-center text-sm text-gold underline"
+              onClick={() => {
+                setRecovery(!recovery);
+                setCode("");
+              }}
+            >
+              {recovery ? "Use your authenticator app instead" : "Use a recovery code instead"}
+            </button>
+          )}
+          <p className="text-center text-sm text-mist">Lost them all? Ask the custodian to reset your two-step sign-in.</p>
+        </form>
+      )}
+    </Shell>
+  );
+}
+
 /** Ask for a reset link by email. The answer is the same whether or not an account
  * uses the address. Without email on the server, it says to ask the custodian. */
 export function ForgotPasswordPage() {
@@ -176,17 +272,17 @@ export function ForgotPasswordPage() {
  * password and be signed in. */
 export function ResetPasswordPage() {
   const { token = "" } = useParams();
-  const navigate = useNavigate();
   const next = useNext();
+  const afterPassword = useAfterPassword();
   const [password, setPassword] = useState("");
   const reset = useQuery({
     queryKey: ["reset", token],
     queryFn: () => unwrap(api.GET("/api/auth/reset/{token}", { params: { path: { token } } })),
     retry: false,
   });
+  // With a second step, the new password is set, and the second step still asked.
   const save = useAction(async () => {
-    await unwrap(api.POST("/api/auth/reset", { body: { token, password } }));
-    navigate(next ?? "/characters");
+    afterPassword(await unwrap(api.POST("/api/auth/reset", { body: { token, password } })));
   });
 
   return (

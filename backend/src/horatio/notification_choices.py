@@ -116,9 +116,15 @@ GROUPS = (
             Topic(
                 "security",
                 "Your account's safety",
-                "The custodian viewing Horatio as you, merging your accounts, or moving a"
-                " character to or from you. Always in the bell.",
-                ("account.viewed_as", "account.merged", "character.moved"),
+                "The custodian viewing Horatio as you, merging your accounts, moving a"
+                " character to or from you, or resetting your two-step sign-in. Always in"
+                " the bell.",
+                (
+                    "account.viewed_as",
+                    "account.merged",
+                    "character.moved",
+                    "account.two_step_reset",
+                ),
                 {"bell": ALWAYS},
             ),
             Topic(

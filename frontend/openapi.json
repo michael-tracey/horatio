@@ -1363,6 +1363,24 @@
         "title": "ApologyChoicesOut",
         "type": "object"
       },
+      "AppSetup": {
+        "properties": {
+          "secret": {
+            "title": "Secret",
+            "type": "string"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret",
+          "uri"
+        ],
+        "title": "AppSetup",
+        "type": "object"
+      },
       "AppealIn": {
         "properties": {
           "against": {
@@ -14121,6 +14139,21 @@
           "games"
         ],
         "title": "ClosingOut",
+        "type": "object"
+      },
+      "Code": {
+        "properties": {
+          "code": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "Code",
         "type": "object"
       },
       "ConditionOut": {
@@ -32179,6 +32212,11 @@
           },
           "preferences": {
             "$ref": "#/components/schemas/Preferences"
+          },
+          "two_step_needed": {
+            "default": false,
+            "title": "Two Step Needed",
+            "type": "boolean"
           }
         },
         "required": [
@@ -37226,6 +37264,19 @@
         "title": "PartyOut",
         "type": "object"
       },
+      "Password": {
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "Password",
+        "type": "object"
+      },
       "PasswordChange": {
         "properties": {
           "current": {
@@ -40130,6 +40181,11 @@
           "suspended": {
             "default": false,
             "title": "Suspended",
+            "type": "boolean"
+          },
+          "two_step": {
+            "default": false,
+            "title": "Two Step",
             "type": "boolean"
           }
         },
@@ -44799,6 +44855,22 @@
         "title": "ReconciliationOut",
         "type": "object"
       },
+      "RecoveryCodes": {
+        "properties": {
+          "recovery_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recovery Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "recovery_codes"
+        ],
+        "title": "RecoveryCodes",
+        "type": "object"
+      },
       "RefusalOut": {
         "description": "Why a trait cannot be taken.",
         "properties": {
@@ -48363,6 +48435,38 @@
           "primogen"
         ],
         "title": "SeatsOut",
+        "type": "object"
+      },
+      "SecondStep": {
+        "description": "The password was right, and the account has a second step: no session until\nit is given (POST /auth/second-step).",
+        "properties": {
+          "second_step": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Second Step",
+            "type": "array"
+          }
+        },
+        "required": [
+          "second_step"
+        ],
+        "title": "SecondStep",
+        "type": "object"
+      },
+      "SecondStepCode": {
+        "properties": {
+          "code": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "SecondStepCode",
         "type": "object"
       },
       "SectCondition": {
@@ -55731,6 +55835,10 @@
             ],
             "title": "Address"
           },
+          "anywhere": {
+            "title": "Anywhere",
+            "type": "boolean"
+          },
           "clears": {
             "format": "date-time",
             "title": "Clears",
@@ -55739,7 +55847,8 @@
           "held": {
             "enum": [
               "sign_in",
-              "sign_up"
+              "sign_up",
+              "second_step"
             ],
             "title": "Held",
             "type": "string"
@@ -55778,6 +55887,7 @@
           "address",
           "masked",
           "per_login",
+          "anywhere",
           "login",
           "limit",
           "clears"
@@ -58868,6 +58978,42 @@
           "characters"
         ],
         "title": "TroupeVinculumOut",
+        "type": "object"
+      },
+      "TwoStepOut": {
+        "properties": {
+          "app": {
+            "title": "App",
+            "type": "boolean"
+          },
+          "apps_available": {
+            "title": "Apps Available",
+            "type": "boolean"
+          },
+          "needed": {
+            "title": "Needed",
+            "type": "boolean"
+          },
+          "recovery_codes_left": {
+            "title": "Recovery Codes Left",
+            "type": "integer"
+          },
+          "required_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Required By",
+            "type": "array"
+          }
+        },
+        "required": [
+          "app",
+          "apps_available",
+          "recovery_codes_left",
+          "required_by",
+          "needed"
+        ],
+        "title": "TwoStepOut",
         "type": "object"
       },
       "UnavailableIn": {
@@ -62662,6 +62808,21 @@
         "title": "GiveIn",
         "type": "object"
       },
+      "horatio__api__two_step__ResetIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ResetIn",
+        "type": "object"
+      },
       "horatio__api__yorick_imports__MatchOut": {
         "properties": {
           "character_id": {
@@ -64144,6 +64305,7 @@
     },
     "/api/auth/login": {
       "post": {
+        "description": "Sign in with a password. For an account with a second step, that starts a\nsign-in waiting on it (202), and only the second step signs them in.",
         "operationId": "sign_in_api_auth_login_post",
         "requestBody": {
           "content": {
@@ -64160,11 +64322,29 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Me"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Me"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SecondStep"
+                    }
+                  ],
+                  "title": "Response Sign In Api Auth Login Post"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecondStep"
+                }
+              }
+            },
+            "description": "Accepted"
           },
           "422": {
             "content": {
@@ -64255,7 +64435,7 @@
     },
     "/api/auth/reset": {
       "post": {
-        "description": "Set a new password from a reset link. Ends every other session the person had,\nand signs them in here.",
+        "description": "Set a new password from a reset link. Ends every other session the person had,\nand signs them in here; or, if they have a second step, asks for it (202) as\nsigning in does. A reset link never stands in for a second step.",
         "operationId": "reset_password_api_auth_reset_post",
         "requestBody": {
           "content": {
@@ -64272,11 +64452,29 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Me"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Me"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SecondStep"
+                    }
+                  ],
+                  "title": "Response Reset Password Api Auth Reset Post"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecondStep"
+                }
+              }
+            },
+            "description": "Accepted"
           },
           "422": {
             "content": {
@@ -64333,6 +64531,68 @@
           }
         },
         "summary": "Reset For",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/second-step": {
+      "get": {
+        "description": "The second steps a sign-in waiting on one can be given with; 410 if there's\nnone waiting here, or it has timed out.",
+        "operationId": "second_step_waiting_api_auth_second_step_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecondStep"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Second Step Waiting",
+        "tags": [
+          "auth"
+        ]
+      },
+      "post": {
+        "description": "Give the second step of a sign-in waiting on one: a code from their\nauthenticator app, or a recovery code. Wrong codes count against limits of their\nown (horatio.auth.attempts); five wrong end the sign-in, to start again.",
+        "operationId": "second_step_api_auth_second_step_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecondStepCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Second Step",
         "tags": [
           "auth"
         ]
@@ -104641,6 +104901,216 @@
         "summary": "Set Range",
         "tags": [
           "xp range"
+        ]
+      }
+    },
+    "/api/two-step": {
+      "get": {
+        "description": "The signed-in person's second steps, and whether they must have one.",
+        "operationId": "two_step_state_api_two_step_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoStepOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Two Step State",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/app": {
+      "post": {
+        "description": "Start setting up an authenticator app: the secret to scan or type into it. It\nsigns no one in until a code from it is given (POST /two-step/app/confirm).",
+        "operationId": "start_app_api_two_step_app_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSetup"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Start App",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/app/confirm": {
+      "post": {
+        "description": "Turn on the authenticator app being set up with a code from it. With it come\nten recovery codes, if they have none left.",
+        "operationId": "confirm_app_api_two_step_app_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Code"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm App",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/app/remove": {
+      "post": {
+        "description": "Turn off their authenticator app, giving their password.",
+        "operationId": "remove_app_api_two_step_app_remove_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove App",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/recovery-codes": {
+      "post": {
+        "description": "Ten new recovery codes in place of the ones they had, giving their password.",
+        "operationId": "new_recovery_codes_api_two_step_recovery_codes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "New Recovery Codes",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/reset/{user_id}": {
+      "post": {
+        "description": "For the custodian: take away every second step someone has, and their recovery\ncodes, when they have lost them, so their password alone signs them in again until\nthey set up another. Recorded as a notice, and they are told.",
+        "operationId": "reset_api_two_step_reset__user_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__two_step__ResetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset",
+        "tags": [
+          "auth"
         ]
       }
     },

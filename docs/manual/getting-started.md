@@ -34,7 +34,17 @@ After several wrong passwords, Horatio stops trying them for a while, and the pa
 2. Give the email you sign in with, and choose **Email me a link**.
 3. Open the link in the email, choose a new password, and choose **Set password and sign in**.
 
-The link works for a limited time. If nothing arrives after a few minutes, check your spam folder. Some servers can't send email: the page says so, and the custodian makes you a reset link instead. Setting a new password signs you out everywhere else.
+The link works for a limited time. If nothing arrives after a few minutes, check your spam folder. Some servers can't send email: the page says so, and the custodian makes you a reset link instead. Setting a new password signs you out everywhere else. With [two-step sign-in](#two-step-sign-in) on, you still give your second step afterwards.
+
+### Two-step sign-in
+
+With two-step sign-in on, your password alone doesn't sign you in. After it, Horatio asks for the 6-digit code your authenticator app shows, such as Google Authenticator, Microsoft Authenticator or 1Password. Someone who learns your password still can't get in. Each code works once.
+
+Lost your phone? Choose **Use a recovery code instead** and give one of the recovery codes you kept when you set it up. Each works once. Lost those too? Ask the custodian to reset your two-step sign-in: they'll want to be sure it's you.
+
+Five wrong codes in a row, or ten minutes, and you start again from your password. Many wrong codes at your account, from anywhere, hold back the second step for a while: "Too many wrong codes."
+
+The custodian must have two-step sign-in, and Horatio sends them to set it up before anything else.
 
 ## Your account
 
@@ -90,6 +100,12 @@ The **Handle** card changes your [handle](glossary.md#handle): write the new one
 ### Changing your password
 
 In the **Password** card, give your **Current password** and a **New password** of at least 10 characters, then choose **Save new password**. You stay signed in on this device, and are signed out on every other.
+
+### Setting up two-step sign-in
+
+In the **Two-step sign-in** card, choose **Set up an authenticator app**. Scan the QR code with the app on your phone, or type the key into it, then give the 6-digit code it shows and choose **Turn on two-step sign-in**.
+
+Horatio then shows ten recovery codes, once. Keep them somewhere safe, away from your phone (**Download** or **Copy** help), and choose **I've kept them**. The card says how many are left; **New recovery codes** makes ten more in place of the old. **Turn off** turns two-step sign-in off. Both ask for your password.
 
 ### Your Discord account
 

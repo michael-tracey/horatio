@@ -27,6 +27,11 @@ function answers(...statuses: number[]) {
   return asked;
 }
 
+function SetUpTwoStep() {
+  const { search } = useLocation();
+  return <p>Two-step setup {search}</p>;
+}
+
 function SignInForm() {
   const { search } = useLocation();
   return <p>Sign-in form {search}</p>;
@@ -46,6 +51,7 @@ function show(client = new QueryClient({ defaultOptions: { queries: { retry: fal
           <Route element={<Shell />}>
             <Route element={<RequireSignIn />}>
               <Route path="/characters" element={<p>Your characters</p>} />
+              <Route path="/two-step" element={<SetUpTwoStep />} />
             </Route>
           </Route>
         </Routes>
@@ -91,6 +97,15 @@ describe("the pages for someone signed in", () => {
     show();
     fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
     expect(await screen.findByText(/Sign-in form/)).not.toBeNull();
+  });
+
+  it("send someone who must set up two-step sign-in there first, and on afterwards (#1057)", async () => {
+    answers(404);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(["me"], { ...agnes, is_custodian: true, two_step_needed: true });
+    show(client);
+    expect((await screen.findByText(/Two-step setup/)).textContent).toBe(`Two-step setup ?next=${encodeURIComponent("/characters?tab=mine")}`);
+    expect(screen.queryByText("Your characters")).toBeNull();
   });
 
   it("stay open when a check fails after the person is known, as from what is kept on the device", async () => {
