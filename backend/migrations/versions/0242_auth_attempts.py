@@ -1,7 +1,7 @@
 """Sign-ins and sign-ups tried, for the limits on them (issue #1059). Kept a day at most.
 
-Revision ID: 0240
-Revises: 0239
+Revision ID: 0242
+Revises: 0241
 Create Date: 2026-11-20 12:00:00.000000
 """
 
@@ -10,8 +10,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0240"
-down_revision: str | None = "0239"
+revision: str = "0242"
+down_revision: str | None = "0241"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
