@@ -177,6 +177,8 @@ The cart lives on this device: if you leave the page with changes in it, your br
 
 ### Raising and lowering traits
 
+On a phone or a narrow window the sheet opens for reading, without these buttons. Press **Make changes**, under the XP to spend, to show them, and **Done** to hide them again. They show by themselves while the cart holds changes, and hide again after **Spend XP** or **Clear**. On a wide screen they're always there.
+
 - **+** and **−** beside a rating raise or lower it, into the cart.
 - **Add**, at the top right of a part, opens a list of what you can add to it, with a search and a filter (for example only what the character can take now). Choose a trait, its rating and any detail it needs, then **Add to cart**. The panel says what it costs. The chevron at the start of a row opens what the trait does under it without choosing it, even one greyed out: for a technique, an elder power or a ritual, its cost, action or casting time, test and effect with the book's page; for a discipline, the power its next dot gives. Several can be open at once.
 - **Swap**, beside a focus, trades it for another, for the XP the rules charge.
