@@ -144,7 +144,9 @@ def test_messages_left_at_one_moment_keep_the_order_they_were_left(troupe: Troup
     first, however Postgres happens to read the rows back."""
     player = uuid.UUID(troupe.player.id)
     for summary in ("First", "Second", "Third"):
-        notifications.notify(troupe.session, [player], "test", summary, "/", email=False)
+        notifications.notify(
+            troupe.session, [player], "downtime.delivered", summary, "/", email=False
+        )
     # Marked read and unread again, the first sits after the others on disk, so by
     # time alone it would come back first of the three, not last.
     first = troupe.session.scalars(
