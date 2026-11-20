@@ -171,6 +171,31 @@ async def require_csrf_header(
     return await call_next(request)
 
 
+# No other site may show Horatio in a frame (issue #1061): a deceptive page laid over
+# it could trick a signed-in player into clicking a real button. Nothing in Horatio
+# frames its own pages; the email design's preview is a sandboxed srcdoc, which these
+# don't touch. In production nginx sends the same, on its own error pages too
+# (deploy/nginx-horatio.conf.j2).
+SECURITY_HEADERS = {
+    "Content-Security-Policy": "frame-ancestors 'none'",
+    "X-Frame-Options": "DENY",
+}
+
+
+@app.middleware("http")
+async def send_security_headers(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Add SECURITY_HEADERS to every answer: the app's pages, the API, and its errors.
+
+    Added after the CSRF check, so it wraps it and that refusal carries them too.
+    """
+    response = await call_next(request)
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
+
+
 # While the custodian views as someone, nothing changes (horatio.auth.viewing).
 api = APIRouter(prefix="/api", dependencies=[Depends(read_only_while_viewing)])
 for module in (
