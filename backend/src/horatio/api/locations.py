@@ -740,6 +740,7 @@ def detail_out(db: DbSession, location: Location) -> LocationDetailOut:
         .where(
             AuditEvent.troupe_id == location.troupe_id,
             AuditEvent.data["location_id"].astext == str(location.id),
+            AuditEvent.level != "debug",
         )
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
         .limit(200)
