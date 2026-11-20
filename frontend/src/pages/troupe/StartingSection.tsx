@@ -13,6 +13,7 @@ import { ClanRarity } from "./ClanRarity";
 import { DefaultBloodlines } from "./DefaultBloodlines";
 import { troupeSettings } from "./features";
 import { useHouseSplat } from "./HouseSplat";
+import { SETTINGS } from "./settingsIndex";
 
 /**
  * What new characters get free in each category: picks at a rating, or a budget
@@ -78,11 +79,9 @@ export function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; ca
     unwrap(api.PATCH("/api/troupes/{troupe_id}", { ...path, body })),
   );
   if (!t) return null;
-  const about =
-    "What this troupe usually gives. Awarding XP starts at the session amount, and each new downtime cycle at the completion amount; either can be changed there. The XP floor and ceiling start from the starting XP.";
   if (!canEdit)
     return (
-      <SettingCard title="Experience" about={about} readOnly>
+      <SettingCard setting={SETTINGS.experience} readOnly>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-mist">To start</dt>
           <dd>{t.starting_xp} XP</dd>
@@ -97,7 +96,7 @@ export function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; ca
     <Input type="number" min={0} max={max} required value={form.value[key]} onChange={(e) => form.set({ [key]: Number(e.target.value) })} className="w-24" />
   );
   return (
-    <SettingCard title="Experience" about={about}>
+    <SettingCard setting={SETTINGS.experience}>
       <SettingForm form={form}>
         <div className="flex flex-wrap items-end gap-3">
           <Field label="To start">{number("starting_xp", 10000)}</Field>
@@ -120,19 +119,18 @@ export function StartingBlood({ troupeId, canEdit }: { troupeId: string; canEdit
     { rules: true },
   );
   if (!troupe.data) return null;
-  const about = "What resetting a character's Play View for the next game puts their blood back to.";
   if (!canEdit)
     return (
-      <SettingCard title="Blood at the start of a game" about={about} readOnly>
+      <SettingCard setting={SETTINGS.startingBlood} readOnly>
         <p className="text-sm">{now === null ? "Full: the generation's most" : `${now} blood, or the generation's most if that is less`}</p>
       </SettingCard>
     );
   const { full, blood } = form.value;
   return (
-    <SettingCard title="Blood at the start of a game" about={about}>
+    <SettingCard setting={SETTINGS.startingBlood}>
       <SettingForm form={form}>
         <RadioList
-          label="Blood at the start of a game"
+          label={SETTINGS.startingBlood.title}
           hideLabel
           value={full}
           options={[

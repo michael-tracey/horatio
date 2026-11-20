@@ -6,6 +6,7 @@ import { SettingCard, SettingForm, useSettingForm } from "../../components/Setti
 import { Button, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useCatalogue } from "../../catalogue";
 import { SectionLabel } from "../../components/Headings";
+import { SETTINGS } from "./settingsIndex";
 
 type Kind = "none" | "date" | "games";
 type Excluded = { category: string; name: string };
@@ -52,9 +53,8 @@ export function FreeChangesSettings({ troupeId, canEdit }: { troupeId: string; c
 
   return (
     <SettingCard
-      title="Free changes for new characters"
+      setting={SETTINGS.freeChangeRules}
       readOnly={!canEdit}
-      about="For a while after the troupe accepts a character, its player can lower or remove traits for their full XP back, as during creation. Each change still has to keep to the rules, and waits on the Approvals tab. Changing this applies to the characters whose free changes are open; turning it on gives them only to characters accepted from then on."
     >
       {canEdit ? (
         <FreeChangesForm troupeId={troupeId} saved={now} />

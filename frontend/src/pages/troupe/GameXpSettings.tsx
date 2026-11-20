@@ -7,6 +7,7 @@ import { SettingCard, SettingForm, useSettingForm } from "../../components/Setti
 import { Button, Card, ErrorText, Input } from "../../components/ui";
 import { addBand, adjustmentText, bandLabel, BOOK_MONTHLY, capText, DEFAULTS, fromRows, PRESETS, removeBand, toRows, type BandRow } from "./gameXp";
 import { SectionLabel } from "../../components/Headings";
+import { SETTINGS } from "./settingsIndex";
 
 /** Said wherever absentee games are: Horatio doesn't take payments. */
 export const PAYMENTS_NOTE = "Payments aren't tracked in Horatio: marking a character absentee is the record, paid or not.";
@@ -95,10 +96,9 @@ export function GameXpCard({ troupeId, canEdit, sessionXp }: { troupeId: string;
   if (found.error) return <ErrorText error={found.error} />;
   return (
     <SettingCard
-      title="Game XP chart"
+      setting={SETTINGS.gameXp}
       className="md:col-span-2"
       readOnly={!canEdit}
-      about="How much XP a game gives each character. The book suggests 3 to 5 a game and no more than 8 to 10 a month (MET: VtM core, p. 108). A chart tapers it by how much XP a character has earned in all, not counting starting XP or what joining gave."
     >
       {canEdit ? <Editor troupeId={troupeId} settings={found.data} /> : <Summary settings={found.data} sessionXp={sessionXp} />}
     </SettingCard>

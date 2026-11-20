@@ -14,6 +14,7 @@ import { namesIn } from "./ownChecks";
 import { EMPTY, EXAMPLES, draftOf, teachable, toBody, topOf, type Draft, type WhichHow } from "./teacherRules";
 import { useCatalogue } from "../../catalogue";
 import { CardHeading } from "../../components/Headings";
+import { SETTINGS } from "./settingsIndex";
 
 function numbers(from: number, to: number): number[] {
   return Array.from({ length: to - from + 1 }, (_, i) => from + i);
@@ -41,9 +42,8 @@ export function TeacherRules({ troupeId, canEdit }: { troupeId: string; canEdit:
 
   return (
     <SettingCard
-      title="Teachers"
+      setting={SETTINGS.teacherRules}
       readOnly={!canEdit}
-      about="Discipline dots need a teacher by the book. Rules here ask one for other traits too. A player buying a matching trait picks a teacher from the troupe's characters who qualify, or names an NPC for you to approve, and the purchase waits on the Approvals tab."
       actions={
         canEdit &&
         !editing && (

@@ -7,6 +7,7 @@ import { useToast } from "../../components/Toast";
 import { SettingCard } from "../../components/SettingCard";
 import { Button, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { SETTINGS } from "./settingsIndex";
 
 type Size = TerritoryOut["size"];
 type Draft = { name: string; size: Size; area: string; held_by: string; holder_ids: string[] };
@@ -53,9 +54,8 @@ export function FeedingTerritories({ troupeId, canManage }: { troupeId: string; 
 
   return (
     <SettingCard
-      title="Feeding territories"
+      setting={SETTINGS.feedingTerritories}
       readOnly={!canManage && "The troupe's storytellers and assistant storytellers keep this list."}
-      about="Areas where only the characters the domain's Authority names may feed. Everyone in the troupe can see them, as the domain knows them. Feeding in one stands in for a feeding action, or with the Rack, it has cards of its own; feeding in another's is poaching."
       actions={
         canManage &&
         editing === null && (

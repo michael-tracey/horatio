@@ -18,6 +18,7 @@ import { CostsSection } from "./CostsSection";
 import { partHome, PART_HOMES, type SettingsPart } from "./features";
 import { HouseRulesTab } from "./HouseRulesTab";
 import { HouseTraitsSection } from "./HouseTraitsSection";
+import { RULE_SECTIONS } from "./settingsIndex";
 import { KeywordsSection } from "./KeywordsSection";
 import { LanguagesSection } from "./LanguagesSection";
 import { OwnChecks } from "./OwnChecks";
@@ -58,19 +59,6 @@ const STRENGTHS: { value: Strength; label: string; meaning: string; tone: "blood
   { value: "off", label: "Off", meaning: "The rule does not apply in this troupe at all.", tone: "mist" },
 ];
 const strength = (value: string) => STRENGTHS.find((s) => s.value === value);
-
-/** The parts of the house rules staff change, each a section of the House rules tab (#782). */
-const RULE_SECTIONS = [
-  { path: "checks", label: "Checks" },
-  { path: "costs", label: "Costs" },
-  { path: "starting", label: "Starting points" },
-  { path: "actions", label: "Downtime actions" },
-  { path: "keywords", label: "Downtime keywords" },
-  { path: "languages", label: "Languages" },
-  { path: "house-traits", label: "House merits and flaws" },
-  { path: "written", label: "Written rules" },
-  { path: "book-traits", label: "Book traits" },
-] as const;
 
 /**
  * The House rules tab for running staff (#782): what players read, then the troupe's

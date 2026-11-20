@@ -516,6 +516,8 @@ The **Log** tab in the Troupe group shows what has happened in the troupe, newes
 
 Everything under **Customise** can stay as the book has it. Storytellers and the lead change it; assistant storytellers can read it all.
 
+**Find a setting**, at the top of every Customise tab, finds a setting by its name or by a word of what it does. Type part of it, such as `ceiling` or `stickers`, and choose a setting from the list, or press Enter for the first. It opens where the setting is: its tab or its part, or the **Settings** of the tab it belongs to, with its card scrolled to and lit gold for a moment. It finds the Customise tabs, the parts of Troupe settings and House rules, each feature's switch, each tab's Settings and every settings card. The search in the top bar finds them too, under **Settings**, while you're on the troupe's pages. Only its storytellers, assistant storytellers and the custodian find a troupe's settings, and only the troupe they're on.
+
 **Customise › Setup** starts with **Setting up**, the four things a new troupe does first, each ticked when done and linked to where you do it:
 
 1. **Name and profile**.

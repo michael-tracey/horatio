@@ -4,6 +4,7 @@ import type { ClanName } from "../../clanNames";
 import { RadioList } from "../../components/RadioList";
 import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { ErrorText } from "../../components/ui";
+import { SETTINGS } from "./settingsIndex";
 
 const NAMES: { value: ClanName; meaning: string }[] = [
   { value: "Banu Haqim", meaning: "The clan's name in later World of Darkness books: Banu Haqim: Vizier, Kiss of the Asp (Banu Haqim)." },
@@ -32,9 +33,8 @@ export function ClanNamesSetting({ troupeId, canEdit }: { troupeId: string; canE
 
   return (
     <SettingCard
-      title="Banu Haqim or Assamite"
+      setting={SETTINGS.clanNames}
       readOnly={!canEdit}
-      about="What Horatio calls the clan of Haqim on every screen here: sheets, the Play View, creation, the roster, the Who's Who and the rules. Only the name shown changes; the rules and the sheets are the same either way."
     >
       {!canEdit ? (
         <p className="text-sm">The clan is called {now === "Banu Haqim" ? "the Banu Haqim" : "the Assamites"} here.</p>

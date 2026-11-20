@@ -8,6 +8,7 @@ import { Toggle } from "../../components/Toggle";
 import { Checkbox } from "../../components/Checkbox";
 import { Badge, Button, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { SETTINGS } from "./settingsIndex";
 
 type Mode = BackstorySettingsOut["mode"];
 type Kind = BackstoryQuestionIn["kind"];
@@ -65,9 +66,8 @@ export function BackstorySettings({ troupeId }: { troupeId: string }) {
   return (
     <div className="flex flex-col gap-6">
       <SettingCard
-        title="Backstories"
+        setting={SETTINGS.backstoryRules}
         readOnly={!s.can_edit}
-        about="Each character has one backstory, in Markdown, which only its player and this troupe's storytellers and assistant storytellers read. They read it as part of accepting the character, and can send it back with feedback."
       >
         {!s.can_edit ? (
           <div className="flex flex-col gap-1 text-sm">
@@ -98,9 +98,8 @@ export function BackstorySettings({ troupeId }: { troupeId: string }) {
 
       {(now.mode !== "free" || s.sets.length > 0) && (
         <SettingCard
-          title="Questions"
+          setting={SETTINGS.backstoryQuestions}
           readOnly={!s.can_edit}
-          about="The troupe's own backstory questions, in sets, for players who answer them."
         >
           {s.sets.length === 0 && (
             <div className="mb-4 flex flex-col gap-2">

@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
+import { useMe } from "../hooks";
 import { isSearchShortcut, searchHere, SHORTEST, troupeOf, type SearchGroup, type SearchHit } from "../search/search";
 import { Dialog } from "./Dialog";
 import { ErrorText, Input } from "./ui";
@@ -10,7 +11,8 @@ import { ErrorText, Input } from "./ui";
  * Search everything from the top bar (#1046): its button, and `/` or Ctrl+K (⌘K) from any
  * page, open a box that finds the characters, players, boons, locations, quests,
  * equipment, news, announcements and help the person may see, each kind a group, the
- * troupe they are on first. Each hit opens its page. On a phone it fills the screen.
+ * troupe they are on first, and that troupe's settings for its running staff (#1047).
+ * Each hit opens its page. On a phone it fills the screen.
  */
 export function SiteSearch() {
   const [open, setOpen] = useState(false);
@@ -63,6 +65,14 @@ export function SearchPanel({ onPick }: { onPick: () => void }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const troupeId = troupeOf(pathname);
+  // The troupe as the person sees it, as its pages have it, for its settings (#1047).
+  const me = useMe();
+  const troupe = useQuery({
+    queryKey: ["troupe", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId! } } })),
+    enabled: !!troupeId,
+  });
+  const place = { troupeId, troupe: troupeId ? troupe.data : null, custodian: me.data?.is_custodian ?? false };
   const [text, setText] = useState("");
   const q = useSettled(text.trim());
   const asks = q.length >= SHORTEST;
@@ -76,8 +86,8 @@ export function SearchPanel({ onPick }: { onPick: () => void }) {
     staleTime: 30_000,
   });
   const here = useQuery({
-    queryKey: ["search-here", q, troupeId],
-    queryFn: () => searchHere(q, { troupeId }),
+    queryKey: ["search-here", q, place],
+    queryFn: () => searchHere(q, place),
     enabled: asks,
     placeholderData: keepPreviousData,
     staleTime: Infinity,
@@ -120,7 +130,7 @@ export function SearchPanel({ onPick }: { onPick: () => void }) {
       />
       <p role="status" className="text-sm text-mist">
         {!asks && text.trim().length < SHORTEST
-          ? "Characters, players, boons, locations, quests, equipment, news, announcements and help: what you may see of each."
+          ? "Characters, players, boons, locations, quests, equipment, news, announcements, settings and help: what you may see of each."
           : searching && count === 0
             ? "Searching…"
             : count === 0

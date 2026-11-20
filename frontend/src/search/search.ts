@@ -1,18 +1,22 @@
 import type { components } from "../api/schema";
+import type { TroupeOut } from "../api/types";
+import { abilities } from "../pages/troupe/roles";
 
 /**
  * Searching everything from the top bar (#1046). The server finds what lives in the
  * database, as far as the person may see it (horatio.search), kind by kind; what the
- * app already holds is searched here, by the local sources below: the manual now, and
- * next a troupe's settings by their labels (#1047), which add a source to
- * `LOCAL_SOURCES` and nothing else.
+ * app already holds is searched here, by the local sources below: the manual, and the
+ * settings of the troupe the person is on, by their names (#1047).
  */
 
 export type SearchHit = components["schemas"]["HitOut"];
 export type SearchGroup = components["schemas"]["GroupOut"];
 
-/** Where the person is searching from: the troupe whose pages they are on, if any. */
-export type SearchPlace = { troupeId: string | null };
+/**
+ * Where the person is searching from: the troupe whose pages they are on, if any, and once
+ * the app has it, that troupe as they see it (their role in it) and whether they are the custodian.
+ */
+export type SearchPlace = { troupeId: string | null; troupe?: TroupeOut | null; custodian?: boolean };
 
 /** A kind searched in the browser, from what the app holds. Its hits come in its own group, after the server's. */
 export type LocalSource = {
@@ -44,7 +48,31 @@ export const manualSource: LocalSource = {
   },
 };
 
-export const LOCAL_SOURCES: LocalSource[] = [manualSource];
+/**
+ * The settings of the troupe the person is on, as Customise's Find a setting finds them (#1047):
+ * only for those who may open them there, its running staff and the custodian, and only that
+ * troupe's. Each opens the setting: its tab or part, its tab's Settings, or its card.
+ */
+export const settingsSource: LocalSource = {
+  kind: "settings",
+  label: "Settings",
+  async find(query, { troupe, custodian = false }) {
+    if (!troupe) return [];
+    const { findSettings, settingsIndex } = await import("../pages/troupe/settingsIndex");
+    return findSettings(settingsIndex(troupe, abilities(troupe.my_role, custodian)), query)
+      .slice(0, LIMIT + 1)
+      .map((s) => ({
+        id: s.to,
+        title: s.title,
+        detail: [s.where, s.hint].filter(Boolean).join(" · "),
+        to: s.to,
+        troupe: troupe.name,
+        troupe_id: troupe.id,
+      }));
+  },
+};
+
+export const LOCAL_SOURCES: LocalSource[] = [settingsSource, manualSource];
 
 /** Each local source's hits as a group of its own, those with none left out. */
 export async function searchHere(query: string, place: SearchPlace, sources: LocalSource[] = LOCAL_SOURCES): Promise<SearchGroup[]> {

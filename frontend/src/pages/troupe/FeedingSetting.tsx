@@ -6,6 +6,7 @@ import { Toggle } from "../../components/Toggle";
 import { SettingCard } from "../../components/SettingCard";
 import { ErrorText } from "../../components/ui";
 import { useRulesAction } from "../../hooks";
+import { SETTINGS } from "./settingsIndex";
 
 export type Setting = { feeding: TroupeOut["feeding"]; resonance: boolean; territories: boolean; rack: boolean };
 
@@ -67,10 +68,9 @@ export function FeedingSetting({ troupeId, canEdit }: { troupeId: string; canEdi
 
   return (
     <SettingCard
-      title="Feeding"
+      setting={SETTINGS.feeding}
       state={off ? "Off" : "On"}
       readOnly={!canEdit}
-      about="How Horatio handles feeding between games. As the book has it, each clan needs a number of feeding actions a cycle, Herd and some traits change it, and staff answer full or half Blood for the next game. Feeding is switched on and off in the Features list."
     >
       {!canEdit ? (
         <p className="text-sm">
