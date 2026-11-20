@@ -133,10 +133,10 @@ def user_by_login(db: DbSession, login: str) -> User | None:
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -> Me:
-    ip = request.client.host if request.client else None
-    if not attempts.check_signup(db, ip):
-        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, attempts.SIGNUP_WAIT)
-    attempts.signup_attempt(db, ip)
+    if not attempts.may_sign_up(db, attempts.source(request)):
+        record(db, None, "account.sign_up_throttled")
+        db.commit()
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, attempts.SIGN_UP_WAIT)
     if user_by_email(db, body.email) is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "An account with that email already exists.")
     user = User(
@@ -160,11 +160,18 @@ def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -
 
 @router.post("/login")
 def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -> Me:
-    ip = request.client.host if request.client else None
-    attempt_id = attempts.begin_login(db, body.login, ip)
-    if ip is not None and attempt_id is None:
-        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, attempts.LOGIN_WAIT)
+    ip = attempts.source(request)
+    allowed = attempts.may_sign_in(db, body.login, ip)
     user = user_by_login(db, body.login)
+    if not allowed:
+        # Turned away before the password is checked, whether an account uses the
+        # login or not. Never what was typed, as for a failed sign-in.
+        if user is None:
+            record(db, None, "account.sign_in_throttled", kind="unknown")
+        else:
+            record(db, user, "account.sign_in_throttled", member=user.display_name, user_id=user.id)
+        db.commit()
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, attempts.SIGN_IN_WAIT)
     ok, new_hash = verify_password(body.password, user.password_hash if user else None)
     if user is None or not ok:
         # Never what was typed: someone may have typed their password as their login.
@@ -172,10 +179,9 @@ def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -
             record(db, None, "account.sign_in_failed", kind="unknown")
         else:
             record(db, user, "account.sign_in_failed", member=user.display_name, user_id=user.id)
-        attempts.failed_login(db, attempt_id)
         db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email, handle or password.")
-    attempts.successful_login(db, attempt_id, body.login, ip)
+    attempts.signed_in(db, body.login, ip)
     if new_hash is not None:
         user.password_hash = new_hash
     record(db, user, "account.signed_in", member=user.display_name, user_id=user.id)

@@ -1,8 +1,8 @@
-"""Short-lived records for login and signup throttles.
+"""Sign-ins and sign-ups tried, for the limits on them (issue #1059). Kept a day at most.
 
 Revision ID: 0240
 Revises: 0239
-Create Date: 2026-11-16 12:00:00.000000
+Create Date: 2026-11-20 12:00:00.000000
 """
 
 from collections.abc import Sequence
@@ -31,7 +31,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_auth_attempts")),
     )
-    op.create_index("ix_auth_attempts_action_created_at", "auth_attempts", ["action", "created_at"])
+    op.create_index("ix_auth_attempts_created_at", "auth_attempts", ["created_at"])
     op.create_index(
         "ix_auth_attempts_action_ip_created_at",
         "auth_attempts",
@@ -47,5 +47,5 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("ix_auth_attempts_action_identity_ip_created_at", table_name="auth_attempts")
     op.drop_index("ix_auth_attempts_action_ip_created_at", table_name="auth_attempts")
-    op.drop_index("ix_auth_attempts_action_created_at", table_name="auth_attempts")
+    op.drop_index("ix_auth_attempts_created_at", table_name="auth_attempts")
     op.drop_table("auth_attempts")

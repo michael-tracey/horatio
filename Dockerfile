@@ -51,4 +51,7 @@ ENV HORATIO_COMMIT=$HORATIO_COMMIT \
 USER horatio
 EXPOSE 8000
 # Behind the host's nginx, which terminates TLS and says so in X-Forwarded-*.
+# uvicorn believes those headers only from the addresses in FORWARDED_ALLOW_IPS
+# (loopback if unset), which deploy/playbook.yml sets to nginx's: see
+# deploy/README.md, "Client addresses".
 CMD ["uvicorn", "horatio.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

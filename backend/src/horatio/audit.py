@@ -36,6 +36,9 @@ DEBUG: frozenset[str] = frozenset(
     {
         "account.signed_in",
         "account.sign_in_failed",
+        # Turned away by horatio.auth.attempts before the password was checked.
+        "account.sign_in_throttled",
+        "account.sign_up_throttled",
         "account.signed_out",
         "account.signed_up",
         # A character started visiting a troupe.

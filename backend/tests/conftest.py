@@ -58,6 +58,8 @@ def no_outside_services(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "backup_dir", None)
     # Nor pictures; a test that uploads them sets a directory.
     monkeypatch.setattr(settings, "upload_dir", None)
+    # Every test client signs in from one address; a test of the limits turns them on.
+    monkeypatch.setattr(settings, "auth_limits", False)
 
 
 @pytest.fixture(scope="session")
