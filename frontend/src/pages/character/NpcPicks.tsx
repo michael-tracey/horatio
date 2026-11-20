@@ -8,7 +8,8 @@ import { Chevron } from "../../components/TraitInfo";
 import { Badge, Button, Card, ErrorText, Rating, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { seatPicks } from "./creation/logic";
-import { ExtraPick, Slot, SlotRows, oneOf, type Choice } from "./creation/Slots";
+import { ExtraPick, Slot, SlotRows, oneOf } from "./creation/Slots";
+import type { BoxChoice } from "../../components/ChoiceBox";
 
 type Placed = PoolOut["placed"][number];
 type Body = { category: string; name: string; detail: string; rating?: number; replacing?: { name: string; detail: string }; grant?: string };
@@ -222,8 +223,8 @@ function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOu
   };
 
   /** What a slot in `pool` holding `holder` offers: the traits a pick there could go on. */
-  const options = (pool: PoolOut, holder: string | null): Choice[] =>
-    pool.candidates.flatMap((c): Choice[] => {
+  const options = (pool: PoolOut, holder: string | null): BoxChoice[] =>
+    pool.candidates.flatMap((c): BoxChoice[] => {
       const k = key(c.name, c.detail);
       const at = where.get(k)?.pool.rating;
       // One in this row's other slots stays where it is.
