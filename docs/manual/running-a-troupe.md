@@ -190,7 +190,7 @@ The same **⋯** has **Import characters and NPCs…**, for a troupe's export fr
 - **A retired character** comes in retired.
 - **What can't come in** says why: a file that isn't a Horatio character, one from a newer Horatio, or a trait this troupe's rules don't have. The rest still come in.
 
-Equipment, titles and status in the files are shown, not imported: give them here as usual. **Import** brings everything in at once, and lists each character with a link to it.
+Equipment, titles and status in the files are shown, not imported: give them here as usual. The exception is a new Stock NPC's equipment, which comes in with it, given from the troupe's equipment, with the member of a [group](#a-group-of-stock-npcs) who carries each item. **Import** brings everything in at once, and lists each character with a link to it.
 
 ### Each character's actions
 
@@ -246,9 +246,9 @@ Its **Equipment** card lists what it carries. **Give equipment** gives it an ite
 
 #### A group of Stock NPCs
 
-A Stock NPC can stand for a group of identical ones: set **How many** on New NPC or on its page, up to 20. They share the one stat block, and each member has its own health levels and its kind's resource. In a scene and in its Play View the group is one card, with a row for each member: tap its damage, healing and resource there. A member with every health level marked is struck off, out of the fight (MET: VTM p. 490), and the card says how many are still standing. **Reset** brings every member back.
+A Stock NPC can stand for a group of identical ones: set **How many** on New NPC or on its page, up to 20. They share the one stat block, and each member has its own health levels and its kind's resource. In a scene and in its Play View the group is one card, with a row for each member: tap its damage, healing and resource there. A member with every health level marked is struck off, out of the fight (MET: VTM p. 490), and the card says how many are still standing. **Strike off** on a member's row takes it out of the fight with levels left, when it flees, surrenders or is otherwise gone, and **Bring back** returns it; both go in the log, and work offline like any tap. **Reset** brings every member back.
 
-In a group, **Who carries what** on its Equipment card gives each item to one member or leaves it with the whole group; the card in play lists each member's under that member. The book has no rule for groups: each member is simply a Stock NPC, like the Blood Brother who is one of four with an identical sheet (p. 504). A Blood Brothers' gestalt (p. 504) is a different thing, one Stock NPC rated for all of them. A group can't be made a full sheet: set **How many** to 1 first.
+In a group, **Who carries what** on its Equipment card gives each item to one member or leaves it with the whole group; the card in play lists each member's under that member. A troupe's export with equipment keeps who carries what. The book has no rule for groups: each member is simply a Stock NPC, like the Blood Brother who is one of four with an identical sheet (p. 504). A Blood Brothers' gestalt (p. 504) is a different thing, one Stock NPC rated for all of them. A group can't be made a full sheet: set **How many** to 1 first.
 
 ### Giving an NPC to a player
 

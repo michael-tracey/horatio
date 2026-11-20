@@ -196,7 +196,8 @@ def test_being_held_back_is_a_debug_event_and_keeps_nothing_typed(
     client_for: Callable[[], TestClient], at: Callable[[str], TestClient], session: Session
 ) -> None:
     agnes = sign_up(client_for, "agnes")
-    audit.save_settings(session, audit.LogSettings(record="debug"))
+    # Without the IP addresses the custodian may keep with them (#1066): see below.
+    audit.save_settings(session, audit.LogSettings(record="debug", sign_in_ips=False))
     session.flush()
     home = at(HOME)
     for _ in range(5):
@@ -244,6 +245,22 @@ def test_being_held_back_is_a_debug_event_and_keeps_nothing_typed(
     assert message(refused.action, None, None, refused.data) == (
         "Someone was turned away from signing up: too many sign-ups from where they were."
     )
+
+    # Keeping IP addresses with sign-in events, as the custodian does unless they say
+    # otherwise (#1066), these keep where they came from too.
+    audit.save_settings(session, audit.LogSettings(record="debug"))
+    session.flush()
+    assert sign_in(home, "agnes@example.com", PASSWORD) == 429
+    assert home.post("/auth/signup", json=body).status_code == 429
+    for action in ("account.sign_in_throttled", "account.sign_up_throttled"):
+        newest = session.scalars(
+            select(AuditEvent)
+            .where(AuditEvent.action == action)
+            .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
+        ).first()
+        assert newest is not None
+        assert newest.data["ip"] == HOME, action
+        assert f" from {HOME}:" in message(newest.action, "agnes", None, newest.data)
 
 
 def request_from(host: str | None) -> Request:

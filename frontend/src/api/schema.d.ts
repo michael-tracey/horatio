@@ -400,8 +400,8 @@ export interface paths {
         };
         /**
          * Log Settings
-         * @description For the custodian: what the log records, how long it keeps each level, and
-         *     what the last purge deleted.
+         * @description For the custodian: what the log records, how long it keeps each level, whether
+         *     sign-in events keep IP addresses, and what the last purge deleted.
          */
         get: operations["log_settings_api_audit_settings_get"];
         /**
@@ -10864,6 +10864,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/getting-ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Getting Ready
+         * @description The steps of getting the troupe ready, for its running staff.
+         */
+        get: operations["read_getting_ready_api_troupes__troupe_id__getting_ready_get"];
+        /**
+         * Change Getting Ready
+         * @description Hide Getting your troupe ready from the Overview, or bring it back: its storytellers'.
+         */
+        put: operations["change_getting_ready_api_troupes__troupe_id__getting_ready_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/golconda": {
         parameters: {
             query?: never;
@@ -14852,6 +14876,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
+            /** Sign In Ips */
+            sign_in_ips: boolean;
         };
         /** AuditSettingsOut */
         AuditSettingsOut: {
@@ -14865,6 +14891,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
+            /** Sign In Ips */
+            sign_in_ips: boolean;
         };
         /** AuditTroupe */
         AuditTroupe: {
@@ -15386,6 +15414,8 @@ export interface components {
             grade: "cheap" | "standard" | "special";
             /** Kind */
             kind: string;
+            /** Member */
+            member?: number | null;
             /** Name */
             name: string;
             /**
@@ -22936,6 +22966,18 @@ export interface components {
             sects: string[];
             /** Setting */
             setting: string | null;
+        };
+        /** GettingReadyChange */
+        GettingReadyChange: {
+            /** Hidden */
+            hidden: boolean;
+        };
+        /** GettingReadyOut */
+        GettingReadyOut: {
+            /** Hidden */
+            hidden: boolean;
+            /** Steps */
+            steps: components["schemas"]["ReadyStepOut"][];
         };
         /** GiftIn */
         GiftIn: {
@@ -31191,6 +31233,16 @@ export interface components {
             /** Ids */
             ids?: string[] | null;
         };
+        /** ReadyStepOut */
+        ReadyStepOut: {
+            /** Done */
+            done: boolean;
+            /**
+             * Step
+             * @enum {string}
+             */
+            step: "profile" | "features" | "joining" | "starting" | "house_rules" | "staff" | "first_game" | "players";
+        };
         /** Reason */
         Reason: {
             /** Reason */
@@ -34432,8 +34484,9 @@ export interface components {
         /**
          * StockMemberOut
          * @description One member of a group of Stock NPCs at this game (issue #1056), tapped as
-         *     "member:<n>/health" and "member:<n>/blood". Its health levels are the stat
-         *     block's; with every one marked it is out of the fight (MET: VTM p. 490).
+         *     "member:<n>/health", "member:<n>/blood" and "member:<n>/struck". Its health
+         *     levels are the stat block's; with every one marked, or struck off by hand, it is
+         *     out of the fight (MET: VTM p. 490).
          */
         StockMemberOut: {
             blood: components["schemas"]["Tracker"];
@@ -34443,6 +34496,11 @@ export interface components {
             name: string;
             /** Number */
             number: number;
+            /**
+             * Struck
+             * @default false
+             */
+            struck: boolean;
         };
         /** StockNpcOut */
         StockNpcOut: {
@@ -58910,6 +58968,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameXpAwarded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_getting_ready_api_troupes__troupe_id__getting_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingReadyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_getting_ready_api_troupes__troupe_id__getting_ready_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GettingReadyChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingReadyOut"];
                 };
             };
             /** @description Validation Error */

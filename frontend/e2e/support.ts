@@ -387,6 +387,25 @@ export function choiceIn(list: Locator, trait: string) {
   return list.locator(`[data-choice="${trait}"]`);
 }
 
+/** The detail under an open list (ChoiceBox): what the highlighted choice does. */
+export function aboutChoice(p: Page) {
+  return p.getByRole("region", { name: "About the highlighted choice" });
+}
+
+/**
+ * Opens the sheet's Add panel's list of a category ("Merits", "Elder Disciplines"),
+ * returning it: a tap on its search box, which a choice made outside it (a chip, the
+ * Show filter) has closed. Typing in the box opens it too.
+ */
+export async function addList(p: Page, category: string) {
+  const box = p.getByRole("combobox", { name: `Search ${category}`, exact: true });
+  await box.scrollIntoViewIfNeeded();
+  await box.click();
+  const list = p.locator(`[id="${await box.getAttribute("aria-controls")}"]`);
+  await expect(list).toBeVisible();
+  return list;
+}
+
 /** Each slot's trait ("" while empty) and the id of its list, read in one go. */
 function slotStates(slots: Locator) {
   return slots.evaluateAll((boxes) => boxes.map((box) => ({ value: (box as HTMLInputElement).value, list: box.getAttribute("aria-controls") ?? "" })));

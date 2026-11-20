@@ -599,7 +599,7 @@ test("a Stock werewolf in a scene: Rage and health tapped on its card and undone
   await expect(p.getByRole("article", { name: "Snarls-at-Dusk" }).getByLabel("Rage: 7 of 10")).toBeVisible();
 });
 
-test("a group of four Stock NPCs made from New NPC is one Scene card: two damaged apart, one struck off, and Reset restores them (#1056)", async ({ browser }) => {
+test("a group of four Stock NPCs made from New NPC is one Scene card: two damaged apart, one struck off, one struck off by hand and brought back, and Reset restores them (#1056, #1075)", async ({ browser }) => {
   const custodian = await person(browser, "stockgrp-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "stockgrp-lead");
@@ -658,8 +658,15 @@ test("a group of four Stock NPCs made from New NPC is one Scene card: two damage
   await expect(member(3).getByRole("button", { name: "+ Normal" })).toBeDisabled();
   await expect(member(4).getByLabel("Blood: 9 of 10")).toBeVisible();
   await expect(card).toContainText("3 of 4 standing");
+
+  // Member 2 flees with every level left: staff strike it off by hand.
+  await member(2).getByRole("button", { name: "Strike off Member 2" }).click();
+  await expect(member(2)).toContainText("Out of the fight");
+  await expect(member(2).getByLabel("Health: 0 of 2 marked")).toBeVisible();
+  await expect(card).toContainText("2 of 4 standing");
   await expect(card.getByRole("status")).toHaveText("Saved");
   await card.getByRole("button", { name: /^Log/ }).click();
+  await expect(card).toContainText("Member 2: struck off");
   await expect(card).toContainText("Member 3: took 1 aggravated (1 → 2 marked)");
   await expect(card).toContainText("Member 1: took 1 normal (0 → 1 marked)");
   await p.screenshot(shots("stock-group-scene-card"));
@@ -668,9 +675,15 @@ test("a group of four Stock NPCs made from New NPC is one Scene card: two damage
   await card.getByRole("link", { name: "Open the full Play View of Shovelheads" }).click();
   await expect(p.getByText("Stock NPC · Vampire · rating 2 · a group of 4")).toBeVisible();
   await expect(p.getByRole("listitem", { name: "Member 3", exact: true })).toContainText("Out of the fight");
+  await expect(p.getByRole("listitem", { name: "Member 2", exact: true })).toContainText("Out of the fight");
   await expect(p.getByRole("listitem", { name: "Member 1", exact: true }).getByLabel("Health: 1 of 2 marked")).toBeVisible();
   expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await p.getByRole("link", { name: "← Back to the scene" }).click();
+
+  // Back in the fight, it stands again.
+  await member(2).getByRole("button", { name: "Bring back Member 2" }).click();
+  await expect(member(2)).not.toContainText("Out of the fight");
+  await expect(card).toContainText("3 of 4 standing");
 
   // Reset on the card brings every member back.
   await card.getByRole("button", { name: /^Reset/ }).click();

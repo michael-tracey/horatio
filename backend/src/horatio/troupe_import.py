@@ -28,7 +28,10 @@ than it may unpack to, refuses the lot.
   file has them, the NPC itself kept), or add a copy.
 - Its XP history isn't written: an NPC has none to keep, and giving one to its player
   writes its own (the "Imported" award, and what staff carry over).
-- Equipment, titles and status are shown, never imported, as on a player's import.
+- A new Stock NPC's equipment comes in with it (issue #1075), given from this troupe,
+  each item with the member of a group who carries it. Anyone else's equipment, a
+  replaced NPC's too, and titles and status are shown, never imported, as on a
+  player's import.
 
 Each character is tried on its own, so one that can't come in says why and the rest
 come in. Reviewing is the same import, rolled back.
@@ -53,7 +56,7 @@ from fastapi import HTTPException
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, backstories, handles, npc_gifts, npc_picks, npcs
+from horatio import audit, backstories, equipment, handles, npc_gifts, npc_picks, npcs
 from horatio import character_backup as backup
 from horatio.models import (
     Character,
@@ -65,6 +68,7 @@ from horatio.models import (
     User,
 )
 from horatio.rules import stock
+from horatio.rules.equipment import item_qualities
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import sync_fixed_ratings, unprocessable
 
@@ -297,6 +301,52 @@ def set_stock(
     row.count = found.count
 
 
+def give_stock_items(
+    db: Session,
+    staff: User,
+    troupe: Troupe,
+    found: backup.Imported,
+    document: backup.CharacterDocument,
+) -> None:
+    """A new Stock NPC's items (issue #1075), each given from this troupe as the file
+    has it, and in a group, with the member who carries it. One that can't be given
+    is left out, saying why."""
+    npc = found.character
+    row = db.scalar(select(StockNpc).where(StockNpc.character_id == npc.id))
+    count = row.count if row is not None else 1
+    carried: dict[str, int] = {}
+    for item in document.equipment:
+        with backup.tried(db, found, "equipment", item.name):
+            fields = equipment.ItemFields(
+                name=item.name,
+                kind=item.kind,
+                grade=item.grade,
+                qualities=item_qualities(item.qualities),
+                crafted=item.crafted,
+                effects=equipment.effects_of(item.effects),
+                description=item.description,
+                archaic=item.archaic,
+            )
+            given = equipment.give(db, staff, troupe, npc, fields)
+            member = item.member if item.member is not None and item.member <= count else None
+            if count > 1 and member is not None:
+                carried[str(given.id)] = member
+            found.items.append(
+                backup.Reviewed(
+                    "equipment",
+                    item.name,
+                    "new",
+                    reason=f"Given from the troupe's equipment: {npcs.member_name(member)}"
+                    " carries it."
+                    if count > 1 and member is not None
+                    else "Given from the troupe's equipment.",
+                )
+            )
+    if row is not None:
+        row.item_members = carried
+        db.flush()
+
+
 def fill_npc(
     db: Session,
     staff: User,
@@ -413,8 +463,12 @@ def fill_npc(
                 backstories.save(db, staff, npc, text, kept.version)
             found.items.append(backup.Reviewed("character", "Backstory", "new"))
     backup.import_retainers(db, staff, found, document)
+    # A Stock NPC has nothing but its stat block and what it carries (issue #1075).
+    items = form == "stock" and into is None
+    if items:
+        give_stock_items(db, staff, troupe, found, document)
     backup.attach_picture(found, document, root, files, write=write_pictures)
-    backup.shown_only(found, document, staff=True)
+    backup.shown_only(found, document, staff=True, items=not items)
     db.flush()
     audit.record(
         db,

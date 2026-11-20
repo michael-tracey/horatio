@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { backstoryOptional, characterTab, inSteps, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, openSections, pagePart, settingsPart } from "./support";
+import { backstoryOptional, characterTab, inSteps, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, openSections, pagePart, settingsPart, addList, aboutChoice } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -98,7 +98,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await next("Backgrounds");
   // What each background is, a tap away in the list.
   await (await openSlot(p, "Backgrounds", 3)).getByRole("button", { name: "About Generation" }).click();
-  await expect(p.getByText(/Every vampire needs at least 1 dot/)).toBeVisible();
+  await expect(aboutChoice(p).getByText(/Every vampire needs at least 1 dot/)).toBeVisible();
   await p.keyboard.press("Escape");
   // A vampire cannot move on without Generation, nor skip ahead.
   await choosePicks(p, "Backgrounds", [["Fame", 3], ["Herd", 2]]);
@@ -141,8 +141,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Changes wait in the cart, with what each costs, until Spend XP.
   const cart = p.getByRole("list", { name: "Changes in the cart" });
   await part("Backgrounds").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Backgrounds").fill("Elite");
-  await p.getByRole("button", { name: "Influences: The Elite", exact: true }).click();
+  await p.getByRole("combobox", { name: "Search Backgrounds", exact: true }).fill("Elite");
+  await p.getByRole("option", { name: "Influences: The Elite", exact: true }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await expect(cart.getByText("Add Influences: The Elite 1 · 1 XP")).toBeVisible();
   // A focus can be changed after creation, for 10 XP.
@@ -160,10 +160,10 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   // Every Ventrue merit, though Agnes is Brujah and cannot take them.
   await p.getByLabel("Show").selectOption({ label: "For Ventrue" });
-  await expect(p.getByRole("button", { name: /^Aura of Command/ })).toBeDisabled();
+  await expect((await addList(p, "Merits")).getByRole("option", { name: /^Aura of Command/ })).toBeDisabled();
   await p.getByLabel("Show").selectOption({ label: "What this character can take" });
-  await p.getByLabel("Search Merits").fill("Rugged");
-  await p.getByRole("button", { name: /^Rugged/ }).click();
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Rugged");
+  await p.getByRole("option", { name: /^Rugged/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("+1 from Rugged").first()).toBeVisible();
@@ -431,8 +431,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByRole("button", { name: "Remove Police" })).toBeVisible();
   // Contacts, named freely: one per dot.
   await part("Backgrounds").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Backgrounds").fill("Contacts");
-  await p.getByRole("button", { name: /^Contacts/ }).click();
+  await p.getByRole("combobox", { name: "Search Backgrounds", exact: true }).fill("Contacts");
+  await p.getByRole("option", { name: /^Contacts/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await p.getByRole("button", { name: "Spend XP" }).click();
   await p.getByRole("button", { name: "Add to Contacts Specialisations" }).click();

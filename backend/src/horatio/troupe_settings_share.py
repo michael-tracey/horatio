@@ -920,6 +920,7 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "throw_images": "its pictures are its own, and files aren't carried",
     "profile": "its profile is its own",
     "contact_id": "its staff are its own",
+    "getting_ready_hidden": "whether its own Overview shows Getting your troupe ready (#1049)",
     "seated_clans": "its court is its own (titles and seats aren't carried)",
     "free_changes_since": "set to the time of import when free changes are switched on",
     "rules_version": "kept by the database, changing with the troupe's rules",

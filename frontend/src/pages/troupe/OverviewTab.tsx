@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
-import { Link } from "react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, useLocation } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { PostOut, TroupeOut } from "../../api/types";
 import { useToast } from "../../components/Toast";
@@ -11,6 +11,7 @@ import { useAgencies, useGlance } from "../news/queries";
 import { Banners, Masthead } from "../news/Story";
 import { ArchiveTroupe } from "./ArchiveTroupe";
 import { GamesCard } from "./GamesCard";
+import { GettingReadyCard, PROFILE_ANCHOR } from "./GettingReady";
 import { NameAndDescription } from "./ProfileControls";
 import type { abilities } from "./roles";
 import { troupeSettings, type TroupeSettingsPart } from "./features";
@@ -21,7 +22,8 @@ import { XpRangeCard } from "./XpRange";
 
 /**
  * The troupe's front page, its Overview (#781, About and Profile in one): for its
- * staff, what is waiting on them first; for its members, its pinned announcements,
+ * lead storyteller and storytellers, getting the troupe ready until they hide it
+ * (#1049); for its staff, what is waiting on them; for its members, its pinned announcements,
  * the latest of its news and the games to come; then its profile, as its players
  * see it, which its storytellers edit here and switch public; who may join; its
  * XP floor and ceiling; for its running staff, the latest of its log; and its
@@ -40,6 +42,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-6 md:grid-cols-2 empty:hidden">
+        {change && <GettingReadyCard troupeId={troupe.id} />}
         {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
         {/* For its members: the same people as see its Who's Who. */}
         {troupe.whos_who && !troupe.archived && <PinnedBanners troupeId={troupe.id} />}
@@ -80,16 +83,25 @@ function Profile({ troupe, leading }: { troupe: TroupeOut; leading: boolean }) {
     queryKey: ["troupe-profile", troupe.id],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/profile", { params: { path: { troupe_id: troupe.id } } })),
   });
+  // Getting your troupe ready links here, from above or from Setup (#1049).
+  const { hash, key } = useLocation();
+  const here = useRef<HTMLDivElement>(null);
+  const loaded = !!profile.data;
+  useEffect(() => {
+    if (loaded && hash === `#${PROFILE_ANCHOR}`) here.current?.scrollIntoView({ block: "start" });
+  }, [loaded, hash, key]);
   if (profile.isPending) return <Loading />;
   if (profile.error) return <ErrorText error={profile.error} />;
   return (
-    <TroupeProfileView
-      profile={profile.data}
-      signedIn
-      editing={editing}
-      onEditing={setEditing}
-      leadParts={leading && <NameAndDescription troupe={troupe} />}
-    />
+    <div id={PROFILE_ANCHOR} ref={here} className="scroll-mt-4">
+      <TroupeProfileView
+        profile={profile.data}
+        signedIn
+        editing={editing}
+        onEditing={setEditing}
+        leadParts={leading && <NameAndDescription troupe={troupe} />}
+      />
+    </div>
   );
 }
 
