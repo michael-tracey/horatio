@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList, chooseIn } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -44,7 +44,7 @@ test("a troupe changes what new characters start with and their downtime actions
   await p.getByLabel("Name").fill("Mara");
   await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
-  await p.getByLabel("Clan").selectOption("Brujah");
+  await chooseIn(p, "Clan", "Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
   for (const heading of ["Attributes", "Focuses", "Skills", "Backgrounds", "Disciplines", "Merits & flaws"]) {
     // A vampire needs Generation before leaving Backgrounds.
@@ -1436,9 +1436,9 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await p.getByLabel("Name").fill("Mara");
   await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
-  await p.getByLabel("Clan").selectOption("Brujah");
+  await chooseIn(p, "Clan", "Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
-  await p.getByLabel("Sect").selectOption("Camarilla");
+  await chooseIn(p, "Sect", "Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });

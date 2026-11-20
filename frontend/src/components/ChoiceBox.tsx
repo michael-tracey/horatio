@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties
 import type { TraitOut } from "../api/types";
 import { withClanNames } from "../clanNames";
 import { bookSummary, wordingOf } from "../houseWording";
+import { pageText } from "../pages/troupe/bookPage";
 import { AboutButton, AboutTrait, hasAbout } from "./AboutTrait";
 import { useClanName } from "./ClanNames";
 import { Input } from "./ui";
@@ -60,13 +61,15 @@ export function oneLine(trait: TraitOut | undefined): string | null {
  * opens its list when tapped, typing narrowing it; each choice with what it does in
  * a line under its name and its page, and the highlighted one's detail (the same as
  * `AboutTrait` shows: the book's summary, the troupe's wording and house rule, a
- * discipline's powers) under the list. Arrow keys move the highlight and Enter
- * chooses; on a touch screen each choice's chevron shows its detail without choosing
- * it. The list is as wide as a phone's screen allows.
+ * discipline's powers; a clan's in-clan disciplines and weakness) under the list.
+ * Arrow keys move the highlight and Enter chooses; on a touch screen each choice's
+ * chevron shows its detail without choosing it. The list is as wide as a phone's
+ * screen allows.
  *
  * With `value`, it shows the choice made, as a select does; without, it is a search
  * to add, emptied once a choice is made. It is the one way of choosing a trait from
- * a list: the NPC editor's, the creation wizard's slots and the sheet's Add panel.
+ * a list: the NPC editor's, the creation wizard's slots and Concept's choices, the
+ * sheet's Add panel and staff's Give panel.
  */
 export function ChoiceBox({
   id,
@@ -368,6 +371,12 @@ export function ChoiceBox({
                   lit.summary && <p className="text-xs text-mist">{named(lit.summary)}</p>
                 )}
                 {lit.trait?.in_clan?.length ? <p className="mt-0.5 text-xs text-mist">In-clan disciplines: {lit.trait.in_clan.join(", ")}.</p> : null}
+                {lit.trait?.weakness && (
+                  <p className="mt-0.5 text-xs text-mist">
+                    Weakness: {named(lit.trait.weakness)}
+                    {lit.trait.weakness_page && <span className="text-gold"> ({pageText(lit.trait.weakness_page)})</span>}
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-xs text-mist">Highlight one to read about it: the arrow keys, a hover, or its chevron.</p>

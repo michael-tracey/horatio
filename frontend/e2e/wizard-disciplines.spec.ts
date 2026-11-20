@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES, choiceIn, choosePick, choosePicks, openSlot, pickedAt, slotsAt, goToStep, inSteps, aboutChoice } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES, choiceIn, choosePick, choosePicks, openSlot, pickedAt, slotsAt, goToStep, inSteps, aboutChoice, chooseIn } from "./support";
 
 /** The creation wizard's in-clan disciplines: Caitiff, Vestiges of Greatness and the merits that change them. */
 
@@ -10,7 +10,7 @@ test("a Caitiff chooses their in-clan disciplines while creating", async ({ brow
   await page.getByLabel("Name").fill("Nobody's Child");
   await page.getByRole("button", { name: "Create" }).click();
   await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
-  await page.getByLabel("Clan").selectOption("Caitiff");
+  await chooseIn(page, "Clan", "Caitiff");
   for (const name of ["Auspex", "Celerity", "Potence"]) {
     await page.getByRole("checkbox", { name }).click();
     await expect(page.getByRole("checkbox", { name })).toBeChecked();
@@ -177,7 +177,7 @@ for (const forTroupe of [false, true]) {
     if (forTroupe) await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
     await p.getByRole("button", { name: "Create" }).click();
     await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
-    await p.getByLabel("Clan").selectOption("Caitiff");
+    await chooseIn(p, "Clan", "Caitiff");
     for (const name of ["Celerity", "Fortitude", "Obfuscate"]) {
       await p.getByRole("checkbox", { name }).click();
       await expect(p.getByRole("checkbox", { name })).toBeChecked();

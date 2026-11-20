@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { closeContextsAfterEach, person, makeCustodian, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, chooseIn } from "./support";
 
 /**
  * The screenshots in the Players part of the manual (docs/manual/players.md, #483).
@@ -71,10 +71,10 @@ test("screenshots for the Players part of the manual", async ({ browser }) => {
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept", exact: true })).toBeVisible();
   const theo = new URL(p.url()).pathname.split("/")[2]!;
-  await p.getByLabel("Clan").selectOption("Gangrel: Coyote");
+  await chooseIn(p, "Clan", "Gangrel: Coyote");
   await expect(p.getByRole("region", { name: /^About Gangrel/ })).toBeVisible();
-  await p.getByLabel("Archetype").selectOption("Loner");
-  await p.getByLabel("Sect").selectOption("Camarilla");
+  await chooseIn(p, "Archetype", "Loner");
+  await chooseIn(p, "Sect", "Camarilla");
   await expect(p.getByLabel("Sect")).toHaveValue("Camarilla");
   await p.waitForTimeout(500);
   await card(p, "Concept").screenshot(shot("wizard-concept"));
