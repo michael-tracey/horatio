@@ -324,10 +324,14 @@ def test_passkey_sign_ins_are_limited_from_one_address(
 
 
 def test_one_place_can_keep_only_so_many_challenges_waiting(
-    at: Callable[[str], TestClient], session: Session
+    at: Callable[[str], TestClient],
+    session: Session,
+    limits: None,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(passkeys, "WAITING_FROM_ONE_PLACE", 3)
     venue = at("198.51.100.7")
-    for _ in range(passkeys.WAITING_FROM_ONE_PLACE):
+    for _ in range(3):
         options(venue)
 
     assert venue.post("/auth/passkey/options").status_code == 429

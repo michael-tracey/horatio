@@ -227,9 +227,10 @@ def _signed(
 
 COOKIE = "horatio_passkey_sign_in"
 CHALLENGE_FOR = timedelta(minutes=5)
-# How many may wait from one place at once: each sign-in page open there asks for one,
-# and a whole troupe may sign in together on a venue's Wi-Fi.
-WAITING_FROM_ONE_PLACE = 60
+# How many may wait from one place at once, while sign-ins are limited: each sign-in
+# page opened there asks for one, and a whole troupe may sign in together on a venue's
+# Wi-Fi. Only so the table can't be filled without end.
+WAITING_FROM_ONE_PLACE = 200
 
 
 def alone_options(db: Session, ip: str | None) -> tuple[str, dict[str, Any]]:
@@ -238,7 +239,8 @@ def alone_options(db: Session, ip: str | None) -> tuple[str, dict[str, Any]]:
     the cookie naming its challenge, kept here. 429 if too many wait from `ip`."""
     db.execute(delete(PasskeySignIn).where(PasskeySignIn.expires_at <= func.now()))
     from_there = PasskeySignIn.ip_address == ip if ip else PasskeySignIn.ip_address.is_(None)
-    if (db.scalar(select(func.count()).where(from_there)) or 0) >= WAITING_FROM_ONE_PLACE:
+    waiting = db.scalar(select(func.count()).where(from_there)) or 0
+    if get_settings().auth_limits and waiting >= WAITING_FROM_ONE_PLACE:
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS, "Too many sign-ins from here. Try again later."
         )
