@@ -535,7 +535,8 @@ export interface paths {
         /**
          * Change Password
          * @description Change your own password, giving the one you have now. Signs you out
-         *     everywhere else, and cancels any reset link you had, but not here.
+         *     everywhere else, and cancels any reset link you had, but not here. Limited at the
+         *     account, every try counted, right or not (#1095).
          */
         post: operations["change_password_api_auth_password_post"];
         delete?: never;
@@ -36322,7 +36323,7 @@ export interface components {
              * Held
              * @enum {string}
              */
-            held: "sign_in" | "sign_up" | "second_step";
+            held: "sign_in" | "sign_up" | "second_step" | "password_change";
             /** Id */
             id: string;
             /** Limit */

@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from threading import Barrier
 from typing import Any
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -399,6 +400,114 @@ def test_tries_made_at_once_cannot_all_slip_under_a_limit(engine: Engine) -> Non
             db.commit()
 
 
+# --- changing a password while signed in (#1095) ----------------------------------------
+
+
+def change_password(client: TestClient, current: str = "not my password") -> int:
+    body = {"current": current, "password": "a new password 1"}
+    return client.post("/auth/password", json=body).status_code
+
+
+def test_changing_a_password_is_limited_at_the_account_from_anywhere(
+    client_for: Callable[[], TestClient],
+    at: Callable[[str], TestClient],
+    session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    agnes = sign_up(client_for, "agnes")
+    # Agnes signed in somewhere else too: her tries there count with these.
+    elsewhere = at(ELSEWHERE)
+    assert sign_in(elsewhere, "agnes", PASSWORD) == 200
+    for client in (agnes.client, elsewhere) * 5:
+        assert change_password(client) == 403
+
+    # The right password is turned away too, before it is checked: no Argon2 for it.
+    checked: list[str] = []
+
+    def verify(password: str, password_hash: str | None) -> tuple[bool, str | None]:
+        checked.append(password)
+        return verify_password(password, password_hash)
+
+    monkeypatch.setattr(auth, "verify_password", verify)
+    held = agnes.client.post(
+        "/auth/password", json={"current": PASSWORD, "password": "a new password 1"}
+    )
+    assert held.status_code == 429
+    assert held.json() == {"detail": attempts.PASSWORD_CHANGE_WAIT}
+    assert change_password(elsewhere, PASSWORD) == 429
+    assert checked == []
+
+    # Only her account: anyone else changes theirs, and she can still sign in.
+    bertha = sign_up(client_for, "bertha")
+    assert change_password(bertha.client) == 403
+    assert sign_in(at(HOME), "agnes", PASSWORD) == 200
+
+    # A quarter of an hour on, she may try again. A right password counts too: each
+    # runs Argon2.
+    later(session, QUARTER_HOUR)
+    assert change_password(agnes.client, PASSWORD) == 204
+    counted = select(func.count()).where(
+        AuthAttempt.action == attempts.PASSWORD_CHANGE,
+        AuthAttempt.identity_hash == attempts.account_key(UUID(agnes.id)),
+        AuthAttempt.created_at > func.now() - timedelta(minutes=15),
+    )
+    assert session.scalar(counted) == 1
+
+    # And 30 a day.
+    for _ in range(9):
+        assert change_password(agnes.client) == 403
+    later(session, QUARTER_HOUR)
+    for _ in range(10):
+        assert change_password(agnes.client) == 403
+    later(session, QUARTER_HOUR)
+    assert change_password(agnes.client) == 429
+
+
+def test_being_held_back_from_changing_a_password_is_logged_at_info_once_a_window(
+    client_for: Callable[[], TestClient], session: Session
+) -> None:
+    agnes = sign_up(client_for, "agnes")
+    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
+    session.flush()
+    for _ in range(10):
+        assert change_password(agnes.client, "hunter2 typed here") == 403
+    for _ in range(3):
+        assert change_password(agnes.client, "hunter2 typed here") == 429
+
+    def held() -> list[AuditEvent]:
+        session.flush()
+        return list(
+            session.scalars(
+                select(AuditEvent)
+                .where(AuditEvent.action.startswith("account.password_change_throttled"))
+                .order_by(AuditEvent.created_at, AuditEvent.id)
+            )
+        )
+
+    [first] = held()
+    assert (first.action, str(first.actor_id), first.level) == (
+        "account.password_change_throttled",
+        agnes.id,
+        "info",
+    )
+    assert first.data == {"limit": "password_changes", "member": "agnes", "user_id": agnes.id}
+    assert message(first.action, "agnes", None, first.data) == (
+        "agnes was turned away from changing their password: too many tries at the account."
+    )
+
+    # Recording debug events, and IP addresses with them, the rest are there at debug.
+    audit.save_settings(session, audit.LogSettings(record="debug"))
+    session.flush()
+    assert change_password(agnes.client, "hunter2 typed here") == 429
+    [_, again] = held()
+    assert (again.action, again.level) == ("account.password_change_throttled_again", "debug")
+    assert "hunter2" not in str(again.data)
+    assert message(again.action, "agnes", None, again.data) == (
+        f"agnes was turned away again from changing their password from {again.data['ip']}:"
+        " too many tries at the account."
+    )
+
+
 # --- the custodian's Throttled now card (#1074) -------------------------------------------
 
 
@@ -566,4 +675,37 @@ def test_sign_ups_held_back_can_be_unblocked(
     ).all()
     assert message(lifted.action, "custodian", None, lifted.data) == (
         f"custodian unblocked sign-ups from {HOME}: over the limit of 20 sign-ups in an hour."
+    )
+
+
+def test_password_changes_held_back_show_the_account_and_can_be_unblocked(
+    client_for: Callable[[], TestClient], custodian: Person, session: Session
+) -> None:
+    agnes = sign_up(client_for, "agnes")
+    for _ in range(10):
+        assert change_password(agnes.client) == 403
+    assert change_password(agnes.client, PASSWORD) == 429
+
+    # Whatever the setting for IP addresses, no address: the account is held back
+    # from anywhere.
+    [held] = custodian.client.get("/throttled").json()
+    assert {k: v for k, v in held.items() if k not in ("id", "clears")} == {
+        "held": "password_change",
+        "address": None,
+        "masked": False,
+        "per_login": True,
+        "anywhere": True,
+        "login": "@agnes",
+        "limit": "10 password changes tried at one account in 15 minutes",
+    }
+    assert unblock(custodian, held) == 204
+    assert custodian.client.get("/throttled").json() == []
+    assert change_password(agnes.client, PASSWORD) == 204
+    [lifted] = session.scalars(
+        select(AuditEvent).where(AuditEvent.action == "account.throttle_lifted")
+    ).all()
+    assert lifted.level == "notice"
+    assert message(lifted.action, "custodian", None, lifted.data) == (
+        "custodian unblocked password changes at @agnes: over the limit of 10 password"
+        " changes tried at one account in 15 minutes."
     )

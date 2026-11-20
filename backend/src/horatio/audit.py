@@ -42,6 +42,7 @@ DEBUG: frozenset[str] = frozenset(
         "account.sign_in_throttled_again",
         "account.sign_up_throttled_again",
         "account.second_step_throttled_again",
+        "account.password_change_throttled_again",
         # The password right, and the second step asked for (#1057).
         "account.second_step_asked",
         "account.signed_out",

@@ -103,6 +103,8 @@ The **Handle** card changes your [handle](glossary.md#handle): write the new one
 
 In the **Password** card, give your **Current password** and a **New password** of at least 10 characters, then choose **Save new password**. You stay signed in on this device, and are signed out on every other.
 
+After many tries at changing it, right or wrong, Horatio stops taking them for a while: "Too many tries at changing your password." Wait a quarter of an hour, or sign out and [reset your password](#forgotten-your-password).
+
 ### Setting up two-step sign-in
 
 The **Two-step sign-in** card offers two kinds of second step. You can have both, and several passkeys.

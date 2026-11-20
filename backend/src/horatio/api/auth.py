@@ -514,7 +514,24 @@ def change_password(
     body: PasswordChange, request: Request, db: DbSession, user: CurrentUser
 ) -> None:
     """Change your own password, giving the one you have now. Signs you out
-    everywhere else, and cancels any reset link you had, but not here."""
+    everywhere else, and cancels any reset link you had, but not here. Limited at the
+    account, every try counted, right or not (#1095)."""
+    whose = {"member": user.display_name, "user_id": user.id}
+    if (held := attempts.password_change_held_back(db, user.id)) is not None:
+        # Turned away before the password is checked. The first a limit turns away in
+        # its window is info; the rest are debug.
+        record(
+            db,
+            user,
+            "account.password_change_throttled"
+            if held.first
+            else "account.password_change_throttled_again",
+            limit=held.limit.key,
+            **whose,
+            **sign_in_ip(db, request),
+        )
+        db.commit()
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, held.wait)
     ok, _ = verify_password(body.current, user.password_hash)
     if not ok:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "That's not your current password.")
@@ -525,7 +542,7 @@ def change_password(
     user.password_hash = hash_password(body.password)
     end_other_sessions(db, user, request.cookies.get(get_settings().session_cookie_name))
     cancel_reset(db, user)
-    record(db, user, "account.password_changed", member=user.display_name, user_id=user.id)
+    record(db, user, "account.password_changed", **whose)
     db.commit()
 
 
