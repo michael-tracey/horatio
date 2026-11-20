@@ -725,6 +725,11 @@ MESSAGES: dict[str, str] = {
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
     "account.password_changed": "{actor} changed their password.",
+    "account.signed_up": "{actor} signed up.",
+    "account.signed_in": "{actor} signed in.",
+    "account.signed_out": "{actor} signed out.",
+    "account.sign_in_failed": "Someone failed to sign in as {member}: wrong password.",
+    "account.sign_in_failed.unknown": "Someone failed to sign in to an account that doesn't exist.",
     "account.suspended": "{actor} suspended {member}{because}.",
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
@@ -824,6 +829,7 @@ MESSAGES: dict[str, str] = {
     "mail.design_test_failed": "{actor}'s test email in the email design failed: {error}",
     "mail.gave_up": "Horatio gave up emailing {count} notifications to {member}: {error}",
     "audit.exported": "{actor} exported {count} events from the audit log.",
+    "audit.settings_changed": "{actor} changed the audit log's settings: {changes}.",
     "dark_pack.fetched": "{actor} fetched the Dark Pack resources from {address}: {clans} clan"
     " symbols and {logo}.",
     "dark_pack.fetch_failed": "{actor}'s fetch of the Dark Pack resources failed, so what was"
@@ -1140,12 +1146,18 @@ def log(
     before: datetime | None = None,
     limit: int = 100,
 ) -> list[LogEntry]:
-    """What has happened in the troupe, newest first."""
+    """What has happened in the troupe, newest first. Never debug events
+    (horatio.audit): those are for the custodian's search alone."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_LOG)
     query = (
         select(AuditEvent, User.display_name)
         .outerjoin(User, AuditEvent.actor_id == User.id)
-        .where(AuditEvent.troupe_id == troupe_id, ~bonds.hidden_events(), ~boons.hidden_events())
+        .where(
+            AuditEvent.troupe_id == troupe_id,
+            AuditEvent.level != "debug",
+            ~bonds.hidden_events(),
+            ~boons.hidden_events(),
+        )
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
         .limit(min(max(limit, 1), 500))
     )

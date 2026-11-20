@@ -52,11 +52,10 @@ def test_the_log_names_a_characters_player(troupe: Troupe) -> None:
     character_id = member(troupe)
     troupe.player.client.delete(f"/characters/{character_id}/troupes/{troupe.id}")
 
+    # Starting to visit is a debug event (#1062), never in a troupe's log.
     messages = [e["message"] for e in troupe_log(troupe)]
-    assert messages[:2] == [
-        "Mr. Carbuncle (player) stopped visiting Lords of the Night.",
-        "Mr. Carbuncle (player) started visiting the troupe.",
-    ]
+    assert messages[0] == "Mr. Carbuncle (player) stopped visiting Lords of the Night."
+    assert "Mr. Carbuncle (player) started visiting the troupe." not in messages
     entry = troupe_log(troupe)[0]
     assert (entry["player_id"], entry["player_name"]) == (troupe.player.id, "player")
     assert entry["actor_id"] == troupe.player.id
@@ -105,11 +104,12 @@ def test_an_old_home_request_still_reads(troupe: Troupe, session: Session) -> No
 
 
 def test_the_log_uses_the_players_name_as_it_is_now(troupe: Troupe) -> None:
-    member(troupe)
+    character_id = member(troupe)
+    troupe.player.client.delete(f"/characters/{character_id}/troupes/{troupe.id}")
     assert edit(troupe.player, display_name="Jane Doe").status_code == 200
 
-    assert (
-        troupe_log(troupe)[0]["message"] == "Mr. Carbuncle (Jane Doe) started visiting the troupe."
+    assert troupe_log(troupe)[0]["message"] == (
+        "Mr. Carbuncle (Jane Doe) stopped visiting Lords of the Night."
     )
 
 

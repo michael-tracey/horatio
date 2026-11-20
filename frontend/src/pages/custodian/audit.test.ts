@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { datesFor } from "../../dates";
-import { auditQuery, exportHref, filtersFrom, nextDay, NO_FILTERS, toParams } from "./audit";
+import { auditQuery, dayChoices, exportHref, filtersFrom, keptFor, nextDay, NO_FILTERS, toParams } from "./audit";
 
 describe("the audit search's filters", () => {
   it("go in the address and come back out of it", () => {
@@ -28,5 +28,21 @@ describe("the audit search's filters", () => {
   it("export only what is set", () => {
     expect(exportHref(auditQuery(NO_FILTERS, () => new Date()))).toBe("/api/audit/export");
     expect(exportHref(auditQuery({ ...NO_FILTERS, group: "xp", words: "awarded 3" }, () => new Date()))).toBe("/api/audit/export?group=xp&q=awarded+3");
+    expect(exportHref(auditQuery({ ...NO_FILTERS, level: "notice" }, () => new Date()))).toBe("/api/audit/export?level=notice");
+  });
+});
+
+describe("the audit log's retention", () => {
+  it("reads in days or years", () => {
+    expect(keptFor(1)).toBe("1 day");
+    expect(keptFor(30)).toBe("30 days");
+    expect(keptFor(365)).toBe("1 year");
+    expect(keptFor(1825)).toBe("5 years");
+  });
+
+  it("offers the one saved, even an unusual one", () => {
+    expect(dayChoices([7, 30], 30)).toEqual([7, 30]);
+    expect(dayChoices([7, 30], null)).toEqual([7, 30]);
+    expect(dayChoices([7, 30], 10)).toEqual([7, 10, 30]);
   });
 });

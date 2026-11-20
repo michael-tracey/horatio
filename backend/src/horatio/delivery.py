@@ -343,9 +343,11 @@ def send_due_now() -> int:
     run out (horatio.free_changes), the items that have expired or are about to
     (horatio.item_expiry), the Yorick pages kept long enough
     (horatio.yorick_imports), the Discord character channels troupes asked
-    Horatio to make, keep in step and check (horatio.discord_channels), and the
-    emoji they asked it to add or remove (horatio.discord_emoji)."""
+    Horatio to make, keep in step and check (horatio.discord_channels), the
+    emoji they asked it to add or remove (horatio.discord_emoji), and, once a day,
+    the audit log's events kept long enough (horatio.audit_retention)."""
     from horatio import (
+        audit_retention,
         discord_channels,
         discord_emoji,
         free_changes,
@@ -367,6 +369,7 @@ def send_due_now() -> int:
     sent += discord_channels.make_due_now()
     sent += discord_channels.keep_in_step_now()
     sent += discord_emoji.push_due_now()
+    audit_retention.purge_due_now()
     return sent
 
 
