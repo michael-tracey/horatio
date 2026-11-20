@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from horatio import handles, notifications, preferences, suspensions
 from horatio.audit import client_ip, record, sign_in_ip
-from horatio.auth import attempts, two_step
+from horatio.auth import attempts, passkeys, two_step
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
 from horatio.auth.resets import (
@@ -98,6 +99,11 @@ class SecondStep(BaseModel):
 
     # The ways they can give it: "app", "passkey", "recovery_code".
     second_step: list[str]
+
+
+class PasskeySigned(BaseModel):
+    # The browser's PublicKeyCredential, as JSON (WebAuthn's toJSON()).
+    credential: dict[str, Any]
 
 
 class SecondStepCode(BaseModel):
@@ -306,6 +312,69 @@ def second_step(body: SecondStepCode, request: Request, db: DbSession, response:
     """Give the second step of a sign-in waiting on one: a code from their
     authenticator app, or a recovery code. Wrong codes count against limits of their
     own (horatio.auth.attempts); five wrong end the sign-in, to start again."""
+    if two_step.is_app_code(body.code):
+        return give_second_step(
+            request,
+            db,
+            response,
+            "app",
+            lambda user, _: two_step.check_app(db, user, body.code),
+            "That code isn't right.",
+        )
+    return give_second_step(
+        request,
+        db,
+        response,
+        "recovery_code",
+        lambda user, _: two_step.use_recovery_code(db, user, body.code),
+        "That recovery code isn't right, or has been used.",
+    )
+
+
+@router.post("/second-step/passkey/options")
+@allowed_first
+def passkey_options(request: Request, db: DbSession) -> dict[str, Any]:
+    """What the browser needs to sign the waiting sign-in with a passkey: WebAuthn's
+    PublicKeyCredentialRequestOptions, as JSON. Its challenge works once."""
+    waiting = two_step.waiting(db, request.cookies.get(two_step.COOKIE))
+    if waiting is None:
+        raise HTTPException(status.HTTP_410_GONE, AGAIN)
+    user = db.get_one(User, waiting.user_id)
+    if not two_step.passkey_count(db, user):
+        raise HTTPException(status.HTTP_409_CONFLICT, "You have no passkey set up.")
+    options = passkeys.sign_in_options(db, waiting, user)
+    db.commit()
+    return options
+
+
+@router.post("/second-step/passkey")
+@allowed_first
+def second_step_passkey(
+    body: PasskeySigned, request: Request, db: DbSession, response: Response
+) -> Me:
+    """Give the second step of a sign-in waiting on one with a passkey: the browser's
+    answer to the challenge from /second-step/passkey/options. Counted against the
+    same limits as codes."""
+    return give_second_step(
+        request,
+        db,
+        response,
+        "passkey",
+        lambda user, waiting: passkeys.check(db, waiting, user, body.credential),
+        "That passkey didn't sign you in. Try again, or use another way.",
+    )
+
+
+def give_second_step(
+    request: Request,
+    db: DbSession,
+    response: Response,
+    method: str,
+    right: Callable[[User, SecondStepSignIn], bool],
+    wrong_message: str,
+) -> Me:
+    """Check a second step for the sign-in waiting here, with `right`: limited, logged,
+    and counted against the sign-in, which ends after five wrong."""
     waiting = two_step.waiting(db, request.cookies.get(two_step.COOKIE))
     if waiting is None:
         clear_second_step_cookie(response)
@@ -331,24 +400,13 @@ def second_step(body: SecondStepCode, request: Request, db: DbSession, response:
     waiting = two_step.waiting(db, request.cookies.get(two_step.COOKIE))
     if waiting is None:
         raise HTTPException(status.HTTP_410_GONE, AGAIN)
-    method = "app" if two_step.is_app_code(body.code) else "recovery_code"
-    right = (
-        two_step.check_app(db, user, body.code)
-        if method == "app"
-        else two_step.use_recovery_code(db, user, body.code)
-    )
-    if not right:
+    if not right(user, waiting):
         ended = two_step.wrong(db, waiting)
         record(db, user, "account.second_step_failed", kind=method, **whose, **from_ip)
         db.commit()
         if ended:
-            raise HTTPException(status.HTTP_410_GONE, "Too many wrong codes. Sign in again.")
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
-            "That code isn't right."
-            if method == "app"
-            else "That recovery code isn't right, or has been used.",
-        )
+            raise HTTPException(status.HTTP_410_GONE, "Too many wrong tries. Sign in again.")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, wrong_message)
     return signed_in_by_second_step(db, user, waiting, method, request, response)
 
 

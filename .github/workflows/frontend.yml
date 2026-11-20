@@ -90,6 +90,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/uploads"
           HORATIO_FRONTEND_DIST=$GITHUB_WORKSPACE/frontend/dist HORATIO_UPLOAD_DIR=$RUNNER_TEMP/uploads HORATIO_AUTH_LIMITS=false \
             HORATIO_TWO_STEP_FOR_CUSTODIANS=false HORATIO_TOTP_KEY=ZTJlIG9ubHk6IG5vdCBhIHJlYWwga2V5ICEhISEhISE= \
+            HORATIO_WEBAUTHN_ORIGIN=http://localhost:8766 \
             uv run uvicorn horatio.app:app --port 8766 --timeout-keep-alive 300 > "$RUNNER_TEMP/horatio.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/horatio.pid"
           for i in $(seq 1 30); do curl -sf localhost:8766/api/health && break; sleep 1; done

@@ -613,6 +613,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/second-step/passkey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Second Step Passkey
+         * @description Give the second step of a sign-in waiting on one with a passkey: the browser's
+         *     answer to the challenge from /second-step/passkey/options. Counted against the
+         *     same limits as codes.
+         */
+        post: operations["second_step_passkey_api_auth_second_step_passkey_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/second-step/passkey/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passkey Options
+         * @description What the browser needs to sign the waiting sign-in with a passkey: WebAuthn's
+         *     PublicKeyCredentialRequestOptions, as JSON. Its challenge works once.
+         */
+        post: operations["passkey_options_api_auth_second_step_passkey_options_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/signup": {
         parameters: {
             query?: never;
@@ -13030,6 +13073,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/staff-two-step": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Staff Two Step
+         * @description Whether the troupe asks a second step of its staff, and who of them has one.
+         */
+        get: operations["get_staff_two_step_api_troupes__troupe_id__staff_two_step_get"];
+        /**
+         * Set Staff Two Step
+         * @description For the lead storyteller (or the custodian): ask a second step of the troupe's
+         *     staff, or stop. Those without one are sent to set it up at their next request. The
+         *     lead storyteller needs one of their own first.
+         */
+        put: operations["set_staff_two_step_api_troupes__troupe_id__staff_two_step_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/staff/{user_id}": {
         parameters: {
             query?: never;
@@ -13773,6 +13842,68 @@ export interface paths {
          * @description Turn off their authenticator app, giving their password.
          */
         post: operations["remove_app_api_two_step_app_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Passkey
+         * @description Keep the passkey the browser made. With someone's first second step come ten
+         *     recovery codes.
+         */
+        post: operations["add_passkey_api_two_step_passkeys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passkey Options
+         * @description What the browser needs to make a passkey for Horatio: WebAuthn's
+         *     PublicKeyCredentialCreationOptions, as JSON. Its challenge works once.
+         */
+        post: operations["passkey_options_api_two_step_passkeys_options_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/{passkey_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Passkey
+         * @description Remove one of their passkeys, giving their password.
+         */
+        post: operations["remove_passkey_api_two_step_passkeys__passkey_id__remove_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -27437,6 +27568,18 @@ export interface components {
              */
             wizard: boolean;
         };
+        /** NewPasskey */
+        NewPasskey: {
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            };
+            /**
+             * Name
+             * @default Passkey
+             */
+            name: string;
+        };
         /** NewPassword */
         NewPassword: {
             /** Password */
@@ -28699,6 +28842,30 @@ export interface components {
             kind: string | null;
             /** Name */
             name: string;
+        };
+        /** PasskeyOut */
+        PasskeyOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Name */
+            name: string;
+        };
+        /** PasskeySigned */
+        PasskeySigned: {
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            };
         };
         /** Password */
         Password: {
@@ -34513,10 +34680,34 @@ export interface components {
              */
             user_id: string;
         };
+        /** StaffMemberTwoStep */
+        StaffMemberTwoStep: {
+            /** Two Step */
+            two_step: boolean;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** StaffRole */
         StaffRole: {
             role: components["schemas"]["Role"];
             troupe: components["schemas"]["MoveTroupe"];
+        };
+        /** StaffTwoStepIn */
+        StaffTwoStepIn: {
+            /** Required */
+            required: boolean;
+        };
+        /** StaffTwoStepOut */
+        StaffTwoStepOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Required */
+            required: boolean;
+            /** Staff */
+            staff: components["schemas"]["StaffMemberTwoStep"][];
         };
         /** StarIn */
         StarIn: {
@@ -37267,6 +37458,10 @@ export interface components {
             apps_available: boolean;
             /** Needed */
             needed: boolean;
+            /** Passkeys */
+            passkeys: components["schemas"]["PasskeyOut"][];
+            /** Passkeys Available */
+            passkeys_available: boolean;
             /** Recovery Codes Left */
             recovery_codes_left: number;
             /** Required By */
@@ -39886,6 +40081,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    second_step_passkey_api_auth_second_step_passkey_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeySigned"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    passkey_options_api_auth_second_step_passkey_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -64011,6 +64261,72 @@ export interface operations {
             };
         };
     };
+    get_staff_two_step_api_troupes__troupe_id__staff_two_step_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTwoStepOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_staff_two_step_api_troupes__troupe_id__staff_two_step_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffTwoStepIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTwoStepOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     remove_staff_api_troupes__troupe_id__staff__user_id__delete: {
         parameters: {
             query?: never;
@@ -65520,6 +65836,94 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_passkey_api_two_step_passkeys_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewPasskey"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodes"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    passkey_options_api_two_step_passkeys_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    remove_passkey_api_two_step_passkeys__passkey_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
             cookie?: never;
         };
         requestBody: {

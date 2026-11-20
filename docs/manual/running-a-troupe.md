@@ -85,6 +85,12 @@ Storytellers and the lead add staff on the **Staff** tab:
 
 To change someone's role, choose another in the list beside their name. **Remove** takes them off the staff. Only the custodian appoints a new lead storyteller.
 
+### Asking the staff for two-step sign-in
+
+Staff see players' emails and lines and veils, so the lead storyteller can ask every one of them to sign in with [two steps](getting-started.md#two-step-sign-in): on the **Staff** tab, turn on **Staff must sign in with two steps** in the **Two-step sign-in** card. Set up your own first, in Account › Sign-in and email: it asks it of you too.
+
+Anyone on the staff without it is sent to set it up when they next open Horatio, and can do nothing else until they have. The card lists who hasn't yet. Someone on the staff of two troupes needs it if either troupe asks, since one sign-in opens both. Taking someone off the staff stops asking it of them. Turning it on or off is kept in the troupe's log.
+
 ### Renaming or archiving the troupe
 
 Only the lead storyteller (and the custodian) can do these, on the troupe's **Overview**:

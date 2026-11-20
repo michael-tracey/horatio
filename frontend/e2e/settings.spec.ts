@@ -412,7 +412,8 @@ test("two-step sign-in: an authenticator app set up from Account, then asked for
   const codes = await listed.allTextContents();
   await page.screenshot(shots("settings-two-step-codes"));
   await card.getByRole("button", { name: "I've kept them" }).click();
-  await expect(card.getByText("Authenticator app set up. 10 of 10 recovery codes left.")).toBeVisible();
+  await expect(card.getByText("Authenticator app set up.")).toBeVisible();
+  await expect(card.getByText("10 of 10 recovery codes left.")).toBeVisible();
 
   // On another device the password alone isn't enough: the app's code is asked next.
   const other = await (await browser.newContext()).newPage();
@@ -442,7 +443,42 @@ test("two-step sign-in: an authenticator app set up from Account, then asked for
   await other.getByRole("button", { name: "Sign in" }).click();
   await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
   await page.reload();
-  await expect(card.getByText("Authenticator app set up. 9 of 10 recovery codes left.")).toBeVisible();
+  await expect(card.getByText("9 of 10 recovery codes left.")).toBeVisible();
+});
+
+/** A passkey on the page's device: Chrome's virtual authenticator, which says yes to
+ * the person's face or finger by itself. */
+async function passkeyDevice(page: Page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("WebAuthn.enable");
+  await cdp.send("WebAuthn.addVirtualAuthenticator", {
+    options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true },
+  });
+}
+
+test("two-step sign-in with a passkey: added from Account, then signed in with after the password (#1057)", async ({ browser }) => {
+  const { page, email } = await person(browser, "passkey-player");
+  await passkeyDevice(page);
+  await page.goto("/account/sign-in");
+  const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
+  await card.getByLabel("Passkey name").fill("This laptop");
+  await card.getByRole("button", { name: "Add a passkey" }).click();
+  // The first second step brings the recovery codes.
+  await expect(card.getByRole("list", { name: "Recovery codes" }).getByRole("listitem")).toHaveCount(10);
+  await card.getByRole("button", { name: "I've kept them" }).click();
+  await expect(card.getByRole("region", { name: "Passkeys" }).getByText("This laptop")).toBeVisible();
+  await page.screenshot(shots("settings-two-step-passkey"));
+
+  // Signed out, the password then the passkey: the same device, so the same passkey.
+  await (await topBar(page)).getByRole("button", { name: "Sign out" }).click();
+  await page.getByLabel("Email or handle").fill(email);
+  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Two-step sign-in" })).toBeVisible();
+  await page.getByRole("button", { name: "Use a passkey" }).click();
+  // Back where they signed out from, with the passkey just used.
+  await expect(page).toHaveURL(/\/account\/sign-in$/);
+  await expect(card.getByText(/This laptop · added .*, last used/)).toBeVisible();
 });
 
 test("the bell links to the notification settings", async ({ browser }) => {

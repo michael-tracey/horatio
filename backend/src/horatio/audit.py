@@ -119,6 +119,7 @@ NOTICE: frozenset[str] = frozenset(
         "account.two_step_reset",
         "account.recovery_codes_made",
         "account.recovery_code_used",
+        "troupe.staff_two_step",
         "account.view_as",
         "account.view_as_ended",
         # --- the custodian's work, and what stays with a troupe for good ---

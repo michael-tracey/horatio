@@ -7,6 +7,7 @@ import { AtHandle, PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, ErrorText, Field, Loading, Select } from "../../components/ui";
 import { useAction, useMe } from "../../hooks";
 import { ROLE_LINES, roleLabel } from "./roles";
+import { StaffTwoStep } from "./StaffTwoStep";
 
 const ASSIGNABLE: Role[] = ["storyteller", "assistant_storyteller", "narrator"];
 
@@ -96,6 +97,7 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
           </form>
         </Card>
       )}
+      {staff.data && <StaffTwoStep troupeId={troupe.id} staff={staff.data} />}
       <Card title="Roles" className="md:col-span-2">
         <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
           {(["lead_storyteller", ...ASSIGNABLE] as Role[]).map((r) => (

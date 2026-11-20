@@ -117,6 +117,8 @@ def test_setting_up_an_authenticator_app_gives_recovery_codes_and_keeps_the_secr
     assert agnes.client.get("/two-step").json() == {
         "app": False,
         "apps_available": True,
+        "passkeys": [],
+        "passkeys_available": True,
         "recovery_codes_left": 0,
         "required_by": [],
         "needed": False,
@@ -155,7 +157,7 @@ def test_setting_up_an_authenticator_app_gives_recovery_codes_and_keeps_the_secr
     assert audit.level("account.two_step_added") == "notice"
 
 
-def test_without_the_servers_key_no_app_can_be_set_up_and_no_one_is_held_to_it(
+def test_without_the_servers_key_only_passkeys_can_be_set_up(
     client_for: Callable[[], TestClient],
     session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -165,7 +167,15 @@ def test_without_the_servers_key_no_app_can_be_set_up_and_no_one_is_held_to_it(
     mina = sign_up(client_for, "mina", custodian=True, session=session)
     assert mina.client.post("/two-step/app").status_code == 409
     state = mina.client.get("/two-step").json()
-    assert (state["apps_available"], state["needed"]) == (False, False)
+    assert (state["apps_available"], state["passkeys_available"], state["needed"]) == (
+        False,
+        True,
+        True,
+    )
+    # With neither, there's no way to set one up, so no one is held to it.
+    monkeypatch.setattr(get_settings(), "public_url", "http://horatio.example")
+    state = mina.client.get("/two-step").json()
+    assert (state["passkeys_available"], state["needed"]) == (False, False)
     assert mina.client.get("/troupes").status_code == 200
 
 
@@ -248,7 +258,7 @@ def test_five_wrong_codes_end_the_sign_in_and_each_is_logged(
 
     assert [a.status_code for a in answers] == [401, 401, 401, 401, 410]
     assert answers[0].json()["detail"] == "That code isn't right."
-    assert answers[4].json()["detail"] == "Too many wrong codes. Sign in again."
+    assert answers[4].json()["detail"] == "Too many wrong tries. Sign in again."
     # Even the right code is no good now: sign in again.
     assert second(fresh, code(secret, clock)).status_code == 410
     failed = events(session, "account.second_step_failed")

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router";
+import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
 import { api, ApiError, unwrap } from "../api/client";
 import type { components } from "../api/schema";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice } from "../components/ui";
@@ -28,8 +29,7 @@ type SecondStep = components["schemas"]["SecondStep"];
 function useAfterPassword() {
   const navigate = useNavigate();
   const next = useNext();
-  return (answer: object) =>
-    "second_step" in answer ? navigate(withNext("/sign-in/second-step", next), { state: answer }) : navigate(next ?? "/characters");
+  return (answer: object) => ("second_step" in answer ? navigate(withNext("/sign-in/second-step", next), { state: answer }) : navigate(next ?? "/characters"));
 }
 
 export function SignInPage() {
@@ -151,10 +151,20 @@ export function SecondStepPage() {
     await unwrap(api.POST("/api/auth/second-step", { body: { code } }));
     navigate(next ?? "/characters");
   });
+  const passkey = useAction(async () => {
+    const optionsJSON = await unwrap(api.POST("/api/auth/second-step/passkey/options"));
+    // The browser asks for the person's face, finger or PIN.
+    const credential = await startAuthentication({ optionsJSON: optionsJSON as never });
+    await unwrap(api.POST("/api/auth/second-step/passkey", { body: { credential: credential as never } }));
+    navigate(next ?? "/characters");
+  });
   // Timed out, or too many wrong codes: start again from the password.
-  const failed = (state?.second_step ? null : waiting.error) ?? give.error;
+  const failed = (state?.second_step ? null : waiting.error) ?? give.error ?? passkey.error;
   const over = failed instanceof ApiError && failed.status === 410;
   const ways = state?.second_step ?? waiting.data?.second_step ?? [];
+  // A passkey first where there is one; a code from the app, or a recovery code in their place.
+  const withPasskey = !recovery && ways.includes("passkey") && browserSupportsWebAuthn();
+  const withCode = recovery || ways.includes("app") || (ways.includes("passkey") && !browserSupportsWebAuthn());
 
   if (me.data) return <Navigate to={next ?? "/characters"} replace />;
   return (
@@ -176,24 +186,41 @@ export function SecondStepPage() {
           }}
           className="flex flex-col gap-4"
         >
-          <p className="text-sm text-mist">{recovery ? "Give one of the recovery codes you kept when you set up two-step sign-in. Each works once." : "Open your authenticator app and give the 6-digit code it shows for Horatio."}</p>
-          <Field label={recovery ? "Recovery code" : "Code from your app"}>
-            <Input
-              required
-              autoFocus
-              autoComplete="one-time-code"
-              autoCapitalize="none"
-              spellCheck={false}
-              inputMode={recovery ? "text" : "numeric"}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          </Field>
-          <ErrorText error={give.error} />
-          <Button type="submit" disabled={give.isPending}>
-            Sign in
-          </Button>
-          {ways.includes("app") && ways.includes("recovery_code") && (
+          {withPasskey && (
+            <>
+              <Button type="button" disabled={passkey.isPending} onClick={() => passkey.mutate(undefined)}>
+                Use a passkey
+              </Button>
+              <ErrorText error={passkey.error} />
+              {withCode && <p className="text-center text-sm text-mist">or</p>}
+            </>
+          )}
+          {withCode && (
+            <>
+              <p className="text-sm text-mist">
+                {recovery
+                  ? "Give one of the recovery codes you kept when you set up two-step sign-in. Each works once."
+                  : "Open your authenticator app and give the 6-digit code it shows for Horatio."}
+              </p>
+              <Field label={recovery ? "Recovery code" : "Code from your app"}>
+                <Input
+                  required
+                  autoFocus
+                  autoComplete="one-time-code"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  inputMode={recovery ? "text" : "numeric"}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                />
+              </Field>
+              <ErrorText error={give.error} />
+              <Button type="submit" variant={withPasskey ? "secondary" : "primary"} disabled={give.isPending}>
+                Sign in
+              </Button>
+            </>
+          )}
+          {(ways.includes("app") || ways.includes("passkey")) && ways.includes("recovery_code") && (
             <button
               type="button"
               className="self-center text-sm text-gold underline"
@@ -202,7 +229,7 @@ export function SecondStepPage() {
                 setCode("");
               }}
             >
-              {recovery ? "Use your authenticator app instead" : "Use a recovery code instead"}
+              {recovery ? (ways.includes("app") ? "Use your authenticator app instead" : "Use your passkey instead") : "Use a recovery code instead"}
             </button>
           )}
           <p className="text-center text-sm text-mist">Lost them all? Ask the custodian to reset your two-step sign-in.</p>

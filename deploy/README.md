@@ -46,8 +46,15 @@ host nginx :443 ── Let's Encrypt certificate, renewed by certbot's timer
    - **Two-step sign-in:** `HORATIO_TOTP_KEY`. Make it once with
      `cd backend && uv run python -m horatio.auth.two_step` and paste the line it
      prints. It seals authenticator apps' secrets; keep it, as a new one stops every
-     app set up with the old. The custodian must set up two-step sign-in at their
-     next request once it is set.
+     app set up with the old. Passkeys need nothing more: they belong to the host of
+     `HORATIO_PUBLIC_URL` (override with `HORATIO_WEBAUTHN_RP_ID` and
+     `HORATIO_WEBAUTHN_ORIGIN` only if the site has another address).
+   - **Every custodian must set up two-step sign-in at their next request after
+     the deploy, with or without `HORATIO_TOTP_KEY`.** On an https site passkeys are
+     always on, so there is always a way to set one up; without the key, a passkey is
+     the only way. Have a phone, or a computer with a password manager or Touch ID /
+     Windows Hello, ready. Only a site with neither https nor the key holds no one
+     to it.
    - **Optional:** email (SMTP), Discord and phone notifications stay off until
      their settings are filled in. For phone notifications, make the key with
      `cd backend && uv run python -m horatio.web_push` and paste the line it

@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     # set up, and Account says so. Changing it stops every authenticator app set up
     # with the old one, until its person sets it up again.
     totp_key: str | None = None
+    # Passkeys (horatio.auth.passkeys): the site they belong to (the relying party id, a
+    # host name) and the origin browsers sign them for. Unset, `public_url`'s host and
+    # origin, which is right unless the site is reached at more than one address.
+    # Changing the id stops every passkey made for the old one.
+    webauthn_rp_id: str | None = None
+    webauthn_origin: str | None = None
     # Secure cookies are only sent over HTTPS. Turn off only for local HTTP development.
     cookie_secure: bool = True
 

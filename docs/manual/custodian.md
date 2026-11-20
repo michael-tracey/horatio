@@ -46,9 +46,9 @@ The repository's own deployment has a script for this, `deploy/custodian.sh you@
 
 ### Two-step sign-in for the custodian
 
-The custodian must sign in with two steps: after the password, a code from an authenticator app on their phone. The first time you open Horatio as the custodian, it sends you to set this up, and nothing else opens until you have. Keep the recovery codes it gives you somewhere safe. See [Two-step sign-in](getting-started.md#two-step-sign-in) for how it works.
+The custodian must sign in with two steps: after the password, a passkey or a code from an authenticator app on their phone. The first time you open Horatio as the custodian, it sends you to set this up, and nothing else opens until you have. Keep the recovery codes it gives you somewhere safe. See [Two-step sign-in](getting-started.md#two-step-sign-in) for how it works.
 
-The server needs its key for this (`HORATIO_TOTP_KEY`, see deploy/README.md). Without it, no one can set up an authenticator app, and the custodian isn't held to it.
+Authenticator apps need the server's key (`HORATIO_TOTP_KEY`, see deploy/README.md); without it, only passkeys can be set up. Passkeys need the site on https. With neither, the custodian isn't held to it.
 
 If you lose your phone and your recovery codes, another custodian can reset your two-step sign-in (below). If you are the only one, run this where Horatio runs: `docker exec horatio-api python -m horatio.auth.two_step reset you@example.com` (from the `backend` folder on your own computer, `uv run python -m horatio.auth.two_step reset you@example.com`). It is kept in the audit log for good.
 
@@ -219,7 +219,7 @@ For someone who has lost their authenticator app and their recovery codes:
 2. Choose **⋯ › Reset two-step sign-in…** (it is there only for people who have it on).
 3. Say why, and choose **Reset two-step sign-in**.
 
-Their authenticator app and recovery codes go, and their password alone signs them in until they set it up again. They're told in the bell, with your reason, and it is kept in the audit log for good. A password reset never does this: someone with two-step sign-in who resets their password is still asked for their second step.
+Their passkeys, authenticator app and recovery codes go, and their password alone signs them in until they set it up again. They're told in the bell, with your reason, and it is kept in the audit log for good. A password reset never does this: someone with two-step sign-in who resets their password is still asked for their second step.
 
 ### Suspending someone and lifting it
 

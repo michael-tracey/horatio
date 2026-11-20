@@ -12,6 +12,7 @@
     "api": "cd ../backend && uv run python -m horatio.openapi > ../frontend/openapi.json && cd ../frontend && openapi-typescript openapi.json -o src/api/schema.d.ts"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^14.0.0",
     "@tanstack/react-query": "^5.104.2",
     "@tiptap/core": "3.32.0",
     "@tiptap/extension-blockquote": "3.32.0",
