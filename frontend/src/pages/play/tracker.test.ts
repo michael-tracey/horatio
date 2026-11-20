@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView } from "../../api/types";
-import { afterSending, applyChange, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, tapsToast, tapToast, withPending, type Tap } from "./tracker";
+import { afterSending, applyChange, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, memberDown, saveQueue, tapId, tapsToast, tapToast, withPending, type Tap } from "./tracker";
 import { amountsOf, usingTaps, waivedBy } from "./UsePower";
 
 function view(overrides: Partial<PlayView> = {}): PlayView {
@@ -247,7 +247,7 @@ describe("items equipped (#306)", () => {
 });
 
 describe("a group of Stock NPCs (#1056)", () => {
-  const member = (number: number) => ({ number, name: `Member ${number}`, marks: [] as string[], blood: { value: 10, most: 10, start: 10 } });
+  const member = (number: number) => ({ number, name: `Member ${number}`, marks: [] as string[], blood: { value: 10, most: 10, start: 10 }, struck: false });
   const group = () =>
     view({
       npc_form: "stock",
@@ -273,6 +273,21 @@ describe("a group of Stock NPCs (#1056)", () => {
 
     expect(shown.log[0]!.text).toBe("Member 4: took 1 normal (not on the sheet now)");
     expect(shown.stock_members.every((m) => m.marks.length === 0)).toBe(true);
+  });
+
+  it("strikes a member off by hand and brings it back, as the server does (#1075)", () => {
+    const strike = change("member:2/struck", 1, 1);
+    const shown = withPending(group(), [strike, change("member:2/struck", 1, 2), change("member:3/struck", 1, 3), change("member:3/struck", -1, 4)]);
+
+    expect(shown.stock_members.map((m) => m.struck)).toEqual([false, true, false]);
+    // Out of the fight with every level left.
+    expect(shown.stock_members.map((m) => memberDown(shown, m))).toEqual([false, true, false]);
+    expect(shown.stock_members[1]!.marks).toEqual([]);
+    expect(shown.log.map((e) => e.text)).toEqual(["Member 3: back in the fight", "Member 3: struck off", "Member 2: struck off", "Member 2: struck off"]);
+    expect(withPending(group(), [strike, makeTap({ kind: "undo", undoes: strike.id }, "g1", at(2))]).stock_members[1]!.struck).toBe(false);
+    expect(tapToast(withPending(group(), []), strike)).toBe("Member 2 struck off");
+    expect(tapToast(shown, change("member:2/struck", -1, 5))).toBe("Member 2 back in the fight");
+    expect(withPending(group(), [change("member:4/struck", 1, 1)]).log[0]!.text).toBe("Member 4: struck off (not on the sheet now)");
   });
 
   it("says in the toast which member took it", () => {

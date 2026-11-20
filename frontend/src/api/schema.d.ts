@@ -400,8 +400,8 @@ export interface paths {
         };
         /**
          * Log Settings
-         * @description For the custodian: what the log records, how long it keeps each level, and
-         *     what the last purge deleted.
+         * @description For the custodian: what the log records, how long it keeps each level, whether
+         *     sign-in events keep IP addresses, and what the last purge deleted.
          */
         get: operations["log_settings_api_audit_settings_get"];
         /**
@@ -14854,6 +14854,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
+            /** Sign In Ips */
+            sign_in_ips: boolean;
         };
         /** AuditSettingsOut */
         AuditSettingsOut: {
@@ -14867,6 +14869,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
+            /** Sign In Ips */
+            sign_in_ips: boolean;
         };
         /** AuditTroupe */
         AuditTroupe: {
@@ -15388,6 +15392,8 @@ export interface components {
             grade: "cheap" | "standard" | "special";
             /** Kind */
             kind: string;
+            /** Member */
+            member?: number | null;
             /** Name */
             name: string;
             /**
@@ -34414,8 +34420,9 @@ export interface components {
         /**
          * StockMemberOut
          * @description One member of a group of Stock NPCs at this game (issue #1056), tapped as
-         *     "member:<n>/health" and "member:<n>/blood". Its health levels are the stat
-         *     block's; with every one marked it is out of the fight (MET: VTM p. 490).
+         *     "member:<n>/health", "member:<n>/blood" and "member:<n>/struck". Its health
+         *     levels are the stat block's; with every one marked, or struck off by hand, it is
+         *     out of the fight (MET: VTM p. 490).
          */
         StockMemberOut: {
             blood: components["schemas"]["Tracker"];
@@ -34425,6 +34432,11 @@ export interface components {
             name: string;
             /** Number */
             number: number;
+            /**
+             * Struck
+             * @default false
+             */
+            struck: boolean;
         };
         /** StockNpcOut */
         StockNpcOut: {

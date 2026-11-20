@@ -276,6 +276,9 @@ class BackupEquipment(Strict):
     description: Text = ""
     # The troupe that made it special, by name.
     special_by: Name | None = None
+    # In a group of Stock NPCs, the member who carries it (issue #1075); None for the
+    # group as a whole, and for anyone else's.
+    member: int | None = Field(default=None, ge=1, le=20)
 
 
 class BackupRetainer(Strict):
@@ -510,8 +513,8 @@ def picture_of(
 
 
 def stock_of(db: Session, character: Character) -> BackupStock | None:
-    """A Stock NPC's rating, specializations and count; never staff's notes on it, or
-    which member carries what."""
+    """A Stock NPC's rating, specializations and count; never staff's notes on it.
+    Which member of a group carries each item is on the item (`equipment_of`)."""
     found = db.scalar(select(StockNpc).where(StockNpc.character_id == character.id))
     if found is None:
         return None
@@ -522,6 +525,13 @@ def stock_of(db: Session, character: Character) -> BackupStock | None:
 
 def equipment_of(db: Session, character: Character) -> list[BackupEquipment]:
     names = dict(db.execute(select(Troupe.id, Troupe.name)).all())
+    # A group of Stock NPCs' items, each with the member who carries it (issue #1075).
+    row = db.scalar(select(StockNpc).where(StockNpc.character_id == character.id))
+    carried = (
+        {k: n for k, n in row.item_members.items() if n <= row.count}
+        if row is not None and row.count > 1
+        else {}
+    )
     return [
         BackupEquipment(
             name=item.name,
@@ -533,6 +543,7 @@ def equipment_of(db: Session, character: Character) -> list[BackupEquipment]:
             effects=item.effects,
             description=item.description,
             special_by=names.get(item.special_troupe_id) if item.special_troupe_id else None,
+            member=carried.get(str(item.id)),
         )
         for item in equipment.items_of(db, character)
     ]
@@ -1082,15 +1093,18 @@ def import_retainers(db: Session, user: User, found: Imported, document: Charact
         found.items.append(Reviewed("retainers", label, "new"))
 
 
-def shown_only(found: Imported, document: CharacterDocument, *, staff: bool = False) -> None:
+def shown_only(
+    found: Imported, document: CharacterDocument, *, staff: bool = False, items: bool = True
+) -> None:
     """What a home troupe's storytellers give, shown and never imported. For `staff`
-    importing their troupe's own, it says where to give it."""
+    importing their troupe's own, it says where to give it. Without `items`, its
+    equipment, imported already (a Stock NPC's, horatio.troupe_import), isn't listed."""
     given = (
         "Give it from the troupe's equipment."
         if staff
         else "Its home troupe's storytellers give equipment: ask them for it."
     )
-    for item in document.equipment:
+    for item in document.equipment if items else ():
         found.items.append(Reviewed("equipment", item.name, "info", reason=given))
     for identity in document.identities:
         if identity.accepted_by:

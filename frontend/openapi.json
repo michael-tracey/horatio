@@ -2391,12 +2391,17 @@
             ],
             "title": "Record",
             "type": "string"
+          },
+          "sign_in_ips": {
+            "title": "Sign In Ips",
+            "type": "boolean"
           }
         },
         "required": [
           "record",
           "keep_debug",
-          "keep_info"
+          "keep_info",
+          "sign_in_ips"
         ],
         "title": "AuditSettingsIn",
         "type": "object"
@@ -2442,12 +2447,17 @@
             ],
             "title": "Record",
             "type": "string"
+          },
+          "sign_in_ips": {
+            "title": "Sign In Ips",
+            "type": "boolean"
           }
         },
         "required": [
           "record",
           "keep_debug",
           "keep_info",
+          "sign_in_ips",
           "last_purge"
         ],
         "title": "AuditSettingsOut",
@@ -3694,6 +3704,19 @@
             "maxLength": 50,
             "title": "Kind",
             "type": "string"
+          },
+          "member": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member"
           },
           "name": {
             "maxLength": 200,
@@ -52790,7 +52813,7 @@
         "type": "object"
       },
       "StockMemberOut": {
-        "description": "One member of a group of Stock NPCs at this game (issue #1056), tapped as\n\"member:<n>/health\" and \"member:<n>/blood\". Its health levels are the stat\nblock's; with every one marked it is out of the fight (MET: VTM p. 490).",
+        "description": "One member of a group of Stock NPCs at this game (issue #1056), tapped as\n\"member:<n>/health\", \"member:<n>/blood\" and \"member:<n>/struck\". Its health\nlevels are the stat block's; with every one marked, or struck off by hand, it is\nout of the fight (MET: VTM p. 490).",
         "properties": {
           "blood": {
             "$ref": "#/components/schemas/Tracker"
@@ -52809,6 +52832,11 @@
           "number": {
             "title": "Number",
             "type": "integer"
+          },
+          "struck": {
+            "default": false,
+            "title": "Struck",
+            "type": "boolean"
           }
         },
         "required": [
@@ -63162,7 +63190,7 @@
     },
     "/api/audit/settings": {
       "get": {
-        "description": "For the custodian: what the log records, how long it keeps each level, and\nwhat the last purge deleted.",
+        "description": "For the custodian: what the log records, how long it keeps each level, whether\nsign-in events keep IP addresses, and what the last purge deleted.",
         "operationId": "log_settings_api_audit_settings_get",
         "responses": {
           "200": {
