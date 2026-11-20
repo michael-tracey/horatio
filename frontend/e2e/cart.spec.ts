@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, tapMid, tabSettings } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, tapMid, tabSettings, aboutChoice, addList } from "./support";
 
 /** The XP cart: changes on the sheet wait in it until Spend XP makes them. */
 
@@ -122,8 +122,8 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
     await route.continue();
   });
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Merits").fill("Ventrue Royalty");
-  await p.getByRole("button", { name: /^Ventrue Royalty/ }).click();
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Ventrue Royalty");
+  await p.getByRole("option", { name: /^Ventrue Royalty/ }).click();
   await expect(p.getByRole("status", { name: "Loading its choices…" })).toBeVisible();
   await expect(p.getByRole("button", { name: "Add to cart" })).toBeDisabled();
   release();
@@ -224,7 +224,7 @@ test("Walking Atrocity gives a bonus attribute dot for each dot of Morality belo
   // The Add panel asks where the dot goes as the power goes in.
   await part("Disciplines").getByRole("button", { name: "Add" }).click();
   await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Elder Disciplines/ }).click();
-  await p.getByRole("button", { name: new RegExp(`^${power}`) }).click();
+  await (await addList(p, "Elder Disciplines")).getByRole("option", { name: new RegExp(`^${power}`) }).click();
   await expect(p.getByText("Place your bonus attribute dots")).toBeVisible();
   await expect(p.getByText("Place 1 bonus dot, one for each dot of Morality below 5, up to 5 in one.")).toBeVisible();
   await p.getByLabel("Bonus dots in Physical").selectOption("1");
@@ -301,8 +301,8 @@ test("once accepted, a merit or flaw is asked of the home troupe: one declined, 
   const cart = p.getByRole("list", { name: "Changes in the cart" });
   const trait = (name: string) => p.locator(`li[data-trait="${name}"]`);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Merits").fill("Rugged");
-  await p.getByRole("button", { name: /^Rugged/ }).click();
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Rugged");
+  await p.getByRole("option", { name: /^Rugged/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await trait("Low Pain Threshold").getByRole("button", { name: "Remove Low Pain Threshold" }).click();
   const rugged = cart.getByRole("listitem").filter({ hasText: "Rugged" });
@@ -391,8 +391,8 @@ test("a finished Nosferatu asks staff for Bloodline: Creeps by exception, spends
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   const cart = p.getByRole("list", { name: "Changes in the cart" });
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Merits").fill("Bloodline: Creeps");
-  await p.getByRole("button", { name: /^Bloodline: Creeps/ }).click();
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Bloodline: Creeps");
+  await p.getByRole("option", { name: /^Bloodline: Creeps/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   const line = cart.getByRole("listitem").filter({ hasText: "Bloodline: Creeps" });
   await expect(line).toContainText("Bloodline: Creeps can only be chosen during character creation.", { timeout: 15_000 });
@@ -574,8 +574,8 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   // Archaic, then Computer, which an Archaic character cannot have: Archaic's line is refused, and nothing can be spent.
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Flaws/ }).click();
-  await p.getByLabel("Search Flaws").fill("Archaic");
-  await p.getByRole("button", { name: /^Archaic/ }).click();
+  await p.getByRole("combobox", { name: "Search Flaws", exact: true }).fill("Archaic");
+  await p.getByRole("option", { name: /^Archaic/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   // With Archaic in the cart, the Skills panel lists nothing to take until its answer of
   // what the cart allows comes, as on a slow connection (#1032), then leaves Computer out.
@@ -586,13 +586,13 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
     await route.continue();
   });
   await part("Skills").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Skills").fill("Computer");
+  await p.getByRole("combobox", { name: "Search Skills", exact: true }).fill("Computer");
   await expect(p.getByRole("status", { name: "Checking what Wren can take…" })).toBeVisible();
-  await expect(p.getByRole("button", { name: /^Computer/ })).toHaveCount(0);
+  await expect(p.getByRole("option", { name: /^Computer/ })).toHaveCount(0);
   release();
   await p.unrouteAll({ behavior: "wait" });
   await expect(p.getByText("None you can take. 1 you can't:")).toBeVisible();
-  await expect(p.getByRole("button", { name: /^Computer/ })).toHaveCount(0);
+  await expect(p.getByRole("option", { name: /^Computer/ })).toHaveCount(0);
   await part("Skills").getByRole("button", { name: "Close", exact: true }).click();
   // Computer goes in from another tab, as a cart kept in this browser can: the cart refuses the pair.
   const tab = await p.context().newPage();
@@ -683,10 +683,11 @@ test("a Neonate Crusader with Hard as Steel buys one Fortitude elder power throu
   // The picker offers Fortitude's elder powers at the merit's price, and no others.
   await disciplines.getByRole("button", { name: "Add" }).click();
   await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
-  const armor = p.getByRole("button", { name: /^Fortitude: Personal Armor/ });
+  const elder = await addList(p, "Elder Disciplines");
+  const armor = elder.getByRole("option", { name: /^Fortitude: Personal Armor/ });
   await expect(armor).toBeEnabled();
   await expect(armor).toContainText("Hard as Steel: 20 XP");
-  await expect(p.getByRole("button", { name: /^Celerity: / })).toHaveCount(0);
+  await expect(elder.getByRole("option", { name: /^Celerity: / })).toHaveCount(0);
   // Priced as it is chosen, with no button to press.
   await armor.click();
   await expect(p.getByText("Hard as Steel: 20 XP.", { exact: true })).toBeVisible();
@@ -699,8 +700,8 @@ test("a Neonate Crusader with Hard as Steel buys one Fortitude elder power throu
   await disciplines.getByRole("button", { name: "Add" }).click();
   await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
   await p.getByLabel("Show").selectOption({ label: "Everything" });
-  await p.getByLabel("Search Elder Disciplines").fill("Resilient Mind");
-  await expect(p.getByRole("button", { name: /^Fortitude: Resilient Mind/ })).toBeDisabled();
+  await p.getByRole("combobox", { name: "Search Elder Disciplines", exact: true }).fill("Resilient Mind");
+  await expect(p.getByRole("option", { name: /^Fortitude: Resilient Mind/ })).toBeDisabled();
   await expect(p.getByText("A Neonate's or Ancilla's blood is too thin for elder powers.", { exact: false })).toBeVisible();
   await p.screenshot(shots("opened-power"));
 
@@ -724,31 +725,32 @@ test("in the picker, a technique, an elder power and a discipline open to say wh
   const disciplines = part("Disciplines");
   const chips = p.getByRole("navigation", { name: "Categories" });
 
-  // Two techniques open at once, each under its own row, and neither is chosen.
+  // A technique's chevron shows what it does under the list, one at a time, choosing none.
+  const about = aboutChoice(p);
   await disciplines.getByRole("button", { name: "Add" }).click();
   await chips.getByRole("button", { name: /^Techniques/ }).click();
   await p.getByLabel("Show").selectOption({ label: "Everything" });
-  await p.getByLabel("Search Techniques").fill("Re");
+  await p.getByRole("combobox", { name: "Search Techniques", exact: true }).fill("Re");
   await p.getByRole("button", { name: "About Relentless Pursuit" }).click();
-  await expect(p.getByText("when someone you're in melee with moves away, move up to 12 steps after them")).toBeVisible();
-  await expect(p.getByText("MET: VTM p. 231")).toBeVisible();
+  await expect(about).toContainText("when someone you're in melee with moves away, move up to 12 steps after them");
+  await expect(about.getByText("MET: VTM p. 231")).toBeVisible();
   await p.getByRole("button", { name: "About Retain the Quick Blood" }).click();
-  await expect(p.getByText("when you spend Blood on a Quietus power, regain 1 of it")).toBeVisible();
-  await expect(p.getByText("when someone you're in melee with moves away, move up to 12 steps after them")).toBeVisible();
+  await expect(about).toContainText("when you spend Blood on a Quietus power, regain 1 of it");
+  await expect(about).not.toContainText("when someone you're in melee with moves away");
   await expect(p.getByRole("button", { name: "Add to cart" })).toHaveCount(0);
   // Closed again with the same chevron.
   await p.getByRole("button", { name: "About Retain the Quick Blood" }).click();
-  await expect(p.getByText("when you spend Blood on a Quietus power, regain 1 of it")).toHaveCount(0);
+  await expect(about).not.toContainText("when you spend Blood on a Quietus power");
 
   // On a phone: an elder power the rules refuse is greyed, and still opens.
   await p.setViewportSize({ width: 375, height: 800 });
   await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
   await p.getByLabel("Show").selectOption({ label: "Everything" });
-  await p.getByLabel("Search Elder Disciplines").fill("Crimson Fury");
-  await expect(p.getByRole("button", { name: /^Animalism: Crimson Fury/ })).toBeDisabled();
+  await p.getByRole("combobox", { name: "Search Elder Disciplines", exact: true }).fill("Crimson Fury");
+  await expect(p.getByRole("option", { name: /^Animalism: Crimson Fury/ })).toBeDisabled();
   await p.getByRole("button", { name: "About Animalism: Crimson Fury" }).click();
-  await expect(p.getByText("flees in a fear frenzy Willpower can't stop")).toBeVisible();
-  await expect(p.getByText("MET: VTM p. 212")).toBeVisible();
+  await expect(about).toContainText("flees in a fear frenzy Willpower can't stop");
+  await expect(about.getByText("MET: VTM p. 212")).toBeVisible();
   await expect(p.getByRole("button", { name: "Add to cart" })).toHaveCount(0);
   // Nothing runs off the side of the screen.
   expect(await p.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
@@ -756,11 +758,11 @@ test("in the picker, a technique, an elder power and a discipline open to say wh
   // A discipline not held yet: the power its first dot gives, and its test.
   await chips.getByRole("button", { name: /^Disciplines/ }).click();
   await p.getByLabel("Show").selectOption({ label: "Everything" });
-  await p.getByLabel("Search Disciplines").fill("Auspex");
+  await p.getByRole("combobox", { name: "Search Disciplines", exact: true }).fill("Auspex");
   await p.getByRole("button", { name: "About Auspex" }).click();
-  await expect(p.getByText("Dot 1 gives:")).toBeVisible();
-  await expect(p.getByText("Heightened Senses", { exact: true })).toBeVisible();
-  await expect(p.getByText("Test: Mental + Investigation against Mental + Willpower.")).toBeVisible();
+  await expect(about.getByText("Dot 1 gives:")).toBeVisible();
+  await expect(about.getByText("Heightened Senses", { exact: true })).toBeVisible();
+  await expect(about.getByText("Test: Mental + Investigation against Mental + Willpower.")).toBeVisible();
   await p.screenshot(shots("power-info"));
 
   // A held one says, under its name on the sheet, what its next dot would give.
@@ -807,10 +809,10 @@ test("in the cart, a second Retainer and a second Alternate Identity are each bo
   await expect(cart.getByText("Add Retainers: Rook 2 · 3 XP")).toBeVisible();
   // And a second identity, by its own name.
   await part("Backgrounds").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Backgrounds").fill("Alternate");
-  // The panel lists it once checked; until then the only match is the one held on the sheet.
-  await expect(p.getByLabel("Search Backgrounds")).toHaveAttribute("placeholder", /you can take/);
-  await p.getByRole("button", { name: /^Alternate Identity/ }).first().click();
+  await p.getByRole("combobox", { name: "Search Backgrounds", exact: true }).fill("Alternate");
+  // The panel lists it once checked.
+  await expect(p.getByRole("combobox", { name: "Search Backgrounds", exact: true })).toHaveAttribute("placeholder", /you can take/);
+  await p.getByRole("option", { name: /^Alternate Identity/ }).click();
   await p.getByPlaceholder("Such as Dr. Ellen Marsh, coroner").fill("Father Kell");
   await p.getByRole("button", { name: "Add to cart" }).click();
   await expect(cart.getByText("Add Alternate Identity: Father Kell 1 · 1 XP")).toBeVisible();
