@@ -265,6 +265,8 @@ test("phone notifications: turned on on this device, which kinds come, and turne
   await expect(page.getByRole("checkbox", { name: "Your boons: phone" })).toBeChecked();
   const renames = page.getByRole("checkbox", { name: "Character renames: phone" });
   await expect(renames).not.toBeChecked();
+  // Teaching asked of your character: always in the bell, and by phone once ticked (#1097).
+  await expect(page.getByRole("checkbox", { name: "Teaching to confirm: phone" })).not.toBeChecked();
 
   await here.click();
   await expect(page.getByText("Phone notifications are on for this device.")).toBeVisible();
