@@ -27,8 +27,8 @@ describe("awardText", () => {
 
   it("says what a game brings, and where from", () => {
     expect(awardText(award)).toBe("about 8 XP a game, from the troupe's session XP");
-    expect(awardText({ ...award, downtime: 1.5, downtime_source: "6 XP from 2 downtime cycles over 4 games in the last year" })).toBe(
-      "about 9.5 XP a game: 8 from the troupe's session XP, and 1.5 from downtimes (6 XP from 2 downtime cycles over 4 games in the last year)",
+    expect(awardText({ ...award, downtime: 1.5, downtime_source: "6 XP from 2 downtime cycles over the troupe's 4 games so far" })).toBe(
+      "about 9.5 XP a game: 8 from the troupe's session XP, and 1.5 from downtimes (6 XP from 2 downtime cycles over the troupe's 4 games so far)",
     );
     expect(awardText({ ...award, per_game: 0, downtime: 2, downtime_source: "the troupe's 2 XP a downtime, counting a cycle a game" })).toBe(
       "about 2 XP a game, from downtimes (the troupe's 2 XP a downtime, counting a cycle a game)",
