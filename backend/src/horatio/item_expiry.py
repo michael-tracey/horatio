@@ -13,7 +13,9 @@ setting is on again.
 - "After N games" counts the games the holder comes to (horatio.checkin) that start
   after the expiry was set, and the item expires once the Nth has ended. A game it
   was given at doesn't count. `attended_games` is the one place attendance is
-  counted.
+  counted. Only player characters check in, so for an NPC, sheeted or Stock, it
+  counts its troupe's games instead (`troupe_games`, issue #1045): each one on the
+  schedule that started after the expiry was set and has ended.
 - "At the end of the cycle" names the troupe's open downtime cycle, and the item
   expires when staff close it.
 
@@ -110,9 +112,34 @@ def attended_games(db: Session, character_id: uuid.UUID, since: datetime, until:
     )
 
 
+def troupe_games(db: Session, troupe_id: uuid.UUID, since: datetime, until: datetime) -> int:
+    """The troupe's games that started at or after `since` and had ended by `until`:
+    what "after N games" counts for an NPC, which never checks in."""
+    return (
+        db.scalar(
+            select(func.count())
+            .select_from(ScheduledGame)
+            .where(
+                ScheduledGame.troupe_id == troupe_id,
+                ScheduledGame.starts_at >= since,
+                ScheduledGame.ends_at <= until,
+            )
+        )
+        or 0
+    )
+
+
 def games_left(db: Session, item: EquipmentItem, at: datetime) -> int:
+    """How many of its games the item's holder has left: those it comes to for a PC,
+    its troupe's for an NPC."""
     assert item.expires_after_games is not None and item.expiry_from is not None
-    done = attended_games(db, item.character_id, item.expiry_from, at)
+    holder = db.get_one(Character, item.character_id)
+    if holder.kind == "pc":
+        done = attended_games(db, holder.id, item.expiry_from, at)
+    else:
+        troupe_id = holder.home_troupe_id or holder.owner_troupe_id
+        assert troupe_id is not None
+        done = troupe_games(db, troupe_id, item.expiry_from, at)
     return max(item.expires_after_games - done, 0)
 
 

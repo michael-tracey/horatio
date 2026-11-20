@@ -69,7 +69,8 @@ class EquipmentItem(Record):
     from_sheet: Mapped[bool] = mapped_column(default=False, server_default="false")
     # When it expires (horatio.item_expiry, #443), while its holder's home troupe lets
     # items expire: "date", once the day `expires_on` is over; "games", once the
-    # holder has been to `expires_after_games` games starting from `expiry_from`;
+    # holder has been to `expires_after_games` games starting from `expiry_from` (for
+    # an NPC, which never checks in, its troupe's games);
     # "cycle", when the downtime cycle `expires_cycle_id` closes. None: never.
     expiry_kind: Mapped[str | None]
     expires_on: Mapped[date | None] = mapped_column(Date)
