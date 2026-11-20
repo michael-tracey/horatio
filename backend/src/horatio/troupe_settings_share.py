@@ -912,6 +912,7 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "name": "the troupe's own name",
     "description": "the troupe's own description",
     "lead_user_id": "its staff are its own",
+    "staff_two_step": "its staff are its own, and their lead asks two-step sign-in of them (#1057)",
     "archived_at": "whether the troupe is open",
     "public": "its profile is its own",
     "portrait_id": "its profile is its own",
