@@ -394,7 +394,7 @@ function ExpiryFields({ expiry, setExpiry, cycleName }: { expiry: ExpiryDraft; s
           </Field>
         )}
         {expiry.kind === "games" && (
-          <Field label="Games" hint="The holder's games from now, from check-in. It expires once the last has ended.">
+          <Field label="Games" hint="The holder's games from now, from check-in; for an NPC, the troupe's games. It expires once the last has ended.">
             <Input type="number" min={1} max={100} value={expiry.games} onChange={(e) => set({ games: e.target.value })} />
           </Field>
         )}
