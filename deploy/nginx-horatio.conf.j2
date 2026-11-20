@@ -26,6 +26,17 @@ server {
     add_header Strict-Transport-Security "max-age=31536000" always;
 {% endif %}
 
+    # No other site may show Horatio in a frame (issue #1061). The app sends these
+    # too (horatio.app.SECURITY_HEADERS); nginx drops its copies and sends its own,
+    # `always`, so nginx's own error pages (a 502 while the app restarts, a 413 for
+    # too big an upload) carry them as well, and there is one of each.
+    # Every location below inherits these and HSTS only while it has no add_header
+    # of its own: a location that adds one must repeat them all.
+    proxy_hide_header Content-Security-Policy;
+    proxy_hide_header X-Frame-Options;
+    add_header Content-Security-Policy "frame-ancestors 'none'" always;
+    add_header X-Frame-Options "DENY" always;
+
     # Compress text: the rules catalogue is over half a megabyte of JSON. The app
     # never compresses, so nginx does, for the API and the built frontend alike.
     # Safe from BREACH: see deploy/README.md, "Compression". Ubuntu 22.04's nginx
