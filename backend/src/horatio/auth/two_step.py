@@ -1,5 +1,6 @@
 """Two-step sign-in (#1057): after the password, a second step, from an authenticator
-app (TOTP) or a passkey, with one-time recovery codes for when it's lost.
+app (TOTP) or a passkey (horatio.auth.passkeys), with one-time recovery codes for when
+it's lost.
 
 **Signing in.** Someone with a second step who gives the right password gets no
 session: they get a sign-in waiting on its second step (`SecondStepSignIn`), named by
@@ -17,7 +18,9 @@ make codes. Recovery codes are random, 10 at a time; only their hashes are kept,
 and each works once.
 
 **Who must have one.** The custodian (`two_step_for_custodians`), and the staff of a
-troupe whose lead storyteller asks it of them. Until someone who must has one, every
+troupe whose lead storyteller asks it of them (`troupes.staff_two_step`): someone on
+the staff of two troupes needs one if either asks, as one sign-in reaches both. Until
+someone who must has one, every
 request of theirs is refused but those that set one up, and the app sends them to do
 that first (`two_step_first`). The custodian resets the second steps of anyone who
 has lost theirs, as a notice; on the server, `python -m horatio.auth.two_step reset
@@ -40,10 +43,11 @@ from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import Depends, HTTPException, Request, status
 from pyotp.totp import TOTP
-from sqlalchemy import delete, exists, func, select, update
+from sqlalchemy import delete, exists, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from horatio.audit import record
+from horatio.auth import passkeys
 from horatio.auth.sessions import hash_token, user_for_token
 from horatio.config import get_settings
 from horatio.db import get_session, get_sessionmaker
@@ -52,6 +56,8 @@ from horatio.models import (
     Passkey,
     RecoveryCode,
     SecondStepSignIn,
+    Troupe,
+    TroupeStaff,
     User,
 )
 
@@ -178,19 +184,43 @@ def recovery_codes_left(db: Session, user: User) -> int:
     )
 
 
+def asking_troupes(db: Session, user: User) -> list[str]:
+    """The troupes, not archived, that ask a second step of their staff and have
+    `user` on their staff, lead storyteller included: by name."""
+    staff = select(TroupeStaff.troupe_id).where(TroupeStaff.user_id == user.id)
+    return list(
+        db.scalars(
+            select(Troupe.name)
+            .where(
+                Troupe.staff_two_step,
+                Troupe.archived_at.is_(None),
+                or_(Troupe.lead_user_id == user.id, Troupe.id.in_(staff)),
+            )
+            .order_by(Troupe.name)
+        )
+    )
+
+
 def required_by(db: Session, user: User) -> list[str]:
-    """Why they must have a second step: "the custodian", for the custodian. Empty if
-    they needn't."""
+    """Why they must have a second step: "the custodian", "staff of Lords of the
+    Night"; any one of them is enough. Empty if they needn't."""
     why: list[str] = []
     if user.is_custodian and get_settings().two_step_for_custodians:
         why.append("the custodian")
+    why.extend(f"staff of {name}" for name in asking_troupes(db, user))
     return why
+
+
+def can_set_up() -> bool:
+    """Whether this server has a way to set up a second step: passkeys, or an
+    authenticator app with the server's key."""
+    return passkeys.available() or apps_available()
 
 
 def needed(db: Session, user: User) -> bool:
     """Whether they must set up a second step before anything else: they must have
     one, have none, and this server has a way to set one up."""
-    return bool(required_by(db, user)) and apps_available() and not has_second_step(db, user)
+    return can_set_up() and bool(required_by(db, user)) and not has_second_step(db, user)
 
 
 # --- authenticator apps --------------------------------------------------------------------

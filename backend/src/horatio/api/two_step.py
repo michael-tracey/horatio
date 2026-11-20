@@ -1,23 +1,38 @@
-"""Setting up two-step sign-in from Account › Sign-in, and the custodian resetting it
-for someone who has lost theirs (#1057). How signing in with it works is in
-horatio.auth.two_step and horatio.api.auth."""
+"""Setting up two-step sign-in from Account › Sign-in: an authenticator app, passkeys
+and recovery codes; the custodian resetting it for someone who has lost theirs; and a
+troupe's lead storyteller asking it of the troupe's staff (#1057). How signing in with
+it works is in horatio.auth.two_step, horatio.auth.passkeys and horatio.api.auth."""
 
 import uuid
+from datetime import datetime
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 
 from horatio.api.players import player
+from horatio.api.troupes import get_troupe
 from horatio.audit import record
-from horatio.auth import two_step
+from horatio.auth import passkeys, two_step
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import verify_password
+from horatio.auth.sessions import hash_token
 from horatio.auth.two_step import allowed_first
-from horatio.models import User
+from horatio.config import get_settings
+from horatio.models import Passkey, Troupe, TroupeStaff, User
+from horatio.models import Session as SignInSession
 from horatio.notifications import notify
-from horatio.permissions import require_custodian
+from horatio.permissions import TroupeAction, require_custodian, require_troupe_action
 
 router = APIRouter(prefix="/two-step", tags=["auth"])
+
+
+class PasskeyOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    created_at: datetime
+    last_used_at: datetime | None
 
 
 class TwoStepOut(BaseModel):
@@ -25,6 +40,9 @@ class TwoStepOut(BaseModel):
     app: bool
     # This server can set one up: it has HORATIO_TOTP_KEY.
     apps_available: bool
+    passkeys: list[PasskeyOut]
+    # This server's address lets browsers make passkeys for it (https, or localhost).
+    passkeys_available: bool
     recovery_codes_left: int
     # Why they must have a second step: ["the custodian"]; empty if they needn't.
     required_by: list[str]
@@ -52,6 +70,30 @@ class RecoveryCodes(BaseModel):
     recovery_codes: list[str]
 
 
+class NewPasskey(BaseModel):
+    # The browser's PublicKeyCredential from navigator.credentials.create, as JSON.
+    credential: dict[str, Any]
+    name: str = Field(default="Passkey", max_length=60)
+
+
+class StaffTwoStepIn(BaseModel):
+    required: bool
+
+
+class StaffMemberTwoStep(BaseModel):
+    user_id: uuid.UUID
+    two_step: bool
+
+
+class StaffTwoStepOut(BaseModel):
+    # The troupe asks a second step of its staff.
+    required: bool
+    # The signed-in person can change that: the lead storyteller, or the custodian.
+    can_change: bool
+    # Whether each of its staff, the lead storyteller included, has a second step.
+    staff: list[StaffMemberTwoStep]
+
+
 class ResetIn(BaseModel):
     reason: str = Field(min_length=1, max_length=2000)
 
@@ -60,6 +102,11 @@ def state(db: DbSession, user: User) -> TwoStepOut:
     return TwoStepOut(
         app=two_step.has_app(db, user),
         apps_available=two_step.apps_available(),
+        passkeys=[
+            PasskeyOut(id=p.id, name=p.name, created_at=p.created_at, last_used_at=p.last_used_at)
+            for p in passkeys.mine(db, user)
+        ],
+        passkeys_available=passkeys.available(),
         recovery_codes_left=two_step.recovery_codes_left(db, user),
         required_by=two_step.required_by(db, user),
         needed=two_step.needed(db, user),
@@ -103,12 +150,83 @@ def confirm_app(body: Code, db: DbSession, user: CurrentUser) -> RecoveryCodes:
             " newest code.",
         )
     record(db, user, "account.two_step_added", kind="app", member=user.display_name)
-    codes: list[str] = []
-    if not two_step.recovery_codes_left(db, user):
-        codes = two_step.new_recovery_codes(db, user)
-        record(db, user, "account.recovery_codes_made", member=user.display_name)
+    codes = first_codes(db, user)
     db.commit()
     return RecoveryCodes(recovery_codes=codes)
+
+
+def first_codes(db: DbSession, user: User) -> list[str]:
+    """Ten recovery codes with someone's first second step, if they have none left."""
+    if two_step.recovery_codes_left(db, user):
+        return []
+    codes = two_step.new_recovery_codes(db, user)
+    record(db, user, "account.recovery_codes_made", member=user.display_name)
+    return codes
+
+
+def this_session(request: Request, db: DbSession, user: User) -> SignInSession:
+    """The sign-in session this request comes with: a passkey being added keeps its
+    challenge there."""
+    token = request.cookies.get(get_settings().session_cookie_name, "")
+    session = db.scalar(
+        select(SignInSession).where(
+            SignInSession.token_hash == hash_token(token), SignInSession.user_id == user.id
+        )
+    )
+    if session is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Sign in first.")
+    return session
+
+
+@router.post("/passkeys/options")
+@allowed_first
+def passkey_options(request: Request, db: DbSession, user: CurrentUser) -> dict[str, Any]:
+    """What the browser needs to make a passkey for Horatio: WebAuthn's
+    PublicKeyCredentialCreationOptions, as JSON. Its challenge works once."""
+    if not passkeys.available():
+        raise HTTPException(status.HTTP_409_CONFLICT, "Passkeys need this site on https.")
+    options = passkeys.adding_options(db, this_session(request, db, user), user)
+    db.commit()
+    return options
+
+
+@router.post("/passkeys")
+@allowed_first
+def add_passkey(
+    body: NewPasskey, request: Request, db: DbSession, user: CurrentUser
+) -> RecoveryCodes:
+    """Keep the passkey the browser made. With someone's first second step come ten
+    recovery codes."""
+    passkey = passkeys.add(db, this_session(request, db, user), user, body.credential, body.name)
+    record(
+        db,
+        user,
+        "account.two_step_added",
+        kind="passkey",
+        member=user.display_name,
+        name=passkey.name,
+    )
+    codes = first_codes(db, user)
+    db.commit()
+    return RecoveryCodes(recovery_codes=codes)
+
+
+@router.post("/passkeys/{passkey_id}/remove", status_code=status.HTTP_204_NO_CONTENT)
+def remove_passkey(passkey_id: uuid.UUID, body: Password, db: DbSession, user: CurrentUser) -> None:
+    """Remove one of their passkeys, giving their password."""
+    check_password(user, body.password)
+    passkey = db.get(Passkey, passkey_id)
+    if passkey is None or passkey.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such passkey.")
+    keep_one(db, user)
+    name = passkey.name
+    db.delete(passkey)
+    db.flush()
+    forget_if_none_left(db, user)
+    record(
+        db, user, "account.two_step_removed", kind="passkey", member=user.display_name, name=name
+    )
+    db.commit()
 
 
 def keep_one(db: DbSession, user: User) -> None:
@@ -118,7 +236,7 @@ def keep_one(db: DbSession, user: User) -> None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             f"You need two-step sign-in as {why[0]}. Set up another second step before"
-            " turning this one off.",
+            " removing this one.",
         )
 
 
@@ -182,3 +300,63 @@ def reset(user_id: uuid.UUID, body: ResetIn, db: DbSession, user: CurrentUser) -
         "/account/sign-in",
     )
     db.commit()
+
+
+troupe_router = APIRouter(prefix="/troupes", tags=["troupes"])
+
+
+def staff_two_step(db: DbSession, user: User, troupe: Troupe) -> StaffTwoStepOut:
+    staff = [
+        troupe.lead_user_id,
+        *db.scalars(select(TroupeStaff.user_id).where(TroupeStaff.troupe_id == troupe.id)),
+    ]
+    having = two_step.with_second_step(db, staff)
+    return StaffTwoStepOut(
+        required=troupe.staff_two_step,
+        can_change=can_change(user, troupe),
+        staff=[StaffMemberTwoStep(user_id=u, two_step=u in having) for u in staff],
+    )
+
+
+def can_change(user: User, troupe: Troupe) -> bool:
+    return user.is_custodian or troupe.lead_user_id == user.id
+
+
+@troupe_router.get("/{troupe_id}/staff-two-step")
+def get_staff_two_step(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> StaffTwoStepOut:
+    """Whether the troupe asks a second step of its staff, and who of them has one."""
+    troupe = get_troupe(db, troupe_id)
+    require_troupe_action(db, user, troupe, TroupeAction.VIEW_STAFF)
+    return staff_two_step(db, user, troupe)
+
+
+@troupe_router.put("/{troupe_id}/staff-two-step")
+def set_staff_two_step(
+    troupe_id: uuid.UUID, body: StaffTwoStepIn, db: DbSession, user: CurrentUser
+) -> StaffTwoStepOut:
+    """For the lead storyteller (or the custodian): ask a second step of the troupe's
+    staff, or stop. Those without one are sent to set it up at their next request. The
+    lead storyteller needs one of their own first."""
+    troupe = get_troupe(db, troupe_id)
+    require_troupe_action(db, user, troupe, TroupeAction.VIEW_STAFF)
+    if not can_change(user, troupe):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the lead storyteller asks this of the staff."
+        )
+    if body.required and troupe.lead_user_id == user.id and not two_step.has_second_step(db, user):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Set up two-step sign-in yourself first, in Account › Sign-in and email: this asks"
+            " it of you too.",
+        )
+    if troupe.staff_two_step != body.required:
+        troupe.staff_two_step = body.required
+        record(
+            db,
+            user,
+            "troupe.staff_two_step",
+            troupe_id=troupe.id,
+            setting="on" if body.required else "off",
+        )
+    db.commit()
+    return staff_two_step(db, user, troupe)

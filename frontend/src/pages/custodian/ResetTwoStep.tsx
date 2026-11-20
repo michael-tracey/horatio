@@ -11,13 +11,10 @@ import { useAction } from "../../hooks";
  */
 export function ResetTwoStep({ person, onDone }: { person: { id: string; display_name: string }; onDone: () => void }) {
   const [reason, setReason] = useState("");
-  const reset = useAction(
-    async () => {
-      await unwrap(api.POST("/api/two-step/reset/{user_id}", { params: { path: { user_id: person.id } }, body: { reason } }));
-      onDone();
-    },
-    [["players"]],
-  );
+  const reset = useAction(async () => {
+    await unwrap(api.POST("/api/two-step/reset/{user_id}", { params: { path: { user_id: person.id } }, body: { reason } }));
+    onDone();
+  }, [["players"]]);
   return (
     <form
       className="flex flex-col gap-3 text-sm"
@@ -27,7 +24,8 @@ export function ResetTwoStep({ person, onDone }: { person: { id: string; display
       }}
     >
       <p className="text-mist">
-        Take away {person.display_name}'s authenticator app and recovery codes, so their password alone signs them in until they set it up again. Do this only once you're sure it's them asking. They're told, with your reason.
+        Take away {person.display_name}'s passkeys, authenticator app and recovery codes, so their password alone signs them in until they set it up again. Do this only once you're sure it's them asking.
+        They're told, with your reason.
       </p>
       <Field label="Why">
         <Textarea required rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />

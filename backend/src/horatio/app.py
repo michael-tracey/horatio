@@ -350,6 +350,8 @@ for module in (
 # The signed-in person's choice of throw pictures (#671), beside the troupe's own.
 api.include_router(throw_images.mine_router)
 api.include_router(setting_style.presets_router)
+# A troupe asking two-step sign-in of its staff (#1057), beside its staff.
+api.include_router(two_step.troupe_router)
 
 
 @api.get("/health")

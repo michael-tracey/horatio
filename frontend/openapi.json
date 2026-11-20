@@ -34016,6 +34016,26 @@
         "title": "NewNpc",
         "type": "object"
       },
+      "NewPasskey": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          },
+          "name": {
+            "default": "Passkey",
+            "maxLength": 60,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "NewPasskey",
+        "type": "object"
+      },
       "NewPassword": {
         "properties": {
           "password": {
@@ -37262,6 +37282,58 @@
           "kind"
         ],
         "title": "PartyOut",
+        "type": "object"
+      },
+      "PasskeyOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "last_used_at"
+        ],
+        "title": "PasskeyOut",
+        "type": "object"
+      },
+      "PasskeySigned": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "PasskeySigned",
         "type": "object"
       },
       "Password": {
@@ -52005,6 +52077,25 @@
         "title": "StaffMember",
         "type": "object"
       },
+      "StaffMemberTwoStep": {
+        "properties": {
+          "two_step": {
+            "title": "Two Step",
+            "type": "boolean"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "two_step"
+        ],
+        "title": "StaffMemberTwoStep",
+        "type": "object"
+      },
       "StaffRole": {
         "properties": {
           "role": {
@@ -52019,6 +52110,45 @@
           "role"
         ],
         "title": "StaffRole",
+        "type": "object"
+      },
+      "StaffTwoStepIn": {
+        "properties": {
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "required"
+        ],
+        "title": "StaffTwoStepIn",
+        "type": "object"
+      },
+      "StaffTwoStepOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/StaffMemberTwoStep"
+            },
+            "title": "Staff",
+            "type": "array"
+          }
+        },
+        "required": [
+          "required",
+          "can_change",
+          "staff"
+        ],
+        "title": "StaffTwoStepOut",
         "type": "object"
       },
       "StarIn": {
@@ -58994,6 +59124,17 @@
             "title": "Needed",
             "type": "boolean"
           },
+          "passkeys": {
+            "items": {
+              "$ref": "#/components/schemas/PasskeyOut"
+            },
+            "title": "Passkeys",
+            "type": "array"
+          },
+          "passkeys_available": {
+            "title": "Passkeys Available",
+            "type": "boolean"
+          },
           "recovery_codes_left": {
             "title": "Recovery Codes Left",
             "type": "integer"
@@ -59009,6 +59150,8 @@
         "required": [
           "app",
           "apps_available",
+          "passkeys",
+          "passkeys_available",
           "recovery_codes_left",
           "required_by",
           "needed"
@@ -64593,6 +64736,72 @@
           }
         },
         "summary": "Second Step",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/second-step/passkey": {
+      "post": {
+        "description": "Give the second step of a sign-in waiting on one with a passkey: the browser's\nanswer to the challenge from /second-step/passkey/options. Counted against the\nsame limits as codes.",
+        "operationId": "second_step_passkey_api_auth_second_step_passkey_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeySigned"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Second Step Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/second-step/passkey/options": {
+      "post": {
+        "description": "What the browser needs to sign the waiting sign-in with a passkey: WebAuthn's\nPublicKeyCredentialRequestOptions, as JSON. Its challenge works once.",
+        "operationId": "passkey_options_api_auth_second_step_passkey_options_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Passkey Options Api Auth Second Step Passkey Options Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Passkey Options",
         "tags": [
           "auth"
         ]
@@ -102679,6 +102888,102 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/staff-two-step": {
+      "get": {
+        "description": "Whether the troupe asks a second step of its staff, and who of them has one.",
+        "operationId": "get_staff_two_step_api_troupes__troupe_id__staff_two_step_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTwoStepOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Staff Two Step",
+        "tags": [
+          "troupes"
+        ]
+      },
+      "put": {
+        "description": "For the lead storyteller (or the custodian): ask a second step of the troupe's\nstaff, or stop. Those without one are sent to set it up at their next request. The\nlead storyteller needs one of their own first.",
+        "operationId": "set_staff_two_step_api_troupes__troupe_id__staff_two_step_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffTwoStepIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTwoStepOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Staff Two Step",
+        "tags": [
+          "troupes"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/staff/{user_id}": {
       "delete": {
         "operationId": "remove_staff_api_troupes__troupe_id__staff__user_id__delete",
@@ -105020,6 +105325,119 @@
           }
         },
         "summary": "Remove App",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/passkeys": {
+      "post": {
+        "description": "Keep the passkey the browser made. With someone's first second step come ten\nrecovery codes.",
+        "operationId": "add_passkey_api_two_step_passkeys_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPasskey"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/passkeys/options": {
+      "post": {
+        "description": "What the browser needs to make a passkey for Horatio: WebAuthn's\nPublicKeyCredentialCreationOptions, as JSON. Its challenge works once.",
+        "operationId": "passkey_options_api_two_step_passkeys_options_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Passkey Options Api Two Step Passkeys Options Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Passkey Options",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/passkeys/{passkey_id}/remove": {
+      "post": {
+        "description": "Remove one of their passkeys, giving their password.",
+        "operationId": "remove_passkey_api_two_step_passkeys__passkey_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Passkey",
         "tags": [
           "auth"
         ]

@@ -176,6 +176,45 @@ test("a new troupe's Overview shows its storytellers getting it ready, each step
   await expect(card.getByText("2 of 8 done")).toBeVisible();
 });
 
+test("a lead storyteller asks the staff to sign in with two steps, and a storyteller without it is sent to set it up first (#1057)", async ({ browser }) => {
+  const { page: c, email: custodianEmail } = await person(browser, "twostep-cust");
+  makeCustodian(custodianEmail);
+  const { page: lead, handle: leadHandle } = await person(browser, "twostep-lead");
+  const { page: st, handle: stHandle } = await person(browser, "twostep-st");
+  const made = await c.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Owls ${run}`, lead_handle: leadHandle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const staffed = await lead.request.put(`/api/troupes/${troupeId}/staff`, { headers: { "X-Horatio": "1" }, data: { handle: stHandle, role: "storyteller" } });
+  expect(staffed.status(), await staffed.text()).toBe(200);
+
+  // The lead needs a second step of their own first: a passkey on this device.
+  const cdp = await lead.context().newCDPSession(lead);
+  await cdp.send("WebAuthn.enable");
+  await cdp.send("WebAuthn.addVirtualAuthenticator", {
+    options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true },
+  });
+  await lead.goto(`/troupes/${troupeId}/staff`);
+  const card = lead.locator("section", { has: lead.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
+  await card.getByRole("switch", { name: "Staff must sign in with two steps" }).click();
+  await expect(card.getByText(/Set up two-step sign-in yourself first/)).toBeVisible();
+  await lead.goto("/account/sign-in");
+  await lead.getByRole("button", { name: "Add a passkey" }).click();
+  await lead.getByRole("button", { name: "I've kept them" }).click();
+  await lead.goto(`/troupes/${troupeId}/staff`);
+  await card.getByRole("switch", { name: "Staff must sign in with two steps" }).click();
+  await expect(card.getByRole("switch", { name: "Staff must sign in with two steps" })).toBeChecked();
+  await expect(card.getByText(/Not set up yet: twostep-st\. They're asked to set it up/)).toBeVisible();
+  await lead.screenshot(shots("staff-two-step"));
+
+  // The storyteller, signed in already, is sent to set it up before anything else.
+  await st.goto(`/troupes/${troupeId}`);
+  await expect(st).toHaveURL(/\/two-step\?next=/);
+  await expect(st.getByRole("heading", { name: "Set up two-step sign-in" })).toBeVisible();
+  await expect(st.getByText(`You need two-step sign-in as staff of Owls ${run}.`)).toBeVisible();
+  await expect(st.getByRole("navigation", { name: "Main" })).toHaveCount(0);
+  await st.screenshot(shots("two-step-setup-required"));
+});
+
 test("a troupe's or character's tab that isn't there, or isn't open to them, says so with the way back (#907)", async ({ browser }) => {
   const custodian = await person(browser, "notopen-custodian");
   makeCustodian(custodian.email);

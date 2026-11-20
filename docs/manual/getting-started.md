@@ -38,13 +38,13 @@ The link works for a limited time. If nothing arrives after a few minutes, check
 
 ### Two-step sign-in
 
-With two-step sign-in on, your password alone doesn't sign you in. After it, Horatio asks for the 6-digit code your authenticator app shows, such as Google Authenticator, Microsoft Authenticator or 1Password. Someone who learns your password still can't get in. Each code works once.
+With two-step sign-in on, your password alone doesn't sign you in. After it, Horatio asks for your second step: choose **Use a passkey** and confirm with your face, finger or PIN, or give the 6-digit code your authenticator app shows. Someone who learns your password still can't get in. Each code works once.
 
-Lost your phone? Choose **Use a recovery code instead** and give one of the recovery codes you kept when you set it up. Each works once. Lost those too? Ask the custodian to reset your two-step sign-in: they'll want to be sure it's you.
+Lost your phone? Use another passkey or your app if you have one, or choose **Use a recovery code instead** and give one of the recovery codes you kept when you set it up. Each works once. Lost those too? Ask the custodian to reset your two-step sign-in: they'll want to be sure it's you.
 
 Five wrong codes in a row, or ten minutes, and you start again from your password. Many wrong codes at your account, from anywhere, hold back the second step for a while: "Too many wrong codes."
 
-The custodian must have two-step sign-in, and Horatio sends them to set it up before anything else.
+The custodian must have two-step sign-in, and so must the staff of a troupe whose lead storyteller asks it. Horatio sends them to set it up before anything else.
 
 ## Your account
 
@@ -103,9 +103,12 @@ In the **Password** card, give your **Current password** and a **New password** 
 
 ### Setting up two-step sign-in
 
-In the **Two-step sign-in** card, choose **Set up an authenticator app**. Scan the QR code with the app on your phone, or type the key into it, then give the 6-digit code it shows and choose **Turn on two-step sign-in**.
+The **Two-step sign-in** card offers two kinds of second step. You can have both, and several passkeys.
 
-Horatio then shows ten recovery codes, once. Keep them somewhere safe, away from your phone (**Download** or **Copy** help), and choose **I've kept them**. The card says how many are left; **New recovery codes** makes ten more in place of the old. **Turn off** turns two-step sign-in off. Both ask for your password.
+- **A passkey** is kept by your phone, computer or password manager, and unlocked with your face, finger or PIN. Give it a name, such as Phone, and choose **Add a passkey**; your browser asks you to confirm. A passkey made on your phone can usually sign you in on a computer nearby too.
+- **An authenticator app**, such as Google Authenticator, Microsoft Authenticator or 1Password, shows a new 6-digit code every 30 seconds. Choose **Set up an authenticator app**, scan the QR code with the app, or type the key into it, then give the code it shows and choose **Turn on two-step sign-in**.
+
+With your first second step, Horatio shows ten recovery codes, once. Keep them somewhere safe, away from your phone (**Download** or **Copy** help), and choose **I've kept them**. The card says how many are left; **New recovery codes** makes ten more in place of the old. **Remove** takes away a passkey, and **Turn off** the app. Each asks for your password. If you must have two-step sign-in, you can't remove your last second step.
 
 ### Your Discord account
 
