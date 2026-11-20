@@ -11716,6 +11716,29 @@
         "title": "CharacterListOut",
         "type": "object"
       },
+      "CharacterNextOut": {
+        "description": "What is next for one character: its player's steps, then staff's, then what is\ncoming up. No steps when there is nothing.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/NextStepOut"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "steps"
+        ],
+        "title": "CharacterNextOut",
+        "type": "object"
+      },
       "CharacterOut": {
         "properties": {
           "asking_troupe_id": {
@@ -34224,6 +34247,66 @@
           "name"
         ],
         "title": "NewsAgencyItem",
+        "type": "object"
+      },
+      "NextStepOut": {
+        "description": "One thing next for a character (horatio.next_steps).",
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "link": {
+            "title": "Link",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "who": {
+            "enum": [
+              "player",
+              "staff",
+              "coming"
+            ],
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "who",
+          "label",
+          "link",
+          "since",
+          "at"
+        ],
+        "title": "NextStepOut",
         "type": "object"
       },
       "NominationIn": {
@@ -64869,6 +64952,32 @@
         ]
       }
     },
+    "/api/characters/next": {
+      "get": {
+        "description": "What is next for each of the player's characters, for the Characters page, in a\nfew queries for all of them. Those with nothing next are left out.",
+        "operationId": "my_next_steps_api_characters_next_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CharacterNextOut"
+                  },
+                  "title": "Response My Next Steps Api Characters Next Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Next Steps",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
     "/api/characters/{character_id}": {
       "delete": {
         "description": "Delete a character for good. It must be in no troupe: leaving each one first\nis what tells those troupes' storytellers.",
@@ -70245,6 +70354,50 @@
         "summary": "Move Character",
         "tags": [
           "custodian"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/next": {
+      "get": {
+        "description": "What is next for the character, for the card at the top of its page: its\nplayer's alone to see.",
+        "operationId": "character_next_steps_api_characters__character_id__next_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterNextOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Next Steps",
+        "tags": [
+          "characters"
         ]
       }
     },
