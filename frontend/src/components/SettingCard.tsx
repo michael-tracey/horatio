@@ -34,23 +34,29 @@ export const STORYTELLERS_CHANGE = "The troupe's storytellers change this.";
  * The Save is `secondary`: settings cards share their screen (the rules in `ui.tsx`).
  */
 export function SettingCard({
-  title,
+  setting,
+  title = setting?.title ?? "",
   state,
   info,
   actions,
-  about,
+  about = setting?.about,
   readOnly,
   className,
   children,
 }: {
-  title: string;
+  /**
+   * A troupe's setting, as Find a setting has it (#1047): its title and line, unless `about`
+   * says otherwise, and its id, which an address ending `#<anchor>` lands on.
+   */
+  setting?: { title: string; about: string; anchor: string };
+  title?: string;
   /** A short state, set on the right: a word becomes a `Badge`, "On" in gold. */
   state?: ReactNode;
   /** An `InfoButton` for the title, set beside it. */
   info?: ReactNode;
   /** Links or buttons beside the state, such as Add a rule for a list. */
   actions?: ReactNode;
-  /** One short line saying what the setting does. */
+  /** One short line saying what the setting does; null for none, where the setting has one. */
   about?: ReactNode;
   /** For a person who can't change it: true, or the line saying who can. */
   readOnly?: boolean | string;
@@ -60,7 +66,7 @@ export function SettingCard({
   const id = useId();
   const badge = typeof state === "string" ? <Badge tone={state === "On" ? "gold" : "mist"}>{state}</Badge> : state;
   return (
-    <section aria-labelledby={id} className={cx("rounded-lg border border-ash bg-dusk p-4 sm:p-5", className)}>
+    <section id={setting?.anchor} aria-labelledby={id} className={cx("scroll-mt-4 rounded-lg border border-ash bg-dusk p-4 sm:p-5", className)}>
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h2 id={id} className="text-lg text-gold">
@@ -81,6 +87,24 @@ export function SettingCard({
     </section>
   );
 }
+
+/**
+ * Marks a card, or a feature's row, that an address has landed on, as Find a setting does
+ * (#1047): it glows gold a moment (`[data-found]` in index.css), so the eye finds it.
+ */
+export function showFound(el: HTMLElement) {
+  clearTimeout(glowing.get(el));
+  el.removeAttribute("data-found");
+  // Once more from the start, if it was still glowing from the last time.
+  void el.offsetWidth;
+  el.setAttribute("data-found", "");
+  glowing.set(
+    el,
+    setTimeout(() => el.removeAttribute("data-found"), 3000),
+  );
+}
+
+const glowing = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 
 type SaveOptions = {
   /** It changes the rules, so the catalogue is asked again too (`useRulesAction`). */

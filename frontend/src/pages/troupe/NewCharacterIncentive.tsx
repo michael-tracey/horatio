@@ -4,6 +4,7 @@ import type { TroupeOut } from "../../api/types";
 import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { Toggle } from "../../components/Toggle";
 import { ErrorText } from "../../components/ui";
+import { SETTINGS } from "./settingsIndex";
 
 /** What a new character built for the troupe starts with, in words. */
 export function startingText(t: Pick<TroupeOut, "new_character_incentive" | "new_character_xp" | "starting_xp" | "xp_floor">): string {
@@ -26,7 +27,7 @@ export function NewCharacterIncentive({ troupeId, canEdit }: { troupeId: string;
   const earned = Math.max(0, t.xp_ceiling - t.starting_xp);
   return (
     <SettingCard
-      title="New Character Incentive"
+      setting={SETTINGS.newCharacterIncentive}
       readOnly={!canEdit}
       about={
         <>

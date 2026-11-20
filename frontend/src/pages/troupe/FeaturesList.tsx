@@ -7,6 +7,7 @@ import { SettingCard } from "../../components/SettingCard";
 import { Badge, ErrorText } from "../../components/ui";
 import { useRulesAction } from "../../hooks";
 import { features, type Feature, type FeatureKey } from "./features";
+import { SETTINGS, switchAnchor } from "./settingsIndex";
 
 /** Switches a feature on or off, through the same endpoint as its settings card. */
 async function setFeature(troupe: TroupeOut, key: FeatureKey, on: boolean): Promise<unknown> {
@@ -112,18 +113,14 @@ export function FeaturesList({ troupe, canEdit }: { troupe: TroupeOut; canEdit: 
   const base = `/troupes/${troupe.id}`;
   return (
     <SettingCard
-      title="Features"
+      setting={SETTINGS.features}
       readOnly={!canEdit && "Its storytellers switch them on and off."}
-      about={
-        canEdit
-          ? "What the troupe uses beyond the sheets and downtimes. Switched off, a feature's tabs are hidden, and what was recorded is kept for when it's on again."
-          : "What the troupe uses beyond the sheets and downtimes."
-      }
+      about={canEdit ? undefined : "What the troupe uses beyond the sheets and downtimes."}
     >
       <ul aria-label="Features" className="flex flex-col divide-y divide-ash">
         {features(troupe).map((f) => {
           return (
-            <li key={f.key} aria-label={f.name} className="py-1">
+            <li key={f.key} id={switchAnchor(f.key)} aria-label={f.name} className="scroll-mt-4 py-1">
               {canEdit ? (
                 // A feature that is always on (Who's Who, News) or goes tab by tab (the Play View)
                 // has its switch too, held as it is, so every row lines up (#908).

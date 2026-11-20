@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { TroupeOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
+import { showFound } from "../../components/SettingCard";
 import { Button } from "../../components/ui";
 import { BackstorySettings } from "./BackstorySettings";
 import { BadgeSetting } from "./BadgeSetting";
@@ -14,6 +15,7 @@ import { LocationRulesSection } from "./LocationRulesSection";
 import { PlayTabsSetting } from "./PlayTabsSetting";
 import { QuestSettings } from "./QuestSettings";
 import { RetainerRules } from "./RetainerRules";
+import { SETTINGS_DIALOGS, type SettingsDialog } from "./settingsIndex";
 import { StatusAtCheckinSetting } from "./StatusSetting";
 import { TeacherRules } from "./TeacherRules";
 import { ThrowImagesSetting } from "./ThrowImagesSetting";
@@ -42,24 +44,30 @@ function scrollWithin(card: HTMLElement) {
  * read but not change them see the same cards, read-only.
  */
 export function FeatureSettings({ tab, children, single = false }: { tab: string; children: ReactNode; single?: boolean }) {
-  const { hash, pathname, search } = useLocation();
+  const { hash, pathname, search, key } = useLocation();
   const navigate = useNavigate();
   const asked = hash === `#${SETTINGS_HASH}` || hash.startsWith(`#${SETTINGS_HASH}-`);
   const [open, setOpen] = useState(asked);
   useEffect(() => {
     if (asked) setOpen(true);
   }, [asked, hash]);
-  // Landing on a part, its card is scrolled to once the cards above it have loaded and
-  // taken their height: again each time a load ends, until none is left.
+  // Landing on a part or a card, it is scrolled to once the cards above it have loaded and
+  // taken their height: again each time a load ends, until none is left. A card glows a
+  // moment as it is found (#1047).
   const client = useQueryClient();
   const fetching = useIsFetching();
   const landed = useRef<string | null>(null);
+  const shown = useRef<string | null>(null);
   useEffect(() => {
-    if (!open || !asked || landed.current === hash) return;
+    if (!open || !asked || landed.current === key) return;
     const card = document.getElementById(hash.slice(1));
     if (card) scrollWithin(card);
-    if (client.isFetching() === 0) landed.current = hash;
-  }, [open, asked, hash, fetching, client]);
+    if (card && hash !== `#${SETTINGS_HASH}` && shown.current !== key) {
+      shown.current = key;
+      showFound(card);
+    }
+    if (client.isFetching() === 0) landed.current = key;
+  }, [open, asked, hash, key, fetching, client]);
   const close = () => {
     setOpen(false);
     landed.current = null;
@@ -84,15 +92,12 @@ export function FeatureSettings({ tab, children, single = false }: { tab: string
 }
 
 /** The features whose settings are behind the Settings button of their own tab. */
-type OnTab = "whos_who" | "play_view" | "boons" | "blood_bonds";
-
-/** The name of each feature's tab, for its settings dialog's title. */
-const TAB_NAMES: Record<OnTab, string> = { whos_who: "Who's Who", play_view: "At game", boons: "Boons", blood_bonds: "Bonds" };
+type OnTab = Extract<SettingsDialog, "whos_who" | "play_view" | "boons" | "blood_bonds">;
 
 /** A feature's tab's Settings, with the cards that were on Troupe settings (#784). */
 export function TabSettings({ troupe, feature, canEdit }: { troupe: TroupeOut; feature: OnTab; canEdit: boolean }) {
   return (
-    <FeatureSettings tab={TAB_NAMES[feature]} single={feature !== "play_view"}>
+    <FeatureSettings tab={SETTINGS_DIALOGS[feature].tab} single={feature !== "play_view"}>
       {feature === "whos_who" && <WhosWhoSetting troupe={troupe} canEdit={canEdit} />}
       {feature === "play_view" && (
         <>
@@ -108,10 +113,7 @@ export function TabSettings({ troupe, feature, canEdit }: { troupe: TroupeOut; f
   );
 }
 
-type Place = "locations" | "quests" | "characters" | "approvals";
-
-/** The name of each place's tab, for its settings dialog's title. */
-const PLACE_NAMES: Record<Place, string> = { locations: "Locations", quests: "Quests", characters: "Roster", approvals: "Approvals" };
+type Place = Extract<SettingsDialog, "locations" | "quests" | "characters" | "approvals">;
 
 /**
  * The house rules that set up a feature rather than a rule, behind the Settings button of the
@@ -126,7 +128,7 @@ export function PartSettings({ troupeId, place, canEdit }: { troupeId: string; p
     </div>
   );
   return (
-    <FeatureSettings tab={PLACE_NAMES[place]} single>
+    <FeatureSettings tab={SETTINGS_DIALOGS[place].tab} single>
       {place === "locations" && part("locations", <LocationRulesSection troupeId={troupeId} canEdit={canEdit} />)}
       {place === "quests" && part("quests", <QuestSettings troupeId={troupeId} canEdit={canEdit} />)}
       {place === "characters" && part("retainers", <RetainerRules troupeId={troupeId} canEdit={canEdit} />)}

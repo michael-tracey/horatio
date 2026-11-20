@@ -9,6 +9,7 @@ import { useAction } from "../../hooks";
 import { THROW_PANEL, THEMES, type Theme } from "../../theme";
 import { ThrowFace, troupeImages } from "../play/throwImages";
 import { THROW_NAMES, THROWS, type Throw } from "../play/throws";
+import { SETTINGS } from "./settingsIndex";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
@@ -41,10 +42,9 @@ export function ThrowImagesSetting({ troupe, canEdit }: { troupe: TroupeOut; can
   const images = useThrowImages(troupe.id);
   return (
     <SettingCard
-      title="Throw pictures"
+      setting={SETTINGS.throwPictures}
       readOnly={!canEdit}
       state={!images.data ? undefined : fullSet(images.data) ? "Set up" : "Not set up"}
-      about="Your troupe's own rock, paper and scissors for the Play View's Throws tab, instead of Horatio's. Once all three are here, the set can be offered to your players."
     >
       {images.isPending ? (
         <Loading />

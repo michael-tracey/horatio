@@ -4,6 +4,7 @@ import { RadioList } from "../../components/RadioList";
 import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { Toggle } from "../../components/Toggle";
 import { ErrorText } from "../../components/ui";
+import { SETTINGS } from "./settingsIndex";
 
 type PrintStatus = "all" | "negative" | "none";
 
@@ -26,7 +27,7 @@ export function BadgeSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit: 
   );
   const status = STATUS.find((o) => o.value === troupe.badge_status) ?? STATUS[0]!;
   return (
-    <SettingCard title="Badges" readOnly={!canEdit} about="What the troupe's game badges print. There is always room for stickers.">
+    <SettingCard setting={SETTINGS.badges} readOnly={!canEdit}>
       {!canEdit ? (
         <p className="text-sm">
           Badges print {troupe.badge_titles ? "titles" : "no titles"}, {status.text}

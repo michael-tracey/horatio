@@ -5,6 +5,7 @@ import { Checkbox } from "../../components/Checkbox";
 import { SettingCard, SettingForm, useSettingForm } from "../../components/SettingCard";
 import { ErrorText, Input, Loading, Select } from "../../components/ui";
 import { bodyOf, draftOf, draftProblem, MOST_GROWTH, MOST_UPKEEP, type RulesDraft } from "./retainerRules";
+import { SETTINGS } from "./settingsIndex";
 
 /**
  * House rules for Retainers (issue #442), neither in the book and each off unless
@@ -20,9 +21,8 @@ export function RetainerRules({ troupeId, canEdit }: { troupeId: string; canEdit
 
   return (
     <SettingCard
-      title="Retainers"
+      setting={SETTINGS.retainerRules}
       readOnly={!canEdit}
-      about="The book has neither of these. Upkeep is taken on the Play View as each character’s night starts, at check-in or its first tap, as its own line in the night’s log. A Retainer its character can’t pay for is marked neglected and staff are told; what follows is up to you, and nothing is lost by itself. Growth goes to the NPC linked to a Retainer, for staff to spend, or is banked on the Retainer while none is. A lost Retainer pays and gains nothing."
     >
       {canEdit ? (
         <RulesForm troupeId={troupeId} rules={now} />

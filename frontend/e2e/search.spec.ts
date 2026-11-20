@@ -69,3 +69,72 @@ test("the top bar finds a character and a boon, each opening its page (#1046)", 
   const panel = onPhone() ? l.getByRole("dialog", { name: `${word} Marsh owes The Harbourmaster` }) : l.getByRole("complementary", { name: `${word} Marsh owes The Harbourmaster` });
   await expect(panel).toBeVisible();
 });
+
+test("Find a setting on Customise, and the top bar, open a setting where it is (#1047)", async ({ browser }) => {
+  const custodian = await person(browser, "findset-custodian");
+  makeCustodian(custodian.email);
+  await custodian.page.reload();
+  const viewport = onPhone() ? { width: 375, height: 800 } : { width: 1280, height: 720 };
+  const lead = await person(browser, "findset-lead", { viewport });
+  const narrator = await person(browser, "findset-narrator", { viewport });
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Court of Finding ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: narrator.handle, role: "narrator" });
+  const l = lead.page;
+  const base = `/troupes/${troupe.id}`;
+  const width = l.viewportSize()!.width;
+
+  // From Setup: part of a card's name, and the card is scrolled to and glows on its part of Troupe settings.
+  await l.goto(`${base}/customise`);
+  const find = l.getByRole("searchbox", { name: "Find a setting" });
+  await find.fill("ceiling");
+  const found = l.getByRole("list", { name: "Settings found" });
+  const hit = found.getByRole("link", { name: /^XP floor and ceiling/ });
+  await expect(hit).toBeVisible();
+  // Nothing wider than the screen, and each a tap target.
+  expect(await l.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  expect((await hit.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await hit.click();
+  await expect(l).toHaveURL(new RegExp(`${base}/settings/xp#settings-xp-range$`));
+  const card = l.getByRole("region", { name: "XP floor and ceiling" });
+  await expect(card).toBeInViewport();
+  await expect(card).toHaveAttribute("data-found", "");
+  await expect(find).toHaveValue("");
+
+  // From another Customise tab, a word of what it does: Enter opens the first, its tab's Settings open at its card.
+  await l.goto(`${base}/specializations`);
+  await find.fill("stickers");
+  await expect(found.getByRole("link").first()).toContainText("Badges");
+  await find.press("Enter");
+  await expect(l).toHaveURL(new RegExp(`${base}/play#settings-badges$`));
+  const dialog = l.getByRole("dialog", { name: "At game settings" });
+  await expect(dialog.getByRole("region", { name: "Badges" })).toBeInViewport();
+  await l.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  // The top bar finds them too, on the troupe's pages.
+  await l.goto(base);
+  if (onPhone()) await l.getByRole("banner").getByRole("button", { name: "Search everything" }).click();
+  else {
+    await expect(l.getByRole("banner").getByRole("button", { name: "Search everything" })).toBeVisible();
+    await l.keyboard.press("/");
+  }
+  await l.getByRole("searchbox", { name: "Search for" }).fill("throw pictures");
+  const settings = l.getByRole("dialog", { name: "Search" }).getByRole("region", { name: "Settings" });
+  await settings.getByRole("link", { name: /^Throw pictures/ }).click();
+  await expect(l).toHaveURL(new RegExp(`${base}/play#settings-throw-pictures$`));
+  await expect(l.getByRole("dialog", { name: "At game settings" }).getByRole("region", { name: "Throw pictures" })).toBeVisible();
+
+  // A narrator has no Customise, and finds no settings.
+  const n = narrator.page;
+  await n.goto(base);
+  await expect(n.getByRole("searchbox", { name: "Find a setting" })).toHaveCount(0);
+  if (onPhone()) await n.getByRole("banner").getByRole("button", { name: "Search everything" }).click();
+  else {
+    await expect(n.getByRole("banner").getByRole("button", { name: "Search everything" })).toBeVisible();
+    await n.keyboard.press("/");
+  }
+  await n.getByRole("searchbox", { name: "Search for" }).fill("throw pictures");
+  const search = n.getByRole("dialog", { name: "Search" });
+  await expect(search.getByRole("region", { name: "Help" })).toBeVisible();
+  await expect(search.getByRole("region", { name: "Settings" })).toHaveCount(0);
+});

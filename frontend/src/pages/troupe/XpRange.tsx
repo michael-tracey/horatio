@@ -5,6 +5,7 @@ import { SettingCard, SettingForm, useSettingForm } from "../../components/Setti
 import { ErrorText, Field, Input } from "../../components/ui";
 import { makeUp } from "./xpRange";
 import { SectionLabel } from "../../components/Headings";
+import { SETTINGS } from "./settingsIndex";
 
 const KINDS: Record<string, string> = { game: "Game", downtime: "Downtime", set: "Set by hand" };
 
@@ -31,10 +32,9 @@ export function XpRangeCard({ troupeId, canEdit, link }: { troupeId: string; can
 
   return (
     <SettingCard
-      title="XP floor and ceiling"
+      setting={SETTINGS.xpRange}
       actions={link}
       readOnly={!canEdit}
-      about="The ceiling is the most XP a character here could have by now: the starting XP, every game's XP and every downtime's XP. The floor leaves out the downtimes. New characters built for this troupe start at the floor."
     >
       {canEdit ? (
         <SettingForm form={form}>

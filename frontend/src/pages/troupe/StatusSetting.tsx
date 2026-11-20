@@ -4,6 +4,7 @@ import { RadioList } from "../../components/RadioList";
 import { Toggle } from "../../components/Toggle";
 import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { ErrorText } from "../../components/ui";
+import { SETTINGS, type CardSetting } from "./settingsIndex";
 
 type Setting = "players" | "staff";
 
@@ -42,9 +43,8 @@ export function StatusSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit:
       troupe={troupe}
       canEdit={canEdit}
       field="status_by"
-      title="Status on sheets"
+      setting={SETTINGS.statusOnSheets}
       options={OPTIONS}
-      about="Who adds and removes sect status on the sheets of characters whose home is here. Storytellers and assistant storytellers always can, with a reason for the character's log."
     />
   );
 }
@@ -56,9 +56,8 @@ export function TitlesSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit:
       troupe={troupe}
       canEdit={canEdit}
       field="titles_by"
-      title="Titles on sheets"
+      setting={SETTINGS.titlesOnSheets}
       options={TITLE_OPTIONS}
-      about="Who gives titles to characters whose home is here. Storytellers and assistant storytellers always can, from the Roster tab or the character's Status & Titles tab."
     />
   );
 }
@@ -75,9 +74,8 @@ export function StatusAtCheckinSetting({ troupe, canEdit }: { troupe: TroupeOut;
   const on = troupe.status_at_checkin;
   return (
     <SettingCard
-      title="The night's status"
+      setting={SETTINGS.nightsStatus}
       readOnly={!canEdit}
-      about="A character with more than one source of abiding status, such as a title and its social age, carries only one into a game (MET: VTM p. 311)."
     >
       {!canEdit ? (
         <p className="text-sm">{on ? "Chosen at check-in, and fixed for the game." : "Chosen on the Play View as the game begins."}</p>
@@ -102,22 +100,20 @@ function WhoSetting({
   troupe,
   canEdit,
   field,
-  title,
+  setting,
   options,
-  about,
 }: {
   troupe: TroupeOut;
   canEdit: boolean;
   field: "status_by" | "titles_by";
-  title: string;
+  setting: CardSetting;
   options: { value: Setting; label: string; meaning: string }[];
-  about: string;
 }) {
   const save = useSaveOnChange((value: Setting) => unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { [field]: value } })));
   const now = troupe[field] as Setting;
   const current = options.find((o) => o.value === now) ?? options[0]!;
   return (
-    <SettingCard title={title} about={about} readOnly={!canEdit}>
+    <SettingCard setting={setting} readOnly={!canEdit}>
       {!canEdit ? (
         <p className="text-sm">
           {current.label}. <span className="text-mist">{current.meaning}</span>
@@ -125,7 +121,7 @@ function WhoSetting({
       ) : (
         <div className="flex flex-col gap-2">
           <RadioList
-            label={title}
+            label={setting.title}
             hideLabel
             value={now}
             options={options.map((o) => ({ value: o.value, label: o.label, hint: o.meaning }))}

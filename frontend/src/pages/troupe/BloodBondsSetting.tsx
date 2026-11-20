@@ -1,9 +1,10 @@
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
-import { BOND_PAGE, BOND_SETTINGS, type BondSetting } from "../../bonds";
+import { BOND_SETTINGS, type BondSetting } from "../../bonds";
 import { RadioList } from "../../components/RadioList";
 import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { ErrorText } from "../../components/ui";
+import { SETTINGS } from "./settingsIndex";
 
 /**
  * How Horatio tracks the troupe's blood bonds, once they're on: with its running staff
@@ -24,9 +25,8 @@ export function BloodBondsSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
   const chosen = BOND_SETTINGS.find((s) => s.value === now) ?? BOND_SETTINGS[0]!;
   return (
     <SettingCard
-      title="Blood bonds"
+      setting={SETTINGS.bloodBonds}
       readOnly={!canEdit}
-      about={`How Horatio keeps the blood bonds between characters (${BOND_PAGE}). A thrall's player sees their own bonds, a regnant's player only those staff mark known to them, and nobody else any. Changing the mode leaves drinks already waiting where they are.`}
     >
       {!canEdit ? (
         <p className="text-sm">

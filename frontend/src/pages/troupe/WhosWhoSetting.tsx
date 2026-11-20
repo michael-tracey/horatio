@@ -3,6 +3,7 @@ import type { TroupeOut } from "../../api/types";
 import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { Toggle } from "../../components/Toggle";
 import { ErrorText } from "../../components/ui";
+import { SETTINGS } from "./settingsIndex";
 
 /** What the troupe's Who's Who shows of sect status: none, or the negative status
  * each character carries into a game here, which is public in the sect anyway. */
@@ -12,9 +13,8 @@ export function WhosWhoSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit
   );
   return (
     <SettingCard
-      title="Who's Who"
+      setting={SETTINGS.whosWho}
       readOnly={!canEdit}
-      about="The troupe’s players and staff see its characters there. It shows no sect status unless you add negative status."
     >
       {!canEdit ? (
         <div className="flex flex-col gap-1 text-sm">

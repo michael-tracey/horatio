@@ -129,6 +129,28 @@ html[data-theme="ultragoth"] .hover\:bg-blood-bright:hover:not(:disabled) {
   }
 }
 
+/* A setting found by name (#1047): its card, or a feature's row, glows gold where the
+   address lands, then fades. With "reduce motion" set it is ringed, without the fade. */
+@keyframes found {
+  from,
+  50% {
+    box-shadow: inset 0 0 0 2px var(--color-gold);
+  }
+  to {
+    box-shadow: inset 0 0 0 2px transparent;
+  }
+}
+[data-found] {
+  border-radius: 0.5rem;
+  animation: found 3s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-found] {
+    animation: none;
+    box-shadow: inset 0 0 0 2px var(--color-gold);
+  }
+}
+
 /* Feeding's finish on the Play View: blood rises from the bottom, then the
    result shows. With "reduce motion" set, the blood fades in instead. */
 @keyframes feed-rise {
