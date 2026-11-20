@@ -400,10 +400,9 @@ def test_the_log_reads_newest_first(troupe: Troupe) -> None:
 
     messages = log(troupe.lead, troupe.id)
 
-    assert messages[:2] == [
-        "player asked for Lords of the Night to be Agnes's home troupe.",
-        "Agnes (player) started visiting the troupe.",
-    ]
+    assert messages[0] == "player asked for Lords of the Night to be Agnes's home troupe."
+    # Starting to visit is a debug event (#1062), never in a troupe's log.
+    assert "Agnes (player) started visiting the troupe." not in messages
     # Staff changes from setting the troupe up are there too.
     assert "lead made narrator narrator." in messages
 

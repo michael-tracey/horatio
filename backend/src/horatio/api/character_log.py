@@ -36,7 +36,11 @@ def character_log(
     query = (
         select(AuditEvent, User.display_name)
         .outerjoin(User, AuditEvent.actor_id == User.id)
-        .where(AuditEvent.character_id == character.id, ~bonds.hidden_events())
+        .where(
+            AuditEvent.character_id == character.id,
+            AuditEvent.level != "debug",
+            ~bonds.hidden_events(),
+        )
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
         .limit(min(max(limit, 1), 500))
     )

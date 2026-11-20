@@ -4,16 +4,18 @@ import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { DateInput } from "../../components/DateInput";
 import { PersonPicker } from "../../components/PersonPicker";
-import { Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useWidePage } from "../../components/widePage";
 import { useDates } from "../../dates";
+import { AuditLogCard } from "./AuditLogCard";
 import { auditQuery, exportHref, filtersFrom, NO_FILTERS, toParams, type AuditCharacter, type AuditEntry, type AuditFilters } from "./audit";
 
 /**
  * The whole audit log, for the custodian: every change in every troupe and outside
  * them, newest first, found by who made it, the character, the troupe, the kind of
  * change, the days and the words. The filters live in the page's address, so a
- * search can be shared or come back to. It only reads the log.
+ * search can be shared or come back to. It only reads the log; what the log records
+ * and keeps is set on its card at the top (#1062).
  */
 export function AuditTab() {
   useWidePage();
@@ -31,6 +33,7 @@ export function AuditTab() {
 
   return (
     <div className="flex flex-col gap-6">
+      <AuditLogCard />
       {/* Filled in afresh whenever the address changes, by a search or by Back. */}
       <SearchForm key={params.toString()} applied={applied} onSearch={(filters) => setParams(toParams(filters))} />
       <Card
@@ -114,6 +117,13 @@ function SearchForm({ applied, onSearch }: { applied: AuditFilters; onSearch: (f
           <Field label="To">
             <DateInput value={draft.to} min={draft.from || undefined} onChange={(e) => set({ to: e.target.value })} />
           </Field>
+          <Field label="Level" hint="Debug events are routine, such as signing in; notice ones are kept forever.">
+            <Select value={draft.level} onChange={(e) => set({ level: e.target.value })}>
+              <option value="">Any level</option>
+              <option value="info">Info and notice</option>
+              <option value="notice">Notice only</option>
+            </Select>
+          </Field>
         </div>
         <Field label="Words" hint="Each word somewhere in what the change says, such as a name, a trait or a reason.">
           <Input type="search" value={draft.words} onChange={(e) => set({ words: e.target.value })} />
@@ -154,6 +164,7 @@ function Entry({ entry }: { entry: AuditEntry }) {
             {entry.troupe_name}
           </Link>
         )}
+        {entry.level !== "info" && <Badge tone={entry.level === "notice" ? "gold" : "mist"}>{entry.level}</Badge>}
       </span>
       <span>
         {character ? (

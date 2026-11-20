@@ -1,7 +1,7 @@
 """Short-lived records for login and signup throttles.
 
-Revision ID: 0239
-Revises: 0238
+Revision ID: 0240
+Revises: 0239
 Create Date: 2026-11-16 12:00:00.000000
 """
 
@@ -10,8 +10,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0239"
-down_revision: str | None = "0238"
+revision: str = "0240"
+down_revision: str | None = "0239"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

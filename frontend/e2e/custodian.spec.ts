@@ -958,6 +958,43 @@ test("the custodian sees whether mail and Discord are set up, never their secret
   await expect(mail.getByRole("textbox", { name: "From address" })).toHaveValue("");
 });
 
+test("the custodian sets how long the audit log keeps each level, and finds the change among the notice events (#1062)", async ({ browser }) => {
+  const custodian = await person(browser, "auditkeep-cust");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  await c.goto("/custodian/audit");
+
+  // At the top of the audit log, what it records and keeps is in sight; the settings are folded away (#944).
+  const card = c.locator("section").filter({ has: c.getByRole("heading", { name: "Audit log", exact: true }) });
+  await expect(card.getByText("Debug events off", { exact: true })).toBeVisible();
+  await expect(card.getByText(/^Keeps debug events for \d+ days?, info events for/)).toBeVisible();
+  await expect(card.getByLabel("Record debug events")).toBeHidden();
+  await card.getByText("Levels, and what it records and keeps", { exact: true }).click();
+  await expect(card.getByLabel("Record debug events")).not.toBeChecked();
+
+  // The log's settings are the whole site's: only one project's run changes them, and puts them back.
+  if (test.info().project.name === "phone") return;
+  await card.getByLabel("Keep debug events for").selectOption({ label: "14 days" });
+  await card.getByLabel("Keep info events for").selectOption({ label: "2 years" });
+  await card.getByRole("button", { name: "Save audit log settings" }).click();
+  await expect(c.getByText("Saved. The audit log works this way from now on.")).toBeVisible();
+  await expect(card.getByText("Keeps debug events for 14 days, info events for 2 years, and notice events forever.")).toBeVisible();
+
+  // The change is itself in the log, as a notice.
+  await c.getByLabel("Level", { exact: true }).selectOption({ label: "Notice only" });
+  await c.getByLabel("Words").fill("audit log's settings");
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem").filter({ hasText: "auditkeep-cust" });
+  await expect(found.first()).toContainText("auditkeep-cust changed the audit log's settings: debug events kept 14 days");
+  await expect(found.first().getByText("notice", { exact: true })).toBeVisible();
+  await expect(c).toHaveURL(/level=notice/);
+
+  await card.getByLabel("Keep debug events for").selectOption({ label: "30 days" });
+  await card.getByLabel("Keep info events for").selectOption({ label: "1 year" });
+  await card.getByRole("button", { name: "Save audit log settings" }).click();
+  await expect(card.getByText("Keeps debug events for 30 days, info events for 1 year, and notice events forever.")).toBeVisible();
+});
+
 test("the custodian designs Horatio's emails: a header, colours and a footer, previewed light and dark, as HTML and plain text (#830)", async ({ browser }) => {
   const custodian = await person(browser, "emaildesign-cu");
   makeCustodian(custodian.email);

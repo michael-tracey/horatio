@@ -19,7 +19,7 @@ from horatio.auth.resets import (
     use_reset,
     user_for_reset,
 )
-from horatio.auth.sessions import end_other_sessions, end_session, start_session
+from horatio.auth.sessions import end_other_sessions, end_session, start_session, user_for_token
 from horatio.auth.viewing import allowed_while_viewing, viewing_for
 from horatio.auth.viewing import end as end_viewing
 from horatio.config import get_settings
@@ -152,6 +152,7 @@ def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -
     db.add(user)
     db.flush()
     notifications.signed_up(db, user)
+    record(db, user, "account.signed_up", member=user.display_name, user_id=user.id)
     set_session_cookie(response, start_session(db, user))
     db.commit()
     return me(user)
@@ -166,11 +167,18 @@ def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -
     user = user_by_login(db, body.login)
     ok, new_hash = verify_password(body.password, user.password_hash if user else None)
     if user is None or not ok:
+        # Never what was typed: someone may have typed their password as their login.
+        if user is None:
+            record(db, None, "account.sign_in_failed", kind="unknown")
+        else:
+            record(db, user, "account.sign_in_failed", member=user.display_name, user_id=user.id)
         attempts.failed_login(db, attempt_id)
+        db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email, handle or password.")
     attempts.successful_login(db, attempt_id, body.login, ip)
     if new_hash is not None:
         user.password_hash = new_hash
+    record(db, user, "account.signed_in", member=user.display_name, user_id=user.id)
     set_session_cookie(response, start_session(db, user))
     db.commit()
     return me(user)
@@ -185,6 +193,8 @@ def sign_out(request: Request, db: DbSession, response: Response) -> None:
         viewing = viewing_for(request, db)
         if viewing is not None:
             end_viewing(db, viewing, "signed_out")
+        if (user := user_for_token(db, token)) is not None:
+            record(db, user, "account.signed_out", member=user.display_name, user_id=user.id)
         end_session(db, token)
         db.commit()
     response.delete_cookie(settings.session_cookie_name, path="/")
