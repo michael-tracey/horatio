@@ -400,8 +400,8 @@ export interface paths {
         };
         /**
          * Log Settings
-         * @description For the custodian: what the log records, how long it keeps each level, and
-         *     what the last purge deleted.
+         * @description For the custodian: what the log records, how long it keeps each level, whether
+         *     sign-in events keep IP addresses, and what the last purge deleted.
          */
         get: operations["log_settings_api_audit_settings_get"];
         /**
@@ -14855,6 +14855,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
+            /** Sign In Ips */
+            sign_in_ips: boolean;
         };
         /** AuditSettingsOut */
         AuditSettingsOut: {
@@ -14868,6 +14870,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
+            /** Sign In Ips */
+            sign_in_ips: boolean;
         };
         /** AuditTroupe */
         AuditTroupe: {

@@ -724,23 +724,24 @@ MESSAGES: dict[str, str] = {
     "account.reset_sent": "{actor} emailed {member} their reset link.",
     "account.reset_sent.self": "Horatio emailed {member} the reset link they asked for.",
     "account.reset_email_failed": "Horatio could not email {member} a reset link: {error}",
-    "account.reset_requested": "{actor} asked for a password reset link.",
-    "account.reset_requested.unknown": "Someone asked for a reset link for {email}; "
+    "account.reset_requested": "{actor} asked for a password reset link{from_ip}.",
+    "account.reset_requested.unknown": "Someone asked for a reset link for {email}{from_ip}; "
     "no account uses it.",
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
     "account.password_changed": "{actor} changed their password.",
-    "account.signed_up": "{actor} signed up.",
-    "account.signed_in": "{actor} signed in.",
-    "account.signed_out": "{actor} signed out.",
-    "account.sign_in_failed": "Someone failed to sign in as {member}: wrong password.",
-    "account.sign_in_failed.unknown": "Someone failed to sign in to an account that doesn't exist.",
-    "account.sign_in_throttled": "Someone was turned away from signing in as {member}: too many"
-    " failed sign-ins from where they were.",
-    "account.sign_in_throttled.unknown": "Someone was turned away from signing in to an account"
-    " that doesn't exist: too many failed sign-ins from where they were.",
-    "account.sign_up_throttled": "Someone was turned away from signing up: too many sign-ups from"
-    " where they were.",
+    "account.signed_up": "{actor} signed up{from_ip}.",
+    "account.signed_in": "{actor} signed in{from_ip}.",
+    "account.signed_out": "{actor} signed out{from_ip}.",
+    "account.sign_in_failed": "Someone failed to sign in as {member}{from_ip}: wrong password.",
+    "account.sign_in_failed.unknown": "Someone failed to sign in{from_ip} to an account that"
+    " doesn't exist.",
+    "account.sign_in_throttled": "Someone was turned away from signing in as {member}{from_ip}:"
+    " too many failed sign-ins from where they were.",
+    "account.sign_in_throttled.unknown": "Someone was turned away from signing in{from_ip} to an"
+    " account that doesn't exist: too many failed sign-ins from where they were.",
+    "account.sign_up_throttled": "Someone was turned away from signing up{from_ip}: too many"
+    " sign-ups from where they were.",
     "account.suspended": "{actor} suspended {member}{because}.",
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
@@ -1127,6 +1128,9 @@ def message(
     values.setdefault("troupe", "this troupe")
     # Entries from before the character it was done as was kept with them (#987).
     values.setdefault("acting", "")
+    # Where a sign-in came from, while the custodian keeps it, or a reset request (#1066):
+    # " from 203.0.113.7".
+    values["from_ip"] = f" from {data['ip']}" if data.get("ip") else ""
     # Given at a Play View game: " at game 3".
     values["at_game"] = f" at game {data['game']}" if data.get("game") else ""
     if isinstance(values.get("picks"), dict):
