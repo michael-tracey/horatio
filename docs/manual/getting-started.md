@@ -24,7 +24,7 @@ Each page names itself in the browser's tab, its bookmarks and its history, the 
 
 Horatio keeps you signed in on that browser for about a month. To sign out, choose **Sign out** at the right of the menu. Signing out also clears whatever Horatio kept on that device for you; if taps from the Play View haven't been sent yet, it asks first.
 
-After several wrong passwords, Horatio stops trying them for a while, and the page says "Too many failed sign-ins from here." Wait a quarter of an hour and try again, or reset your password (below). Only the network you were on is held back, never your account everywhere.
+After several wrong passwords, Horatio stops trying them for a while, and the page says "Too many failed sign-ins from here." Wait a quarter of an hour and try again, or reset your password (below). Only the network you were on is held back, never your account everywhere. Signing in very many times from one network, even with the right password, is held back the same way: "Too many sign-ins from here."
 
 ![The sign-in page](images/getting-started/sign-in.png)
 

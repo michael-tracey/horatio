@@ -55718,6 +55718,73 @@
         "title": "TextNeed",
         "type": "object"
       },
+      "ThrottledOut": {
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "clears": {
+            "format": "date-time",
+            "title": "Clears",
+            "type": "string"
+          },
+          "held": {
+            "enum": [
+              "sign_in",
+              "sign_up"
+            ],
+            "title": "Held",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "string"
+          },
+          "login": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Login"
+          },
+          "masked": {
+            "title": "Masked",
+            "type": "boolean"
+          },
+          "per_login": {
+            "title": "Per Login",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "held",
+          "address",
+          "masked",
+          "per_login",
+          "login",
+          "limit",
+          "clears"
+        ],
+        "title": "ThrottledOut",
+        "type": "object"
+      },
       "ThrowImagesNameIn": {
         "properties": {
           "name": {
@@ -58849,6 +58916,19 @@
           "categories"
         ],
         "title": "UnavailableIn",
+        "type": "object"
+      },
+      "Unblock": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "Unblock",
         "type": "object"
       },
       "UnmatchedOut": {
@@ -85520,6 +85600,67 @@
         "summary": "Refuse Teaching",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/throttled": {
+      "get": {
+        "description": "For the custodian: every address a limit on sign-ins or sign-ups holds back\nnow, and when each clears, the soonest first.",
+        "operationId": "throttled_api_throttled_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ThrottledOut"
+                  },
+                  "title": "Response Throttled Api Throttled Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Throttled",
+        "tags": [
+          "custodian"
+        ]
+      }
+    },
+    "/api/throttled/unblock": {
+      "post": {
+        "description": "For the custodian: forget the tries that hold an address back (at a login, for\na limit at one login), so it may try again at once. Recorded as a notice.",
+        "operationId": "unblock_api_throttled_unblock_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Unblock"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unblock",
+        "tags": [
+          "custodian"
         ]
       }
     },

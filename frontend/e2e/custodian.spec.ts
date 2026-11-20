@@ -1020,6 +1020,49 @@ test("the custodian sets how long the audit log keeps each level, and finds the 
   await expect(card.getByLabel("Record IP addresses with sign-in events")).toBeChecked();
 });
 
+/** Holds `login` back at `address` as the limit on failed sign-ins at one login would:
+ * the suite runs with the limits off, as every browser signs in from one address. */
+function heldBackAt(login: string, address: string) {
+  const script = [
+    "import sys",
+    "from horatio.auth import attempts",
+    "from horatio.db import get_sessionmaker",
+    "from horatio.models import AuthAttempt",
+    "login, ip = sys.argv[1:]",
+    "with get_sessionmaker()() as db, db.begin():",
+    "    for _ in range(5):",
+    "        db.add(AuthAttempt(action=attempts.SIGN_IN, identity_hash=attempts.login_key(login), ip_address=ip))",
+  ].join("\n");
+  execFileSync("uv", ["run", "python", "-c", script, login, address], { cwd: "../backend", stdio: "ignore" });
+}
+
+test("the custodian unblocks a login held back for too many failed sign-ins, and finds it among the notice events (#1074)", async ({ browser }) => {
+  const custodian = await person(browser, "unblock-cust");
+  makeCustodian(custodian.email);
+  const player = await person(browser, "unblock-player");
+  heldBackAt(`@${player.handle}`, `192.0.2.${(Number(run.slice(-3)) % 250) + 1}`);
+  const c = custodian.page;
+  await c.goto("/custodian/audit");
+
+  // The address shows in full, or only its start while sign-in events keep no IP addresses.
+  const card = c.locator("section").filter({ has: c.getByRole("heading", { name: "Throttled now", exact: true }) });
+  const row = card.getByRole("listitem").filter({ hasText: `at @${player.handle}` });
+  await expect(row).toContainText(/^192\.0\.(2\.\d+|x\.x) at @/);
+  await expect(row).toContainText("Sign-ins over the limit of 5 failed sign-ins at one login in 15 minutes. Clears ");
+  await row.getByRole("button", { name: /^Unblock / }).click();
+  await expect(c.getByText("Unblocked. It may try again now.")).toBeVisible();
+  await expect(row).toHaveCount(0);
+
+  // Unblocking is kept forever.
+  await c.getByLabel("Level", { exact: true }).selectOption({ label: "Notice only" });
+  await c.getByLabel("Words").fill(`unblocked ${player.handle}`);
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem").filter({ hasText: "unblock-cust" });
+  await expect(found.first()).toContainText(`unblock-cust unblocked sign-ins at @${player.handle}`);
+  await expect(found.first()).toContainText(": over the limit of 5 failed sign-ins at one login in 15 minutes.");
+  await expect(found.first().getByText("notice", { exact: true })).toBeVisible();
+});
+
 test("the custodian designs Horatio's emails: a header, colours and a footer, previewed light and dark, as HTML and plain text (#830)", async ({ browser }) => {
   const custodian = await person(browser, "emaildesign-cu");
   makeCustodian(custodian.email);

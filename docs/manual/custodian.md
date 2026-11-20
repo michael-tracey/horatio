@@ -554,15 +554,29 @@ The **Audit log** card at the top of **Custodian › Audit** sets what the log r
 
 - **Notice**: kept forever. Suspensions, merges, moves, deletions, password resets, changes to the site's settings, and everything Horatio reads back from the log as history, such as title history, the chronicle and a location's log.
 - **Info**: most changes, as each troupe sees them on its **Log** tab.
-- **Debug**: routine events, many a day: signing in and out, failed sign-ins, signing up, and someone turned away for too many failed sign-ins or sign-ups from one place. Only you see them, here in the audit log; never a troupe's or a character's log.
+- **Debug**: routine events, many a day: signing in and out, failed sign-ins, signing up, and someone turned away again for too many sign-ins or sign-ups from one place. Only you see them, here in the audit log; never a troupe's or a character's log.
+
+The first attempt turned away by a limit on signing in or up, from one place (or at one login, for the limit at one login), is info, so it is always recorded: "Someone was turned away from signing in as Agnes from 203.0.113.7: too many failed sign-ins from where they were." The ones after it, until the limit's window has passed (a quarter of an hour, an hour or a day), are debug, so a flood of them doesn't fill the log.
 
 Tick **Record debug events** to record them, for instance while you look into a question such as "who has been trying to sign in as this player?". Untick it again when you're done; nothing is recorded below info while it's off.
 
-**Record IP addresses with sign-in events**, ticked until you untick it, keeps the IP address each sign-in, failed sign-in, sign-out, sign-up and attempt turned away came from, and the search shows it: "Agnes signed in from 203.0.113.7." These are debug events, so an address is kept only while **Record debug events** is ticked too, and only as long as **Keep debug events for** says: after that the purge deletes it with its event. Unticking it keeps no address from then on; the ones already kept go when their events do. A request for a password reset link keeps its address either way, as it always has, because the limits on asking for links count by it; the search shows that too: "Agnes asked for a password reset link from 203.0.113.7." It is a notice event, so it is kept forever.
+**Record IP addresses with sign-in events**, ticked until you untick it, keeps the IP address each sign-in, failed sign-in, sign-out, sign-up and attempt turned away came from, and the search shows it: "Agnes signed in from 203.0.113.7." Most are debug events, so their addresses are kept only while **Record debug events** is ticked too, and only as long as **Keep debug events for** says: after that the purge deletes them with their events. The first attempt a limit turns away is info, so its address is kept as long as info events are. Unticking it keeps no address from then on; the ones already kept go when their events do. A request for a password reset link keeps its address either way, as it always has, because the limits on asking for links count by it; the search shows that too: "Agnes asked for a password reset link from 203.0.113.7." It is a notice event, so it is kept forever.
 
 **Keep debug events for** and **Keep info events for** say how long each is kept. Once a day Horatio deletes the debug and info events older than that, a little at a time; the card says when it last did and how many it deleted. Notice events are never deleted. A failed sign-in never records what was typed, nor the password.
 
 Saving goes in the audit log, as a notice.
+
+### Throttled now
+
+Horatio limits how often anyone can try to sign in or sign up from one place (one IP address):
+
+- **Failed sign-ins**: 20 in a quarter of an hour and 100 a day from one address, and 5 in a quarter of an hour at one email or handle from it.
+- **All sign-ins**, right password or not: 60 in a quarter of an hour and 300 a day from one address, so that no one can keep the server busy checking passwords. A troupe signing in together on a venue's Wi-Fi stays well under it.
+- **Sign-ups**: 20 an hour and 50 a day from one address.
+
+The **Throttled now** card, below the **Audit log** card, lists each address over a limit now (with the email or handle, for the limit at one login), which limit, and when it clears. Choose **Unblock** to let it try again at once, for instance when a whole troupe is held back at a game. Unblocking goes in the audit log, as a notice.
+
+An address shows in full only while **Record IP addresses with sign-in events** is ticked; otherwise only its start, such as 198.51.x.x. **Unblock** works either way.
 
 ## Setting up Discord and email
 

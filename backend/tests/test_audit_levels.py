@@ -188,6 +188,11 @@ def test_each_level_names_real_actions() -> None:
     # Started visiting a troupe: in its log, as stopping is (#1066).
     assert audit.level("troupe.join") == audit.level("troupe.leave") == "info"
     assert audit.level("sheet.purchase") == "info"
+    # Turned away by a limit: the first in its window is always recorded, the rest are
+    # debug; the custodian unblocking is kept forever (#1074).
+    for action in ("account.sign_in_throttled", "account.sign_up_throttled"):
+        assert (audit.level(action), audit.level(f"{action}_again")) == ("info", "debug")
+    assert audit.level("account.throttle_lifted") == "notice"
     assert audit.level("character.deleted") == "notice"
 
 

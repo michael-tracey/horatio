@@ -60,10 +60,13 @@ handles are unique.
 `user_id`, `token_hash`, `expires_at`, `revoked_at`.
 
 **`auth_attempts`**: sign-ins and sign-ups tried, counted against the limits on
-them (`horatio.auth.attempts`). `action` (`sign_in` | `sign_up`), `identity_hash`
-(a sign-in's login, hashed; never what was typed), `ip_address` (an IP address,
-or an IPv6 /64). A successful sign-in deletes its login's tries from that
-address; every row is deleted once a day old.
+them (`horatio.auth.attempts`). `action` (`sign_in` | `signed_in` | `sign_up`, or
+`sign_in_held` | `sign_up_held` for the first try a limit turned away in its
+window, which is logged at info and the rest at debug), `identity_hash` (a
+sign-in's login, hashed; never what was typed), `ip_address` (an IP address, or
+an IPv6 /64). A successful sign-in marks its login's tries from that address
+`signed_in`: counted among all sign-ins, no longer as failed. The custodian's
+Unblock deletes an address's rows. Every row is deleted once a day old.
 
 **`password_resets`**: one-time links the custodian makes for someone locked out.
 `user_id`, `token_hash` (unique), `expires_at` (a day on), `created_by_id` →
