@@ -14,16 +14,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import horatio
-from horatio import notification_choices, notification_emails, notifications, posts
+from horatio import notification_choices, notification_emails, notifications, posts, web_push
 from horatio.config import get_settings
 from horatio.connectors import email
-from horatio.models import EmailNotice, Notification, User
+from horatio.models import EmailNotice, Notification, PushNotice, User
 from horatio.notification_choices import TOPICS, Topic, Way
 from tests.api_helpers import Person, Troupe, sign_up
 from tests.test_api_boon_reports_told import court, told_path  # noqa: F401
 from tests.test_api_boon_standings import at_home
 from tests.test_api_boon_talons import Talons
 from tests.test_email_connector import FakeSMTP
+from tests.test_web_push import Browser, FakePushService, endpoint, pushes, turn_on  # noqa: F401
 
 SOURCE = Path(horatio.__file__).parent
 # The functions that send a notification of a kind their caller names.
@@ -194,7 +195,7 @@ def test_the_locked_ones_say_so(client_for: Callable[[], TestClient]) -> None:
     assert routes(topics["account_emails"]) == {"email": (True, True)}
     assert routes(topics["teaching"]) == {"bell": (True, True)}
     assert topics["teaching"]["task"] is True
-    for way in ("bell", "email"):
+    for way in ("bell", "email", "push"):
         refused = person.client.put(
             "/notification-settings", json={"topic": "security", "way": way, "on": False}
         )
@@ -312,6 +313,14 @@ def choosable() -> list[tuple[Topic, Way]]:
     ]
 
 
+def pushed_to(session: Session, kind: str) -> bool:
+    """Whether a push waits to go of what `sent` sent."""
+    return (
+        session.scalar(select(PushNotice.id).where(PushNotice.summary == f"About {kind}"))
+        is not None
+    )
+
+
 @pytest.mark.parametrize(("topic", "way"), choosable(), ids=lambda v: getattr(v, "name", v))
 def test_each_choice_is_honoured(
     topic: Topic,
@@ -319,9 +328,12 @@ def test_each_choice_is_honoured(
     client_for: Callable[[], TestClient],
     session: Session,
     mail: FakeSMTP,
+    pushes: FakePushService,  # noqa: F811
 ) -> None:
     person = sign_up(client_for, "chooser")
     user = user_of(session, person)
+    # On a phone of theirs (#1054).
+    assert turn_on(person, Browser(endpoint("chooser"))).status_code == 200
     kind = topic.kinds[0].replace("*", "review")
     default = topic.routes[way].default
     changed = person.client.put(
@@ -331,17 +343,20 @@ def test_each_choice_is_honoured(
     session.refresh(user)
     assert notification_choices.chosen(user, topic, way) is not default
     if topic.task:
-        # A task's bell is always on; its email goes as the work arrives.
+        # A task's bell is always on; its email and push go as the work arrives.
         notification_emails.queue(session, [user.id], kind, "Waiting", "/troupes")
+        web_push.queue(session, [user.id], kind, "Waiting", "/troupes")
         mailed = session.scalar(select(EmailNotice.id).where(EmailNotice.user_id == user.id))
-        assert (mailed is not None) == (not default)
+        pushed = session.scalar(select(PushNotice.id).where(PushNotice.summary == "Waiting"))
+        assert ((mailed if way == "email" else pushed) is not None) == (not default)
         return
     bell, mailed = sent(session, user, kind)
-    assert (bell if way == "bell" else mailed) == (not default)
-    # The other way is as it was.
-    other = "email" if way == "bell" else "bell"
-    if other in topic.routes:
-        assert (mailed if way == "bell" else bell) == topic.routes[other].default
+    came = {"bell": bell, "email": mailed, "push": pushed_to(session, kind)}
+    assert came[way] == (not default)
+    # The other ways are as they were.
+    for other, route in topic.routes.items():
+        if other != way:
+            assert came[other] == route.default, other
 
 
 def test_the_always_ones_come_whatever_is_stored(

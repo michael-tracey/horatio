@@ -16,6 +16,7 @@ from horatio.models import (
     AuthIdentity,
     EmailChange,
     FormerHandle,
+    PushDevice,
     Suspension,
     User,
     Viewing,
@@ -26,6 +27,7 @@ from tests.test_api_email_changes import token_of
 from tests.test_api_play import send, tap
 from tests.test_api_renames import at_home, other_troupe, summaries, troupe_log, visit
 from tests.test_email_connector import FakeSMTP, text_of
+from tests.test_web_push import Browser, FakePushService, endpoint, pushes, turn_on  # noqa: F401
 
 
 @pytest.fixture
@@ -525,6 +527,23 @@ def test_its_characters_own_discord_channels_stay_off(troupe: Troupe, twin: Pers
 
     kept = account(troupe, troupe.player).preferences["own_channels_off"]
     assert kept == sorted([agnes, bram])
+
+
+def test_its_devices_stop_getting_pushes(
+    troupe: Troupe,
+    twin: Person,
+    pushes: FakePushService,  # noqa: F811
+) -> None:
+    """Signed out everywhere, so its devices' pushes stop too (#1054); turned on there
+    again, they go to the account that stays."""
+    for person, name in ((twin, "twin"), (troupe.player, "player")):
+        on = turn_on(person, Browser(endpoint(name)))
+        assert on.status_code == 200, on.text
+
+    merged(troupe, troupe.player, twin)
+
+    owners = troupe.session.scalars(select(PushDevice.user_id))
+    assert list(owners) == [uuid.UUID(troupe.player.id)]
 
 
 def test_its_messages_move_to_the_bell_of_the_account_that_stays(

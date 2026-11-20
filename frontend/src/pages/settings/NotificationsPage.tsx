@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { NotificationSettingsOut, NotificationTopicOut, Preferences } from "../../api/types";
 import { Checkbox } from "../../components/Checkbox";
@@ -7,8 +7,10 @@ import { SettingCard } from "../../components/SettingCard";
 import { SettingRow } from "../../components/SettingRow";
 import { useToast } from "../../components/Toast";
 import { Toggle } from "../../components/Toggle";
-import { ErrorText, Loading, Notice } from "../../components/ui";
+import { Button, ErrorText, Loading, Notice } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
+import { blocked, pushSupport, subscribeHere, subscriptionHere } from "../../offline/push";
 import { ToldOfReports } from "../troupe/BoonReportsTold";
 import { Choice, PreferenceCards, useScrollToHash } from "./PreferenceControls";
 
@@ -16,12 +18,12 @@ export const NOTIFICATION_SETTINGS = ["notification-settings"];
 
 type Way = NotificationTopicOut["routes"][number]["way"];
 
-const WAYS: Record<Way, string> = { bell: "Bell", email: "Email" };
+const WAYS: Record<Way, string> = { bell: "Bell", email: "Email", push: "Phone" };
 
 /**
  * Account › Notifications (#1053): every kind of notification Horatio sends you, grouped,
- * and where each comes, the bell or email (horatio.notification_choices). Some always
- * come, and say so. Reported boons go with a role: each troupe's switch is the one beside
+ * and where each comes, the bell, email or your phone (horatio.notification_choices). Some
+ * always come, and say so. Phone notifications are turned on per device (#1054), here. Reported boons go with a role: each troupe's switch is the one beside
  * the role (#1018), shown here too. What a troupe also sends to Discord or by its own email
  * is the troupe's choice, and is said, not chosen, but for each character's own channel on
  * its Discord, which its player can turn off (#1077). A way not listed never carries it.
@@ -34,19 +36,21 @@ export function NotificationsPage() {
   });
   if (settings.isPending) return <Loading />;
   if (settings.error) return <ErrorText error={settings.error} />;
-  const { email, groups } = settings.data;
+  const { email, push, groups } = settings.data;
+  const ways = [email && "email", push && "push"].filter((w): w is Way => !!w);
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <p className="text-sm text-mist">
-        Choose where each kind of notification comes: to the bell, by email, both, or neither. Work waiting on you stays in the bell until it's done, and word about your account always
-        comes.
+        Choose where each kind of notification comes: to the bell{email && ", by email"}
+        {push && ", to your phone"}, or nowhere. Work waiting on you stays in the bell until it's done, and word about your account always comes.
       </p>
-      {!email && <Notice>Email isn't set up on this server, so notifications come only to the bell.</Notice>}
+      {!email && <Notice>Email isn't set up on this server, so notifications don't come by email.</Notice>}
+      {push ? <PhoneCard settings={settings.data} /> : <Notice>Phone notifications aren't set up on this server, so none come to your phone.</Notice>}
       {groups.map((group) => (
         <SettingCard key={group.name} title={group.title}>
           <div id={group.name} className="scroll-mt-4">
             {group.topics.map((topic) => (
-              <TopicRow key={topic.name} topic={topic} email={email} />
+              <TopicRow key={topic.name} topic={topic} ways={ways} />
             ))}
           </div>
         </SettingCard>
@@ -63,10 +67,11 @@ export function NotificationsPage() {
 }
 
 /** One kind of notification: what it is, and a tick for each way it can come. */
-function TopicRow({ topic, email }: { topic: NotificationTopicOut; email: boolean }) {
+function TopicRow({ topic, ways }: { topic: NotificationTopicOut; ways: Way[] }) {
   const toast = useToast();
   const client = useQueryClient();
-  const routes = topic.routes.filter((r) => email || r.way !== "email");
+  // The bell always; email and phone where this server can send them.
+  const routes = topic.routes.filter((r) => r.way === "bell" || ways.includes(r.way));
   // Shown as chosen at once, while it saves.
   const [chosen, setChosen] = useState<{ way: Way; on: boolean } | null>(null);
   const choose = useAction(
@@ -161,6 +166,100 @@ function OwnChannels({ topic }: { topic: NotificationTopicOut }) {
       <ErrorText error={save.error} />
     </div>
   );
+}
+
+/**
+ * Phone notifications (#1054): on or off on this device, and every device where they're on.
+ * Each kind ticked under Phone comes to each of them, even while Horatio is closed.
+ */
+function PhoneCard({ settings }: { settings: NotificationSettingsOut }) {
+  const toast = useToast();
+  const client = useQueryClient();
+  const dates = useDates();
+  const support = pushSupport();
+  // This browser's subscription, once looked for; a device is "on" here if it is one of yours.
+  const [here, setHere] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    void subscriptionHere().then((s) => setHere(s?.endpoint ?? null));
+  }, []);
+  const thisOne = settings.devices.find((d) => d.endpoint === here);
+  const [chosen, setChosen] = useState<boolean | null>(null);
+  const saved = (done: NotificationSettingsOut) => client.setQueryData<NotificationSettingsOut>(NOTIFICATION_SETTINGS, done);
+  const turn = useAction(
+    async (on: boolean) => {
+      if (on) {
+        const subscription = await subscribeHere(settings.push_key ?? "");
+        saved(await unwrap(api.PUT("/api/notification-settings/devices", { body: subscription })));
+        setHere(subscription.endpoint);
+        toast({ message: "Phone notifications are on for this device." });
+      } else {
+        if (thisOne) saved(await turnOff(thisOne.id));
+        await (await subscriptionHere())?.unsubscribe();
+        setHere(null);
+        toast({ message: "Phone notifications are off for this device." });
+      }
+    },
+    [],
+    { answered: [NOTIFICATION_SETTINGS] },
+  );
+  const forget = useAction(
+    async ({ id, name }: { id: string; name: string }) => {
+      saved(await turnOff(id));
+      toast({ message: `Phone notifications are off for ${name}.` });
+    },
+    [],
+    { answered: [NOTIFICATION_SETTINGS] },
+  );
+  const others = settings.devices.filter((d) => d !== thisOne);
+  return (
+    <SettingCard title="Phone notifications">
+      {support === "yes" ? (
+        <SettingRow
+          label="On this device"
+          hint={
+            blocked() && !thisOne
+              ? "This browser is set not to let Horatio notify you. Allow notifications for Horatio in its settings first."
+              : "Each kind ticked under Phone below comes here, even while Horatio is closed. A tap opens it."
+          }
+          checked={chosen ?? !!thisOne}
+          disabled={here === undefined || turn.isPending}
+          onChange={(on) => {
+            setChosen(on);
+            turn.mutate(on, { onSettled: () => setChosen(null) });
+          }}
+        />
+      ) : (
+        <p className="py-3 text-sm text-mist">
+          {support === "home-screen"
+            ? "On an iPhone or iPad, add Horatio to your Home Screen first: in Safari, tap Share, then Add to Home Screen. Open Horatio from there, and turn phone notifications on here."
+            : "This browser can't show notifications from Horatio. Try Chrome, Firefox, Edge or Safari."}
+        </p>
+      )}
+      <ErrorText error={turn.error} />
+      {others.length > 0 && (
+        <div className="border-t border-ash/60 py-2 text-sm">
+          <p className="py-1 text-mist">Also on:</p>
+          <ul>
+            {others.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-1">
+                <span>
+                  {d.name} <span className="text-mist">· since {dates.date(d.created_at)}</span>
+                </span>
+                <Button variant="secondary" disabled={forget.isPending} onClick={() => forget.mutate({ id: d.id, name: d.name })}>
+                  Turn off
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <ErrorText error={forget.error} />
+        </div>
+      )}
+    </SettingCard>
+  );
+}
+
+function turnOff(id: string): Promise<NotificationSettingsOut> {
+  return unwrap(api.DELETE("/api/notification-settings/devices/{device_id}", { params: { path: { device_id: id } } }));
 }
 
 /** "to Discord", "by email", "to Discord and by email". */

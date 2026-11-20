@@ -120,8 +120,9 @@ The **Notifications** tab of your account lists every kind of notification Horat
 
 - **Bell**: in the bell. Every kind comes to the bell until you untick it.
 - **Email**: by email as well. Every kind is off until you tick it, but troupe announcements, which are on because they're often practical. One the staff mark **Important** is emailed to everyone in the troupe even so.
+- **Phone**: as a notification on your phone, on each device where you turn them on (see [Notifications on your phone](#notifications-on-your-phone)). Downtime results, your boons (one you reported accepted or not), powers used on your character, blood bonds and troupe announcements are ticked to begin with; the rest are off until you tick them.
 
-Untick both and that kind doesn't come at all. Some always come, and show **Bell, always** or **Email, always** with a lock instead of a tick: work waiting on you, such as an approval to decide or teaching to confirm, stays in the bell until it's done; word that the custodian viewed Horatio as you, merged your accounts or moved a character to or from you always comes to the bell; and emails to set a new password, confirm a new email, or say your account is suspended or let back in always come.
+Untick them all and that kind doesn't come at all. Some always come, and show **Bell, always** or **Email, always** with a lock instead of a tick: work waiting on you, such as an approval to decide or teaching to confirm, stays in the bell until it's done; word that the custodian viewed Horatio as you, merged your accounts or moved a character to or from you always comes to the bell; and emails to set a new password, confirm a new email, or say your account is suspended or let back in always come.
 
 **Boons players report** goes with a role: staff, the Harpy and Lesser Harpies who approve reported boons choose whether they're told at all, for each troupe. The tab lists your choice in each troupe where you have one, the same switch as in the troupe's Boons settings or on your ledger's **To review** tab, so changing it in either place changes both.
 
@@ -132,6 +133,19 @@ Where a troupe's Discord gives your character a channel of their own, **Downtime
 If email is set up, **Send emails** under **Emails** chooses **At once** or **Once a day**, which gathers them into one email at 8 am in your time zone. Every email has a link to stop that kind by email, which unticks it here. If the server can't send email, the tab says so, and notifications come only to the bell.
 
 ![The Downtimes group on the Notifications tab: a tick for the bell and for email](images/getting-started/email-notifications.png)
+
+### Notifications on your phone
+
+Horatio can tell your phone, so you hear of downtime results or a boon accepted at a game without opening it. You turn this on for each device, at the top of the **Notifications** tab, under **Phone notifications**:
+
+1. On the phone, open Horatio and go to **Your account › Notifications**.
+   - **Android**: in Chrome, as it is, or after **Add to Home screen**.
+   - **iPhone or iPad**: first add Horatio to your Home Screen. In Safari, tap **Share**, then **Add to Home Screen**, and open Horatio from the new icon. Phone notifications don't work in Safari itself; the tab says so. This needs iOS 16.4 or later.
+2. Turn on **On this device**, and allow notifications when the phone asks.
+
+Each kind ticked under **Phone** then comes to that phone, even while Horatio is closed. Tap one to open the page it's about. A notification says no more than the bell's line.
+
+Turn **On this device** off to stop them there. Signing out on a device stops them there too. Every other device where they're on is listed under **Also on**, with **Turn off** for each, so you can stop a phone you no longer have. If the server isn't set up for phone notifications, the tab says so.
 
 ## The calendar link
 

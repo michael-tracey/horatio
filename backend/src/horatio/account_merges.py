@@ -62,6 +62,7 @@ from horatio.models import (
     FormerHandle,
     Notification,
     PasswordReset,
+    PushDevice,
     Response,
     Scene,
     Suspension,
@@ -500,6 +501,9 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
 
     db.execute(update(Notification).where(Notification.user_id == other.id).values(user_id=keep.id))
     db.execute(update(EmailNotice).where(EmailNotice.user_id == other.id).values(user_id=keep.id))
+    # Its devices' pushes stop with its sign-ins: turned on again there, as the staying
+    # account, they go to it (horatio.web_push).
+    db.execute(delete(PushDevice).where(PushDevice.user_id == other.id))
     db.execute(update(Scene).where(Scene.created_by_id == other.id).values(created_by_id=keep.id))
     db.execute(
         update(Response)

@@ -92,6 +92,14 @@ def test_held_for_review_a_report_waits_and_staff_accept_it(ledger: Ledger) -> N
         "reports"
     ]
     assert [(r["state"], r["other"]) for r in reports] == [("accepted", "Bram")]
+    # And the player is told, as they would be of a rejection (#1054).
+    told = ledger.troupe.player.client.get("/notifications").json()["items"]
+    assert [(n["summary"], n["link"]) for n in told if n["kind"] == "boon.accepted"] == [
+        (
+            "The minor boon you reported (Agnes owes Bram, 3 Oct 2026) was accepted.",
+            f"/play/characters/{ledger.agnes}?tab=boons",
+        )
+    ]
 
 
 def test_staff_registrations_stand_at_once_even_when_held(ledger: Ledger) -> None:
@@ -399,6 +407,11 @@ def test_accept_all_shown_accepts_those_that_still_wait(ledger: Ledger) -> None:
         "Second",
     ]
     assert ok(ledger.get({"id": ids[0]}))["events"][-1]["note"] == "At court"
+    # The player is told once for the two (#1054).
+    told = ledger.troupe.player.client.get("/notifications").json()["items"]
+    assert [n["summary"] for n in told if n["kind"] == "boon.accepted"] == [
+        "The 2 boons you reported were accepted."
+    ]
     assert (
         ledger.troupe.player.client.post(f"{ledger.path}/accept", json={"boon_ids": ids})
     ).status_code in (403, 404)

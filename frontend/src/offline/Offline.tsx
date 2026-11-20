@@ -9,6 +9,7 @@ import { useDates } from "../dates";
 import { useMe } from "../hooks";
 import { isNoAnswer, useOnline } from "./connection";
 import { dropSent, keeping, keepsQuery, markAsked, mineOf, setKeeping, setKeptFor, tapsWaiting, waitingTaps, wasAsked, type Keeping } from "./keep";
+import { stopPushHere } from "./push";
 import { choicesChanged, dropRestored, forget, keptSummary, keptVersion, refresh, removeKept, save, saveScenes, scenesTouched, subscribe, type KeptSummary } from "./store";
 
 /** This person's choice on this device, kept up to date as it changes. */
@@ -192,6 +193,8 @@ export function useSignOut() {
     setError(null);
     try {
       const id = client.getQueryData<Me | null>(["me"])?.id;
+      // Push stops here too (#1054): this device is no longer theirs to notify.
+      await stopPushHere();
       await unwrap(api.POST("/api/auth/logout"));
       if (id) await forget(client, id);
       setAsking(0);

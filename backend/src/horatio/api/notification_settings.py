@@ -1,16 +1,25 @@
 """Account › Notifications (#1053): every kind of notification Horatio sends the
 signed-in person, grouped, with where each comes, and the choices that go with a
-role (horatio.notification_choices), and their characters' own Discord channels
-(#1077). Each person reads and changes only their own."""
+role (horatio.notification_choices), their characters' own Discord channels
+(#1077), and the devices where they turned on push (#1054, horatio.web_push). Each
+person reads and changes only their own."""
 
 import uuid
+from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel, Field
 from sqlalchemy import exists, or_, select
 
-from horatio import boon_reports_told, delivery, discord_channels, notification_choices, preferences
+from horatio import (
+    boon_reports_told,
+    delivery,
+    discord_channels,
+    notification_choices,
+    preferences,
+    web_push,
+)
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.connectors import CONNECTORS, email
 from horatio.models import Character, Troupe, TroupeConnector, TroupeStaff, User
@@ -83,9 +92,25 @@ class NotificationGroupOut(BaseModel):
     topics: list[NotificationTopicOut]
 
 
+class PushDeviceOut(BaseModel):
+    """A phone or computer where the person turned on push."""
+
+    id: uuid.UUID
+    # Such as "Chrome on Android".
+    name: str
+    # The browser's subscription, so the page knows which of these it is on.
+    endpoint: str
+    created_at: datetime
+
+
 class NotificationSettingsOut(BaseModel):
     # Whether this server can send email at all.
     email: bool
+    # Whether it can send push notifications, and the key a browser subscribes with.
+    push: bool
+    push_key: str | None
+    # The devices where the person turned push on.
+    devices: list[PushDeviceOut]
     # The groups that apply to the person: staff work only for staff, the custodian's
     # only for the custodian.
     groups: list[NotificationGroupOut]
@@ -100,6 +125,15 @@ class NotificationChoiceIn(BaseModel):
 class OwnChannelChoiceIn(BaseModel):
     character_id: uuid.UUID
     on: bool
+
+
+class PushDeviceIn(BaseModel):
+    """A browser's push subscription (`PushSubscription.toJSON()`): where its push
+    service takes messages for it, and its keys, base64url."""
+
+    endpoint: str = Field(max_length=2048)
+    p256dh: str = Field(max_length=200)
+    auth: str = Field(max_length=100)
 
 
 def audience_of(db: DbSession, user: User) -> set[Audience]:
@@ -226,6 +260,12 @@ def settings_out(db: DbSession, user: User) -> NotificationSettingsOut:
     sending = troupes_sending(db, user)
     return NotificationSettingsOut(
         email=email.configured(),
+        push=web_push.configured(),
+        push_key=web_push.public_key(),
+        devices=[
+            PushDeviceOut(id=d.id, name=d.name, endpoint=d.endpoint, created_at=d.created_at)
+            for d in web_push.devices_of(db, user)
+        ],
         groups=[
             group_out(db, user, g, sending)
             for g in notification_choices.GROUPS
@@ -244,8 +284,8 @@ def read_notification_settings(db: DbSession, user: CurrentUser) -> Notification
 def choose_notification(
     body: NotificationChoiceIn, db: DbSession, user: CurrentUser
 ) -> NotificationSettingsOut:
-    """Choose whether one kind of notification comes to you one way: in the bell, or by
-    email. Some always come, and can't be turned off."""
+    """Choose whether one kind of notification comes to you one way: in the bell, by
+    email, or by push to your devices. Some always come, and can't be turned off."""
     topic = notification_choices.BY_NAME.get(body.topic)
     if topic is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such kind of notification.")
@@ -272,5 +312,36 @@ def choose_own_channel(
     if character is None or character.player_id != user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character of yours.")
     notification_choices.choose_own_channel(user, character.id, body.on)
+    db.commit()
+    return settings_out(db, user)
+
+
+@router.put("/devices")
+def turn_on_push(
+    body: PushDeviceIn, request: Request, db: DbSession, user: CurrentUser
+) -> NotificationSettingsOut:
+    """Turn on push notifications on this device: its browser's subscription. Which
+    kinds come by push is chosen per kind, as for the bell and email."""
+    if not web_push.configured():
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Push notifications aren't set up on this server."
+        )
+    try:
+        web_push.turn_on(
+            db, user, body.endpoint, body.p256dh, body.auth, request.headers.get("user-agent")
+        )
+    except web_push.BadDevice as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
+    db.commit()
+    return settings_out(db, user)
+
+
+@router.delete("/devices/{device_id}")
+def turn_off_push(
+    device_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> NotificationSettingsOut:
+    """Turn off push notifications on one of your devices: nothing more goes to it."""
+    if not web_push.turn_off(db, user, device_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such device of yours.")
     db.commit()
     return settings_out(db, user)

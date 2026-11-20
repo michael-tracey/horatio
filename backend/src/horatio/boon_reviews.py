@@ -1,11 +1,11 @@
 """Reviewing boons (#687): the troupe's review setting, the flags raised on boons, and
 the review queue, for its running staff (and the Harpy, #688).
 
-A troupe may hold the boons its players report (#686) for review: they wait,
-pending, until staff accept them, edit and accept them, or reject them with a reason
-their reporter sees. Off, they stand at once. Either way the report is logged. What
-staff register themselves stands at once: they are the reviewers. So does what the
-Harpy or a Lesser Harpy registers.
+A troupe may hold the boons its players report (#686) for review: they wait, pending,
+until staff accept them, edit and accept them, or reject them with a reason their
+reporter sees; the reporter is told either way (accepted since #1054). Off, they stand
+at once. Either way the report is logged. What staff register themselves stands at once:
+they are the reviewers. So does what the Harpy or a Lesser Harpy registers.
 
 **Approval by kind** (#993). While reports wait, the troupe says which kinds go
 straight into the ledger all the same (`boon_auto_accept`, none to start with): a
@@ -387,9 +387,10 @@ def accept(
     boon: Boon,
     note: str = "",
     as_character: Character | None = None,
+    tell: bool = True,
 ) -> None:
     """The boon stands: it was reviewed and is right, perhaps after an edit. Its flags
-    are cleared with it."""
+    are cleared with it, and whoever reported it is told (`tell_accepted`)."""
     must_wait(boon, "accepted")
     note = note.strip()
     boon.state = "registered"
@@ -397,6 +398,8 @@ def accept(
     boons.event(db, user, boon, "accepted", note, {"state": ("Pending", "Standing")}, as_character)
     boons.log(db, user, "boon.accepted", boon, reason=note)
     clear_flags(db, user, raised(db, [boon.id]), note or "Accepted.", logged=False)
+    if tell:
+        tell_accepted(db, user, [boon])
 
 
 def accept_all(
@@ -407,14 +410,46 @@ def accept_all(
     as_character: Character | None = None,
 ) -> int:
     """Accept every boon given that waits for review, as `accept` does each: "Accept
-    all shown" (#993). Any that no longer waits is left as it is. Returns how many
-    were accepted."""
-    done = 0
+    all shown" (#993). Any that no longer waits is left as it is. Each reporter is
+    told once. Returns how many were accepted."""
+    accepted: list[Boon] = []
     for boon in found:
         if boon.state == "pending":
-            accept(db, user, boon, note, as_character)
-            done += 1
-    return done
+            accept(db, user, boon, note, as_character, tell=False)
+            accepted.append(boon)
+    tell_accepted(db, user, accepted)
+    return len(accepted)
+
+
+def tell_accepted(db: Session, user: User, accepted: Sequence[Boon]) -> None:
+    """Tell whoever reported each boon that it stands now (#1054), once for each
+    character they reported as: a line for one boon, a count for several. Not the
+    reviewer, for one they reported themselves."""
+    told: dict[tuple[uuid.UUID, uuid.UUID, uuid.UUID | None], list[Boon]] = {}
+    for boon in accepted:
+        by, character = reporter(db, boon)
+        if by is None or by == user.id:
+            continue
+        told.setdefault((by, boon.troupe_id, character.id if character else None), []).append(boon)
+    for (by, troupe_id, character_id), these in told.items():
+        if len(these) == 1:
+            boon = these[0]
+            debtor, creditor = boons.parties(db, boon)
+            summary = (
+                f"The {boons.KINDS[boon.kind].lower()} boon you reported ({debtor.shown} owes"
+                f" {creditor.shown}, {boons.when(boon.made_on)}) was accepted."
+            )
+        else:
+            summary = f"The {len(these)} boons you reported were accepted."
+        notifications.notify(
+            db,
+            [by],
+            "boon.accepted",
+            summary,
+            f"/play/characters/{character_id}?tab=boons" if character_id else "/",
+            troupe_id=troupe_id,
+            character_id=character_id,
+        )
 
 
 def reported_as(db: Session, boon_ids: Iterable[uuid.UUID]) -> dict[uuid.UUID, Character]:

@@ -14,9 +14,9 @@ A new kind of task is a new function in `TASK_SOURCES`; a new kind of message
 is a call to `notify` wherever the event happens. Either kind needs a topic in
 horatio.notification_choices, which says where it comes: a message comes to the
 bell unless the person turns it off there, a task always. Either may also come by
-email to those who choose it (horatio.notification_emails): `notify` sees to that
-for messages; a task emails when its work arrives (`approval_waiting`,
-`troupe_request_waiting`).
+email or by push to those who choose it (horatio.notification_emails,
+horatio.web_push): `notify` sees to that for messages; a task emails and pushes when
+its work arrives (`approval_waiting`, `troupe_request_waiting`).
 """
 
 import uuid
@@ -27,7 +27,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
-from horatio import clan_names, notification_choices, notification_emails
+from horatio import clan_names, notification_choices, notification_emails, web_push
 from horatio.announcement_emails import ANNOUNCEMENT_LINK
 from horatio.models import (
     Approval,
@@ -332,18 +332,17 @@ def approval_waiting(db: Session, approval: Approval) -> None:
     [item] = approval_items(db, {troupe.id: troupe}, [(approval, about)])
     people = [p for p in approvers(db, troupe) if p != approval.requested_by]
     notification_emails.queue(db, people, item.kind, item.summary, item.link, troupe_id=troupe.id)
+    web_push.queue(db, people, item.kind, item.summary, item.link, troupe_id=troupe.id)
 
 
 def troupe_request_waiting(db: Session, request: TroupeRequest, requester: User) -> None:
-    """Someone has just asked for a new troupe: email the custodians who want that."""
-    custodians = db.scalars(select(User.id).where(User.is_custodian, User.id != requester.id))
-    notification_emails.queue(
-        db,
-        custodians,
-        "troupe_request",
-        f"{requester.display_name} asks for a new troupe, {request.name}",
-        "/custodian/troupe-management#requests",
-    )
+    """Someone has just asked for a new troupe: email and push to the custodians who
+    want that."""
+    custodians = list(db.scalars(select(User.id).where(User.is_custodian, User.id != requester.id)))
+    summary = f"{requester.display_name} asks for a new troupe, {request.name}"
+    link = "/custodian/troupe-management#requests"
+    notification_emails.queue(db, custodians, "troupe_request", summary, link)
+    web_push.queue(db, custodians, "troupe_request", summary, link)
 
 
 def signed_up(db: Session, user: User) -> None:
@@ -462,9 +461,10 @@ def notify(
     email: bool = True,
 ) -> None:
     """Leave a message for each of `user_ids` who has this kind come to the bell, in
-    the same transaction as the event, and an email for those who want it by email
+    the same transaction as the event, an email for those who want it by email
     (horatio.notification_choices; unless `email` is False: the caller emails apart
-    from the bell, as horatio.posts does). A kind no topic there covers is refused.
+    from the bell, as horatio.posts does), and a push to the devices of those who
+    want it by push (horatio.web_push). A kind no topic there covers is refused.
     The clan stored as Assamite is named as the troupe calls it then, and stays so
     (horatio.clan_names)."""
     topic = notification_choices.topic_for(kind)
@@ -489,6 +489,7 @@ def notify(
     db.flush()
     if email:
         notification_emails.queue(db, user_ids, kind, summary, link, troupe_id=troupe_id)
+    web_push.queue(db, user_ids, kind, summary, link, troupe_id=troupe_id)
 
 
 def mark_read(db: Session, user: User, ids: Iterable[uuid.UUID] | None = None) -> None:

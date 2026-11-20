@@ -163,7 +163,7 @@ test("Account › Notifications: where each kind comes, the ones that always com
   await page.locator("main").getByRole("link", { name: "Notifications", exact: true }).click();
   await expect(page).toHaveURL(/\/account\/notifications$/);
   // This suite's server has no email set up, and the page says so: only the bell.
-  await expect(page.getByText("Email isn't set up on this server, so notifications come only to the bell.")).toBeVisible();
+  await expect(page.getByText("Email isn't set up on this server, so notifications don't come by email.")).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "Downtime results: email" })).toHaveCount(0);
   // Every group a player gets; staff work only for staff.
   const groups = page.locator("main section > header h2");
@@ -209,6 +209,84 @@ test("Account › Notifications: where each kind comes, the ones that always com
   await page.goto("/unsubscribe/not-a-real-link");
   await expect(page.getByText(/This unsubscribe link doesn't work/)).toBeVisible();
   await expect(page.getByText(/Account › Notifications/)).toBeVisible();
+});
+
+/**
+ * Phone notifications (#1054). This suite's server has no push key and no push service
+ * can reach a test browser, so: the page says push isn't set up; then it is shown as set
+ * up, the browser's push manager answers with a made-up subscription, and the devices are
+ * kept by the test, while the kinds chosen for the phone are saved for real. The service
+ * worker is the app's own, with the push handlers imported. Headless Chrome shows no
+ * notifications, so a push handed to it can't be seen here. Sending real pushes is
+ * covered by tests/test_web_push.py.
+ */
+test("phone notifications: turned on on this device, which kinds come, and turned off (#1054)", async ({ browser }) => {
+  const { page } = await person(browser, "phone-pusher", { serviceWorkers: "allow", permissions: ["notifications"] });
+  await page.goto("/account/notifications");
+  await expect(page.getByText("Phone notifications aren't set up on this server, so none come to your phone.")).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Downtime results: phone" })).toHaveCount(0);
+
+  const endpoint = "https://fcm.googleapis.com/fcm/send/e2e-phone-pusher";
+  await page.addInitScript((at) => {
+    const subscription = {
+      endpoint: at,
+      options: { applicationServerKey: null },
+      toJSON: () => ({ endpoint: at, keys: { p256dh: "BPhone", auth: "secret" } }),
+      unsubscribe: async () => (localStorage.removeItem("e2e.push"), true),
+    };
+    PushManager.prototype.getSubscription = async () => (localStorage.getItem("e2e.push") ? (subscription as unknown as PushSubscription) : null);
+    PushManager.prototype.subscribe = async () => (localStorage.setItem("e2e.push", "1"), subscription as unknown as PushSubscription);
+  }, endpoint);
+  let devices: { id: string; name: string; endpoint: string; created_at: string }[] = [];
+  const turnedOn: unknown[] = [];
+  const key = "B" + "A".repeat(86);
+  await page.route("**/api/notification-settings", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), push: true, push_key: key, devices } });
+  });
+  await page.route("**/api/notification-settings/devices**", async (route) => {
+    const request = route.request();
+    if (request.method() === "PUT") {
+      turnedOn.push(request.postDataJSON());
+      devices = [{ id: "d1", name: "Chrome on Android", endpoint, created_at: new Date().toISOString() }];
+    } else devices = [];
+    const response = await route.fetch({ url: route.request().url().replace(/\/devices.*$/, ""), method: "GET" });
+    await route.fulfill({ response, json: { ...(await response.json()), push: true, push_key: key, devices } });
+  });
+  await page.reload();
+
+  const phone = page.getByRole("region", { name: "Phone notifications" });
+  const here = phone.getByRole("switch", { name: "On this device" });
+  await expect(here).not.toBeChecked();
+  await expect(here).toBeEnabled();
+  // Pushed until turned off: downtime results, boons and the like; not the rest until ticked.
+  await expect(page.getByRole("checkbox", { name: "Downtime results: phone" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Your boons: phone" })).toBeChecked();
+  const renames = page.getByRole("checkbox", { name: "Character renames: phone" });
+  await expect(renames).not.toBeChecked();
+
+  await here.click();
+  await expect(page.getByText("Phone notifications are on for this device.")).toBeVisible();
+  await expect(here).toBeChecked();
+  expect(turnedOn).toEqual([{ endpoint, p256dh: "BPhone", auth: "secret" }]);
+  await renames.check();
+  await expect(page.getByText("Character renames, phone: on. Saved.")).toBeVisible();
+  await page.reload();
+  await expect(here).toBeChecked();
+  await expect(renames).toBeChecked();
+
+  // The app's one service worker, the one keeping it offline, shows the pushes too.
+  const worker = await page.evaluate(async () => (await navigator.serviceWorker.ready).active?.scriptURL ?? "");
+  expect(await (await page.request.get(worker)).text()).toContain('importScripts("push-sw.js")');
+  const shows = await (await page.request.get("/push-sw.js")).text();
+  for (const handled of ['"push"', '"notificationclick"', '"pushsubscriptionchange"']) expect(shows).toContain(`self.addEventListener(${handled}`);
+
+  // Turned off here: the device goes, and the browser's subscription with it.
+  await here.click();
+  await expect(page.getByText("Phone notifications are off for this device.")).toBeVisible();
+  await expect(here).not.toBeChecked();
+  expect(devices).toEqual([]);
+  expect(await page.evaluate(() => localStorage.getItem("e2e.push"))).toBeNull();
 });
 
 test("a handle to be found by, and to sign in with", async ({ browser }) => {
