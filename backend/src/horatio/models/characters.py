@@ -384,3 +384,18 @@ class XpEntry(Record):
     # For a correction: the award (or self-entered entry) it corrects, by `amount`
     # (the difference). For a reprice: the purchase it reprices.
     corrects_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("xp_entries.id"), index=True)
+
+
+class XpPlan(Record):
+    """What a character's player means to buy with XP later, in order (horatio.xp_plans):
+    theirs alone, seen by the staff who see the sheet only while they share it."""
+
+    __tablename__ = "xp_plans"
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), unique=True
+    )
+    # Each line a trait and the rating to take it to:
+    # {"category": "disciplines", "name": "Dominate", "detail": "", "rating": 3}.
+    lines: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+    shared: Mapped[bool] = mapped_column(default=False, server_default="false")

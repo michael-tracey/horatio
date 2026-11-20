@@ -4618,6 +4618,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/xp-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Plan
+         * @description The character's plan, each line priced as the cart would price it. Its player's
+         *     own: anyone else who sees the sheet sees it only while it is shared.
+         */
+        get: operations["read_plan_api_characters__character_id__xp_plan_get"];
+        /**
+         * Save Plan
+         * @description Keep the plan's lines, in order, and whether it is shared. Its player's alone.
+         */
+        put: operations["save_plan_api_characters__character_id__xp_plan_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/xp/debt": {
         parameters: {
             query?: never;
@@ -37654,6 +37679,83 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** XpPlanAwardOut */
+        XpPlanAwardOut: {
+            /** Per Game */
+            per_game: number;
+            /** Source */
+            source: string;
+        };
+        /** XpPlanIn */
+        XpPlanIn: {
+            /** Lines */
+            lines: components["schemas"]["XpPlanLineIn"][];
+            /**
+             * Shared
+             * @default false
+             */
+            shared: boolean;
+        };
+        /** XpPlanLineIn */
+        XpPlanLineIn: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+        };
+        /** XpPlanLineOut */
+        XpPlanLineOut: {
+            /** Affordable */
+            affordable: boolean;
+            /** Because */
+            because: string | null;
+            /** Buyable */
+            buyable: boolean;
+            /** Category */
+            category: string;
+            /** Cost */
+            cost: number | null;
+            /** Detail */
+            detail: string;
+            /** From Rating */
+            from_rating: number;
+            /** Games */
+            games: number | null;
+            /** Held */
+            held: boolean;
+            /** Name */
+            name: string;
+            /** Needs Approval */
+            needs_approval: boolean;
+            /** Rating */
+            rating: number;
+            /** Refused */
+            refused: string | null;
+            teacher: components["schemas"]["TeacherNeedOut"] | null;
+            /** Total */
+            total: number;
+        };
+        /** XpPlanOut */
+        XpPlanOut: {
+            award: components["schemas"]["XpPlanAwardOut"] | null;
+            /** Balance */
+            balance: number;
+            /** Lines */
+            lines: components["schemas"]["XpPlanLineOut"][];
+            /** Mine */
+            mine: boolean;
+            /** Priced */
+            priced: boolean;
+            /** Shared */
+            shared: boolean;
+        };
         /** XpRangeChange */
         XpRangeChange: {
             /** Ceiling */
@@ -46811,6 +46913,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["XpEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_plan_api_characters__character_id__xp_plan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpPlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_plan_api_characters__character_id__xp_plan_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["XpPlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpPlanOut"];
                 };
             };
             /** @description Validation Error */

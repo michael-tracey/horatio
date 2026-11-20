@@ -31,6 +31,7 @@ from horatio.models.characters import (
     SheetVersion,
     TraitException,
     XpEntry,
+    XpPlan,
 )
 from horatio.models.discord_webhooks import DiscordWebhook
 from horatio.models.downtimes import (
@@ -271,6 +272,7 @@ __all__ = [
     "Viewing",
     "VinculumTie",
     "XpEntry",
+    "XpPlan",
     "XpRangeEntry",
     "YorickImport",
 ]

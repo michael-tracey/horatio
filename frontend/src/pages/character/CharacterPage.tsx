@@ -281,7 +281,7 @@ export function CharacterPage() {
         <Route path="sheet" element={creating ? sheet : <Navigate to={base} replace />} />
         <Route path="status" element={<StatusTitlesTab character={c} />} />
         <Route path="equipment" element={<EquipmentTab character={c} />} />
-        <Route path="xp" element={<XpTab characterId={c.id} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
+        <Route path="xp" element={<XpTab character={c} mine={mine} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}
         <Route path="shared" element={<CharacterShared characterId={c.id} />} />

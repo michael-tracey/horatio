@@ -621,6 +621,43 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   await expect(p.getByText("Dodge 3 → 5")).toBeVisible();
 });
 
+test("a plan on the Experience tab lines up two traits, priced as the cart prices them, and moves one into the cart", async ({ browser }) => {
+  const { page: p } = await person(browser, "planahead");
+  const disciplines: [string, number][] = [["Celerity", 2], ["Potence", 1], ["Presence", 1]];
+  const id = await builtVampire(p, "Thessaly", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]], disciplines });
+  await p.goto(`/characters/${id}/xp`);
+  const plan = p.locator("section").filter({ has: p.getByRole("heading", { name: "Plan", exact: true }) });
+  await expect(plan.getByText("Nothing planned yet.")).toBeVisible();
+
+  // Potence, held at 1, up to 3; then Stealth, new, at 1.
+  const add = async (category: string, trait: string, upTo?: number) => {
+    await plan.getByRole("button", { name: "Add to plan" }).click();
+    const form = plan.getByRole("form", { name: "Add to plan" });
+    await form.getByLabel("Category").selectOption({ label: category });
+    await form.getByRole("combobox", { name: `Plan ${category}` }).fill(trait);
+    await p.getByRole("option", { name: new RegExp(`^${trait}`) }).click();
+    if (upTo) await form.getByLabel("Up to").fill(String(upTo));
+    await form.getByRole("button", { name: "Add to plan" }).click();
+  };
+  const planned = plan.getByRole("list", { name: "Planned purchases" });
+  await add("Disciplines", "Potence", 3);
+  await expect(planned.getByRole("listitem")).toHaveCount(1);
+  await add("Skills", "Stealth");
+  await expect(planned.getByRole("listitem")).toHaveText([/Potence 1 → 3 · \d+ XP · \d+ XP in all/, /Add Stealth 1 · 1 XP/]);
+  await expect(planned.getByRole("listitem").first()).toContainText("Affordable now");
+  const potence = (await planned.getByRole("listitem").first().textContent())!.match(/Potence 1 → 3 · (\d+) XP/)![1];
+  await p.screenshot(shots("xp-plan"));
+
+  // Reordered, Stealth first; then Potence moves into the cart, at the price the plan gave.
+  await plan.getByRole("button", { name: "Move Add Stealth 1 up" }).click();
+  await expect(planned.getByRole("listitem").first()).toContainText("Add Stealth 1");
+  await plan.getByRole("button", { name: "Move Potence 1 → 3 to the cart" }).click();
+  await expect(planned.getByRole("listitem")).toHaveCount(1);
+  await expect(plan.getByText("Potence 1 → 3 is in the cart.")).toBeVisible();
+  await plan.getByRole("link", { name: "Spend XP on the sheet" }).click();
+  await expect(p.getByRole("list", { name: "Changes in the cart" }).getByText(`Potence 1 → 3 · ${potence} XP`)).toBeVisible();
+});
+
 test("a cart is judged by the sheet it ends with, so a technique may go in before what it needs", async ({ browser }) => {
   const { page: p } = await person(browser, "tactician");
   const send = async (method: "POST" | "PUT", url: string, data: object) => {
