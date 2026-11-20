@@ -19,3 +19,6 @@ export function allowedPowers(kind: Pick<NpcKind, "any_discipline" | "specializa
 export function expandPower(name: string, dots: number): string {
   return `${name} up to ${dots}`;
 }
+
+/** The most members a group of Stock NPCs has (#1056), as the server allows (horatio.rules.stock.GROUP_MAX). */
+export const GROUP_MAX = 20;

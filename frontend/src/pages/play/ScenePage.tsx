@@ -21,6 +21,7 @@ import { formsOn, healthMost, onKeys } from "./powers";
 import { PoolRow } from "./ReferenceTabs";
 import { byInitiative, findPins, loadOpen, loadSorted, saveOpen, saveSorted, toggleOpen, unpin, type Rank, type Section } from "./scene";
 import { RenameScene, SCENE_REFRESH, useSceneChanges } from "./ScenesPage";
+import { StockMembers } from "./StockMembers";
 import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracker";
 import { useModifiers } from "./useModifiers";
 import { usePlay } from "./usePlay";
@@ -440,7 +441,8 @@ function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; w
  * A Stock NPC in the scene (issue #215): its name, kind and rating, its test pool
  * and specializations at a glance, and its kind's resource and health levels to
  * tap. It has the same `usePlay` as its full Play View, the Stock one, so its taps,
- * Undo and log are everyone's.
+ * Undo and log are everyone's. A group of them (#1056) is one card, with a row for
+ * each member's resource, health and items, and the stat block they share.
  */
 function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; back: string; onRemove?: () => void }) {
   const characterId = pin.character_id;
@@ -473,6 +475,7 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
   const name = shown.character_name;
   const stats = stock.stats;
   const specializations = [...stats.skill_pools.map((p) => `${p.name} ${p.pool}`), ...stats.powers.map((p) => expandPower(p.name, p.dots))];
+  const group = (shown.stock_members ?? []).length > 0;
   return (
     <article className="flex flex-col gap-3 rounded-lg border border-ash bg-dusk p-3" aria-label={name}>
       <header className="flex items-start justify-between gap-2">
@@ -480,12 +483,19 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
           <h2 className="truncate text-lg leading-tight text-gold">{name}</h2>
           <p className="text-xs text-mist">
             Stock NPC · {stock.kind.name} · rating {stock.rating}
+            {group && ` · a group of ${stock.count}`}
           </p>
         </div>
         <SyncStatus sync={sync} />
       </header>
-      <Counter title={shown.blood_name} value={shown.blood.value} most={shown.blood.most} fill="border-blood bg-blood" onChange={(n) => change("blood", n)} />
-      <HealthRow view={shown} damage={(kind, amount) => change("health", amount, kind)} />
+      {group ? (
+        <StockMembers view={shown} change={change} />
+      ) : (
+        <>
+          <Counter title={shown.blood_name} value={shown.blood.value} most={shown.blood.most} fill="border-blood bg-blood" onChange={(n) => change("blood", n)} />
+          <HealthRow view={shown} damage={(kind, amount) => change("health", amount, kind)} />
+        </>
+      )}
       <div className="flex flex-col gap-0.5 text-sm">
         <p>
           <span className="text-gold">Test pool </span>
@@ -497,7 +507,7 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
         </p>
         <p className="text-xs text-mist">No Willpower: no retests unless it overbids</p>
       </div>
-      <CarriedItems items={shown.stock_items} />
+      {!group && <CarriedItems items={shown.stock_items} />}
       <div className="flex flex-wrap items-center gap-1.5 border-t border-ash pt-2">
         <Button variant="secondary" className="min-h-10 px-3" disabled={!last} aria-label={last ? `Undo ${last.text}` : "Undo"} onClick={() => last && tap({ kind: "undo", undoes: last.id })}>
           Undo

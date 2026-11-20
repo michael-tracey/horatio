@@ -79,6 +79,8 @@ class StockPin(BaseModel):
     character_id: uuid.UUID
     name: str
     rating: int
+    # How many it stands for (issue #1056): a group's card has a row a member.
+    count: int = 1
 
 
 class SceneOut(SceneSummary):
@@ -229,9 +231,9 @@ def scene_out(db: Session, user: User, troupe: Troupe, scene: Scene) -> SceneOut
     (summary,) = summaries(db, user, troupe, [scene])
     characters = pinned(db, scene.id)
     stock = [
-        StockPin(character_id=character_id, name=name, rating=rating)
-        for character_id, name, rating in db.execute(
-            select(Character.id, Character.name, StockNpc.rating)
+        StockPin(character_id=character_id, name=name, rating=rating, count=count)
+        for character_id, name, rating, count in db.execute(
+            select(Character.id, Character.name, StockNpc.rating, StockNpc.count)
             .join(StockNpc, StockNpc.character_id == Character.id)
             .where(Character.id.in_(characters), Character.npc_form == "stock")
         )
