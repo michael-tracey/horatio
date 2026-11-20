@@ -61,7 +61,6 @@ from horatio import (
     discord_webhooks,
     notification_emails,
     pictures,
-    preferences,
     public_pictures,
 )
 from horatio.config import get_settings
@@ -92,15 +91,11 @@ class Kind:
     noun: str
     # The channel's name in a sentence: "No news channel is chosen."
     channel: str
-    # The preference that keeps it from the bell (horatio.preferences).
-    bell: str
 
 
 KINDS = {
-    "news": Kind("news", "news", "story", "news", "bell_news"),
-    "announcement": Kind(
-        "announcement", "announcements", "announcement", "announcements", "bell_announcements"
-    ),
+    "news": Kind("news", "news", "story", "news"),
+    "announcement": Kind("announcement", "announcements", "announcement", "announcements"),
 }
 # An announcement's embed on Discord: Horatio's gold, as it has no masthead.
 ANNOUNCEMENT_COLOUR = "#c9a24a"
@@ -568,13 +563,7 @@ def tell_everyone(db: Session, troupe: Troupe, post: Post, publisher: uuid.UUID)
         return
     kind = f"{post.kind}.published"
     words = summary(db, post)
-    bell = KINDS[post.kind].bell
-    ringing = [
-        u.id
-        for u in db.scalars(select(User).where(User.id.in_(people)))
-        if getattr(preferences.read(u), bell)
-    ]
-    notify(db, ringing, kind, words, link(post), troupe_id=troupe.id, email=False)
+    notify(db, people, kind, words, link(post), troupe_id=troupe.id, email=False)
     notification_emails.queue(
         db, people, kind, words, link(post), troupe_id=troupe.id, forced=post.important
     )

@@ -42,7 +42,7 @@ test("account settings are in two tabs, Preferences and Sign-in and email, each 
   const { page } = await person(browser, "account-tabs", { viewport: { width: 375, height: 800 } });
   const cards = () => page.locator("main section > header h2").allTextContents();
   const tall = () => page.evaluate(() => document.documentElement.scrollHeight);
-  // The old address lands on Preferences, and its #notifications on the email notifications.
+  // The old address lands on Preferences, and its #notifications on the notifications.
   await page.goto("/account/settings");
   await expect(page).toHaveURL(/\/account\/preferences$/);
   await expect(page.getByRole("radiogroup", { name: "Theme" })).toBeVisible();
@@ -57,11 +57,15 @@ test("account settings are in two tabs, Preferences and Sign-in and email, each 
   expect(await under("Paper")).toBe(false);
   await page.screenshot(shots("account-preferences-phone"));
 
-  await page.goto("/account/settings#notifications");
-  await expect(page).toHaveURL(/\/account\/sign-in#notifications$/);
-  await expect(page.getByRole("heading", { name: "Notifications by email" })).toBeInViewport();
+  // The old addresses of the notification settings land on Account › Notifications (#1053).
+  for (const old of ["/account/settings#notifications", "/account/sign-in#notifications"]) {
+    await page.goto(old);
+    await expect(page).toHaveURL(/\/account\/notifications$/);
+    await expect(page.getByRole("region", { name: "Your account" })).toBeVisible();
+  }
+  await page.goto("/account/sign-in");
   await expect(page.getByLabel("Your handle")).toBeVisible();
-  expect(await cards()).toEqual(["Email", "Handle", "Password", "Notifications by email"]);
+  expect(await cards()).toEqual(["Email", "Handle", "Password"]);
   // Under 2000 px on a phone, on a server that can't send email, as this suite's can't.
   expect(await tall()).toBeLessThan(2000);
   await page.screenshot(shots("account-sign-in-phone"));
@@ -153,20 +157,42 @@ test("Show ratings as is kept through signing out and in, a reload and another d
   await p.screenshot(shots("npc-builder-pips"));
 });
 
-test("notifications by email: a switch per kind, once the server can send email", async ({ browser }) => {
+test("Account › Notifications: where each kind comes, the ones that always come, and email once the server can send it (#1053)", async ({ browser }) => {
   const { page } = await person(browser, "email-player");
-  await page.goto("/account/sign-in");
-  // This suite's server has no email set up, and the setting says so.
+  await (await topBar(page)).getByRole("link", { name: "email-player" }).click();
+  await page.locator("main").getByRole("link", { name: "Notifications", exact: true }).click();
+  await expect(page).toHaveURL(/\/account\/notifications$/);
+  // This suite's server has no email set up, and the page says so: only the bell.
   await expect(page.getByText("Email isn't set up on this server, so notifications come only to the bell.")).toBeVisible();
-  await expect(page.getByRole("switch", { name: "Downtime results" })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: "Downtime results: email" })).toHaveCount(0);
+  // Every group a player gets; staff work only for staff.
+  const groups = page.locator("main section > header h2");
+  await expect(groups).toHaveText(["Your account", "Your characters", "Downtimes", "Boons", "Troupe news"]);
+  // Word about your account always comes, with nothing to turn off.
+  const account = page.getByRole("region", { name: "Your account" });
+  await expect(account.getByText("Bell, always").first()).toBeVisible();
+  await expect(account.getByRole("checkbox")).toHaveCount(0);
 
-  // Where it is set up, each kind is bell only until switched on, and the choice is kept.
-  await page.route("**/api/preferences/email", (route) => route.fulfill({ json: { available: true } }));
+  // A kind turned off in the bell is kept on the account.
+  const renames = page.getByRole("checkbox", { name: "Character renames: bell" });
+  await expect(renames).toBeChecked();
+  await renames.uncheck();
+  await expect(page.getByText("Character renames, bell: off. Saved.")).toBeVisible();
   await page.reload();
-  const downtime = page.getByRole("switch", { name: "Downtime results" });
+  await expect(renames).not.toBeChecked();
+
+  // Where email is set up, each kind but announcements is off by email until ticked.
+  await page.route("**/api/notification-settings", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), email: true } });
+  });
+  await page.reload();
+  await expect(page.getByRole("checkbox", { name: "Troupe announcements: email" })).toBeChecked();
+  const downtime = page.getByRole("checkbox", { name: "Downtime results: email" });
   await expect(downtime).not.toBeChecked();
-  await downtime.click();
-  await expect(page.getByText("Downtime results by email: on. Saved.")).toBeVisible();
+  await downtime.check();
+  await expect(page.getByText("Downtime results, email: on. Saved.")).toBeVisible();
+  await expect(page.getByText("Email, always")).toBeVisible();
   await Promise.all([
     page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok()),
     page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" }).click(),
@@ -175,11 +201,14 @@ test("notifications by email: a switch per kind, once the server can send email"
   await page.reload();
   await expect(downtime).toBeChecked();
   await expect(page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" })).toHaveAttribute("aria-checked", "true");
-  await page.screenshot(shots("settings-email"));
+  await page.screenshot(shots("settings-notifications"), { fullPage: true });
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.screenshot(shots("settings-notifications-phone"), { fullPage: true });
 
   // An unsubscribe link that isn't real says so, and where to choose instead.
   await page.goto("/unsubscribe/not-a-real-link");
   await expect(page.getByText(/This unsubscribe link doesn't work/)).toBeVisible();
+  await expect(page.getByText(/Account › Notifications/)).toBeVisible();
 });
 
 test("a handle to be found by, and to sign in with", async ({ browser }) => {
@@ -276,8 +305,8 @@ test("the bell links to the notification settings", async ({ browser }) => {
   const { page } = await person(browser, "bellsettings-pl");
   await page.getByRole("button", { name: /^Notifications/ }).click();
   await page.getByRole("dialog", { name: "Notifications" }).getByRole("link", { name: "Notification settings" }).click();
-  await expect(page).toHaveURL(/\/account\/sign-in#notifications$/);
-  await expect(page.getByRole("heading", { name: "Notifications by email" })).toBeInViewport();
+  await expect(page).toHaveURL(/\/account\/notifications$/);
+  await expect(page.getByRole("region", { name: "Your account" })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Notifications" })).toHaveCount(0);
 });
 

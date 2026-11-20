@@ -32,7 +32,7 @@ export function UnsubscribePage() {
             {shown.subscribed ? (
               <>
                 <p>
-                  Stop emails about {shown.about} to {shown.display_name} ({shown.email})? The bell in Horatio still shows them.
+                  Stop emails about {shown.about} to {shown.display_name} ({shown.email})? The bell in Horatio stays as you set it.
                 </p>
                 <ErrorText error={stop.error} />
                 <Button onClick={() => stop.mutate()} disabled={stop.isPending}>
@@ -41,10 +41,10 @@ export function UnsubscribePage() {
               </>
             ) : (
               <p>
-                {shown.display_name} ({shown.email}) gets no emails about {shown.about}. The bell in Horatio still shows them.
+                {shown.display_name} ({shown.email}) gets no emails about {shown.about}. The bell in Horatio stays as you set it.
               </p>
             )}
-            <Link to="/account/sign-in#notifications" className="text-center text-gold underline">
+            <Link to="/account/notifications" className="text-center text-gold underline">
               Choose which notifications come by email
             </Link>
           </div>

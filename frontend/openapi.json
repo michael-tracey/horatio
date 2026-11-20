@@ -2391,12 +2391,17 @@
             ],
             "title": "Record",
             "type": "string"
+          },
+          "sign_in_ips": {
+            "title": "Sign In Ips",
+            "type": "boolean"
           }
         },
         "required": [
           "record",
           "keep_debug",
-          "keep_info"
+          "keep_info",
+          "sign_in_ips"
         ],
         "title": "AuditSettingsIn",
         "type": "object"
@@ -2442,12 +2447,17 @@
             ],
             "title": "Record",
             "type": "string"
+          },
+          "sign_in_ips": {
+            "title": "Sign In Ips",
+            "type": "boolean"
           }
         },
         "required": [
           "record",
           "keep_debug",
           "keep_info",
+          "sign_in_ips",
           "last_purge"
         ],
         "title": "AuditSettingsOut",
@@ -3694,6 +3704,19 @@
             "maxLength": 50,
             "title": "Kind",
             "type": "string"
+          },
+          "member": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member"
           },
           "name": {
             "maxLength": 200,
@@ -23792,6 +23815,40 @@
         "title": "GeneratedOut",
         "type": "object"
       },
+      "GettingReadyChange": {
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
+        ],
+        "title": "GettingReadyChange",
+        "type": "object"
+      },
+      "GettingReadyOut": {
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ReadyStepOut"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "hidden",
+          "steps"
+        ],
+        "title": "GettingReadyOut",
+        "type": "object"
+      },
       "GiftIn": {
         "properties": {
           "amount": {
@@ -34273,6 +34330,59 @@
         "title": "NotHere",
         "type": "object"
       },
+      "NotificationChoiceIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "topic": {
+            "title": "Topic",
+            "type": "string"
+          },
+          "way": {
+            "enum": [
+              "bell",
+              "email"
+            ],
+            "title": "Way",
+            "type": "string"
+          }
+        },
+        "required": [
+          "topic",
+          "way",
+          "on"
+        ],
+        "title": "NotificationChoiceIn",
+        "type": "object"
+      },
+      "NotificationGroupOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationTopicOut"
+            },
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "topics"
+        ],
+        "title": "NotificationGroupOut",
+        "type": "object"
+      },
       "NotificationOut": {
         "properties": {
           "at": {
@@ -34352,6 +34462,196 @@
           "picture"
         ],
         "title": "NotificationOut",
+        "type": "object"
+      },
+      "NotificationRoleOut": {
+        "description": "Whether the person is told at all in one troupe, as a role (#1018): changed with\n`PUT /troupes/{troupe_id}/boon-reports-told`, as beside the role.",
+        "properties": {
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "office": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Office"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "role": {
+            "enum": [
+              "staff",
+              "keeper"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "role",
+          "on"
+        ],
+        "title": "NotificationRoleOut",
+        "type": "object"
+      },
+      "NotificationRouteOut": {
+        "properties": {
+          "always": {
+            "title": "Always",
+            "type": "boolean"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "way": {
+            "enum": [
+              "bell",
+              "email"
+            ],
+            "title": "Way",
+            "type": "string"
+          }
+        },
+        "required": [
+          "way",
+          "on",
+          "always"
+        ],
+        "title": "NotificationRouteOut",
+        "type": "object"
+      },
+      "NotificationSettingsOut": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "boolean"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationGroupOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "email",
+          "groups"
+        ],
+        "title": "NotificationSettingsOut",
+        "type": "object"
+      },
+      "NotificationTopicOut": {
+        "properties": {
+          "hint": {
+            "title": "Hint",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "roles": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NotificationRoleOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roles"
+          },
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationRouteOut"
+            },
+            "title": "Routes",
+            "type": "array"
+          },
+          "task": {
+            "title": "Task",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "troupes_send": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationTroupeOut"
+            },
+            "title": "Troupes Send",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "hint",
+          "task",
+          "routes",
+          "troupes_send"
+        ],
+        "title": "NotificationTopicOut",
+        "type": "object"
+      },
+      "NotificationTroupeOut": {
+        "description": "A troupe that also sends it through its own connectors: its choice.",
+        "properties": {
+          "connectors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Connectors",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "connectors"
+        ],
+        "title": "NotificationTroupeOut",
         "type": "object"
       },
       "NotificationsOut": {
@@ -40883,16 +41183,6 @@
             "title": "Badge Size",
             "type": "string"
           },
-          "bell_announcements": {
-            "default": true,
-            "title": "Bell Announcements",
-            "type": "boolean"
-          },
-          "bell_news": {
-            "default": true,
-            "title": "Bell News",
-            "type": "boolean"
-          },
           "clock": {
             "default": "12",
             "enum": [
@@ -40912,16 +41202,6 @@
             "title": "Date Format",
             "type": "string"
           },
-          "email_announcements": {
-            "default": true,
-            "title": "Email Announcements",
-            "type": "boolean"
-          },
-          "email_approvals": {
-            "default": false,
-            "title": "Email Approvals",
-            "type": "boolean"
-          },
           "email_digest": {
             "default": "at_once",
             "enum": [
@@ -40930,41 +41210,6 @@
             ],
             "title": "Email Digest",
             "type": "string"
-          },
-          "email_downtime": {
-            "default": false,
-            "title": "Email Downtime",
-            "type": "boolean"
-          },
-          "email_downtime_reminders": {
-            "default": false,
-            "title": "Email Downtime Reminders",
-            "type": "boolean"
-          },
-          "email_news": {
-            "default": false,
-            "title": "Email News",
-            "type": "boolean"
-          },
-          "email_pictures": {
-            "default": false,
-            "title": "Email Pictures",
-            "type": "boolean"
-          },
-          "email_renames": {
-            "default": false,
-            "title": "Email Renames",
-            "type": "boolean"
-          },
-          "email_titles": {
-            "default": false,
-            "title": "Email Titles",
-            "type": "boolean"
-          },
-          "email_troupe_requests": {
-            "default": false,
-            "title": "Email Troupe Requests",
-            "type": "boolean"
           },
           "keep_awake": {
             "default": true,
@@ -44121,6 +44366,34 @@
           }
         },
         "title": "ReadIds",
+        "type": "object"
+      },
+      "ReadyStepOut": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "step": {
+            "enum": [
+              "profile",
+              "features",
+              "joining",
+              "starting",
+              "house_rules",
+              "staff",
+              "first_game",
+              "players"
+            ],
+            "title": "Step",
+            "type": "string"
+          }
+        },
+        "required": [
+          "step",
+          "done"
+        ],
+        "title": "ReadyStepOut",
         "type": "object"
       },
       "Reason": {
@@ -52623,7 +52896,7 @@
         "type": "object"
       },
       "StockMemberOut": {
-        "description": "One member of a group of Stock NPCs at this game (issue #1056), tapped as\n\"member:<n>/health\" and \"member:<n>/blood\". Its health levels are the stat\nblock's; with every one marked it is out of the fight (MET: VTM p. 490).",
+        "description": "One member of a group of Stock NPCs at this game (issue #1056), tapped as\n\"member:<n>/health\", \"member:<n>/blood\" and \"member:<n>/struck\". Its health\nlevels are the stat block's; with every one marked, or struck off by hand, it is\nout of the fight (MET: VTM p. 490).",
         "properties": {
           "blood": {
             "$ref": "#/components/schemas/Tracker"
@@ -52642,6 +52915,11 @@
           "number": {
             "title": "Number",
             "type": "integer"
+          },
+          "struck": {
+            "default": false,
+            "title": "Struck",
+            "type": "boolean"
           }
         },
         "required": [
@@ -62995,7 +63273,7 @@
     },
     "/api/audit/settings": {
       "get": {
-        "description": "For the custodian: what the log records, how long it keeps each level, and\nwhat the last purge deleted.",
+        "description": "For the custodian: what the log records, how long it keeps each level, whether\nsign-in events keep IP addresses, and what the last purge deleted.",
         "operationId": "log_settings_api_audit_settings_get",
         "responses": {
           "200": {
@@ -79120,6 +79398,68 @@
         ]
       }
     },
+    "/api/notification-settings": {
+      "get": {
+        "description": "Every kind of notification Horatio sends you, and where each comes.",
+        "operationId": "read_notification_settings_api_notification_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Notification Settings",
+        "tags": [
+          "preferences"
+        ]
+      },
+      "put": {
+        "description": "Choose whether one kind of notification comes to you one way: in the bell, or by\nemail. Some always come, and can't be turned off.",
+        "operationId": "choose_notification_api_notification_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationChoiceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choose Notification",
+        "tags": [
+          "preferences"
+        ]
+      }
+    },
     "/api/notifications": {
       "get": {
         "operationId": "list_notifications_api_notifications_get",
@@ -94484,6 +94824,102 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/getting-ready": {
+      "get": {
+        "description": "The steps of getting the troupe ready, for its running staff.",
+        "operationId": "read_getting_ready_api_troupes__troupe_id__getting_ready_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Getting Ready",
+        "tags": [
+          "troupes"
+        ]
+      },
+      "put": {
+        "description": "Hide Getting your troupe ready from the Overview, or bring it back: its storytellers'.",
+        "operationId": "change_getting_ready_api_troupes__troupe_id__getting_ready_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GettingReadyChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Getting Ready",
+        "tags": [
+          "troupes"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/golconda": {
       "put": {
         "description": "Switch on or off the optional rule that Golconda Seekers are Enlightened. The\ncharacters playing by the troupe's rules gain or lose it at once.",
@@ -103187,7 +103623,7 @@
         ]
       },
       "post": {
-        "description": "Stop the emails the link is about. The bell still shows them.",
+        "description": "Stop the emails the link is about. The bell stays as the person set it.",
         "operationId": "unsubscribe_api_unsubscribe__token__post",
         "parameters": [
           {

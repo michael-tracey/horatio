@@ -1583,6 +1583,21 @@ test("staff choose to be told when a player reports a boon, and the Harpy, told 
   await expect(h.getByText("You won't be told when a player reports a boon.")).toBeVisible();
   await expect(theirs).not.toBeChecked();
 
+  // Account › Notifications shows each of those choices, kept in one place (#1053): a
+  // change there is the change beside the role.
+  await l.goto("/account/notifications#boons");
+  await expect(l.getByRole("switch", { name: `Debts Heralded ${run}: as staff` })).toBeChecked();
+  await h.goto("/account/notifications#boons");
+  const listed = h.getByRole("switch", { name: `Debts Heralded ${run}: as Harpy, Marguerite Sallow` });
+  await expect(listed).not.toBeChecked();
+  await listed.check();
+  await expect(h.getByText("You'll be told when a player reports a boon.")).toBeVisible();
+  await h.screenshot(shots("boon-reports-told-notifications"));
+  await h.goto(`/play/characters/${marguerite}/ledger/review`);
+  await expect(theirs).toBeChecked();
+  await theirs.uncheck();
+  await expect(theirs).not.toBeChecked();
+
   // Tobias's player reports a boon; the lead is told, and the word opens To review.
   await send(player.page, "POST", `/api/characters/${tobias}/play-boons`, {
     other: { character_id: marguerite },

@@ -291,6 +291,9 @@ class Troupe(Imported, Record):
     profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Who new players should contact: one of its staff.
     contact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # Its storytellers hid Getting your troupe ready from its Overview (horatio.api.setup,
+    # issue #1049); they bring it back from Customise › Setup.
+    getting_ready_hidden: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Its written house rules (horatio.written_rules) show on its profile too.
     written_rules_public: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Its Setting Style Document (horatio.setting_style), which players read: the

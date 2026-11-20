@@ -400,8 +400,8 @@ export interface paths {
         };
         /**
          * Log Settings
-         * @description For the custodian: what the log records, how long it keeps each level, and
-         *     what the last purge deleted.
+         * @description For the custodian: what the log records, how long it keeps each level, whether
+         *     sign-in events keep IP addresses, and what the last purge deleted.
          */
         get: operations["log_settings_api_audit_settings_get"];
         /**
@@ -5885,6 +5885,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notification-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Notification Settings
+         * @description Every kind of notification Horatio sends you, and where each comes.
+         */
+        get: operations["read_notification_settings_api_notification_settings_get"];
+        /**
+         * Choose Notification
+         * @description Choose whether one kind of notification comes to you one way: in the bell, or by
+         *     email. Some always come, and can't be turned off.
+         */
+        put: operations["choose_notification_api_notification_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -10859,6 +10884,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/getting-ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Getting Ready
+         * @description The steps of getting the troupe ready, for its running staff.
+         */
+        get: operations["read_getting_ready_api_troupes__troupe_id__getting_ready_get"];
+        /**
+         * Change Getting Ready
+         * @description Hide Getting your troupe ready from the Overview, or bring it back: its storytellers'.
+         */
+        put: operations["change_getting_ready_api_troupes__troupe_id__getting_ready_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/golconda": {
         parameters: {
             query?: never;
@@ -13458,7 +13507,7 @@ export interface paths {
         put?: never;
         /**
          * Unsubscribe
-         * @description Stop the emails the link is about. The bell still shows them.
+         * @description Stop the emails the link is about. The bell stays as the person set it.
          */
         post: operations["unsubscribe_api_unsubscribe__token__post"];
         delete?: never;
@@ -14847,6 +14896,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
+            /** Sign In Ips */
+            sign_in_ips: boolean;
         };
         /** AuditSettingsOut */
         AuditSettingsOut: {
@@ -14860,6 +14911,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
+            /** Sign In Ips */
+            sign_in_ips: boolean;
         };
         /** AuditTroupe */
         AuditTroupe: {
@@ -15381,6 +15434,8 @@ export interface components {
             grade: "cheap" | "standard" | "special";
             /** Kind */
             kind: string;
+            /** Member */
+            member?: number | null;
             /** Name */
             name: string;
             /**
@@ -22941,6 +22996,18 @@ export interface components {
             /** Setting */
             setting: string | null;
         };
+        /** GettingReadyChange */
+        GettingReadyChange: {
+            /** Hidden */
+            hidden: boolean;
+        };
+        /** GettingReadyOut */
+        GettingReadyOut: {
+            /** Hidden */
+            hidden: boolean;
+            /** Steps */
+            steps: components["schemas"]["ReadyStepOut"][];
+        };
         /** GiftIn */
         GiftIn: {
             /** Amount */
@@ -27188,6 +27255,27 @@ export interface components {
             /** Player Name */
             player_name: string;
         };
+        /** NotificationChoiceIn */
+        NotificationChoiceIn: {
+            /** On */
+            on: boolean;
+            /** Topic */
+            topic: string;
+            /**
+             * Way
+             * @enum {string}
+             */
+            way: "bell" | "email";
+        };
+        /** NotificationGroupOut */
+        NotificationGroupOut: {
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+            /** Topics */
+            topics: components["schemas"]["NotificationTopicOut"][];
+        };
         /** NotificationOut */
         NotificationOut: {
             /**
@@ -27213,6 +27301,82 @@ export interface components {
             troupe_id: string | null;
             /** Troupe Name */
             troupe_name: string | null;
+        };
+        /**
+         * NotificationRoleOut
+         * @description Whether the person is told at all in one troupe, as a role (#1018): changed with
+         *     `PUT /troupes/{troupe_id}/boon-reports-told`, as beside the role.
+         */
+        NotificationRoleOut: {
+            /** Character Name */
+            character_name?: string | null;
+            /** Office */
+            office?: string | null;
+            /** On */
+            on: boolean;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "staff" | "keeper";
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** NotificationRouteOut */
+        NotificationRouteOut: {
+            /** Always */
+            always: boolean;
+            /** On */
+            on: boolean;
+            /**
+             * Way
+             * @enum {string}
+             */
+            way: "bell" | "email";
+        };
+        /** NotificationSettingsOut */
+        NotificationSettingsOut: {
+            /** Email */
+            email: boolean;
+            /** Groups */
+            groups: components["schemas"]["NotificationGroupOut"][];
+        };
+        /** NotificationTopicOut */
+        NotificationTopicOut: {
+            /** Hint */
+            hint: string;
+            /** Name */
+            name: string;
+            /** Roles */
+            roles?: components["schemas"]["NotificationRoleOut"][] | null;
+            /** Routes */
+            routes: components["schemas"]["NotificationRouteOut"][];
+            /** Task */
+            task: boolean;
+            /** Title */
+            title: string;
+            /** Troupes Send */
+            troupes_send: components["schemas"]["NotificationTroupeOut"][];
+        };
+        /**
+         * NotificationTroupeOut
+         * @description A troupe that also sends it through its own connectors: its choice.
+         */
+        NotificationTroupeOut: {
+            /** Connectors */
+            connectors: string[];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** NotificationsOut */
         NotificationsOut: {
@@ -29889,16 +30053,6 @@ export interface components {
              */
             badge_size: "3x5" | "3x4" | "cr80" | "4x6";
             /**
-             * Bell Announcements
-             * @default true
-             */
-            bell_announcements: boolean;
-            /**
-             * Bell News
-             * @default true
-             */
-            bell_news: boolean;
-            /**
              * Clock
              * @default 12
              * @enum {string}
@@ -29911,56 +30065,11 @@ export interface components {
              */
             date_format: "day_month" | "month_day" | "iso";
             /**
-             * Email Announcements
-             * @default true
-             */
-            email_announcements: boolean;
-            /**
-             * Email Approvals
-             * @default false
-             */
-            email_approvals: boolean;
-            /**
              * Email Digest
              * @default at_once
              * @enum {string}
              */
             email_digest: "at_once" | "daily";
-            /**
-             * Email Downtime
-             * @default false
-             */
-            email_downtime: boolean;
-            /**
-             * Email Downtime Reminders
-             * @default false
-             */
-            email_downtime_reminders: boolean;
-            /**
-             * Email News
-             * @default false
-             */
-            email_news: boolean;
-            /**
-             * Email Pictures
-             * @default false
-             */
-            email_pictures: boolean;
-            /**
-             * Email Renames
-             * @default false
-             */
-            email_renames: boolean;
-            /**
-             * Email Titles
-             * @default false
-             */
-            email_titles: boolean;
-            /**
-             * Email Troupe Requests
-             * @default false
-             */
-            email_troupe_requests: boolean;
             /**
              * Keep Awake
              * @default true
@@ -31136,6 +31245,16 @@ export interface components {
         ReadIds: {
             /** Ids */
             ids?: string[] | null;
+        };
+        /** ReadyStepOut */
+        ReadyStepOut: {
+            /** Done */
+            done: boolean;
+            /**
+             * Step
+             * @enum {string}
+             */
+            step: "profile" | "features" | "joining" | "starting" | "house_rules" | "staff" | "first_game" | "players";
         };
         /** Reason */
         Reason: {
@@ -34378,8 +34497,9 @@ export interface components {
         /**
          * StockMemberOut
          * @description One member of a group of Stock NPCs at this game (issue #1056), tapped as
-         *     "member:<n>/health" and "member:<n>/blood". Its health levels are the stat
-         *     block's; with every one marked it is out of the fight (MET: VTM p. 490).
+         *     "member:<n>/health", "member:<n>/blood" and "member:<n>/struck". Its health
+         *     levels are the stat block's; with every one marked, or struck off by hand, it is
+         *     out of the fight (MET: VTM p. 490).
          */
         StockMemberOut: {
             blood: components["schemas"]["Tracker"];
@@ -34389,6 +34509,11 @@ export interface components {
             name: string;
             /** Number */
             number: number;
+            /**
+             * Struck
+             * @default false
+             */
+            struck: boolean;
         };
         /** StockNpcOut */
         StockNpcOut: {
@@ -49199,6 +49324,59 @@ export interface operations {
             };
         };
     };
+    read_notification_settings_api_notification_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettingsOut"];
+                };
+            };
+        };
+    };
+    choose_notification_api_notification_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationChoiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_notifications_api_notifications_get: {
         parameters: {
             query?: never;
@@ -58821,6 +58999,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameXpAwarded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_getting_ready_api_troupes__troupe_id__getting_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingReadyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_getting_ready_api_troupes__troupe_id__getting_ready_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GettingReadyChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingReadyOut"];
                 };
             };
             /** @description Validation Error */

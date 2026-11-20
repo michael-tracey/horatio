@@ -1,10 +1,9 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
-import { withClanNames } from "../../../clanNames";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { useClanName } from "../../../components/ClanNames";
 import type { TraitOut } from "../../../api/types";
+import { ChoiceBox, type BoxChoice } from "../../../components/ChoiceBox";
 import { Input, Rating } from "../../../components/ui";
 import { usePreferences } from "../../../hooks";
-import { AboutButton, AboutTrait, hasAbout } from "../../../components/AboutTrait";
 import { detailNeed } from "../fields";
 import { choose, clear, fieldProblems, move, picksLeft, seatPicks, traitOf, type Allowed, type Picks } from "./logic";
 import type { Held, RatingBar } from "./DotGrid";
@@ -143,8 +142,8 @@ export function SlotGrid({
   };
 
   /** What a slot at `rating` holding `holder` offers. */
-  const options = (rating: number, holder: string | null): Choice[] =>
-    traits.flatMap((t): Choice[] => {
+  const options = (rating: number, holder: string | null): BoxChoice[] =>
+    traits.flatMap((t): BoxChoice[] => {
       const mine = holder !== null && traitOf(holder) === t.name;
       const others = Object.keys(picks).filter((k) => traitOf(k) === t.name && k !== holder);
       if (!mine && held[t.name] && !others.length) return [];
@@ -163,7 +162,7 @@ export function SlotGrid({
       // Each pick of it at another rating, to move here; not one in this row's other slots.
       const moves = mine || misfits.has(t.name) ? [] : others.filter((k) => picks[k] !== rating);
       const choices = moves.map(
-        (k): Choice => ({
+        (k): BoxChoice => ({
           value: `move:${k}`,
           name: t.name,
           trait: t,
@@ -178,7 +177,7 @@ export function SlotGrid({
       // A new pick: of a trait not picked yet, or another field of one that is.
       if (mine || !others.length || fielded) {
         const hint = !mine && others.length ? "Another field" : undefined;
-        choices.push({ value: `pick:${t.name}`, name: t.name, trait: t, label: named(t.name), group, current: mine, disabled: !!note, note, hint });
+        choices.push({ value: `pick:${t.name}`, name: t.name, trait: t, label: t.name, group, current: mine, disabled: !!note, note, hint });
       }
       return choices;
     });
@@ -222,7 +221,7 @@ export function SlotGrid({
                     key={`slot-${i}`}
                     label={`${title} at ${rating}${slots > 1 ? `, pick ${i + 1} of ${slots}` : ""}`}
                     placeholder={`Choose ${one}`}
-                    value={name ? named(name) : ""}
+                    value={name ?? ""}
                     marked={!!mark}
                     choices={options(rating, key)}
                     locked={key && bought.has(key) ? undoFirst(key) : undefined}
@@ -323,10 +322,10 @@ export function SlotRows({
 }
 
 /** One slot in a row: its choice, and what goes under it (a field, a note). */
-export function Slot({ children, ...choice }: Parameters<typeof TraitChoice>[0] & { children?: ReactNode }) {
+export function Slot({ children, ...choice }: Parameters<typeof SlotChoice>[0] & { children?: ReactNode }) {
   return (
     <li className="flex min-w-0 flex-col gap-1">
-      <TraitChoice {...choice} />
+      <SlotChoice {...choice} />
       {children}
     </li>
   );
@@ -351,26 +350,6 @@ function pipsWidth(n: number): number {
   return (n * 0.7 + (n - fives) * 0.12 + (fives - 1) * 0.35) * 0.875 + 0.05;
 }
 
-/**
- * One trait a slot offers: greyed with `note` saying why when it can't be chosen.
- * `value` is what choosing it gives the slot's `onChoose`; `at` is the rating the
- * trait is picked at elsewhere, shown as "Brawl (at 3)", for a choice that moves it.
- */
-export type Choice = {
-  value: string;
-  /** The trait's name, which typing finds it by. */
-  name: string;
-  label: string;
-  group: string | null;
-  current: boolean;
-  disabled: boolean;
-  note?: ReactNode;
-  hint?: ReactNode;
-  at?: number;
-  /** The trait, for its description. */
-  trait?: TraitOut;
-};
-
 function ClearButton({ label, onClear, disabled }: { label: string; onClear: () => void; disabled?: boolean }) {
   return (
     <button
@@ -386,13 +365,13 @@ function ClearButton({ label, onClear, disabled }: { label: string; onClear: () 
 }
 
 /**
- * A slot's choice: a box that opens a list of the traits as soon as it is tapped,
- * typing narrowing it. Traits that can't be chosen stay listed, greyed, saying why;
- * what each one does opens from the list, several at once, without choosing it (for a
- * discipline, the powers the slot's `rating` gives, #1000). The list fits the
- * screen's width, so it works on a phone.
+ * A slot's choice: the explaining drop-down (ChoiceBox), which opens a list of the
+ * traits as soon as it is tapped, typing narrowing it, each with what it does in a
+ * line. Traits that can't be chosen stay listed, greyed, saying why; the highlighted
+ * one's detail shows under the list without choosing it (for a discipline, the
+ * powers the slot's `rating` gives, #1000).
  */
-export function TraitChoice({
+function SlotChoice({
   label,
   placeholder,
   value,
@@ -409,9 +388,10 @@ export function TraitChoice({
 }: {
   label: string;
   placeholder: string;
+  /** The trait in the slot, by its name ("" while empty). */
   value: string;
   marked?: boolean;
-  choices: Choice[];
+  choices: BoxChoice[];
   onChoose: (value: string) => void;
   onClear?: () => void;
   /** What the clear button says; "Clear Brawl" unless told. */
@@ -426,186 +406,22 @@ export function TraitChoice({
   /** The slot's rating: the dots a discipline chosen here gives. */
   rating?: number;
 }) {
-  const listId = useId();
-  const inputId = `${listId}-box`;
-  const list = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  // What is typed while the list is open; the choice shows otherwise.
-  const [typed, setTyped] = useState<string | null>(null);
-  const [active, setActive] = useState(-1);
-  // The choices whose "about" is open: several at once.
-  const [about, setAbout] = useState<ReadonlySet<string>>(new Set());
-  const [place, setPlace] = useState<CSSProperties>({});
-  const closing = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const q = (typed ?? "").trim().toLowerCase();
-  const offered = locked ? choices.map((c) => (c.current ? c : { ...c, disabled: true, note: undefined })) : choices;
-  const shown = offered.filter((c) => !q || withClanNames(c.name).toLowerCase().includes(q) || c.label.toLowerCase().includes(q));
-  const pickable = shown.filter((c) => !c.disabled);
-  const groups = [...new Set(shown.map((c) => c.group))];
-
-  const show = () => {
-    clearTimeout(closing.current);
-    setOpen(true);
-  };
-  const close = () => {
-    setOpen(false);
-    setTyped(null);
-    setActive(-1);
-    setAbout(new Set());
-  };
-  const pick = (c: Choice) => {
-    if (c.disabled) return;
-    close();
-    if (!c.current) onChoose(c.value);
-  };
-
-  // As wide as the screen allows, and kept on it: a slot at the right of a row opens leftwards.
-  useLayoutEffect(() => {
-    const box = open ? document.getElementById(inputId)?.getBoundingClientRect() : undefined;
-    if (!box) return;
-    const width = Math.min(352, window.innerWidth - 32);
-    setPlace({ width, left: Math.min(0, window.innerWidth - 16 - (box.left + width)) });
-  }, [open, inputId]);
-  useEffect(() => {
-    if (open) list.current?.scrollIntoView?.({ block: "nearest" });
-  }, [open]);
-  useEffect(() => {
-    if (active >= 0) document.getElementById(`${listId}-${active}`)?.scrollIntoView?.({ block: "nearest" });
-  }, [active, listId]);
-
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      if (!open) return show();
-      if (!pickable.length) return;
-      const step = e.key === "ArrowDown" ? 1 : -1;
-      setActive((active + step + pickable.length) % pickable.length);
-    } else if (e.key === "Enter" && open) {
-      e.preventDefault();
-      const c = pickable[active] ?? (pickable.length === 1 ? pickable[0] : undefined);
-      if (c) pick(c);
-    } else if (e.key === "Escape") {
-      close();
-    }
-  };
-
+  const offered = choices.map((c): BoxChoice => ({
+    ...(locked && !c.current ? { ...c, disabled: true, note: undefined } : c),
+    dots: rating ? { from: 1, to: rating } : undefined,
+  }));
   return (
-    <div className="relative">
-      <Input
-        id={inputId}
-        role="combobox"
-        aria-label={label}
-        aria-autocomplete="list"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
-        autoComplete="off"
-        spellCheck={false}
-        enterKeyHint="done"
-        placeholder={placeholder}
-        value={typed ?? value}
-        disabled={disabled}
-        className={`text-sm ${held ? "pr-10" : "pr-8"} ${marked ? "border-blood" : value ? "" : "border-dashed"}`}
-        onChange={(e) => {
-          setTyped(e.target.value);
-          setActive(-1);
-          show();
-        }}
-        onFocus={(e) => {
-          show();
-          e.currentTarget.select();
-        }}
-        onClick={show}
-        // Late enough that a tap in the list lands first; coming back to the box keeps it open.
-        onBlur={() => {
-          closing.current = setTimeout(close, 150);
-        }}
-        onKeyDown={onKeyDown}
-      />
-      <span className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center">
-        {onClear && held ? (
-          <ClearButton label={clearLabel ?? `Clear ${held}`} onClear={onClear} disabled={disabled} />
-        ) : (
-          <span aria-hidden className="pointer-events-none px-1.5 text-xs text-mist">
-            ▾
-          </span>
-        )}
-      </span>
-      {open && (
-        <div
-          ref={list}
-          style={place}
-          // Keeps the box focused while the list is tapped or scrolled.
-          onMouseDown={(e) => e.preventDefault()}
-          className="absolute z-20 mt-1 max-h-80 overflow-y-auto rounded-md border border-ash bg-dusk py-1 shadow-lg"
-        >
-          {locked && <p className="border-b border-ash px-3 py-2 text-xs text-blood-bright">{locked}</p>}
-          <ul id={listId} role="listbox" aria-label={label}>
-            {groups.map((group) => (
-              <li key={group ?? "all"} role="presentation">
-                {group && groups.length > 1 && <p className="px-3 pt-2 pb-1 font-sans text-xs tracking-wide text-mist uppercase">{group}</p>}
-                <ul role="presentation">
-                  {shown
-                    .filter((c) => c.group === group)
-                    .map((c) => {
-                      const index = pickable.indexOf(c);
-                      const trait = c.trait;
-                      const described = !!trait && hasAbout(trait, splat);
-                      const opened = about.has(c.value);
-                      const aboutId = `${listId}-about-${c.value}`.replace(/\W+/g, "-");
-                      const noteId = `${listId}-why-${c.value}`.replace(/\W+/g, "-");
-                      const name = c.at === undefined ? c.label : `${c.label} (at ${c.at})`;
-                      return (
-                        <li key={c.value} role="presentation" data-choice={c.name} className="flex flex-wrap items-start">
-                          <div
-                            id={index >= 0 ? `${listId}-${index}` : undefined}
-                            role="option"
-                            aria-label={name}
-                            aria-selected={c.current}
-                            aria-disabled={c.disabled || undefined}
-                            aria-describedby={c.note ? noteId : undefined}
-                            onClick={() => pick(c)}
-                            className={`min-w-0 flex-1 px-3 py-2 text-sm pointer-coarse:py-2.5 ${
-                              c.disabled ? "cursor-not-allowed text-line" : index === active ? "cursor-pointer bg-gold/20 text-gold" : "cursor-pointer hover:bg-night"
-                            }`}
-                          >
-                            <span className={c.current ? "text-gold" : c.disabled ? "" : "text-parchment"}>
-                              {c.label}
-                              {c.current && <span className="sr-only"> (chosen)</span>}
-                            </span>
-                            {c.at !== undefined && <span className={`ml-1 ${c.disabled ? "" : "text-mist"}`}>(at {c.at})</span>}
-                            {c.hint && <span className="ml-2 text-xs text-mist">{c.hint}</span>}
-                          </div>
-                          {described && (
-                            <AboutButton
-                              name={c.label}
-                              open={opened}
-                              controls={aboutId}
-                              onToggle={() => {
-                                const next = new Set(about);
-                                if (!next.delete(c.value)) next.add(c.value);
-                                setAbout(next);
-                              }}
-                              className="mt-1 mr-1"
-                            />
-                          )}
-                          {/* Beside the option, not in it: its links (to the step a refusal is because of) stay links. */}
-                          {c.note && (
-                            <p id={noteId} className="-mt-1.5 basis-full px-3 pb-2 text-xs text-blood-bright">
-                              {c.note}
-                            </p>
-                          )}
-                          {opened && trait && <AboutTrait id={aboutId} trait={trait} splat={splat} to={rating} className="basis-full px-3 pb-2" />}
-                        </li>
-                      );
-                    })}
-                </ul>
-              </li>
-            ))}
-          </ul>
-          {shown.length === 0 && <p className="px-3 py-2 text-sm text-mist">Nothing by that name here.</p>}
-        </div>
-      )}
-    </div>
+    <ChoiceBox
+      label={label}
+      placeholder={placeholder}
+      value={value}
+      choices={offered}
+      onChoose={onChoose}
+      notice={locked}
+      splat={splat}
+      disabled={disabled}
+      inputClassName={marked ? "border-blood" : value ? "" : "border-dashed"}
+      trailing={onClear && held ? <ClearButton label={clearLabel ?? `Clear ${held}`} onClear={onClear} disabled={disabled} /> : undefined}
+    />
   );
 }

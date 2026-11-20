@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { withClanNames } from "../../clanNames";
 import { useClanName } from "../../components/ClanNames";
-import { HouseMark, HouseSummary } from "../../components/HouseMark";
+import { HouseMark } from "../../components/HouseMark";
+import { ChoiceBox, type BoxChoice } from "../../components/ChoiceBox";
 import { Button, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { AskStaff } from "./AskStaff";
 import type { CartLine, Exception } from "./cart";
@@ -21,7 +22,7 @@ import { rulesTroupe } from "./rules";
 import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
 import { CategoryMark, HouseWording } from "../../components/TroupeChange";
 import { bookSummary } from "../../houseWording";
-import { AboutButton, AboutTrait, DisciplineDots, hasAbout } from "../../components/AboutTrait";
+import { DisciplineDots } from "../../components/AboutTrait";
 
 /** A new trait for the cart. */
 export type NewTrait = {
@@ -39,9 +40,10 @@ export type NewTrait = {
 
 /**
  * Add a trait to one part of the sheet: pick a category from its chips, then from
- * a searchable list of what the character can take there (or everything), see
- * what it costs (priced as it is chosen), and put it in the cart. Traits the rules
- * would refuse are greyed out with the reason. What the character can take counts the cart.
+ * the explaining drop-down (ChoiceBox) of what the character can take there (or
+ * everything), see what it costs (priced as it is chosen), and put it in the cart.
+ * Traits the rules would refuse are greyed out with the reason, and staff can be
+ * asked for one. What the character can take counts the cart.
  */
 export function AddTraitPanel({
   character,
@@ -69,7 +71,8 @@ export function AddTraitPanel({
   onClose: () => void;
 }) {
   const [category, setCategory] = useState(initial ?? categories[0] ?? "");
-  const [query, setQuery] = useState(pick ?? "");
+  // What is typed in the search, for what "can take" leaves out and what other categories hold.
+  const [query, setQuery] = useState("");
   const named = useClanName();
   const [filter, setFilter] = useState("can");
   const [name, setName] = useState(pick ?? "");
@@ -127,7 +130,7 @@ export function AddTraitPanel({
   const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null, teacher: asksTeacher ? teacher : "" };
   const priced = !!trait && !!cat?.rated && !asking && (body.rating ?? 0) >= 1;
   const quote = useQuote(character.id, priced, body);
-  // On a phone the list grows with the page, so the chosen trait's form is brought into view.
+  // The chosen trait's form, under the box, is brought into view: on a phone it can be below the screen.
   const form = useRef<HTMLFormElement>(null);
   // Once it is listed, for one chosen as the panel opens.
   const listed = !!trait;
@@ -155,6 +158,38 @@ export function AddTraitPanel({
     onClose();
   };
 
+  // Under the list, in it: that it is still checking, where else a trait typed is, and what "can take" leaves out.
+  const footer =
+    !judged || elsewhere.length > 0 || matching.length === 0 || leftOut > 0 ? (
+      <ul className="flex flex-col">
+        {elsewhere.map((found) => (
+          <li key={`${found.category.key}/${found.trait.name}`}>
+            <button
+              type="button"
+              onClick={() => switchTo(found.category.key, found.canTake)}
+              className="w-full rounded px-2 py-1.5 text-left text-sm text-mist hover:bg-ash/40 hover:text-parchment pointer-coarse:min-h-10"
+            >
+              Found in {found.category.name}: <span className="text-parchment">{named(found.trait.name)}</span>
+            </button>
+          </li>
+        ))}
+        {!judged && (
+          <li>
+            <Loading compact label={`Checking what ${character.name} can take…`} />
+          </li>
+        )}
+        {judged && matching.length === 0 && elsewhere.length === 0 && leftOut === 0 && <li className="px-2 py-1.5 text-sm text-mist">Nothing matches.</li>}
+        {leftOut > 0 && (
+          <li className="px-2 py-1.5 text-xs text-mist">
+            {matching.length > 0 ? `${leftOut} more you can't take: ` : `None you can take. ${leftOut} you can't: `}
+            <button type="button" onClick={() => setFilter("all")} className="text-gold underline hover:text-parchment pointer-coarse:min-h-10">
+              show
+            </button>
+          </li>
+        )}
+      </ul>
+    ) : null;
+
   return (
     <div className="mb-4 flex flex-col gap-3 rounded-md border border-ash bg-night/40 p-3">
       {categories.length > 1 && (
@@ -174,63 +209,51 @@ export function AddTraitPanel({
             </option>
           ))}
         </Select>
-        <Input
-          aria-label={`Search ${cat?.name ?? ""}`}
+        <ChoiceBox
+          label={`Search ${cat?.name ?? ""}`}
           placeholder={judged ? `Search ${countOf(shown.length, cat?.name ?? "")}${filter === "can" ? " you can take" : ""}…` : `Search ${cat?.name ?? ""}…`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={trait?.name}
+          choices={shown.map(
+            (t): BoxChoice => ({
+              value: t.name,
+              label: t.name,
+              trait: t,
+              disabled: !!unavailable[t.name],
+              note: unavailable[t.name],
+              offer: unavailable[t.name] ? undefined : current?.opened?.[t.name],
+              hint: (
+                <>
+                  {t.fixed_rating ? <span className="text-gold">({t.fixed_rating})</span> : null}
+                  {t.requirement && <span className={t.fixed_rating ? "ml-2" : undefined}>{named(t.requirement)}</span>}
+                  {t.house && <HouseMark label={t.house.label} />}
+                </>
+              ),
+              action:
+                unavailable[t.name] && character.home_troupe_id
+                  ? {
+                      label: "Ask staff",
+                      run: () => {
+                        setName("");
+                        setAsking(t);
+                      },
+                    }
+                  : undefined,
+              // For a discipline, the power its next dot gives.
+              dots: { from: (held.find((h) => h.category === t.category && h.name === t.name)?.rating ?? 0) + 1 },
+            }),
+          )}
+          onChoose={(chosen) => {
+            const t = all.find((x) => x.name === chosen);
+            if (t) choose(t);
+          }}
+          onType={setQuery}
+          splat={character.splat}
+          troupeId={rulesTroupe(character)}
+          empty={null}
+          footer={footer}
           className="min-w-40 flex-1"
         />
       </div>
-      {/* Its own scroll area only on a wider screen: on a phone, one inside the page's is hard to work. */}
-      <ul className="flex flex-col sm:max-h-72 sm:overflow-y-auto">
-        {matching.map((t) => (
-          <TraitChoice
-            key={t.name}
-            trait={t}
-            chosen={t.name === name}
-            refused={unavailable[t.name]}
-            opened={current?.opened?.[t.name]}
-            splat={character.splat}
-            troupeId={rulesTroupe(character)}
-            next={(held.find((h) => h.category === t.category && h.name === t.name)?.rating ?? 0) + 1}
-            onChoose={() => choose(t)}
-            onAsk={
-              character.home_troupe_id
-                ? () => {
-                    setName("");
-                    setAsking(t);
-                  }
-                : undefined
-            }
-          />
-        ))}
-        {elsewhere.map((found) => (
-          <li key={`${found.category.key}/${found.trait.name}`}>
-            <button
-              type="button"
-              onClick={() => switchTo(found.category.key, found.canTake)}
-              className="w-full rounded px-2 py-1.5 text-left text-sm text-mist hover:bg-ash/40 hover:text-parchment"
-            >
-              Found in {found.category.name}: <span className="text-parchment">{named(found.trait.name)}</span>
-            </button>
-          </li>
-        ))}
-        {!judged && (
-          <li>
-            <Loading compact label={`Checking what ${character.name} can take…`} />
-          </li>
-        )}
-        {judged && matching.length === 0 && elsewhere.length === 0 && leftOut === 0 && <li className="px-2 text-sm text-mist">Nothing matches.</li>}
-        {leftOut > 0 && (
-          <li className="px-2 py-1.5 text-xs text-mist">
-            {matching.length > 0 ? `${leftOut} more you can't take: ` : `None you can take. ${leftOut} you can't: `}
-            <button type="button" onClick={() => setFilter("all")} className="text-gold underline hover:text-parchment">
-              show
-            </button>
-          </li>
-        )}
-      </ul>
       {seeAll && (
         <Link to={seeAll} className="self-start text-xs text-mist underline hover:text-parchment">
           See all {cat?.name.toLowerCase() ?? "of them"} in the rules
@@ -367,74 +390,6 @@ function useQuote(characterId: string, enabled: boolean, body: { category: strin
     retry: false,
   });
   return enabled ? quote : { data: undefined, error: null };
-}
-
-/**
- * One trait in the list: chosen, or greyed with why the rules refuse it, and then
- * (given `onAsk`) a way to ask staff for it as an exception. Its chevron opens what
- * it does under it without choosing it, greyed or not (#1000): for a discipline,
- * with the power its `next` dot gives.
- */
-function TraitChoice({
-  trait,
-  chosen,
-  refused,
-  opened,
-  splat,
-  troupeId,
-  next,
-  onChoose,
-  onAsk,
-}: {
-  trait: TraitOut;
-  chosen: boolean;
-  refused?: string;
-  /** Opened past the character's Generation by a merit: "Hard as Steel: 20 XP". */
-  opened?: string;
-  splat: string;
-  /** The troupe whose written rules about it are linked. */
-  troupeId?: string | null;
-  /** The dot taking it would give: a discipline's next. */
-  next: number;
-  onChoose: () => void;
-  onAsk?: () => void;
-}) {
-  const named = useClanName();
-  const [open, setOpen] = useState(false);
-  const aboutId = useId();
-  return (
-    <li>
-      <div className="flex items-start">
-        {hasAbout(trait, splat) ? (
-          <AboutButton name={named(trait.name)} open={open} controls={aboutId} onToggle={() => setOpen(!open)} className="mt-0.5" />
-        ) : (
-          <span aria-hidden className="w-7 shrink-0 pointer-coarse:w-10" />
-        )}
-        <button
-          type="button"
-          disabled={!!refused}
-          onClick={onChoose}
-          className={`flex min-w-0 flex-1 flex-col rounded px-2 py-1.5 text-left text-sm ${chosen ? "bg-ash/60" : "hover:bg-ash/40"} ${refused ? "opacity-50" : ""}`}
-        >
-          <span>
-            {named(trait.name)}
-            {trait.fixed_rating ? <span className="text-gold"> ({trait.fixed_rating})</span> : null}
-            {trait.requirement && <span className="ml-2 text-xs text-mist">{named(trait.requirement)}</span>}
-            {trait.house && <HouseMark label={trait.house.label} />}
-          </span>
-          <HouseSummary summary={trait.house?.summary} />
-          {refused && <span className="text-xs text-blood-bright">{named(refused)}</span>}
-          {!refused && opened && <span className="text-xs text-gold">{opened}</span>}
-        </button>
-      </div>
-      {refused && onAsk && (
-        <button type="button" className="ml-9 text-xs text-gold underline pointer-coarse:ml-12" onClick={onAsk}>
-          Ask staff
-        </button>
-      )}
-      {open && <AboutTrait id={aboutId} trait={trait} splat={splat} from={next} troupeId={troupeId} className="pt-1 pr-2 pb-2 pl-9 pointer-coarse:pl-12" />}
-    </li>
-  );
 }
 
 /**

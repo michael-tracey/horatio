@@ -24,11 +24,11 @@ const choices: BoxChoice[] = [
   { value: "disciplines/Dementation", label: "Dementation", trait: dementation, note: "A Neonate can't learn it without a teacher." },
 ];
 
-function box(onChoose = vi.fn(), value?: string) {
+function box(onChoose = vi.fn(), value?: string, offered = choices) {
   render(
     <MemoryRouter>
       <QueryClientProvider client={client()}>
-        <ChoiceBox label="Search Disciplines" placeholder="Search to add…" value={value} choices={choices} onChoose={onChoose} splat="vampire" />
+        <ChoiceBox label="Search Disciplines" placeholder="Search to add…" value={value} choices={offered} onChoose={onChoose} splat="vampire" />
       </QueryClientProvider>
     </MemoryRouter>,
   );
@@ -63,12 +63,48 @@ describe("ChoiceBox", () => {
     const input = box(onChoose);
     fireEvent.focus(input);
     const option = screen.getByRole("option", { name: "Dementation" });
-    expect(option.textContent).toContain("A Neonate can't learn it without a teacher.");
+    expect(option.getAttribute("aria-disabled")).toBeNull();
+    expect(document.getElementById(option.getAttribute("aria-describedby")!)?.textContent).toBe("A Neonate can't learn it without a teacher.");
     fireEvent.click(screen.getByRole("button", { name: "About Dementation" }));
     expect(screen.getByText(/Staff can give it all the same\./)).toBeTruthy();
     expect(onChoose).not.toHaveBeenCalled();
     fireEvent.click(option);
     expect(onChoose).toHaveBeenCalledWith("disciplines/Dementation");
+  });
+
+  it("greys one the rules refuse a player, which can't be chosen, and offers what can be done instead", () => {
+    const onChoose = vi.fn();
+    const ask = vi.fn();
+    const refused: BoxChoice[] = [
+      choices[0]!,
+      { ...choices[1]!, disabled: true, note: "Dementation is out of clan.", action: { label: "Ask staff", run: ask } },
+    ];
+    const input = box(onChoose, undefined, refused);
+    fireEvent.focus(input);
+    const option = screen.getByRole("option", { name: "Dementation" });
+    expect(option.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(option);
+    expect(onChoose).not.toHaveBeenCalled();
+    // Its detail still opens, and Enter on it asks staff.
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(input.getAttribute("aria-activedescendant")).toBe(option.id);
+    expect(screen.queryByText(/Staff can give it all the same/)).toBeNull();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(ask).toHaveBeenCalled();
+    expect(onChoose).not.toHaveBeenCalled();
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("offers a pick made elsewhere by where it is, typing finding it by the trait's name", () => {
+    const onChoose = vi.fn();
+    const moving: BoxChoice[] = [{ value: "move:Auspex", label: "Auspex: Aura", name: "Auspex", at: 3, trait: auspex }, choices[1]!];
+    const input = box(onChoose, undefined, moving);
+    fireEvent.change(input, { target: { value: "ausp" } });
+    expect(screen.getAllByRole("option").map((o) => o.getAttribute("aria-label"))).toEqual(["Auspex: Aura (at 3)"]);
+    // The one choice left that can be made is made with Enter.
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onChoose).toHaveBeenCalledWith("move:Auspex");
   });
 
   it("shows the choice made, highlighted when the list opens", () => {

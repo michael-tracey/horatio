@@ -33,13 +33,20 @@ function AuditLogForm({ settings }: { settings: Settings }) {
   const [debug, setDebug] = useState(settings.record === "debug");
   const [keepDebug, setKeepDebug] = useState(settings.keep_debug);
   const [keepInfo, setKeepInfo] = useState(settings.keep_info);
+  const [ips, setIps] = useState(settings.sign_in_ips);
   useEffect(() => {
     setDebug(settings.record === "debug");
     setKeepDebug(settings.keep_debug);
     setKeepInfo(settings.keep_info);
-  }, [settings.record, settings.keep_debug, settings.keep_info]);
+    setIps(settings.sign_in_ips);
+  }, [settings.record, settings.keep_debug, settings.keep_info, settings.sign_in_ips]);
   const save = useAction(
-    () => unwrap(api.PUT("/api/audit/settings", { body: { record: debug ? "debug" : "info", keep_debug: keepDebug, keep_info: keepInfo } })),
+    () =>
+      unwrap(
+        api.PUT("/api/audit/settings", {
+          body: { record: debug ? "debug" : "info", keep_debug: keepDebug, keep_info: keepInfo, sign_in_ips: ips },
+        }),
+      ),
     [SETTINGS],
   );
   const submit = (event: FormEvent) => {
@@ -55,7 +62,8 @@ function AuditLogForm({ settings }: { settings: Settings }) {
       {/* What it keeps and the last purge stay in sight; the levels and the settings fold away, as on Site (#944). */}
       <div className="flex flex-col gap-4 text-sm">
         <p className="text-parchment">
-          Keeps debug events {kept(settings.keep_debug)}, info events {kept(settings.keep_info)}, and notice events forever.{" "}
+          Keeps debug events {kept(settings.keep_debug)}, info events {kept(settings.keep_info)}, and notice events forever.
+          {recording ? (settings.sign_in_ips ? " Sign-in events keep IP addresses." : " Sign-in events keep no IP addresses.") : ""}{" "}
           <span className="text-mist">
             {last
               ? `Last cleared ${dates.dateTime(last.at)}: ${last.debug.toLocaleString()} debug and ${last.info.toLocaleString()} info events deleted${last.finished ? "" : ", with more still to delete"}.`
@@ -67,13 +75,23 @@ function AuditLogForm({ settings }: { settings: Settings }) {
             <p className="text-mist">
               Each change in the log has a level. <strong className="text-parchment">Notice</strong> ones, such as suspensions, merges, deletions and what Horatio
               reads back as history, are kept forever. <strong className="text-parchment">Info</strong> ones are most changes, as troupes see them in their logs.{" "}
-              <strong className="text-parchment">Debug</strong> ones are routine: signing in and out, failed sign-ins, signing up, and a character starting to visit
-              a troupe. They show only in Custodian › Audit. Once a day Horatio deletes the debug and info events older than you keep them.
+              <strong className="text-parchment">Debug</strong> ones are routine: signing in and out, failed sign-ins, signing up, and attempts turned away for too
+              many from one place. They show only in Custodian › Audit. Once a day Horatio deletes the debug and info events older than you keep them.
             </p>
             <label className="flex items-start gap-2">
               <input type="checkbox" className="mt-1" checked={debug} onChange={(e) => setDebug(e.target.checked)} />
               <span>Record debug events</span>
             </label>
+            <div>
+              <label className="flex items-start gap-2">
+                <input type="checkbox" className="mt-1" checked={ips} onChange={(e) => setIps(e.target.checked)} aria-describedby="audit-ips-hint" />
+                <span>Record IP addresses with sign-in events</span>
+              </label>
+              <p id="audit-ips-hint" className="ml-6 text-mist">
+                Where each sign-in, failed sign-in, sign-out, sign-up and attempt turned away came from. These are debug events, so an address is kept only while debug events are
+                recorded, and only as long as debug events are kept.
+              </p>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Keep debug events for">
                 <DaysSelect usual={DEBUG_DAYS} value={keepDebug} onChange={setKeepDebug} />
