@@ -167,6 +167,21 @@ curl -s -o /dev/null -D - -H 'Accept-Encoding: gzip' -b 'horatio_session=…' \
 
 It shows `etag: W/"…"`; the same with `-H 'If-None-Match: W/"…"'` gives 304.
 
+## Security headers
+
+No other site may show Horatio in a frame (#1061): every answer carries
+`Content-Security-Policy: frame-ancestors 'none'` and `X-Frame-Options: DENY`. And
+no page passes its address on (#1060, "Links with a secret in them" above): every
+answer carries `Referrer-Policy: no-referrer`. The app sends them (`horatio.app.SECURITY_HEADERS`), and nginx drops the app's copies and
+sends its own with `always`, so its own error pages (a 502 while the app restarts, a
+413) carry them too, beside HSTS. nginx gives a location the server's `add_header`s
+only while it has none of its own, so a location that adds a header must repeat them
+all. To check it, after a deploy:
+
+```bash
+curl -s -o /dev/null -D - https://horatio.lotslarp.org/ | grep -i -E 'frame|referrer|strict'
+```
+
 ## What is live
 
 **Custodian → System** shows the commit the running image was built from (linked to

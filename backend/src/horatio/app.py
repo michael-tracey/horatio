@@ -172,12 +172,19 @@ async def require_csrf_header(
     return await call_next(request)
 
 
-# No page tells anyone, Horatio included, the address it was opened at (issue #1060):
-# a reset, claim, unsubscribe or calendar link's address is its secret
-# (horatio.secret_links), and the browser would otherwise send it as the Referer of
-# the page's every request. In production nginx sends the same, on its own error
-# pages too (deploy/nginx-horatio.conf.j2).
+# Sent on every answer (horatio.app.send_security_headers). In production nginx sends
+# the same, on its own error pages too (deploy/nginx-horatio.conf.j2).
+# - No other site may show Horatio in a frame (issue #1061): a deceptive page laid over
+#   it could trick a signed-in player into clicking a real button. Nothing in Horatio
+#   frames its own pages; the email design's preview is a sandboxed srcdoc, which
+#   these don't touch.
+# - No page tells anyone, Horatio included, the address it was opened at (issue
+#   #1060): a reset, claim, unsubscribe or calendar link's address is its secret
+#   (horatio.secret_links), and the browser would otherwise send it as the Referer of
+#   the page's every request.
 SECURITY_HEADERS = {
+    "Content-Security-Policy": "frame-ancestors 'none'",
+    "X-Frame-Options": "DENY",
     "Referrer-Policy": "no-referrer",
 }
 
