@@ -3695,6 +3695,19 @@
             "title": "Kind",
             "type": "string"
           },
+          "member": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member"
+          },
           "name": {
             "maxLength": 200,
             "title": "Name",
@@ -52540,7 +52553,7 @@
         "type": "object"
       },
       "StockMemberOut": {
-        "description": "One member of a group of Stock NPCs at this game (issue #1056), tapped as\n\"member:<n>/health\" and \"member:<n>/blood\". Its health levels are the stat\nblock's; with every one marked it is out of the fight (MET: VTM p. 490).",
+        "description": "One member of a group of Stock NPCs at this game (issue #1056), tapped as\n\"member:<n>/health\", \"member:<n>/blood\" and \"member:<n>/struck\". Its health\nlevels are the stat block's; with every one marked, or struck off by hand, it is\nout of the fight (MET: VTM p. 490).",
         "properties": {
           "blood": {
             "$ref": "#/components/schemas/Tracker"
@@ -52559,6 +52572,11 @@
           "number": {
             "title": "Number",
             "type": "integer"
+          },
+          "struck": {
+            "default": false,
+            "title": "Struck",
+            "type": "boolean"
           }
         },
         "required": [
