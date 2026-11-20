@@ -14,6 +14,14 @@ officer or a pack of werewolves in a hurry (issue #215).
   specialisation, which opens every Dark Thaumaturgy ritual to it (the V20 LARP
   SRD, issue #414): the one way a Stock NPC has rituals.
 
+A Stock NPC may stand for a group of identical ones (issue #1056): four
+shovelheads, rating 2. The book has no rule for groups. Each member is a Stock NPC
+as above, the same stat block, with its own health levels and resource; its sample
+Blood Brother is one of four "each of whom have an identical NPC sheet" (p. 504),
+and werewolves attack in packs (p. 494). A member with no health levels left is out
+of the fight (p. 490). A Blood Brothers' gestalt (p. 504) is a different thing: one
+Stock NPC whose rating is all of theirs together.
+
 Nothing here reads the database: horatio.npcs keeps Stock NPCs and asks these
 rules what they make.
 """
@@ -28,6 +36,9 @@ from horatio.rules.npc_kinds import MAX_DOTS, BuiltInPower, NpcKind, Resource
 POOL_PER_RATING = 2
 # ...and a skill specialization adds this to it (p. 489).
 SKILL_BONUS = 5
+# The most members a group of Stock NPCs has: Horatio's own limit, as the book has
+# none (a circle of Blood Brothers is three to 10, p. 504).
+GROUP_MAX = 20
 # What no Stock NPC has, whatever its kind (p. 490).
 STOCK_RULES = (
     "No Willpower: it cannot retest a failed challenge unless it can overbid.",

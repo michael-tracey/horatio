@@ -54,9 +54,17 @@ class StockFields(BaseModel):
     notes: str = Field(default="", max_length=10000)
 
 
+class NewStock(StockFields):
+    # How many it stands for (issue #1056): 1 for a single Stock NPC, more for a group
+    # of identical ones, each with its own health and resource.
+    count: int = Field(default=1, ge=1, le=stock.GROUP_MAX)
+
+
 class StockIn(StockFields):
     npc_kind: str
     custom_kind: CustomKind | None = None
+    # How many it stands for (issue #1056); left out, it stays as it is.
+    count: int | None = Field(default=None, ge=1, le=stock.GROUP_MAX)
 
 
 class NewNpc(BaseModel):
@@ -70,13 +78,14 @@ class NewNpc(BaseModel):
     npc_kind: str | None = None
     custom_kind: CustomKind | None = None
     npc_form: Literal["sheeted", "stock"] = "sheeted"
-    # A Stock NPC's rating and specializations; rating 1 and none if left out.
-    stock: StockFields | None = None
+    # A Stock NPC's rating, specializations and count; rating 1, none and one if left out.
+    stock: NewStock | None = None
 
 
 class NpcOut(CharacterOut):
-    # A Stock NPC's rating; None for a sheeted one.
+    # A Stock NPC's rating, and how many it stands for; None for a sheeted one.
     stock_rating: int | None
+    stock_count: int | None = None
     # Staff list it on the troupe's Who's Who though it holds no title there.
     on_whos_who: bool
     # When its open claim link expires (horatio.npc_gifts), if it has one.
@@ -178,6 +187,11 @@ class StockNpcOut(BaseModel):
     specializations: list[Specialization]
     notes: str
     stats: StatBlockOut
+    # How many it stands for (issue #1056): 1 for a single Stock NPC.
+    count: int = 1
+    # In a group, the member who carries each of its items, by the item's id; an item
+    # not here is carried by the group as a whole.
+    item_members: dict[str, int] = {}
 
 
 def resource_out(resource: Resource) -> ResourceOut:
@@ -234,6 +248,8 @@ def stock_out(db: DbSession, npc: Character) -> StockNpcOut:
         rating=row.rating,
         specializations=[Specialization.model_validate(s) for s in row.specializations],
         notes=row.notes,
+        count=row.count,
+        item_members=npcs.item_members(db, npc, row),
         stats=StatBlockOut(
             rating=stats.rating,
             pool=stats.pool,
@@ -291,8 +307,8 @@ def list_npcs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Np
             .order_by(Character.name)
         )
     )
-    ratings = {
-        row.character_id: row.rating
+    rows = {
+        row.character_id: row
         for row in db.scalars(
             select(StockNpc).where(StockNpc.character_id.in_([c.id for c in found]))
         )
@@ -310,7 +326,8 @@ def list_npcs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Np
     return [
         NpcOut(
             **out.model_dump(),
-            stock_rating=ratings.get(out.id),
+            stock_rating=rows[out.id].rating if out.id in rows else None,
+            stock_count=rows[out.id].count if out.id in rows else None,
             on_whos_who=out.id in listed,
             claim_expires_at=claims.get(out.id),
         )
@@ -336,7 +353,7 @@ def create_npc(
         db, user, troupe, splat, body.name, body.wizard, npc_kind, body.npc_form, custom
     )
     if body.stock is not None:
-        set_stock_fields(db, user, npc, npc_kind, custom, body.stock)
+        set_stock_fields(db, user, npc, npc_kind, custom, body.stock, body.stock.count)
     db.commit()
     return character_out(db, npc)
 
@@ -348,6 +365,7 @@ def set_stock_fields(
     npc_kind: str,
     custom: dict[str, Any] | None,
     fields: StockFields,
+    count: int,
 ) -> None:
     npcs.set_stock(
         db,
@@ -358,6 +376,7 @@ def set_stock_fields(
         fields.rating,
         [stock.Specialization(s.type, s.name) for s in fields.specializations],
         fields.notes,
+        count,
     )
 
 
@@ -371,9 +390,32 @@ def read_stock(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Sto
 def set_stock(
     character_id: uuid.UUID, body: StockIn, db: DbSession, user: CurrentUser
 ) -> StockNpcOut:
-    """Change a Stock NPC's kind, rating, specializations and notes."""
+    """Change a Stock NPC's kind, rating, specializations and notes, and how many it
+    stands for."""
     npc = players_character(db, user, character_id)
-    set_stock_fields(db, user, npc, body.npc_kind, custom_dict(body.custom_kind), body)
+    count = body.count if body.count is not None else npcs.stock_of(db, npc).count
+    set_stock_fields(db, user, npc, body.npc_kind, custom_dict(body.custom_kind), body, count)
+    db.commit()
+    return stock_out(db, npc)
+
+
+class ItemMemberIn(BaseModel):
+    # The member who carries it, from 1; None for the group as a whole.
+    member: int | None = Field(default=None, ge=1, le=stock.GROUP_MAX)
+
+
+@router.put("/characters/{character_id}/npc/stock/items/{item_id}")
+def set_item_member(
+    character_id: uuid.UUID,
+    item_id: uuid.UUID,
+    body: ItemMemberIn,
+    db: DbSession,
+    user: CurrentUser,
+) -> StockNpcOut:
+    """Say which member of a group of Stock NPCs carries one of its items, or that
+    the group as a whole does (issue #1056)."""
+    npc = players_character(db, user, character_id)
+    npcs.set_item_member(db, user, npc, item_id, body.member)
     db.commit()
     return stock_out(db, npc)
 

@@ -8,6 +8,7 @@ import { Dialog } from "../../components/Dialog";
 import { SectionLabel } from "../../components/Headings";
 import { AtHandle, PersonPicker } from "../../components/PersonPicker";
 import { Badge, Button, Empty, ErrorText, Field, Loading, Textarea } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useRulesAction } from "../../hooks";
 import { roleLabel } from "../troupe/roles";
 import { characterLink, characterNotes, characterTroupe } from "./personCharacters";
@@ -174,10 +175,12 @@ function Confirm({
  * A player's characters, in the accordion on their row of the People tab (#890):
  * every one, whatever its standing, with its picture, where it stands and its
  * troupe, each with Move to another player (an NPC belongs to its troupe, so it
- * has none). Loads when the row is first opened.
+ * has none), and under them the PCs they deleted, each a search of the audit log
+ * for its name (#1063). Loads when the row is first opened.
  */
 export function PersonCharacters({ playerId }: { playerId: string }) {
   const [moving, setMoving] = useState<{ id: string; name: string } | null>(null);
+  const dates = useDates();
   const player = useQuery({
     queryKey: ["player", playerId],
     queryFn: () => unwrap(api.GET("/api/players/{user_id}", { params: { path: { user_id: playerId } } })),
@@ -222,6 +225,20 @@ export function PersonCharacters({ playerId }: { playerId: string }) {
         </ul>
       ) : (
         <Empty>No characters.</Empty>
+      )}
+      {player.data.deleted_characters.length > 0 && (
+        <p className="mt-2 text-xs text-mist">
+          Deleted:{" "}
+          {player.data.deleted_characters.map((d, i) => (
+            <span key={`${d.name} ${d.deleted_at}`}>
+              {i > 0 && ", "}
+              <Link to={`/custodian/audit?${new URLSearchParams({ words: d.name })}`} className="underline hover:text-parchment pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center">
+                {d.name}
+              </Link>{" "}
+              on {dates.date(d.deleted_at)}
+            </span>
+          ))}
+        </p>
       )}
       <Dialog title={`Move ${moving?.name ?? ""} to another player`} open={!!moving} onClose={() => setMoving(null)}>
         {moving && <MoveCharacter characterId={moving.id} characterName={moving.name} playerId={playerId} onDone={() => setMoving(null)} />}

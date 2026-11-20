@@ -7,6 +7,7 @@ import { kindPages, resourceText } from "../troupe/npcKinds";
 import { RulesCard, StatBlock } from "../troupe/StockNpcBuilder";
 import { AwakeSwitch, BoxTracker, GameLog, HealthTracker, Notes, PastGames, ResetGame, SyncStatus, useToldTap, type KeepAwake } from "./PlayPage";
 import { EquipmentTab } from "./Equipment";
+import { StockMembers } from "./StockMembers";
 import type { Damage } from "./tracker";
 import type { Play, Sync } from "./usePlay";
 import { useKeepAwake } from "./wakeLock";
@@ -17,7 +18,8 @@ import { useKeepAwake } from "./wakeLock";
  * block and its kind's rules card, what it carries (#1043), and the game's log
  * with Undo. A Stock NPC has no Willpower, so nothing else needs tracking. Taps
  * go through the same queue and endpoints as everyone's, and Reset starts the
- * next game the same way.
+ * next game the same way. A group of them (#1056) has each member's resource,
+ * health and items in place of its own.
  */
 export function StockPlay({ characterId, play }: { characterId: string; play: Play }) {
   const [params] = useSearchParams();
@@ -42,13 +44,15 @@ export function StockPlay({ characterId, play }: { characterId: string; play: Pl
   }
   const record = ({ tracker, amount, damage }: { tracker: string; amount: number; damage?: Damage }) =>
     tap({ kind: "change", tracker, amount, damage: damage ?? null });
+  const group = (shown.stock_members ?? []).length > 0;
   return (
     <StockShell back={back} builder={builder} name={shown.character_name} sync={sync} awake={awake}>
       <section className="flex items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl leading-tight">{shown.character_name}</h1>
           <p className="text-sm text-mist">
-            Stock NPC · {stock.kind.name} · rating {stock.rating} · {kindPages(stock.kind)}
+            Stock NPC · {stock.kind.name} · rating {stock.rating}
+            {group && ` · a group of ${stock.count}`} · {kindPages(stock.kind)}
           </p>
         </div>
         <p className="text-right text-xs text-mist">
@@ -57,10 +61,14 @@ export function StockPlay({ characterId, play }: { characterId: string; play: Pl
           {shown.game ? `Game ${shown.game.number}` : "First game"}
         </p>
       </section>
-      <div className="grid gap-3 md:grid-cols-2">
-        <BoxTracker title={shown.blood_name} tracker="blood" value={shown.blood.value} most={shown.blood.most} hint={resourceText(stock.stats.resource)} record={record} loud />
-        <HealthTracker view={shown} record={record} />
-      </div>
+      {group ? (
+        <StockMembers view={shown} change={(tracker, amount, damage) => record({ tracker, amount, damage })} big />
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          <BoxTracker title={shown.blood_name} tracker="blood" value={shown.blood.value} most={shown.blood.most} hint={resourceText(stock.stats.resource)} record={record} loud />
+          <HealthTracker view={shown} record={record} />
+        </div>
+      )}
       <div className="grid gap-3 md:grid-cols-2">
         <StatBlock stock={stock} />
         <RulesCard kind={stock.kind} />

@@ -22,6 +22,7 @@ from horatio import (
     equipment,
     house_traits,
     influence_log,
+    npcs,
     play,
     play_effects,
     play_influence,
@@ -205,6 +206,20 @@ class RetainerTrackOut(BaseModel):
     blood: Tracker | None
     # An animal (issue #854): Beast's Vigor moves damage onto animal ghouls only.
     animal: bool = False
+
+
+class StockMemberOut(BaseModel):
+    """One member of a group of Stock NPCs at this game (issue #1056), tapped as
+    "member:<n>/health" and "member:<n>/blood". Its health levels are the stat
+    block's; with every one marked it is out of the fight (MET: VTM p. 490)."""
+
+    number: int
+    # "Member 2".
+    name: str
+    # Its levels marked, in the order they were: "normal" or "aggravated".
+    marks: list[str]
+    # Its kind's resource, in Blood's place.
+    blood: Tracker
 
 
 class AllyOut(BaseModel):
@@ -450,6 +465,10 @@ class PlayView(BaseModel):
     # them with no signal. Its test pool stays rating × 2 whatever it holds. Empty
     # for anyone else, whose items are the Equipment tab's.
     stock_items: list[EquipmentItemOut] = []
+    # A group of Stock NPCs' members (issue #1056), each with its own health and
+    # resource, which its `health` and `blood` are not; empty for anyone else, and
+    # for a single Stock NPC. Which member carries what is in `stock`.
+    stock_members: list[StockMemberOut] = []
     # A sheeted NPC's kind and its name (a custom kind's own), for the badge and
     # rules card; None for a PC.
     npc_kind: str | None = None
@@ -575,7 +594,7 @@ class TapIn(BaseModel):
                 raise ValueError("A change names what changed and by how much.")
             if self.tracker.startswith(equipment.ITEM) and self.amount != -1:
                 raise ValueError("An item is given or discarded once.")
-            if self.tracker == "health" and self.damage is None:
+            if play.marked(self.tracker) and self.damage is None:
                 raise ValueError("Health changes say whether the damage is normal or aggravated.")
         if self.kind == "note" and not self.note.strip():
             raise ValueError("A note needs some words.")
@@ -952,6 +971,19 @@ def play_view(db: Session, character: Character) -> PlayView:
         npc_form=character.npc_form,  # type: ignore[arg-type]  # checked by the database
         stock=stock_out(db, character) if character.npc_form == "stock" else None,
         stock_items=stock_items(db, character),
+        stock_members=[
+            StockMemberOut(
+                number=n,
+                name=npcs.member_name(n),
+                marks=state["members"].get(str(n), []),
+                blood=Tracker(
+                    value=state["uses"].get(play.member_key(n, "blood"), limits.starting_blood),
+                    most=limits.blood,
+                    start=limits.starting_blood,
+                ),
+            )
+            for n in range(1, limits.members + 1)
+        ],
         npc_kind=character.npc_kind,
         npc_kind_name=kind_name(character.npc_kind, character.npc_custom_kind),
         panels=PanelsOut(**asdict(limits.panels)),

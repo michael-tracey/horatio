@@ -1,7 +1,31 @@
 # Written by Horatio's deploy/playbook.yml; do not edit here.
+
+# Links with a secret in their path or query (issue #1060): a password reset, an
+# email change, an NPC's claim, an unsubscribe, a calendar, a check-in, Discord's
+# callback. The access log writes REDACTED in the secret's place, and only the
+# origin of a Referer. These are the patterns in horatio.secret_links, which
+# tests/test_secret_links.py checks against these lines: change both together.
+map $request_uri $horatio_logged_uri {
+    default $request_uri;
+    "~^(/(?:reset-password|confirm-email|unsubscribe|claim|check-in|api/auth/reset|api/auth/email-change|api/unsubscribe|api/claims|api/checkin)/)[^/?]+([^?]*)" "$1REDACTED$2";
+    "~^(/api/calendar/)[^/?]+(\.ics)" "$1REDACTED$2";
+    "~^(/api/discord/callback)\?" "$1?REDACTED";
+}
+
+map $http_referer $horatio_logged_referer {
+    default "-";
+    "~^([a-z][a-z0-9+.-]*://[^/?#]+)" $1;
+}
+
+# nginx's usual "combined" format, with those two in place of the request and Referer.
+log_format horatio '$remote_addr - $remote_user [$time_local] '
+                   '"$request_method $horatio_logged_uri $server_protocol" '
+                   '$status $body_bytes_sent "$horatio_logged_referer" "$http_user_agent"';
+
 server {
     listen 80;
     server_name {{ domain }};
+    access_log /var/log/nginx/access.log horatio;
 
     # Let's Encrypt's HTTP challenge, for the first certificate and renewals.
     location /.well-known/acme-challenge/ {
@@ -24,7 +48,23 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_session_cache shared:horatio:10m;
     add_header Strict-Transport-Security "max-age=31536000" always;
+    access_log /var/log/nginx/access.log horatio;
 {% endif %}
+
+    # No other site may show Horatio in a frame (issue #1061), and no page tells
+    # anyone the address it was opened at, as that may be a link's secret (issue
+    # #1060). The app sends these too (horatio.app.SECURITY_HEADERS); nginx drops its
+    # copies and sends its own, `always`, so nginx's own error pages (a 502 while the
+    # app restarts, a 413 for too big an upload) carry them as well, and there is one
+    # of each.
+    # Every location below inherits these and HSTS only while it has no add_header
+    # of its own: a location that adds one must repeat them all.
+    proxy_hide_header Content-Security-Policy;
+    proxy_hide_header X-Frame-Options;
+    proxy_hide_header Referrer-Policy;
+    add_header Content-Security-Policy "frame-ancestors 'none'" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
 
     # Compress text: the rules catalogue is over half a megabyte of JSON. The app
     # never compresses, so nginx does, for the API and the built frontend alike.

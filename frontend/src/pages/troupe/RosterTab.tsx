@@ -432,7 +432,8 @@ function rosterColumns({
     ) : null;
   };
   const kind = (e: RosterEntry) => e.npc_kind_name ?? e.splat;
-  const form = (e: RosterEntry) => FORM_NAMES[(e.npc_form ?? "sheeted") as NpcForm];
+  // A group of Stock NPCs (#1056) says how many.
+  const form = (e: RosterEntry) => FORM_NAMES[(e.npc_form ?? "sheeted") as NpcForm] + ((e.stock_count ?? 1) > 1 ? `, a group of ${e.stock_count}` : "");
   return [
     {
       key: "select",

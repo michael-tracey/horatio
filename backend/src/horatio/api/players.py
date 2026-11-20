@@ -75,6 +75,11 @@ class PlayerCharacter(BaseModel):
     clan: str | None = None
 
 
+class DeletedCharacter(BaseModel):
+    name: str
+    deleted_at: datetime
+
+
 class PlayerOut(BaseModel):
     id: uuid.UUID
     display_name: str
@@ -101,6 +106,8 @@ class PlayerOut(BaseModel):
     reset_expires_at: datetime | None
     # A change of email waiting to be confirmed. Only for the player themself and the custodian.
     email_change: PendingEmail | None = None
+    # The PCs they deleted, newest first, from the audit log. Only for the custodian.
+    deleted_characters: list[DeletedCharacter] = []
 
 
 class PlayerSummary(BaseModel):
@@ -252,6 +259,21 @@ def player_characters(db: DbSession, viewer: User, user: User) -> list[PlayerCha
     ]
 
 
+def deleted_characters(db: DbSession, user: User) -> list[DeletedCharacter]:
+    """One for each PC `user` deleted, though one that was in troupes has an entry in
+    each: those of one deletion are made at once, under its name."""
+    name = AuditEvent.data["character_name"].astext
+    return [
+        DeletedCharacter(name=n, deleted_at=at)
+        for n, at in db.execute(
+            select(name, AuditEvent.created_at)
+            .where(AuditEvent.action == "character.deleted", AuditEvent.actor_id == user.id)
+            .distinct()
+            .order_by(AuditEvent.created_at.desc(), name)
+        )
+    ]
+
+
 def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
     return PlayerOut(
         id=user.id,
@@ -269,6 +291,7 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
         reset_expires_at=reset_expiry(db, user) if viewer.is_custodian else None,
         lines_veils=lines_veils_of(user) if can_see_lines_veils(db, viewer, user) else None,
         email_change=pending(db, user) if viewer.is_custodian or viewer.id == user.id else None,
+        deleted_characters=deleted_characters(db, user) if viewer.is_custodian else [],
     )
 
 
