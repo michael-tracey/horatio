@@ -13,7 +13,7 @@ import { ImportCharacterPage } from "./pages/character/Backup";
 import { ClaimPage } from "./pages/ClaimPage";
 import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
-import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
+import { ForgotPasswordPage, ResetPasswordPage, SecondStepPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
 import { KeepQuestion, useKeptOnDevice } from "./offline/Offline";
@@ -25,6 +25,7 @@ import { useTheme } from "./useTheme";
 
 // The bigger pages load when first opened, so the first visit (signing in, the
 // character list) downloads less.
+const TwoStepSetupPage = lazy(() => import("./pages/TwoStepSetupPage").then((m) => ({ default: m.TwoStepSetupPage })));
 const AccountPage = lazy(() => import("./pages/AccountPage").then((m) => ({ default: m.AccountPage })));
 const CheckInPage = lazy(() => import("./pages/CheckInPage").then((m) => ({ default: m.CheckInPage })));
 const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then((m) => ({ default: m.CharacterPage })));
@@ -111,6 +112,7 @@ export const routes = createRoutesFromElements(
     </Route>
     <Route element={<Layout />}>
       <Route path="/sign-in" element={<SignInPage />} />
+      <Route path="/sign-in/second-step" element={<SecondStepPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/sign-up" element={<SignUpPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -151,6 +153,7 @@ export const routes = createRoutesFromElements(
         <Route path="/cycles/:cycleId/*" element={<OldCycleLink />} />
         <Route path="/players/:userId" element={<PlayerPage />} />
         <Route path="/account/*" element={<AccountPage />} />
+        <Route path="/two-step" element={<TwoStepSetupPage />} />
         <Route path="/custodian/*" element={<CustodianPage />} />
         <Route path="/charts" element={<ChartKitPage />} />
         <Route path="/people" element={<Navigate to="/custodian/people" replace />} />

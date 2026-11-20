@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from horatio import handles, notifications, preferences, suspensions
 from horatio.audit import client_ip, record, sign_in_ip
-from horatio.auth import attempts
+from horatio.auth import attempts, two_step
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
 from horatio.auth.resets import (
@@ -21,12 +21,13 @@ from horatio.auth.resets import (
     user_for_reset,
 )
 from horatio.auth.sessions import end_other_sessions, end_session, start_session, user_for_token
+from horatio.auth.two_step import allowed_first
 from horatio.auth.viewing import allowed_while_viewing, viewing_for
 from horatio.auth.viewing import end as end_viewing
 from horatio.config import get_settings
 from horatio.connectors import email
 from horatio.db import get_sessionmaker
-from horatio.models import User
+from horatio.models import SecondStepSignIn, User
 from horatio.preferences import Preferences
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -86,9 +87,26 @@ class Me(BaseModel):
     is_custodian: bool
     # Their settings, so the app has them from the start (horatio.preferences).
     preferences: Preferences
+    # They must set up two-step sign-in before anything else (horatio.auth.two_step):
+    # the app sends them to do it. Never while the custodian views as them.
+    two_step_needed: bool = False
 
 
-def me(user: User) -> Me:
+class SecondStep(BaseModel):
+    """The password was right, and the account has a second step: no session until
+    it is given (POST /auth/second-step)."""
+
+    # The ways they can give it: "app", "passkey", "recovery_code".
+    second_step: list[str]
+
+
+class SecondStepCode(BaseModel):
+    # Six digits from their authenticator app, or a recovery code.
+    code: str = Field(min_length=1, max_length=64)
+
+
+def me(user: User, db: Session | None = None) -> Me:
+    """Who they are, for the app. With `db`, whether they must set up a second step."""
     return Me(
         id=user.id,
         email=user.email,
@@ -97,7 +115,43 @@ def me(user: User) -> Me:
         next_handle_change=handles.next_change(user),
         is_custodian=user.is_custodian,
         preferences=preferences.read(user),
+        two_step_needed=db is not None and two_step.needed(db, user),
     )
+
+
+def set_second_step_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        two_step.COOKIE,
+        token,
+        max_age=int(two_step.SIGN_IN_FOR.total_seconds()),
+        httponly=True,
+        secure=get_settings().cookie_secure,
+        samesite="lax",
+        path="/api/auth",
+    )
+
+
+def clear_second_step_cookie(response: Response) -> None:
+    response.delete_cookie(two_step.COOKIE, path="/api/auth")
+
+
+def ask_second_step(
+    db: DbSession, user: User, response: Response, login_hash: str | None, request: Request
+) -> SecondStep:
+    """Their password was right (or newly set): wait on their second step, with no
+    session. Refused at once while they are suspended, as a session would be."""
+    suspensions.refuse(db, user)
+    set_second_step_cookie(response, two_step.begin(db, user, login_hash))
+    record(
+        db,
+        user,
+        "account.second_step_asked",
+        member=user.display_name,
+        user_id=user.id,
+        **sign_in_ip(db, request),
+    )
+    response.status_code = status.HTTP_202_ACCEPTED
+    return SecondStep(second_step=two_step.methods(db, user))
 
 
 def set_session_cookie(response: Response, token: str) -> None:
@@ -133,6 +187,7 @@ def user_by_login(db: DbSession, login: str) -> User | None:
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
+@allowed_first
 def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -> Me:
     if (held := attempts.sign_up_held_back(db, attempts.source(request))) is not None:
         # The first a limit turns away in its window is info; the rest are debug (#1074).
@@ -173,8 +228,11 @@ def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -
     return me(user)
 
 
-@router.post("/login")
-def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -> Me:
+@router.post("/login", responses={202: {"model": SecondStep}})
+@allowed_first
+def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -> Me | SecondStep:
+    """Sign in with a password. For an account with a second step, that starts a
+    sign-in waiting on it (202), and only the second step signs them in."""
     ip = attempts.source(request)
     held = attempts.sign_in_held_back(db, body.login, ip)
     user = user_by_login(db, body.login)
@@ -214,17 +272,129 @@ def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -
             )
         db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email, handle or password.")
-    attempts.signed_in(db, body.login, ip)
     if new_hash is not None:
         user.password_hash = new_hash
+    if two_step.has_second_step(db, user):
+        # Its tries still count as failed until the second step signs them in.
+        asked = ask_second_step(db, user, response, attempts.login_key(body.login), request)
+        db.commit()
+        return asked
+    attempts.signed_in(db, body.login, ip)
     record(db, user, "account.signed_in", member=user.display_name, user_id=user.id, **from_ip)
     set_session_cookie(response, start_session(db, user))
     db.commit()
-    return me(user)
+    return me(user, db)
+
+
+AGAIN = "Your sign-in has timed out. Sign in again."
+
+
+@router.get("/second-step")
+@allowed_first
+def second_step_waiting(request: Request, db: DbSession) -> SecondStep:
+    """The second steps a sign-in waiting on one can be given with; 410 if there's
+    none waiting here, or it has timed out."""
+    waiting = two_step.waiting(db, request.cookies.get(two_step.COOKIE))
+    if waiting is None:
+        raise HTTPException(status.HTTP_410_GONE, AGAIN)
+    return SecondStep(second_step=two_step.methods(db, db.get_one(User, waiting.user_id)))
+
+
+@router.post("/second-step")
+@allowed_first
+def second_step(body: SecondStepCode, request: Request, db: DbSession, response: Response) -> Me:
+    """Give the second step of a sign-in waiting on one: a code from their
+    authenticator app, or a recovery code. Wrong codes count against limits of their
+    own (horatio.auth.attempts); five wrong end the sign-in, to start again."""
+    waiting = two_step.waiting(db, request.cookies.get(two_step.COOKIE))
+    if waiting is None:
+        clear_second_step_cookie(response)
+        raise HTTPException(status.HTTP_410_GONE, AGAIN)
+    user = db.get_one(User, waiting.user_id)
+    ip = attempts.source(request)
+    from_ip = sign_in_ip(db, request)
+    whose = {"member": user.display_name, "user_id": user.id}
+    if (held := attempts.second_step_held_back(db, user.id, ip)) is not None:
+        record(
+            db,
+            user,
+            "account.second_step_throttled"
+            if held.first
+            else "account.second_step_throttled_again",
+            limit=held.limit.key,
+            **whose,
+            **from_ip,
+        )
+        db.commit()
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, held.wait)
+    # Counted and committed, which let go of the row's lock: take it again.
+    waiting = two_step.waiting(db, request.cookies.get(two_step.COOKIE))
+    if waiting is None:
+        raise HTTPException(status.HTTP_410_GONE, AGAIN)
+    method = "app" if two_step.is_app_code(body.code) else "recovery_code"
+    right = (
+        two_step.check_app(db, user, body.code)
+        if method == "app"
+        else two_step.use_recovery_code(db, user, body.code)
+    )
+    if not right:
+        ended = two_step.wrong(db, waiting)
+        record(db, user, "account.second_step_failed", kind=method, **whose, **from_ip)
+        db.commit()
+        if ended:
+            raise HTTPException(status.HTTP_410_GONE, "Too many wrong codes. Sign in again.")
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "That code isn't right."
+            if method == "app"
+            else "That recovery code isn't right, or has been used.",
+        )
+    return signed_in_by_second_step(db, user, waiting, method, request, response)
+
+
+def signed_in_by_second_step(
+    db: DbSession,
+    user: User,
+    waiting: SecondStepSignIn,
+    method: str,
+    request: Request,
+    response: Response,
+) -> Me:
+    """The second step was right: sign them in, here only."""
+    ip = attempts.source(request)
+    from_ip = sign_in_ip(db, request)
+    attempts.second_step_passed(db, user.id, ip)
+    if waiting.login_hash is not None:
+        attempts.signed_in_at(db, waiting.login_hash, ip)
+    db.delete(waiting)
+    if method == "recovery_code":
+        record(
+            db,
+            user,
+            "account.recovery_code_used",
+            member=user.display_name,
+            user_id=user.id,
+            left=two_step.recovery_codes_left(db, user),
+            **from_ip,
+        )
+    record(
+        db,
+        user,
+        "account.signed_in",
+        kind=method,
+        member=user.display_name,
+        user_id=user.id,
+        **from_ip,
+    )
+    set_session_cookie(response, start_session(db, user))
+    clear_second_step_cookie(response)
+    db.commit()
+    return me(user, db)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 @allowed_while_viewing
+@allowed_first
 def sign_out(request: Request, db: DbSession, response: Response) -> None:
     settings = get_settings()
     token = request.cookies.get(settings.session_cookie_name)
@@ -247,11 +417,14 @@ def sign_out(request: Request, db: DbSession, response: Response) -> None:
 
 
 @router.get("/me")
-def who_am_i(user: CurrentUser) -> Me:
-    return me(user)
+@allowed_first
+def who_am_i(request: Request, db: DbSession, user: CurrentUser) -> Me:
+    # While the custodian views as someone, never sent to set up anything.
+    return me(user, None if viewing_for(request, db) is not None else db)
 
 
 @router.post("/password", status_code=status.HTTP_204_NO_CONTENT)
+@allowed_first
 def change_password(
     body: PasswordChange, request: Request, db: DbSession, user: CurrentUser
 ) -> None:
@@ -283,23 +456,32 @@ def reset_user(db: DbSession, token: str) -> User:
 
 
 @router.get("/reset/{token}")
+@allowed_first
 def reset_for(token: str, db: DbSession) -> ResetFor:
     """Whose password a reset link sets, so the page can say."""
     user = reset_user(db, token)
     return ResetFor(display_name=user.display_name, email=user.email)
 
 
-@router.post("/reset")
-def reset_password(body: NewPassword, db: DbSession, response: Response) -> Me:
+@router.post("/reset", responses={202: {"model": SecondStep}})
+@allowed_first
+def reset_password(
+    body: NewPassword, request: Request, db: DbSession, response: Response
+) -> Me | SecondStep:
     """Set a new password from a reset link. Ends every other session the person had,
-    and signs them in here."""
+    and signs them in here; or, if they have a second step, asks for it (202) as
+    signing in does. A reset link never stands in for a second step."""
     user = reset_user(db, body.token)
     user.password_hash = hash_password(body.password)
     use_reset(db, user)
     record(db, user, "account.password_reset", member=user.display_name, user_id=user.id)
+    if two_step.has_second_step(db, user):
+        asked = ask_second_step(db, user, response, None, request)
+        db.commit()
+        return asked
     set_session_cookie(response, start_session(db, user))
     db.commit()
-    return me(user)
+    return me(user, db)
 
 
 NO_EMAIL = "Horatio can't send email here, so ask the custodian to make you a reset link."
@@ -323,12 +505,14 @@ def send_requested_reset(user_id: uuid.UUID, url: str) -> None:
 
 
 @router.get("/forgot")
+@allowed_first
 def forgot_help() -> ForgotHelp:
     """Whether someone who forgot their password can ask Horatio for a link."""
     return ForgotHelp(can_email=email.configured())
 
 
 @router.post("/forgot", status_code=status.HTTP_202_ACCEPTED)
+@allowed_first
 def forgot_password(
     body: Forgot, request: Request, db: DbSession, background: BackgroundTasks
 ) -> ForgotAnswer:

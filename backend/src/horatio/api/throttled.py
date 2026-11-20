@@ -26,7 +26,7 @@ router = APIRouter(prefix="/throttled", tags=["custodian"])
 class ThrottledOut(BaseModel):
     # Names it to unblock.
     id: str
-    held: Literal["sign_in", "sign_up"]
+    held: Literal["sign_in", "sign_up", "second_step"]
     # The IP address (an IPv6 /64), or its start while sign-in events keep no IP
     # addresses; None for requests that came with none.
     address: str | None
@@ -34,10 +34,19 @@ class ThrottledOut(BaseModel):
     # For a limit at one login: whose it is, "@agnes" or an email, or None for a
     # login no account uses.
     per_login: bool
+    # For a limit at one account from anywhere (wrong second-step codes): no address.
+    anywhere: bool
     login: str | None
     # "20 failed sign-ins in 15 minutes".
     limit: str
     clears: datetime
+
+
+HELD: dict[str, Literal["sign_in", "sign_up", "second_step"]] = {
+    attempts.SIGN_IN: "sign_in",
+    attempts.SIGN_UP: "sign_up",
+    attempts.SECOND_STEP: "second_step",
+}
 
 
 class Unblock(BaseModel):
@@ -56,15 +65,20 @@ def masked(ip: str) -> str:
 
 
 def logins(db: DbSession, hashed: set[str]) -> dict[str, str]:
-    """Whose each hashed login is: an account's "@handle" or email."""
+    """Whose each hashed login is: an account's "@handle" or email; for second steps,
+    counted by account, its "@handle"."""
     found: dict[str, str] = {}
     if not hashed:
         return found
-    users = db.execute(select(User.email, User.handle).where(User.merged_into_id.is_(None)))
-    for email, handle in users:
+    users = db.execute(
+        select(User.id, User.email, User.handle).where(User.merged_into_id.is_(None))
+    )
+    for user_id, email, handle in users:
         for login in (email, f"@{handle}"):
             if (key := attempts.login_key(login)) in hashed:
                 found[key] = login
+        if (key := attempts.account_key(user_id)) in hashed:
+            found[key] = f"@{handle}"
     return found
 
 
@@ -84,10 +98,11 @@ def throttled(db: DbSession, user: CurrentUser) -> list[ThrottledOut]:
     return [
         ThrottledOut(
             id=t.id,
-            held="sign_up" if t.limit.action == attempts.SIGN_UP else "sign_in",
+            held=HELD[t.limit.action],
             address=t.ip if t.ip is None or shown else masked(t.ip),
             masked=t.ip is not None and not shown,
             per_login=t.limit.per_login,
+            anywhere=t.limit.anywhere,
             login=whose.get(t.identity) if t.identity else None,
             limit=str(t.limit),
             clears=t.clears,
@@ -109,6 +124,11 @@ def unblock(body: Unblock, db: DbSession, user: CurrentUser) -> None:
     data: dict[str, Any] = {"limit": limit.key, "rule": str(limit)}
     if limit.action == attempts.SIGN_UP:
         data["kind"] = "sign_up"
+    elif limit.action == attempts.SECOND_STEP:
+        data["kind"] = "second_step"
+        if limit.per_login:
+            data["kind"] = "second_step_account"
+            data["login"] = whose.get(throttle.identity or "", "an account no longer here")
     elif limit.per_login:
         data["kind"] = "login"
         data["login"] = whose.get(throttle.identity or "", "a login no account uses")

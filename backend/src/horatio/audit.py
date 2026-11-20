@@ -41,6 +41,9 @@ DEBUG: frozenset[str] = frozenset(
         # the first in a limit's window: that one is info, so it is always recorded (#1074).
         "account.sign_in_throttled_again",
         "account.sign_up_throttled_again",
+        "account.second_step_throttled_again",
+        # The password right, and the second step asked for (#1057).
+        "account.second_step_asked",
         "account.signed_out",
         "account.signed_up",
     }
@@ -110,6 +113,12 @@ NOTICE: frozenset[str] = frozenset(
         "account.suspension_email_failed",
         "account.suspension_lifted",
         "account.throttle_lifted",
+        # Two-step sign-in (#1057).
+        "account.two_step_added",
+        "account.two_step_removed",
+        "account.two_step_reset",
+        "account.recovery_codes_made",
+        "account.recovery_code_used",
         "account.view_as",
         "account.view_as_ended",
         # --- the custodian's work, and what stays with a troupe for good ---

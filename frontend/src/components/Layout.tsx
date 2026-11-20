@@ -44,7 +44,13 @@ export function Layout() {
           </Link>
           {/* Signed out: the manual, which is for anyone, and the ways in (#907). */}
           {!me.data && <SignedOutLinks link={link} />}
-          {me.data && (
+          {/* Until they set up two-step sign-in, only a way out (#1057). */}
+          {me.data?.two_step_needed && (
+            <button className="text-sm text-mist hover:text-parchment" onClick={signOut.signOut}>
+              Sign out
+            </button>
+          )}
+          {me.data && !me.data.two_step_needed && (
             <div className="flex min-w-0 items-center gap-1 lg:gap-4">
               {/* Search everything (#1046), on every screen, before the bar's links. */}
               <SiteSearch />

@@ -126,6 +126,7 @@ from horatio.api import (
     troupe_requests,
     troupe_settings_share,
     troupes,
+    two_step,
     unsubscribe,
     viewing,
     vinculum,
@@ -139,6 +140,7 @@ from horatio.api import (
     yorick_imports,
 )
 from horatio.auth.deps import DbSession
+from horatio.auth.two_step import allowed_first, two_step_first
 from horatio.auth.viewing import read_only_while_viewing
 from horatio.config import get_settings
 
@@ -211,8 +213,11 @@ async def send_security_headers(
 logging.getLogger("uvicorn.access").addFilter(secret_links.RedactSecrets())
 
 
-# While the custodian views as someone, nothing changes (horatio.auth.viewing).
-api = APIRouter(prefix="/api", dependencies=[Depends(read_only_while_viewing)])
+# While the custodian views as someone, nothing changes (horatio.auth.viewing). Someone
+# who must set up two-step sign-in does that first (horatio.auth.two_step).
+api = APIRouter(
+    prefix="/api", dependencies=[Depends(read_only_while_viewing), Depends(two_step_first)]
+)
 for module in (
     auth,
     troupes,
@@ -336,6 +341,7 @@ for module in (
     boon_imports,
     tools,
     throttled,
+    two_step,
     vtes_symbols,
     jyhad_card,
     search,
@@ -347,6 +353,7 @@ api.include_router(setting_style.presets_router)
 
 
 @api.get("/health")
+@allowed_first
 def health() -> dict[str, str]:
     return {"status": "ok"}
 

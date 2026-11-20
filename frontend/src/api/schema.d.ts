@@ -477,7 +477,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Sign In */
+        /**
+         * Sign In
+         * @description Sign in with a password. For an account with a second step, that starts a
+         *     sign-in waiting on it (202), and only the second step signs them in.
+         */
         post: operations["sign_in_api_auth_login_post"];
         delete?: never;
         options?: never;
@@ -552,7 +556,8 @@ export interface paths {
         /**
          * Reset Password
          * @description Set a new password from a reset link. Ends every other session the person had,
-         *     and signs them in here.
+         *     and signs them in here; or, if they have a second step, asks for it (202) as
+         *     signing in does. A reset link never stands in for a second step.
          */
         post: operations["reset_password_api_auth_reset_post"];
         delete?: never;
@@ -575,6 +580,33 @@ export interface paths {
         get: operations["reset_for_api_auth_reset__token__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/second-step": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Second Step Waiting
+         * @description The second steps a sign-in waiting on one can be given with; 410 if there's
+         *     none waiting here, or it has timed out.
+         */
+        get: operations["second_step_waiting_api_auth_second_step_get"];
+        put?: never;
+        /**
+         * Second Step
+         * @description Give the second step of a sign-in waiting on one: a code from their
+         *     authenticator app, or a recovery code. Wrong codes count against limits of their
+         *     own (horatio.auth.attempts); five wrong end the sign-in, to start again.
+         */
+        post: operations["second_step_api_auth_second_step_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13665,6 +13697,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/two-step": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Two Step State
+         * @description The signed-in person's second steps, and whether they must have one.
+         */
+        get: operations["two_step_state_api_two_step_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/app": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start App
+         * @description Start setting up an authenticator app: the secret to scan or type into it. It
+         *     signs no one in until a code from it is given (POST /two-step/app/confirm).
+         */
+        post: operations["start_app_api_two_step_app_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/app/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm App
+         * @description Turn on the authenticator app being set up with a code from it. With it come
+         *     ten recovery codes, if they have none left.
+         */
+        post: operations["confirm_app_api_two_step_app_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/app/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove App
+         * @description Turn off their authenticator app, giving their password.
+         */
+        post: operations["remove_app_api_two_step_app_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * New Recovery Codes
+         * @description Ten new recovery codes in place of the ones they had, giving their password.
+         */
+        post: operations["new_recovery_codes_api_two_step_recovery_codes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/reset/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset
+         * @description For the custodian: take away every second step someone has, and their recovery
+         *     codes, when they have lost them, so their password alone signs them in again until
+         *     they set up another. Recorded as a notice, and they are told.
+         */
+        post: operations["reset_api_two_step_reset__user_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/unsubscribe/{token}": {
         parameters: {
             query?: never;
@@ -14654,6 +14810,13 @@ export interface components {
             troupe_id: string;
             /** Troupe Name */
             troupe_name: string;
+        };
+        /** AppSetup */
+        AppSetup: {
+            /** Secret */
+            secret: string;
+            /** Uri */
+            uri: string;
         };
         /** AppealIn */
         AppealIn: {
@@ -19472,6 +19635,11 @@ export interface components {
             npcs: components["schemas"]["ClosingCharacter"][];
             /** Visiting */
             visiting: components["schemas"]["ClosingCharacter"][];
+        };
+        /** Code */
+        Code: {
+            /** Code */
+            code: string;
         };
         /**
          * ConditionOut
@@ -26503,6 +26671,11 @@ export interface components {
             /** Next Handle Change */
             next_handle_change: string | null;
             preferences: components["schemas"]["Preferences"];
+            /**
+             * Two Step Needed
+             * @default false
+             */
+            two_step_needed: boolean;
         };
         /**
          * MeetingIn
@@ -28527,6 +28700,11 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** Password */
+        Password: {
+            /** Password */
+            password: string;
+        };
         /** PasswordChange */
         PasswordChange: {
             /** Current */
@@ -29747,6 +29925,11 @@ export interface components {
              * @default false
              */
             suspended: boolean;
+            /**
+             * Two Step
+             * @default false
+             */
+            two_step: boolean;
         };
         /** PlayerVaulderieIn */
         PlayerVaulderieIn: {
@@ -31600,6 +31783,11 @@ export interface components {
             /** Trait */
             trait: string;
         };
+        /** RecoveryCodes */
+        RecoveryCodes: {
+            /** Recovery Codes */
+            recovery_codes: string[];
+        };
         /**
          * RefusalOut
          * @description Why a trait cannot be taken.
@@ -32967,6 +33155,20 @@ export interface components {
             primogen: string[];
             /** Seated */
             seated: string[] | null;
+        };
+        /**
+         * SecondStep
+         * @description The password was right, and the account has a second step: no session until
+         *     it is given (POST /auth/second-step).
+         */
+        SecondStep: {
+            /** Second Step */
+            second_step: string[];
+        };
+        /** SecondStepCode */
+        SecondStepCode: {
+            /** Code */
+            code: string;
         };
         /**
          * SectCondition
@@ -35917,6 +36119,8 @@ export interface components {
         ThrottledOut: {
             /** Address */
             address: string | null;
+            /** Anywhere */
+            anywhere: boolean;
             /**
              * Clears
              * Format: date-time
@@ -35926,7 +36130,7 @@ export interface components {
              * Held
              * @enum {string}
              */
-            held: "sign_in" | "sign_up";
+            held: "sign_in" | "sign_up" | "second_step";
             /** Id */
             id: string;
             /** Limit */
@@ -37054,6 +37258,19 @@ export interface components {
             ties: components["schemas"]["VinculumTieOut"][];
             /** Vaulderies */
             vaulderies: components["schemas"]["VaulderieOut"][];
+        };
+        /** TwoStepOut */
+        TwoStepOut: {
+            /** App */
+            app: boolean;
+            /** Apps Available */
+            apps_available: boolean;
+            /** Needed */
+            needed: boolean;
+            /** Recovery Codes Left */
+            recovery_codes_left: number;
+            /** Required By */
+            required_by: string[];
         };
         /** UnavailableIn */
         UnavailableIn: {
@@ -38544,6 +38761,11 @@ export interface components {
              */
             trial: boolean;
         };
+        /** ResetIn */
+        horatio__api__two_step__ResetIn: {
+            /** Reason */
+            reason: string;
+        };
         /** MatchOut */
         horatio__api__yorick_imports__MatchOut: {
             /** Character Id */
@@ -39450,7 +39672,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Me"];
+                    "application/json": components["schemas"]["Me"] | components["schemas"]["SecondStep"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecondStep"];
                 };
             };
             /** @description Validation Error */
@@ -39552,7 +39783,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Me"];
+                    "application/json": components["schemas"]["Me"] | components["schemas"]["SecondStep"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecondStep"];
                 };
             };
             /** @description Validation Error */
@@ -39584,6 +39824,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResetFor"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    second_step_waiting_api_auth_second_step_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecondStep"];
+                };
+            };
+        };
+    };
+    second_step_api_auth_second_step_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecondStepCode"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
                 };
             };
             /** @description Validation Error */
@@ -65137,6 +65430,176 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["XpRangeOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    two_step_state_api_two_step_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwoStepOut"];
+                };
+            };
+        };
+    };
+    start_app_api_two_step_app_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppSetup"];
+                };
+            };
+        };
+    };
+    confirm_app_api_two_step_app_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Code"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodes"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_app_api_two_step_app_remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    new_recovery_codes_api_two_step_recovery_codes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodes"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_api_two_step_reset__user_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__two_step__ResetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

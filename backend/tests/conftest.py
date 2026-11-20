@@ -33,6 +33,8 @@ passwords._hasher = PasswordHash(  # pyright: ignore[reportPrivateUsage]
 )
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
+# Encrypts authenticator apps' secrets in tests (horatio.auth.two_step).
+TOTP_KEY = "dGVzdHMgb25seTogbm90IGEgcmVhbCBrZXkgISEhISE="
 
 # Whatever backend/.env sets up for development, tests reach no outside service:
 # a test that wants Discord or email sets it up against a fake.
@@ -60,6 +62,10 @@ def no_outside_services(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "upload_dir", None)
     # Every test client signs in from one address; a test of the limits turns them on.
     monkeypatch.setattr(settings, "auth_limits", False)
+    # Custodians are made partway through a test (api_helpers.sign_up), already signed
+    # in; a test of two-step sign-in asks it of them (test_api_two_step).
+    monkeypatch.setattr(settings, "two_step_for_custodians", False)
+    monkeypatch.setattr(settings, "totp_key", TOTP_KEY)
 
 
 @pytest.fixture(scope="session")

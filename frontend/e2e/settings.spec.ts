@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, topBar } from "./support";
 
@@ -65,7 +66,7 @@ test("account settings are in two tabs, Preferences and Sign-in and email, each 
   }
   await page.goto("/account/sign-in");
   await expect(page.getByLabel("Your handle")).toBeVisible();
-  expect(await cards()).toEqual(["Email", "Handle", "Password"]);
+  expect(await cards()).toEqual(["Email", "Handle", "Password", "Two-step sign-in"]);
   // Under 2000 px on a phone, on a server that can't send email, as this suite's can't.
   expect(await tall()).toBeLessThan(2000);
   await page.screenshot(shots("account-sign-in-phone"));
@@ -377,6 +378,71 @@ test("a signed-in person changes their password, and signs in with the new one",
   await other.getByLabel("Password").fill(newPassword);
   await other.getByRole("button", { name: "Sign in" }).click();
   await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+});
+
+/** An authenticator app's code (RFC 6238: HMAC-SHA1, 30 s, 6 digits) for the base32
+ * `secret`, at `at` milliseconds: what the person's phone would show. */
+function appCode(secret: string, at = Date.now()): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const bits = [...secret.replace(/=+$/, "")].map((c) => alphabet.indexOf(c).toString(2).padStart(5, "0")).join("");
+  const key = Buffer.from(bits.match(/.{8}/g)!.map((b) => parseInt(b, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
+  const mac = createHmac("sha1", key).update(counter).digest();
+  const offset = mac[mac.length - 1]! & 0xf;
+  return ((mac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).toString().padStart(6, "0");
+}
+
+test("two-step sign-in: an authenticator app set up from Account, then asked for after the password, and a recovery code in its place (#1057)", async ({ browser }) => {
+  const { page, email } = await person(browser, "twostep-player");
+  await (await topBar(page)).getByRole("link", { name: "Your account" }).click();
+  await page.locator("main").getByRole("link", { name: "Sign-in and email", exact: true }).click();
+  const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
+  await card.getByRole("button", { name: "Set up an authenticator app" }).click();
+  await expect(card.getByRole("img", { name: "QR code for your authenticator app" })).toBeVisible();
+  const key = (await card.getByText(/^Key:/).textContent())!.replace("Key:", "").replace(/\s/g, "");
+  // A wrong code is refused; the one the app shows turns it on.
+  await card.getByLabel("Code from your app").fill("000000");
+  await card.getByRole("button", { name: "Turn on two-step sign-in" }).click();
+  await expect(card.getByText(/That code isn't right/)).toBeVisible();
+  await card.getByLabel("Code from your app").fill(appCode(key));
+  await card.getByRole("button", { name: "Turn on two-step sign-in" }).click();
+  const listed = card.getByRole("list", { name: "Recovery codes" }).getByRole("listitem");
+  await expect(listed).toHaveCount(10);
+  const codes = await listed.allTextContents();
+  await page.screenshot(shots("settings-two-step-codes"));
+  await card.getByRole("button", { name: "I've kept them" }).click();
+  await expect(card.getByText("Authenticator app set up. 10 of 10 recovery codes left.")).toBeVisible();
+
+  // On another device the password alone isn't enough: the app's code is asked next.
+  const other = await (await browser.newContext()).newPage();
+  await other.goto("/sign-in");
+  const signIn = async () => {
+    await expect(other.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await other.getByLabel("Email or handle").fill(email);
+    await other.getByLabel("Password").fill(PASSWORD);
+    await other.getByRole("button", { name: "Sign in" }).click();
+    await expect(other.getByRole("heading", { name: "Two-step sign-in" })).toBeVisible();
+  };
+  await signIn();
+  await other.getByLabel("Code from your app").fill("123456");
+  await other.getByRole("button", { name: "Sign in" }).click();
+  await expect(other.getByText("That code isn't right.")).toBeVisible();
+  await other.screenshot(shots("sign-in-second-step"));
+  // A code works once, so the next one the app shows (30 s on) signs in.
+  await other.getByLabel("Code from your app").fill(appCode(key, Date.now() + 30_000));
+  await other.getByRole("button", { name: "Sign in" }).click();
+  await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+
+  // Signed out, a recovery code stands in for the app, once.
+  await (await topBar(other)).getByRole("button", { name: "Sign out" }).click();
+  await signIn();
+  await other.getByRole("button", { name: "Use a recovery code instead" }).click();
+  await other.getByLabel("Recovery code").fill(codes[0]!);
+  await other.getByRole("button", { name: "Sign in" }).click();
+  await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  await page.reload();
+  await expect(card.getByText("Authenticator app set up. 9 of 10 recovery codes left.")).toBeVisible();
 });
 
 test("the bell links to the notification settings", async ({ browser }) => {

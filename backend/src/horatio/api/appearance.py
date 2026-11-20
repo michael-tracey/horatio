@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.auth.two_step import allowed_first
 from horatio.models import ServerSetting
 from horatio.permissions import require_custodian
 from horatio.rules.splats import SPLATS
@@ -49,6 +50,7 @@ def loading_animation(db: DbSession) -> dict[str, Motif]:
 
 
 @router.get("")
+@allowed_first
 def appearance(db: DbSession) -> AppearanceOut:
     return AppearanceOut(loading_animation=loading_animation(db))
 

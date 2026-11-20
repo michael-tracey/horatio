@@ -130,6 +130,12 @@ from horatio.models.troupes import (
     TroupeTitle,
     XpRangeEntry,
 )
+from horatio.models.two_step import (
+    AuthenticatorApp,
+    Passkey,
+    RecoveryCode,
+    SecondStepSignIn,
+)
 from horatio.models.viewing import Viewing
 from horatio.models.vinculum import Vaulderie, VaulderieParticipant, VinculumTie
 from horatio.models.written_rules import WrittenRule
@@ -193,6 +199,7 @@ __all__ = [
     "Post",
     "PostDismissal",
     "PostRead",
+    "Passkey",
     "PushDevice",
     "PushNotice",
     "OwedAction",
@@ -218,6 +225,7 @@ __all__ = [
     "AuditEvent",
     "AuthAttempt",
     "AuthIdentity",
+    "AuthenticatorApp",
     "Base",
     "Character",
     "CharacterTitle",
@@ -248,9 +256,11 @@ __all__ = [
     "SceneCharacter",
     "Session",
     "Suspension",
+    "RecoveryCode",
     "Retainer",
     "RetainerGrowth",
     "AlternateIdentity",
+    "SecondStepSignIn",
     "SharedBackground",
     "SharedBackgroundEntry",
     "SheetVersion",

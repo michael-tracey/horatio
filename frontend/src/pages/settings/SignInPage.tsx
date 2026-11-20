@@ -5,14 +5,15 @@ import { ViewedAs } from "../ViewedAs";
 import { DiscordLinkCard } from "./DiscordLinkCard";
 import { HandleCard } from "./HandleCard";
 import { PasswordCard } from "./PasswordCard";
+import { TwoStepCard } from "./TwoStepCard";
 import { useScrollToHash } from "./PreferenceControls";
 
 /**
  * How the signed-in person signs in (#910): their email and handle, either of which
- * signs them in, their password and their linked Discord account; and each time the
- * custodian viewed Horatio as them. Which notifications come by email moved to
- * Account › Notifications (#1053), where links in emails already sent to
- * #notifications here now land.
+ * signs them in, their password, two-step sign-in (#1057) and their linked Discord
+ * account; and each time the custodian viewed Horatio as them. Which notifications
+ * come by email moved to Account › Notifications (#1053), where links in emails
+ * already sent to #notifications here now land.
  */
 export function SignInPage({ player }: { player: PlayerOut }) {
   useScrollToHash();
@@ -23,6 +24,7 @@ export function SignInPage({ player }: { player: PlayerOut }) {
       <AccountEmail player={player} />
       <HandleCard />
       <PasswordCard />
+      <TwoStepCard />
       <DiscordLinkCard />
       <ViewedAs />
     </div>

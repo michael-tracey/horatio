@@ -51,7 +51,7 @@ from horatio import (
     preferences,
     suspensions,
 )
-from horatio.auth import viewing
+from horatio.auth import two_step, viewing
 from horatio.connectors import SendError, email
 from horatio.email_design import Body, compose
 from horatio.models import (
@@ -526,6 +526,8 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
         .values(revoked_at=now)
     )
     db.execute(delete(PasswordReset).where(PasswordReset.user_id == other.id))
+    # Its second steps go with it: the staying account keeps its own (#1057).
+    two_step.forget_all(db, other)
     other.merged_into_id = keep.id
     other.merged_at = now
     other.display_name = merged_name(name, keep.handle)

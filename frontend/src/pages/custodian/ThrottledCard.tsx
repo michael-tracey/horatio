@@ -35,8 +35,9 @@ export function ThrottledCard() {
           found.length ? (
             <div className="flex flex-col gap-2 text-sm">
               <p className="text-mist">
-                Held back for too many tries from one place. Each may try again
-                once its limit clears, or at once if you unblock it.
+                Held back for too many tries from one place, or too many wrong
+                second-step codes at one account. Each may try again once its
+                limit clears, or at once if you unblock it.
               </p>
               <ul className="divide-y divide-ash/50" aria-label="Throttled now">
                 {found.map((throttled) => (
@@ -82,28 +83,22 @@ function Row({
   onUnblock: () => void;
 }) {
   const dates = useDates();
-  const address = throttled.address ?? "No address";
+  // Wrong second-step codes are also limited at the account, from anywhere (#1057).
+  const address = throttled.anywhere ? "Anywhere" : (throttled.address ?? "No address");
+  const login = throttled.login ?? (throttled.held === "second_step" ? "an account no longer here" : "a login no account uses");
+  const what = { sign_up: "Sign-ups", sign_in: "Sign-ins", second_step: "Second-step codes" }[throttled.held];
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2">
       <div className="min-w-0">
         <p className="break-words text-parchment">
-          <span className="font-mono">{address}</span>
-          {throttled.per_login && (
-            <> at {throttled.login ?? "a login no account uses"}</>
-          )}
+          <span className={throttled.anywhere ? undefined : "font-mono"}>{address}</span>
+          {throttled.per_login && <> at {login}</>}
         </p>
         <p className="text-xs text-mist">
-          {throttled.held === "sign_up" ? "Sign-ups" : "Sign-ins"} over the
-          limit of {throttled.limit}. Clears {dates.dateTime(throttled.clears)}.
+          {what} over the limit of {throttled.limit}. Clears {dates.dateTime(throttled.clears)}.
         </p>
       </div>
-      <Button
-        type="button"
-        variant="secondary"
-        disabled={busy}
-        aria-label={`Unblock ${address}${throttled.per_login ? ` at ${throttled.login ?? "a login no account uses"}` : ""}`}
-        onClick={onUnblock}
-      >
+      <Button type="button" variant="secondary" disabled={busy} aria-label={`Unblock ${address}${throttled.per_login ? ` at ${login}` : ""}`} onClick={onUnblock}>
         Unblock
       </Button>
     </li>

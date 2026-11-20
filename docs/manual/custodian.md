@@ -44,6 +44,14 @@ Run the same command inside the running app, for example in its container: `dock
 
 The repository's own deployment has a script for this, `deploy/custodian.sh you@example.com`, which needs the server's SSH key. See [deploy/README.md](https://github.com/michael-tracey/horatio/blob/main/deploy/README.md) for the full steps.
 
+### Two-step sign-in for the custodian
+
+The custodian must sign in with two steps: after the password, a code from an authenticator app on their phone. The first time you open Horatio as the custodian, it sends you to set this up, and nothing else opens until you have. Keep the recovery codes it gives you somewhere safe. See [Two-step sign-in](getting-started.md#two-step-sign-in) for how it works.
+
+The server needs its key for this (`HORATIO_TOTP_KEY`, see deploy/README.md). Without it, no one can set up an authenticator app, and the custodian isn't held to it.
+
+If you lose your phone and your recovery codes, another custodian can reset your two-step sign-in (below). If you are the only one, run this where Horatio runs: `docker exec horatio-api python -m horatio.auth.two_step reset you@example.com` (from the `backend` folder on your own computer, `uv run python -m horatio.auth.two_step reset you@example.com`). It is kept in the audit log for good.
+
 ### Removing a custodian
 
 The same command takes the role away again, with `--remove` before the email:
@@ -202,6 +210,16 @@ For someone locked out:
 The link works once, for a day, and replaces any earlier link. Setting a new password with it signs them out everywhere else. Choose **Cancel link** to stop a link working. The same **Password** card is on a person's profile when you open it.
 
 People can reset their own password from **Forgot your password?** on the sign-in page, but only on a server that can send email. Otherwise that page tells them to ask you.
+
+### Resetting two-step sign-in
+
+For someone who has lost their authenticator app and their recovery codes:
+
+1. Make sure it is them asking, for example by talking to them.
+2. Choose **⋯ › Reset two-step sign-in…** (it is there only for people who have it on).
+3. Say why, and choose **Reset two-step sign-in**.
+
+Their authenticator app and recovery codes go, and their password alone signs them in until they set it up again. They're told in the bell, with your reason, and it is kept in the audit log for good. A password reset never does this: someone with two-step sign-in who resets their password is still asked for their second step.
 
 ### Suspending someone and lifting it
 
@@ -573,6 +591,7 @@ Horatio limits how often anyone can try to sign in or sign up from one place (on
 - **Failed sign-ins**: 20 in a quarter of an hour and 100 a day from one address, and 5 in a quarter of an hour at one email or handle from it.
 - **All sign-ins**, right password or not: 60 in a quarter of an hour and 300 a day from one address, so that no one can keep the server busy checking passwords. A troupe signing in together on a venue's Wi-Fi stays well under it.
 - **Sign-ups**: 20 an hour and 50 a day from one address.
+- **Wrong second-step codes** ([two-step sign-in](getting-started.md#two-step-sign-in)): 20 in a quarter of an hour and 100 a day from one address, and 10 in a quarter of an hour and 30 a day at one account from anywhere. Only someone with the account's password gets that far, so the limit at the account can't be used to keep anyone else out. It shows as **Anywhere at @handle**.
 
 The **Throttled now** card, below the **Audit log** card, lists each address over a limit now (with the email or handle, for the limit at one login), which limit, and when it clears. Choose **Unblock** to let it try again at once, for instance when a whole troupe is held back at a game. Unblocking goes in the audit log, as a notice.
 
