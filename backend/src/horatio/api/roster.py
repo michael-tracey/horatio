@@ -759,6 +759,10 @@ MESSAGES: dict[str, str] = {
     "troupe.staff_two_step": "{actor} set two-step sign-in for the troupe's staff: {setting}.",
     "account.two_step_reset": "{actor} reset {member}'s two-step sign-in{because}.",
     "account.two_step_reset.server": "{member}'s two-step sign-in was reset on the server.",
+    "account.two_step_email_failed.reset": "Horatio could not email {member} that their"
+    " two-step sign-in was reset: {error}",
+    "account.two_step_email_failed.recovery_code": "Horatio could not email {member} that a"
+    " recovery code was used to sign in as them: {error}",
     "account.signed_out": "{actor} signed out{from_ip}.",
     "account.sign_in_failed": "Someone failed to sign in as {member}{from_ip}: wrong password.",
     "account.sign_in_failed.unknown": "Someone failed to sign in{from_ip} to an account that"

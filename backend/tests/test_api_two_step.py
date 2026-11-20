@@ -2,8 +2,10 @@
 recovery code, its limits, and who must have one."""
 
 import base64
+import smtplib
 import uuid
 from collections.abc import Callable, Iterator
+from contextlib import nullcontext
 from typing import Any
 
 import pytest
@@ -12,13 +14,23 @@ from pyotp.totp import TOTP
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, notification_choices
+from horatio.api import auth as auth_api
 from horatio.api.roster import message
 from horatio.app import app
 from horatio.auth import two_step
 from horatio.config import get_settings
-from horatio.models import AuditEvent, AuthenticatorApp, RecoveryCode, SecondStepSignIn
+from horatio.connectors import email
+from horatio.models import (
+    AuditEvent,
+    AuthenticatorApp,
+    Notification,
+    RecoveryCode,
+    SecondStepSignIn,
+    User,
+)
 from tests.api_helpers import PASSWORD, Person, sign_up
+from tests.test_email_connector import FakeSMTP, text_of
 
 START = 1_800_000_000.0
 
@@ -49,6 +61,38 @@ def required(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def limits(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(get_settings(), "auth_limits", True)
+
+
+@pytest.fixture
+def mail(monkeypatch: pytest.MonkeyPatch, session: Session) -> Iterator[FakeSMTP]:
+    """Email set up against a fake mail server. What goes after the response goes in
+    a session of its own: here, the test's."""
+    fake = FakeSMTP()
+    settings = get_settings()
+    monkeypatch.setattr(settings, "smtp_host", "mail.example.org")
+    monkeypatch.setattr(settings, "mail_from", "Horatio <horatio@example.org>")
+    monkeypatch.setattr(email, "smtp_factory", fake)
+    monkeypatch.setattr(auth_api, "background_session", lambda: nullcontext(session))
+    yield fake
+
+
+def no_email_wanted(session: Session, person: Person) -> None:
+    """Turn off every notification email they can turn off."""
+    user = session.get_one(User, uuid.UUID(person.id))
+    user.preferences = {
+        t.setting("email"): False for t in notification_choices.TOPICS if t.choosable("email")
+    }
+    session.flush()
+
+
+def bell(session: Session, person: Person, kind: str) -> list[str]:
+    return list(
+        session.scalars(
+            select(Notification.summary).where(
+                Notification.user_id == uuid.UUID(person.id), Notification.kind == kind
+            )
+        )
+    )
 
 
 @pytest.fixture
@@ -294,6 +338,42 @@ def test_a_recovery_code_signs_in_once(
     assert refused.json()["detail"] == "That recovery code isn't right, or has been used."
 
 
+def test_a_recovery_code_used_is_in_the_bell_and_emailed_whatever_they_chose(
+    client_for: Callable[[], TestClient], session: Session, clock: Clock, mail: FakeSMTP
+) -> None:
+    agnes = sign_up(client_for, "agnes")
+    secret, codes = set_up_app(agnes, clock)
+    no_email_wanted(session, agnes)
+    fresh = client_for()
+    password(fresh, "agnes")
+
+    assert second(fresh, codes[0]).status_code == 200
+
+    assert bell(session, agnes, "account.recovery_code_used") == [
+        "Someone signed in to your account with one of your recovery codes: 9 left. If it"
+        " wasn't you, change your password and make new recovery codes."
+    ]
+    [sent] = mail.sent
+    assert sent["To"] == f"agnes <{agnes.email}>"
+    assert sent["Subject"] == "A recovery code was used to sign in to Horatio"
+    text = text_of(sent)
+    # What happened and when, in their time zone (UTC until they choose one).
+    assert (
+        f"signed in to your Horatio account ({agnes.email}) with one of your recovery codes on"
+        in text
+    )
+    assert "(UTC). That code is used now: you have 9 left." in text
+    assert "If it wasn't you, someone has your password" in text
+    assert "contact the custodian at once" in text
+    assert "http://localhost:5173/account/sign-in" in text
+    # An app's code tells no one.
+    again = client_for()
+    password(again, "agnes")
+    clock.step()
+    assert second(again, code(secret, clock)).status_code == 200
+    assert len(mail.sent) == 1
+
+
 def test_new_recovery_codes_take_the_place_of_the_old_and_ask_for_the_password(
     client_for: Callable[[], TestClient], clock: Clock
 ) -> None:
@@ -487,7 +567,7 @@ def test_turning_off_the_app_asks_for_the_password_and_takes_the_recovery_codes(
 
 
 def test_the_custodian_resets_a_lost_second_step_and_the_person_is_told(
-    client_for: Callable[[], TestClient], session: Session, clock: Clock
+    client_for: Callable[[], TestClient], session: Session, clock: Clock, mail: FakeSMTP
 ) -> None:
     mina = sign_up(client_for, "mina", custodian=True, session=session)
     agnes = sign_up(client_for, "agnes")
@@ -507,10 +587,67 @@ def test_the_custodian_resets_a_lost_second_step_and_the_person_is_told(
     )
     bell = agnes.client.get("/notifications").json()["items"]
     assert any("reset your two-step sign-in: Lost her phone" in i["summary"] for i in bell)
+    # And by email, whatever they chose for other email.
+    [sent] = mail.sent
+    assert sent["To"] == f"agnes <{agnes.email}>"
+    assert sent["Subject"] == "Your Horatio two-step sign-in was reset"
+    text = text_of(sent)
+    assert "mina, Horatio's custodian, reset two-step sign-in for your Horatio account" in text
+    assert "(UTC): Lost her phone." in text
+    assert "Your password alone does, until you set two-step sign-in up again" in text
+    assert "If you didn't ask for this, contact the custodian at once" in text
     # Nothing left to reset.
     assert (
         mina.client.post(f"/two-step/reset/{agnes.id}", json={"reason": "again"}).status_code == 409
     )
+
+
+def test_an_email_the_mail_server_refuses_is_logged_and_the_reset_stands(
+    client_for: Callable[[], TestClient], session: Session, clock: Clock, mail: FakeSMTP
+) -> None:
+    mina = sign_up(client_for, "mina", custodian=True, session=session)
+    agnes = sign_up(client_for, "agnes")
+    set_up_app(agnes, clock)
+    mail.fail = smtplib.SMTPDataError(554, b"No such mailbox")
+
+    reset = mina.client.post(f"/two-step/reset/{agnes.id}", json={"reason": "Lost her phone"})
+
+    assert reset.status_code == 204
+    assert agnes.client.get("/two-step").json()["app"] is False
+    [failed] = events(session, two_step.EMAIL_FAILED)
+    assert failed.level == "notice"
+    assert said(failed) == (
+        "Horatio could not email agnes that their two-step sign-in was reset: The mail server"
+        " refused it (554): No such mailbox"
+    )
+
+
+def test_a_reset_on_the_server_is_in_the_bell_and_emailed(
+    client_for: Callable[[], TestClient],
+    session: Session,
+    clock: Clock,
+    mail: FakeSMTP,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    agnes = sign_up(client_for, "agnes")
+    set_up_app(agnes, clock)
+
+    assert two_step.reset_by_server(session, agnes.email.upper()) == 0
+
+    assert agnes.client.get("/two-step").json()["app"] is False
+    assert capsys.readouterr().out == (
+        f"{agnes.email.upper()} has no second step now, and can sign in with their password.\n"
+        "They have been emailed about it.\n"
+    )
+    [event] = events(session, "account.two_step_reset")
+    assert said(event) == "agnes's two-step sign-in was reset on the server."
+    assert bell(session, agnes, "account.two_step_reset") == [two_step.RESET_ON_SERVER]
+    [sent] = mail.sent
+    assert (
+        f"Two-step sign-in for your Horatio account ({agnes.email}) was reset on the server on"
+        in text_of(sent)
+    )
+    assert two_step.reset_by_server(session, "nobody@example.com") == 1
 
 
 def test_the_key_command_prints_a_key_for_production_env(

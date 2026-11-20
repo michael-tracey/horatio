@@ -105487,7 +105487,7 @@
     },
     "/api/two-step/reset/{user_id}": {
       "post": {
-        "description": "For the custodian: take away every second step someone has, and their recovery\ncodes, when they have lost them, so their password alone signs them in again until\nthey set up another. Recorded as a notice, and they are told.",
+        "description": "For the custodian: take away every second step someone has, and their recovery\ncodes, when they have lost them, so their password alone signs them in again until\nthey set up another. Recorded as a notice, and they are told in the bell and by\nemail; the email goes before the answer, as the custodian's other emails do.",
         "operationId": "reset_api_two_step_reset__user_id__post",
         "parameters": [
           {
