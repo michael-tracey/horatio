@@ -68,8 +68,8 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   await expect(request.getByText("Waiting")).toBeVisible();
   await expect(p.getByText("Agnes has made 1 of 1 quest request until the next downtime cycle.")).toBeVisible();
   await expect(p.getByRole("button", { name: "Ask for this quest" })).toHaveCount(0);
-  // The character's quests come first, then its requests.
-  await expect(p.locator("main").getByRole("heading", { level: 2 })).toHaveText(["Quests", "Your requests"]);
+  // The character's quests come first, then its requests (below the Next card, #1051).
+  await expect(p.locator("main").getByRole("heading", { level: 2 }).filter({ hasNotText: "Next for this character" })).toHaveText(["Quests", "Your requests"]);
 
   // The lead's bell has it as a task; the queue shows it as new, and the lead takes it on.
   await l.reload();

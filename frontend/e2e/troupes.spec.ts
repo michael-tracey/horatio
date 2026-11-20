@@ -2038,8 +2038,9 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit", exact: true }).click();
   await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
-  // Home troupe comes first, then the visiting troupes, each with what it means behind its (i).
-  await expect(p.locator("main section h2")).toHaveText(["Home troupe", "Visiting troupes"]);
+  // Home troupe comes first, then the visiting troupes, each with what it means behind its (i),
+  // below the Next card above the tabs (#1051).
+  await expect(p.locator('main section:not([aria-label="Next for this character"]) h2')).toHaveText(["Home troupe", "Visiting troupes"]);
   const card = (title: string) => p.locator("main section").filter({ has: p.getByRole("heading", { name: title }) });
   await expect(card("Home troupe").getByText("The one troupe that holds this character's sheet.")).toHaveCount(0);
   await card("Home troupe").getByRole("button", { name: "What a home troupe is" }).click();

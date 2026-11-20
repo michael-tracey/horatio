@@ -277,7 +277,7 @@ def downtime(asked: Asked) -> Found:
             Submission.status == "submitted",
             ~delivered,
         )
-        .order_by(Submission.submitted_at)
+        .order_by(Submission.submitted_at, Submission.id)
     ):
         step = Step(
             "downtime_results",
@@ -306,7 +306,7 @@ def boon_reports(asked: Asked) -> Found:
             Troupe.boons.is_(True),
         )
         .distinct()
-        .order_by(Boon.created_at)
+        .order_by(Boon.created_at, Boon.id)
     ):
         if character_id is not None:
             by[character_id].append(made_at)
@@ -369,7 +369,7 @@ def quest_requests(asked: Asked) -> Found:
             QuestRequest.status.in_(("new", "working")),
             Troupe.quests_enabled.is_(True),
         )
-        .order_by(QuestRequest.created_at)
+        .order_by(QuestRequest.created_at, QuestRequest.id)
     ):
         by[character_id].append(made_at)
     return [
