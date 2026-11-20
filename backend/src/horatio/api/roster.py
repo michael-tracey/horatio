@@ -630,6 +630,7 @@ MESSAGES: dict[str, str] = {
     "troupe.court_history": "{actor} set the court over time to show to {who}.",
     "troupe.chronicle": "{actor} set the chronicle to show to {who}.",
     "troupe.play_tabs": "{actor} set the Play View's tabs for players: {tabs}.",
+    "troupe.getting_ready": "{actor} {what} Getting your troupe ready on the Overview.",
     "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
     "scene.created": "{actor} made the scene {name}.",
     "scene.renamed": "{actor} renamed the scene {old} to {name}.",
