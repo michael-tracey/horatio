@@ -4205,8 +4205,15 @@
       },
       "BackupStock": {
         "additionalProperties": false,
-        "description": "What a Stock NPC has in place of a sheet: its rating and specializations.",
+        "description": "What a Stock NPC has in place of a sheet: its rating and specializations, and\nhow many it stands for (issue #1056).",
         "properties": {
+          "count": {
+            "default": 1,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Count",
+            "type": "integer"
+          },
           "rating": {
             "maximum": 20.0,
             "minimum": 1.0,
@@ -27768,6 +27775,25 @@
         "title": "ItemExpiryOut",
         "type": "object"
       },
+      "ItemMemberIn": {
+        "properties": {
+          "member": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member"
+          }
+        },
+        "title": "ItemMemberIn",
+        "type": "object"
+      },
       "ItemSpend": {
         "properties": {
           "item": {
@@ -33773,7 +33799,7 @@
           "stock": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/StockFields"
+                "$ref": "#/components/schemas/NewStock"
               },
               {
                 "type": "null"
@@ -33898,6 +33924,43 @@
           "name"
         ],
         "title": "NewScene",
+        "type": "object"
+      },
+      "NewStock": {
+        "properties": {
+          "count": {
+            "default": 1,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "rating": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "specializations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Specialization"
+            },
+            "maxItems": 20,
+            "title": "Specializations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "NewStock",
         "type": "object"
       },
       "NewTitle": {
@@ -34631,6 +34694,17 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "stock_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Count"
           },
           "stock_rating": {
             "anyOf": [
@@ -38716,6 +38790,14 @@
               "$ref": "#/components/schemas/EquipmentItemOut"
             },
             "title": "Stock Items",
+            "type": "array"
+          },
+          "stock_members": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/StockMemberOut"
+            },
+            "title": "Stock Members",
             "type": "array"
           },
           "summons": {
@@ -46786,6 +46868,17 @@
             "title": "Splat",
             "type": "string"
           },
+          "stock_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Count"
+          },
           "stock_rating": {
             "anyOf": [
               {
@@ -52398,39 +52491,21 @@
         "title": "StepOut",
         "type": "object"
       },
-      "StockFields": {
-        "description": "What a Stock NPC has in place of a sheet (MET: VTM pp. 489\u2013490).",
-        "properties": {
-          "notes": {
-            "default": "",
-            "maxLength": 10000,
-            "title": "Notes",
-            "type": "string"
-          },
-          "rating": {
-            "maximum": 20.0,
-            "minimum": 1.0,
-            "title": "Rating",
-            "type": "integer"
-          },
-          "specializations": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/Specialization"
-            },
-            "maxItems": 20,
-            "title": "Specializations",
-            "type": "array"
-          }
-        },
-        "required": [
-          "rating"
-        ],
-        "title": "StockFields",
-        "type": "object"
-      },
       "StockIn": {
         "properties": {
+          "count": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
           "custom_kind": {
             "anyOf": [
               {
@@ -52474,12 +52549,48 @@
         "title": "StockIn",
         "type": "object"
       },
+      "StockMemberOut": {
+        "description": "One member of a group of Stock NPCs at this game (issue #1056), tapped as\n\"member:<n>/health\" and \"member:<n>/blood\". Its health levels are the stat\nblock's; with every one marked it is out of the fight (MET: VTM p. 490).",
+        "properties": {
+          "blood": {
+            "$ref": "#/components/schemas/Tracker"
+          },
+          "marks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Marks",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "number",
+          "name",
+          "marks",
+          "blood"
+        ],
+        "title": "StockMemberOut",
+        "type": "object"
+      },
       "StockNpcOut": {
         "properties": {
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
             "type": "string"
+          },
+          "count": {
+            "default": 1,
+            "title": "Count",
+            "type": "integer"
           },
           "custom_kind": {
             "anyOf": [
@@ -52490,6 +52601,14 @@
                 "type": "null"
               }
             ]
+          },
+          "item_members": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "default": {},
+            "title": "Item Members",
+            "type": "object"
           },
           "kind": {
             "$ref": "#/components/schemas/NpcKindOut"
@@ -52550,6 +52669,11 @@
             "format": "uuid",
             "title": "Character Id",
             "type": "string"
+          },
+          "count": {
+            "default": 1,
+            "title": "Count",
+            "type": "integer"
           },
           "name": {
             "title": "Name",
@@ -69850,7 +69974,7 @@
         ]
       },
       "put": {
-        "description": "Change a Stock NPC's kind, rating, specializations and notes.",
+        "description": "Change a Stock NPC's kind, rating, specializations and notes, and how many it\nstands for.",
         "operationId": "set_stock_api_characters__character_id__npc_stock_put",
         "parameters": [
           {
@@ -69897,6 +70021,70 @@
           }
         },
         "summary": "Set Stock",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/npc/stock/items/{item_id}": {
+      "put": {
+        "description": "Say which member of a group of Stock NPCs carries one of its items, or that\nthe group as a whole does (issue #1056).",
+        "operationId": "set_item_member_api_characters__character_id__npc_stock_items__item_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemMemberIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockNpcOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Item Member",
         "tags": [
           "npcs"
         ]

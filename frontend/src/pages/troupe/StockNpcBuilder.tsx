@@ -7,11 +7,11 @@ import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Select, Textarea } from "../../components/ui";
 import { BackLink } from "../../components/BackLink";
 import { useAction } from "../../hooks";
-import { EquipmentTab } from "../character/EquipmentTab";
+import { EquipmentTab, useCharacterEquipment } from "../character/EquipmentTab";
 import { GiveEquipment } from "../character/GiveEquipment";
 import { CharacterPicture } from "../character/Picture";
 import { type NpcKind, groupedKinds, kindPages, resourceText } from "./npcKinds";
-import { allowedPowers, expandPower, INFERNAL_INVESTMENT } from "./stockNpcs";
+import { allowedPowers, expandPower, GROUP_MAX, INFERNAL_INVESTMENT } from "./stockNpcs";
 import { useCatalogue } from "../../catalogue";
 
 type StockNpc = components["schemas"]["StockNpcOut"];
@@ -20,7 +20,8 @@ type Specialization = components["schemas"]["Specialization"];
 /**
  * A Stock NPC's builder (MET: VTM pp. 489–490): name, kind, rating, specializations,
  * notes and picture, with the book's stat block as the server works it out. Every
- * change is saved as it is made, so the stat block is always the saved NPC's.
+ * change is saved as it is made, so the stat block is always the saved NPC's. It
+ * can stand for a group of identical ones (#1056), played on one card.
  */
 export function StockNpcBuilder({ troupeId }: { troupeId: string }) {
   const { characterId = "" } = useParams();
@@ -77,7 +78,7 @@ function Builder({
   useEffect(() => setNotes(stock.notes), [stock.notes]);
 
   // Each change goes to the server with the rest as it is saved.
-  const save = useAction(async (changes: Partial<{ npc_kind: string; rating: number; specializations: Specialization[]; notes: string }>) => {
+  const save = useAction(async (changes: Partial<{ npc_kind: string; rating: number; count: number; specializations: Specialization[]; notes: string }>) => {
     await unwrap(
       api.PUT("/api/characters/{character_id}/npc/stock", {
         ...path,
@@ -134,7 +135,7 @@ function Builder({
                 </form>
               </div>
               <ErrorText error={rename.error} />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Field label="Kind">
                   <Select value={stock.npc_kind} disabled={save.isPending} onChange={(e) => save.mutate({ npc_kind: e.target.value })}>
                     {groupedKinds(choosable).map((g) => (
@@ -153,6 +154,15 @@ function Builder({
                     {Array.from({ length: kind.rating_max }, (_, i) => i + 1).map((r) => (
                       <option key={r} value={r}>
                         {r}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="How many" hint="More than 1: a group on one card, a health track each.">
+                  <Select value={stock.count} disabled={save.isPending} onChange={(e) => save.mutate({ count: Number(e.target.value) })}>
+                    {Array.from({ length: GROUP_MAX }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>
+                        {n}
                       </option>
                     ))}
                   </Select>
@@ -233,7 +243,7 @@ function Builder({
               </form>
             </div>
           </Card>
-          <StockEquipment character={character} />
+          <StockEquipment character={character} stock={stock} refresh={refresh} />
           <Card title="Notes">
             <Textarea aria-label="Notes" rows={4} maxLength={10000} value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => notes !== stock.notes && save.mutate({ notes })} />
           </Card>
@@ -241,7 +251,13 @@ function Builder({
         <div className="flex flex-col gap-6">
           <StatBlock stock={stock} />
           <RulesCard kind={kind} />
-          <MakeSheeted stock={stock} character={character} path={path} refresh={refresh} />
+          {stock.count > 1 ? (
+            <Card title="Full sheet">
+              <p className="text-sm text-mist">A group can't become one sheet. Set How many to 1 first to give it a full Vampire-rules sheet.</p>
+            </Card>
+          ) : (
+            <MakeSheeted stock={stock} character={character} path={path} refresh={refresh} />
+          )}
         </div>
       </div>
     </>
@@ -254,15 +270,60 @@ function Builder({
  * back from the troupe's. The book has no rule for a Stock NPC's items: its sample
  * Stock NPCs list their equipment beside a test pool that is still rating × 2
  * (Vol. 2 pp. 319–325), so items leave the stat block alone and each says what it does.
+ * A group's items are the group's, or one member's, as staff choose (#1056).
  */
-function StockEquipment({ character }: { character: components["schemas"]["CharacterOut"] }) {
+function StockEquipment({ character, stock, refresh }: { character: components["schemas"]["CharacterOut"]; stock: StockNpc; refresh: () => Promise<void> }) {
   return (
     <Card title="Equipment" actions={character.status === "active" && <GiveEquipment character={character} />}>
       <div className="flex flex-col gap-3">
         <p className="text-sm text-mist">Items don't change its test pool: each says what it does, to add when it's used.</p>
+        {stock.count > 1 && <WhoCarries stock={stock} refresh={refresh} />}
         <EquipmentTab character={character} inCard />
       </div>
     </Card>
+  );
+}
+
+/** Which member of a group carries each item, or the whole group (#1056), chosen and saved item by item. */
+function WhoCarries({ stock, refresh }: { stock: StockNpc; refresh: () => Promise<void> }) {
+  const held = useCharacterEquipment(stock.character_id);
+  const carry = useAction(async ({ item, member }: { item: string; member: number | null }) => {
+    await unwrap(
+      api.PUT("/api/characters/{character_id}/npc/stock/items/{item_id}", {
+        params: { path: { character_id: stock.character_id, item_id: item } },
+        body: { member },
+      }),
+    );
+    await refresh();
+  });
+  const items = held.data?.items ?? [];
+  if (items.length === 0) return null;
+  return (
+    <section aria-label="Who carries what" className="flex flex-col gap-2 rounded-md border border-ash p-3">
+      <h3 className="text-sm text-gold">Who carries what</h3>
+      <ul className="flex flex-col gap-2">
+        {items.map((item) => (
+          <li key={item.id} className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm">{item.name}</span>
+            <Select
+              aria-label={`Who carries ${item.name}`}
+              className="w-auto"
+              value={stock.item_members[item.id] ?? ""}
+              disabled={carry.isPending}
+              onChange={(e) => carry.mutate({ item: item.id, member: e.target.value ? Number(e.target.value) : null })}
+            >
+              <option value="">The whole group</option>
+              {Array.from({ length: stock.count }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  Member {n}
+                </option>
+              ))}
+            </Select>
+          </li>
+        ))}
+      </ul>
+      <ErrorText error={carry.error ?? held.error} />
+    </section>
   );
 }
 

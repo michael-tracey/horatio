@@ -216,7 +216,7 @@ Each character's **⋯**, at the end of its row, holds what you can do for it, p
 
 ## NPCs
 
-NPCs belong to the troupe, need no approval and take no part in downtimes. Choose **NPCs** on the [Roster](#the-roster) to see them; the old **NPCs** tab's address opens it there. Each row shows the NPC's kind, its form (sheeted or stock), a Stock NPC's rating, and whether it is listed on the Who's Who; choose a heading to sort by it. On a phone these fold in under the name. Filter the NPCs by kind and by form, or open an NPC by its name. The search, the filter, printing and each NPC's [**⋯**](#each-characters-actions) work as for player characters.
+NPCs belong to the troupe, need no approval and take no part in downtimes. Choose **NPCs** on the [Roster](#the-roster) to see them; the old **NPCs** tab's address opens it there. Each row shows the NPC's kind, its form (sheeted or stock, and how many in a group), a Stock NPC's rating, and whether it is listed on the Who's Who; choose a heading to sort by it. On a phone these fold in under the name. Filter the NPCs by kind and by form, or open an NPC by its name. The search, the filter, printing and each NPC's [**⋯**](#each-characters-actions) work as for player characters.
 
 ![The Roster showing NPCs, with the New NPC form open.](images/running-a-troupe/npcs.png)
 
@@ -227,7 +227,7 @@ With **NPCs** or **Everyone** shown, choose **New NPC**:
 1. Give it a **Name** and choose its **Kind** (a vampire, a ghoul, a mortal and others, or a custom kind you describe).
 2. Choose its **Form**:
    - **Sheeted**: a full sheet. **Quick build** sets ratings directly, with a running tally of what the NPC is worth (its merits at what they'd cost a player character, and its flaws giving up to the troupe's budget for them); **Use step-by-step creation** builds it as a player would.
-   - **Stock**: no sheet, only a rating and a few specialisations, as the book's Stock NPCs have. Choose its **Rating**, from 1 to the kind's highest.
+   - **Stock**: no sheet, only a rating and a few specialisations, as the book's Stock NPCs have. Choose its **Rating**, from 1 to the kind's highest, and **How many**: more than 1 makes a [group](#a-group-of-stock-npcs), such as four shovelheads, played on one card.
 3. Choose **Quick build**, **Use step-by-step creation** or **Make Stock NPC**. A Stock NPC opens on [its own page](#stock-npcs), to add its specialisations and notes.
 
 In the quick build, a trait the NPC holds can carry a detail, as a player's can:
@@ -243,6 +243,12 @@ In the quick build, a trait the NPC holds can carry a detail, as a player's can:
 A Stock NPC's page shows its **Stat block** worked out from its kind and rating, and a rules card for its kind. Change its name, kind or rating, add up to as many **Specialisations** as its rating, and keep **Notes**; each change saves as you make it. **Make this a full sheet…** turns it into a sheeted NPC. That cannot be undone.
 
 Its **Equipment** card lists what it carries. **Give equipment** gives it an item, as for any character, and each item's **Give** and **Discard** pass it on or drop it; change or take one back from [World › Equipment](#equipment). An item doesn't change a Stock NPC's test pool: the book's own sample Stock NPCs list their equipment beside a pool that is still twice their rating (Vol. 2 pp. 319–325). Each item says what it does instead, a weapon's damage and what its qualities give, to add when it's used. Its Play View and its card in a scene show the same.
+
+#### A group of Stock NPCs
+
+A Stock NPC can stand for a group of identical ones: set **How many** on New NPC or on its page, up to 20. They share the one stat block, and each member has its own health levels and its kind's resource. In a scene and in its Play View the group is one card, with a row for each member: tap its damage, healing and resource there. A member with every health level marked is struck off, out of the fight (MET: VTM p. 490), and the card says how many are still standing. **Reset** brings every member back.
+
+In a group, **Who carries what** on its Equipment card gives each item to one member or leaves it with the whole group; the card in play lists each member's under that member. The book has no rule for groups: each member is simply a Stock NPC, like the Blood Brother who is one of four with an identical sheet (p. 504). A Blood Brothers' gestalt (p. 504) is a different thing, one Stock NPC rated for all of them. A group can't be made a full sheet: set **How many** to 1 first.
 
 ### Giving an NPC to a player
 
@@ -1309,7 +1315,7 @@ If an award takes a character past the monthly figure, Horatio warns you (or, wi
 
 ### Scenes
 
-**Games › Scenes** (or **Open the scenes** on the At game tab) puts several characters on one page, side by side, to run a scene: tap Blood, Willpower, health and Beast traits for each, with Undo and the log. Stock NPCs show their pool and resource to tap, and what they carry.
+**Games › Scenes** (or **Open the scenes** on the At game tab) puts several characters on one page, side by side, to run a scene: tap Blood, Willpower, health and Beast traits for each, with Undo and the log. Stock NPCs show their pool and resource to tap, and what they carry; a group of them shows a row for each member.
 
 - A line at the top of the Scenes page and of each scene leads back: the troupe, its **At game** tab, then **Scenes**.
 - Make a scene with **Name of a new scene**, then find characters and NPCs by name to put them in it.

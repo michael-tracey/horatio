@@ -75,8 +75,8 @@ function AuditLogForm({ settings }: { settings: Settings }) {
             <p className="text-mist">
               Each change in the log has a level. <strong className="text-parchment">Notice</strong> ones, such as suspensions, merges, deletions and what Horatio
               reads back as history, are kept forever. <strong className="text-parchment">Info</strong> ones are most changes, as troupes see them in their logs.{" "}
-              <strong className="text-parchment">Debug</strong> ones are routine: signing in and out, failed sign-ins and signing up. They show only in Custodian ›
-              Audit. Once a day Horatio deletes the debug and info events older than you keep them.
+              <strong className="text-parchment">Debug</strong> ones are routine: signing in and out, failed sign-ins, signing up, and attempts turned away for too
+              many from one place. They show only in Custodian › Audit. Once a day Horatio deletes the debug and info events older than you keep them.
             </p>
             <label className="flex items-start gap-2">
               <input type="checkbox" className="mt-1" checked={debug} onChange={(e) => setDebug(e.target.checked)} />
@@ -88,7 +88,7 @@ function AuditLogForm({ settings }: { settings: Settings }) {
                 <span>Record IP addresses with sign-in events</span>
               </label>
               <p id="audit-ips-hint" className="ml-6 text-mist">
-                Where each sign-in, failed sign-in, sign-out and sign-up came from. These are debug events, so an address is kept only while debug events are
+                Where each sign-in, failed sign-in, sign-out, sign-up and attempt turned away came from. These are debug events, so an address is kept only while debug events are
                 recorded, and only as long as debug events are kept.
               </p>
             </div>

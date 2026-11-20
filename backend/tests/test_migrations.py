@@ -1058,7 +1058,7 @@ def test_the_troupe_join_migration_makes_visiting_info_again(
 ) -> None:
     """Migration 0243 (#1066): 0239 made a character starting to visit a troupe a
     debug event; it is info again, and only it changes."""
-    command.downgrade(alembic_config, "0239")
+    command.downgrade(alembic_config, "0242")
     joined, signed_in = uuid.uuid4(), uuid.uuid4()
     try:
         with engine.begin() as connection:

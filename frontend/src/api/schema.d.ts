@@ -2857,9 +2857,31 @@ export interface paths {
         get: operations["read_stock_api_characters__character_id__npc_stock_get"];
         /**
          * Set Stock
-         * @description Change a Stock NPC's kind, rating, specializations and notes.
+         * @description Change a Stock NPC's kind, rating, specializations and notes, and how many it
+         *     stands for.
          */
         put: operations["set_stock_api_characters__character_id__npc_stock_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/npc/stock/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Item Member
+         * @description Say which member of a group of Stock NPCs carries one of its items, or that
+         *     the group as a whole does (issue #1056).
+         */
+        put: operations["set_item_member_api_characters__character_id__npc_stock_items__item_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -15530,9 +15552,15 @@ export interface components {
         };
         /**
          * BackupStock
-         * @description What a Stock NPC has in place of a sheet: its rating and specializations.
+         * @description What a Stock NPC has in place of a sheet: its rating and specializations, and
+         *     how many it stands for (issue #1056).
          */
         BackupStock: {
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
             /** Rating */
             rating: number;
             /**
@@ -24451,6 +24479,11 @@ export interface components {
             /** On */
             on: boolean;
         };
+        /** ItemMemberIn */
+        ItemMemberIn: {
+            /** Member */
+            member?: number | null;
+        };
         /** ItemSpend */
         ItemSpend: {
             /** Item */
@@ -26898,7 +26931,7 @@ export interface components {
              * @default vampire
              */
             splat: string;
-            stock?: components["schemas"]["StockFields"] | null;
+            stock?: components["schemas"]["NewStock"] | null;
             /**
              * Wizard
              * @default false
@@ -26948,6 +26981,26 @@ export interface components {
             characters?: string[];
             /** Name */
             name: string;
+        };
+        /** NewStock */
+        NewStock: {
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Rating */
+            rating: number;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: components["schemas"]["Specialization"][];
         };
         /** NewTitle */
         NewTitle: {
@@ -27225,6 +27278,8 @@ export interface components {
             splat: string;
             /** Status */
             status: string;
+            /** Stock Count */
+            stock_count?: number | null;
             /** Stock Rating */
             stock_rating: number | null;
         };
@@ -28915,6 +28970,11 @@ export interface components {
              * @default []
              */
             stock_items: components["schemas"]["EquipmentItemOut"][];
+            /**
+             * Stock Members
+             * @default []
+             */
+            stock_members: components["schemas"]["StockMemberOut"][];
             /**
              * Summons
              * @default []
@@ -32102,6 +32162,8 @@ export interface components {
             social_age: string;
             /** Splat */
             splat: string;
+            /** Stock Count */
+            stock_count?: number | null;
             /** Stock Rating */
             stock_rating: number | null;
             /** Titles */
@@ -34220,26 +34282,10 @@ export interface components {
             /** Step */
             step: number;
         };
-        /**
-         * StockFields
-         * @description What a Stock NPC has in place of a sheet (MET: VTM pp. 489–490).
-         */
-        StockFields: {
-            /**
-             * Notes
-             * @default
-             */
-            notes: string;
-            /** Rating */
-            rating: number;
-            /**
-             * Specializations
-             * @default []
-             */
-            specializations: components["schemas"]["Specialization"][];
-        };
         /** StockIn */
         StockIn: {
+            /** Count */
+            count?: number | null;
             custom_kind?: components["schemas"]["CustomKind"] | null;
             /**
              * Notes
@@ -34256,6 +34302,21 @@ export interface components {
              */
             specializations: components["schemas"]["Specialization"][];
         };
+        /**
+         * StockMemberOut
+         * @description One member of a group of Stock NPCs at this game (issue #1056), tapped as
+         *     "member:<n>/health" and "member:<n>/blood". Its health levels are the stat
+         *     block's; with every one marked it is out of the fight (MET: VTM p. 490).
+         */
+        StockMemberOut: {
+            blood: components["schemas"]["Tracker"];
+            /** Marks */
+            marks: string[];
+            /** Name */
+            name: string;
+            /** Number */
+            number: number;
+        };
         /** StockNpcOut */
         StockNpcOut: {
             /**
@@ -34263,7 +34324,19 @@ export interface components {
              * Format: uuid
              */
             character_id: string;
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
             custom_kind: components["schemas"]["CustomKind"] | null;
+            /**
+             * Item Members
+             * @default {}
+             */
+            item_members: {
+                [key: string]: number;
+            };
             kind: components["schemas"]["NpcKindOut"];
             /** Notes */
             notes: string;
@@ -34288,6 +34361,11 @@ export interface components {
              * Format: uuid
              */
             character_id: string;
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
             /** Name */
             name: string;
             /** Rating */
@@ -43293,6 +43371,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["StockIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockNpcOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_item_member_api_characters__character_id__npc_stock_items__item_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemMemberIn"];
             };
         };
         responses: {

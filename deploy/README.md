@@ -84,6 +84,35 @@ docker logs --tail 100 horatio-api                   # also in Cloud Logging (gc
 docker exec -it horatio-db psql -U horatio horatio
 ```
 
+## Links with a secret in them
+
+A password reset, an email change, an NPC's claim, an unsubscribe, a calendar and a
+check-in link each carry their secret in the path, and Discord's callback its code in
+the query (#1060). Neither access log keeps them: nginx's (`/var/log/nginx/access.log`,
+in the `horatio` format of `nginx-horatio.conf.j2`) and the app's (uvicorn's, in
+`docker logs` and Cloud Logging) write `REDACTED` in the secret's place, and nginx
+logs only the origin of a Referer. The patterns are in `horatio.secret_links` and
+nginx's `map`; `tests/test_secret_links.py` finds every route with a token or code in
+its path and fails until both cover it. Every answer also sends
+`Referrer-Policy: no-referrer`, so a page opened from such a link never passes its
+address on, to Horatio's own API or to another site.
+
+nginx's error log still names the request when nginx itself fails it (a 502 while the
+app restarts, say), secret and all; its format can't be changed.
+
+Logs from before this change hold the secrets as they were. How long each stays good:
+a reset link 24 hours and once; an email change 7 days; a claim link 30 days, or
+until used; an unsubscribe link until the address changes; a calendar link until its
+person resets it; a check-in code while check-in is open. To clear them, on the host:
+
+```bash
+sudo sh -c 'truncate -s 0 /var/log/nginx/access.log; rm -f /var/log/nginx/access.log.*'
+```
+
+Cloud Logging keeps the app's lines for its bucket's retention (30 days by default),
+and single entries can't be deleted, so they age out. Who can read them is the GCP
+project's Logging viewers.
+
 ## Compression and caching
 
 nginx gzips the app's text responses (`nginx-horatio.conf.j2`): JSON, JavaScript,
@@ -137,6 +166,47 @@ curl -s -o /dev/null -D - -H 'Accept-Encoding: gzip' -b 'horatio_session=…' \
 ```
 
 It shows `etag: W/"…"`; the same with `-H 'If-None-Match: W/"…"'` gives 304.
+
+## Client addresses
+
+The limits on failed sign-ins, sign-ups and reset links (`horatio.auth.attempts`,
+#1059; `horatio.auth.resets`) count by the address a request comes from, and the
+audit log keeps it with sign-in events and reset requests (#1066). nginx says what it
+is in `X-Forwarded-For`, which it sets to the address that reached it
+(`$remote_addr`): one address, never added to a header the client sent. uvicorn
+believes the header only from the addresses in `FORWARDED_ALLOW_IPS`, so no one can
+make up an address of their own by sending one, whether to nginx or to the app's
+port. Anyone else's header is ignored, and the request counts as coming from
+wherever it came from.
+
+nginx reaches the app through its published port, `127.0.0.1:8100`. Docker hands
+that connection on to the container from the gateway of the `horatio` network, so
+that is the address nginx's requests arrive from. `playbook.yml` looks the gateway
+up and sets `FORWARDED_ALLOW_IPS` to it on `horatio-api`; nothing else on the
+network (Postgres) is believed.
+
+Unset, uvicorn believes only loopback, which nginx never is from inside the
+container: every request would then seem to come from the gateway, and the limits
+would count the whole site as one address (and the audit log show the gateway's
+address for everyone). If sign-ins are being turned away for everyone, check it
+with `docker exec horatio-api printenv FORWARDED_ALLOW_IPS`.
+The e2e suite runs with `HORATIO_AUTH_LIMITS=false`, as it signs everyone up from
+one address; nothing else should.
+
+## Security headers
+
+No other site may show Horatio in a frame (#1061): every answer carries
+`Content-Security-Policy: frame-ancestors 'none'` and `X-Frame-Options: DENY`. And
+no page passes its address on (#1060, "Links with a secret in them" above): every
+answer carries `Referrer-Policy: no-referrer`. The app sends them (`horatio.app.SECURITY_HEADERS`), and nginx drops the app's copies and
+sends its own with `always`, so its own error pages (a 502 while the app restarts, a
+413) carry them too, beside HSTS. nginx gives a location the server's `add_header`s
+only while it has none of its own, so a location that adds a header must repeat them
+all. To check it, after a deploy:
+
+```bash
+curl -s -o /dev/null -D - https://horatio.lotslarp.org/ | grep -i -E 'frame|referrer|strict'
+```
 
 ## What is live
 

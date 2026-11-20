@@ -598,3 +598,85 @@ test("a Stock werewolf in a scene: Rage and health tapped on its card and undone
   await expect(p).toHaveURL(new RegExp(`${scene}$`));
   await expect(p.getByRole("article", { name: "Snarls-at-Dusk" }).getByLabel("Rage: 7 of 10")).toBeVisible();
 });
+
+test("a group of four Stock NPCs made from New NPC is one Scene card: two damaged apart, one struck off, and Reset restores them (#1056)", async ({ browser }) => {
+  const custodian = await person(browser, "stockgrp-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "stockgrp-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Shovels ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const p = lead.page;
+
+  // Four shovelheads, rating 2, from New NPC: they open on their own page as a group.
+  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.getByRole("button", { name: "New NPC" }).click();
+  await p.getByLabel("Name").fill("Shovelheads");
+  await p.getByRole("radio", { name: "Stock" }).click();
+  await p.getByLabel("Rating").selectOption("2");
+  await p.getByLabel("How many").selectOption("4");
+  await p.getByRole("button", { name: "Make Stock NPC" }).click();
+  await expect(p.getByRole("heading", { name: "Shovelheads", level: 1 })).toBeVisible();
+  await expect(p.getByLabel("How many")).toHaveValue("4");
+  await expect(p.getByText("A group can't become one sheet.")).toBeVisible();
+  const npc = new URL(p.url()).pathname.split("/").pop()!;
+
+  // A shovel for the second of them, and a lantern left with the group.
+  for (const name of ["Shovel", "Lantern"]) {
+    const item = await p.request.post(`/api/troupes/${troupeId}/equipment`, { headers, data: { character_id: npc, name, kind: name === "Shovel" ? "melee" : "miscellaneous", grade: "cheap", qualities: [] } });
+    expect(item.status(), await item.text()).toBe(201);
+  }
+  await p.reload();
+  const carries = p.getByRole("region", { name: "Who carries what" });
+  await expect(carries.getByLabel("Who carries Lantern")).toHaveValue("");
+  await carries.getByLabel("Who carries Shovel").selectOption({ label: "Member 2" });
+  await expect(carries.getByLabel("Who carries Shovel")).toHaveValue("2");
+  await expect(carries.getByLabel("Who carries Shovel")).toBeEnabled();
+
+  // In a scene they are one card: a row a member, the stat block once.
+  const scene = await p.request.post(`/api/troupes/${troupeId}/scenes`, { headers, data: { name: "Dig site", characters: [npc] } });
+  expect(scene.status(), await scene.text()).toBe(201);
+  await p.goto(`/play/troupes/${troupeId}/scenes/${(await scene.json()).id}`);
+  const card = p.getByRole("article", { name: "Shovelheads" });
+  await expect(card).toContainText("Stock NPC · Vampire · rating 2 · a group of 4");
+  await expect(card).toContainText("4 of 4 standing");
+  await expect(card).toContainText("Test pool 4 in most challenges");
+  const member = (n: number) => card.getByRole("listitem", { name: `Member ${n}`, exact: true });
+  await expect(member(2).getByRole("list", { name: "Carries" })).toContainText("Shovel");
+  await expect(card.getByRole("list", { name: "The group carries" })).toContainText("Lantern");
+
+  // Member 1 takes a wound, member 3 two aggravated: struck off, out of the fight.
+  await member(1).getByRole("button", { name: "+ Normal" }).click();
+  await member(3).getByRole("button", { name: "+ Aggravated" }).click();
+  await member(3).getByRole("button", { name: "+ Aggravated" }).click();
+  await member(4).getByRole("button", { name: "Spend Blood" }).click();
+  await expect(member(1).getByLabel("Health: 1 of 2 marked")).toBeVisible();
+  await expect(member(2).getByLabel("Health: 0 of 2 marked")).toBeVisible();
+  await expect(member(3).getByLabel("Health: 2 of 2 marked")).toBeVisible();
+  await expect(member(3)).toContainText("Out of the fight");
+  await expect(member(3).getByRole("button", { name: "+ Normal" })).toBeDisabled();
+  await expect(member(4).getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(card).toContainText("3 of 4 standing");
+  await expect(card.getByRole("status")).toHaveText("Saved");
+  await card.getByRole("button", { name: /^Log/ }).click();
+  await expect(card).toContainText("Member 3: took 1 aggravated (1 → 2 marked)");
+  await expect(card).toContainText("Member 1: took 1 normal (0 → 1 marked)");
+  await p.screenshot(shots("stock-group-scene-card"));
+
+  // Its full Play View has the same members.
+  await card.getByRole("link", { name: "Open the full Play View of Shovelheads" }).click();
+  await expect(p.getByText("Stock NPC · Vampire · rating 2 · a group of 4")).toBeVisible();
+  await expect(p.getByRole("listitem", { name: "Member 3", exact: true })).toContainText("Out of the fight");
+  await expect(p.getByRole("listitem", { name: "Member 1", exact: true }).getByLabel("Health: 1 of 2 marked")).toBeVisible();
+  expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await p.getByRole("link", { name: "← Back to the scene" }).click();
+
+  // Reset on the card brings every member back.
+  await card.getByRole("button", { name: /^Reset/ }).click();
+  await card.getByRole("button", { name: "Reset for next game…" }).click();
+  await card.getByRole("button", { name: "Reset for next game", exact: true }).click();
+  for (const n of [1, 2, 3, 4]) await expect(member(n).getByLabel("Health: 0 of 2 marked")).toBeVisible();
+  await expect(member(4).getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(card).toContainText("4 of 4 standing");
+});

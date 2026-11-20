@@ -73,6 +73,8 @@ class RosterEntry(BaseModel):
     npc_kind_name: str | None
     npc_form: str | None
     stock_rating: int | None
+    # How many a Stock NPC stands for (issue #1056); None for anyone else.
+    stock_count: int | None = None
     # Staff list the NPC on the troupe's Who's Who though it holds no title there.
     on_whos_who: bool
     # When the NPC's open claim link expires (horatio.npc_gifts), if it has one.
@@ -153,8 +155,8 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         )
     )
     npc_ids = [c.id for _, c, _ in rows if c.kind == "npc"]
-    stock_ratings = {
-        row.character_id: row.rating
+    stock_rows = {
+        row.character_id: row
         for row in db.scalars(select(StockNpc).where(StockNpc.character_id.in_(npc_ids)))
     }
     claims = {
@@ -183,7 +185,8 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             npc_kind=c.npc_kind if c.kind == "npc" else None,
             npc_kind_name=kind_name(c.npc_kind, c.npc_custom_kind) if c.kind == "npc" else None,
             npc_form=c.npc_form if c.kind == "npc" else None,
-            stock_rating=stock_ratings.get(c.id),
+            stock_rating=stock_rows[c.id].rating if c.id in stock_rows else None,
+            stock_count=stock_rows[c.id].count if c.id in stock_rows else None,
             on_whos_who=c.kind == "npc" and c.on_whos_who,
             claim_expires_at=claims.get(c.id),
             titles=held[c.id],
@@ -565,6 +568,8 @@ MESSAGES: dict[str, str] = {
     "character.copied_as_npc": "{actor} made the NPC {npc} from a copy of {character}, which"
     " stays as it was.",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
+    "npc.stock_item_member": "{actor} set who carries {item} in the Stock NPC group"
+    " {character}: {member}.",
     "npc.pick_placed": "{actor} placed a creation pick of {pick} on {name} for the NPC"
     " {character}.",
     "npc.pick_taken_off": "{actor} took the creation pick off {name} for the NPC {character}.",
@@ -719,8 +724,8 @@ MESSAGES: dict[str, str] = {
     "account.reset_sent": "{actor} emailed {member} their reset link.",
     "account.reset_sent.self": "Horatio emailed {member} the reset link they asked for.",
     "account.reset_email_failed": "Horatio could not email {member} a reset link: {error}",
-    "account.reset_requested": "{actor} asked for a password reset link.",
-    "account.reset_requested.unknown": "Someone asked for a reset link for {email}; "
+    "account.reset_requested": "{actor} asked for a password reset link{from_ip}.",
+    "account.reset_requested.unknown": "Someone asked for a reset link for {email}{from_ip}; "
     "no account uses it.",
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
@@ -731,6 +736,12 @@ MESSAGES: dict[str, str] = {
     "account.sign_in_failed": "Someone failed to sign in as {member}{from_ip}: wrong password.",
     "account.sign_in_failed.unknown": "Someone failed to sign in{from_ip} to an account that"
     " doesn't exist.",
+    "account.sign_in_throttled": "Someone was turned away from signing in as {member}{from_ip}:"
+    " too many failed sign-ins from where they were.",
+    "account.sign_in_throttled.unknown": "Someone was turned away from signing in{from_ip} to an"
+    " account that doesn't exist: too many failed sign-ins from where they were.",
+    "account.sign_up_throttled": "Someone was turned away from signing up{from_ip}: too many"
+    " sign-ups from where they were.",
     "account.suspended": "{actor} suspended {member}{because}.",
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
@@ -1117,7 +1128,8 @@ def message(
     values.setdefault("troupe", "this troupe")
     # Entries from before the character it was done as was kept with them (#987).
     values.setdefault("acting", "")
-    # Where a sign-in came from, while the custodian keeps it (#1066): " from 203.0.113.7".
+    # Where a sign-in came from, while the custodian keeps it, or a reset request (#1066):
+    # " from 203.0.113.7".
     values["from_ip"] = f" from {data['ip']}" if data.get("ip") else ""
     # Given at a Play View game: " at game 3".
     values["at_game"] = f" at game {data['game']}" if data.get("game") else ""

@@ -286,13 +286,15 @@ CLIENT = "203.0.113.7"
 PROXY = "172.18.0.1"
 
 
-def behind_nginx() -> TestClient:
-    """A client signing in through nginx: uvicorn runs with --proxy-headers
-    (Dockerfile), and nginx sets X-Forwarded-For to the address that reached it."""
+def behind_nginx(forwarded_for: str = CLIENT) -> TestClient:
+    """A client signing in through nginx, as production runs: uvicorn with
+    --proxy-headers (Dockerfile), believing X-Forwarded-For only from the docker
+    network's gateway (FORWARDED_ALLOW_IPS, deploy/playbook.yml), and nginx setting
+    the header to the address that reached it (deploy/nginx-horatio.conf.j2)."""
     return TestClient(
-        cast(Any, ProxyHeadersMiddleware(cast(Any, app), trusted_hosts="*")),
+        cast(Any, ProxyHeadersMiddleware(cast(Any, app), trusted_hosts=PROXY)),
         base_url="http://testserver/api",
-        headers={"X-Horatio": "1", "X-Forwarded-For": CLIENT},
+        headers={"X-Horatio": "1", "X-Forwarded-For": forwarded_for},
         client=(PROXY, 50000),
     )
 
@@ -326,6 +328,14 @@ def test_sign_in_events_keep_the_clients_ip_address_while_the_custodian_says(
         f"Someone failed to sign in from {CLIENT} to an account that doesn't exist."
     ]
 
+    # Were nginx to add its address to one the client made up, the made-up one would
+    # still not be taken: only the gateway is believed, and the client is the last
+    # address not the gateway's.
+    with behind_nginx(f"192.0.2.66, {CLIENT}") as client:
+        body = {"login": "traced@example.com", "password": PASSWORD}
+        assert client.post("/auth/login", json=body).status_code == 200
+    assert events(session, "account.signed_in")[-1].data["ip"] == CLIENT
+
     # Off: at once, and only sign-in events go without; a reset request keeps its own.
     set_log(troupe.custodian, record="debug", sign_in_ips=False)
     with behind_nginx() as client:
@@ -339,8 +349,10 @@ def test_sign_in_events_keep_the_clients_ip_address_while_the_custodian_says(
 
 def test_nginx_tells_the_app_who_the_client_is() -> None:
     """nginx sets X-Forwarded-For to the address that reached it, rather than adding
-    it to one the client sent: uvicorn takes the first address in the header, so one
-    the client made up would be taken for theirs."""
+    it to one the client sent. uvicorn believes the header only from the gateway, so
+    takes the last address in it; with one address only, there is nothing else it
+    could take, even were it to believe everyone again (--forwarded-allow-ips "*",
+    when it takes the first)."""
     conf = (Path(__file__).parents[2] / "deploy" / "nginx-horatio.conf.j2").read_text()
     proxied = conf.count("proxy_pass ")
     assert proxied >= 3

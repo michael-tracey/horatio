@@ -11,13 +11,14 @@ werewolf, all on the Vampire rule set, and a form: sheeted, with a full sheet as
 above, or stock, with only an NPC rating and specializations (horatio.rules.stock).
 """
 
+import uuid
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from fastapi import HTTPException
-from sqlalchemy import select
+from fastapi import HTTPException, status
+from sqlalchemy import ColumnElement, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, creation_xp, npc_picks, sect_status
@@ -25,6 +26,7 @@ from horatio.creation import grant_starting_traits
 from horatio.models import (
     Character,
     CharacterTrait,
+    EquipmentItem,
     StockNpc,
     Troupe,
     TroupeMembership,
@@ -164,11 +166,16 @@ def set_stock(
     rating: int,
     specializations: Sequence[stock.Specialization],
     notes: str,
+    count: int = 1,
 ) -> None:
     """Change a Stock NPC: its kind, rating, specializations and notes, as the
-    Stock NPC rules allow them (horatio.rules.stock). Its skills, disciplines and
-    paths are the Vampire rule set's, under its troupe's house rules."""
+    Stock NPC rules allow them (horatio.rules.stock), and how many it stands for
+    (issue #1056). Its skills, disciplines and paths are the Vampire rule set's,
+    under its troupe's house rules. Items a member gone from a smaller group
+    carried are the group's."""
     row = stock_of(db, npc)
+    if not 1 <= count <= stock.GROUP_MAX:
+        raise unprocessable(f"A group of Stock NPCs has 1 to {stock.GROUP_MAX} members.")
     kind = resolve_kind(npc_kind, custom)
     rule_set = read_troupe_rules(db, "vampire", npc.owner_troupe_id).rule_set
     names = {
@@ -185,8 +192,57 @@ def set_stock(
     row.rating = rating
     row.specializations = [{"type": s.type, "name": s.name} for s in specializations]
     row.notes = notes
+    row.count = count
+    row.item_members = {k: n for k, n in row.item_members.items() if n <= count}
     db.flush()
     audit.record(db, staff, "npc.stock_changed", troupe_id=npc.owner_troupe_id, character_id=npc.id)
+
+
+def member_name(number: int) -> str:
+    """A member of a group of Stock NPCs, as the Play View and log name it."""
+    return f"Member {number}"
+
+
+def item_members(db: Session, npc: Character, row: StockNpc) -> dict[str, int]:
+    """Which member of a group carries each item it holds now, by the item's id;
+    an item not here is the group's. Empty for a single Stock NPC."""
+    if row.count < 2:
+        return {}
+    held = {str(i) for i in db.scalars(select(EquipmentItem.id).where(held_by(npc)))}
+    return {k: n for k, n in row.item_members.items() if k in held and n <= row.count}
+
+
+def held_by(npc: Character) -> ColumnElement[bool]:
+    return (EquipmentItem.character_id == npc.id) & (EquipmentItem.status == "held")
+
+
+def set_item_member(
+    db: Session, staff: User, npc: Character, item_id: uuid.UUID, member: int | None
+) -> None:
+    """Say which member of a group of Stock NPCs carries one of its items, or None
+    for the group as a whole (issue #1056)."""
+    row = stock_of(db, npc)
+    item = db.scalar(select(EquipmentItem).where(EquipmentItem.id == item_id, held_by(npc)))
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"{npc.name} doesn't hold that item.")
+    if member is not None and not 1 <= member <= row.count:
+        raise unprocessable(
+            f"{npc.name} has {row.count} member{'s' if row.count != 1 else ''}: no member {member}."
+        )
+    found = {k: n for k, n in row.item_members.items() if k != str(item_id)}
+    if member is not None:
+        found[str(item_id)] = member
+    row.item_members = found
+    db.flush()
+    audit.record(
+        db,
+        staff,
+        "npc.stock_item_member",
+        troupe_id=npc.owner_troupe_id,
+        character_id=npc.id,
+        item=item.name,
+        member=member_name(member) if member is not None else "the whole group",
+    )
 
 
 def set_rating(
@@ -417,6 +473,10 @@ def make_sheeted(db: Session, staff: User, npc: Character) -> Conversion:
     a sheeted NPC has no use for it, and its notes, rating and specializations are
     kept in the log entry. It cannot be turned back."""
     row, block = stat_block(db, npc)
+    if row.count > 1:
+        raise conflict(
+            f"{npc.name} is a group of {row.count}: make it one Stock NPC before giving it a sheet."
+        )
     kind = kind_of(npc)
     specializations = specializations_of(row)
     rules = rules_for(db, npc)

@@ -59,6 +59,12 @@ handles are unique.
 **`sessions`**: server-side sessions behind an HTTP-only cookie.
 `user_id`, `token_hash`, `expires_at`, `revoked_at`.
 
+**`auth_attempts`**: sign-ins and sign-ups tried, counted against the limits on
+them (`horatio.auth.attempts`). `action` (`sign_in` | `sign_up`), `identity_hash`
+(a sign-in's login, hashed; never what was typed), `ip_address` (an IP address,
+or an IPv6 /64). A successful sign-in deletes its login's tries from that
+address; every row is deleted once a day old.
+
 **`password_resets`**: one-time links the custodian makes for someone locked out.
 `user_id`, `token_hash` (unique), `expires_at` (a day on), `created_by_id` →
 users. At most one per user: a new link deletes the old, and using it deletes

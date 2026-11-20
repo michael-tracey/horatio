@@ -240,7 +240,9 @@ def test_a_stock_npc_is_pinned_with_its_rating(troupe: Troupe) -> None:
     scene = new_scene(troupe.storyteller, troupe, "Gate", characters=[lucien, guard])
 
     assert scene["characters"] == [lucien, guard]
-    assert scene["stock"] == [{"character_id": guard, "name": "Ghoul guard", "rating": 2}]
+    assert scene["stock"] == [
+        {"character_id": guard, "name": "Ghoul guard", "rating": 2, "count": 1}
+    ]
 
 
 def test_removing_a_scene_leaves_its_characters_and_their_play(troupe: Troupe) -> None:
