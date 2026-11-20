@@ -127,12 +127,12 @@ export function EquipmentTab({
  * What a Stock NPC carries, at a glance on its Scene card (#1043): weapons first,
  * each with its facts and what each quality does at the table. Nothing for none.
  */
-export function CarriedItems({ items }: { items: EquipmentItemOut[] }) {
+export function CarriedItems({ items, title = "Carries" }: { items: EquipmentItemOut[]; title?: string }) {
   if (items.length === 0) return null;
   return (
     <div className="text-sm">
-      <p className="text-gold">Carries</p>
-      <ul aria-label="Carries" className="flex flex-col gap-0.5">
+      <p className="text-gold">{title}</p>
+      <ul aria-label={title} className="flex flex-col gap-0.5">
         {combatFirst(items).map((item) => {
           const does = [
             factsText(item.facts),

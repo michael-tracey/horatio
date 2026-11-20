@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import { Button, ErrorText, Field, Input, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { FORM_NAMES, type NpcForm, type NpcKind, groupedKinds, kindPages, resourceText } from "./npcKinds";
+import { GROUP_MAX } from "./stockNpcs";
 
 type Custom = { name: string; nature: "mortal" | "supernatural"; resource: { name: string; size: number; per_turn: number; regains: string } };
 const NEW_CUSTOM: Custom = { name: "", nature: "supernatural", resource: { name: "Blood", size: 10, per_turn: 1, regains: "" } };
@@ -12,7 +13,8 @@ const NEW_CUSTOM: Custom = { name: "", nature: "supernatural", resource: { name:
 /**
  * The fast way to make an NPC, on the troupe's Characters list when it shows NPCs:
  * its name, kind and form. A sheeted one goes to its quick build or to step-by-step
- * creation; a Stock NPC goes to its own page, for its specialisations and notes.
+ * creation; a Stock NPC goes to its own page, for its specialisations and notes. A
+ * Stock NPC can be a group of identical ones, played on one card (#1056).
  */
 export function NewNpc({ troupeId }: { troupeId: string }) {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ export function NewNpc({ troupeId }: { troupeId: string }) {
   const [kindKey, setKindKey] = useState("vampire");
   const [form, setForm] = useState<NpcForm>("sheeted");
   const [rating, setRating] = useState(1);
+  const [count, setCount] = useState(1);
   const [custom, setCustom] = useState<Custom>(NEW_CUSTOM);
   const kind = kinds.data?.find((k) => k.key === kindKey);
   const create = useAction(async (wizard: boolean) => {
@@ -32,7 +35,7 @@ export function NewNpc({ troupeId }: { troupeId: string }) {
       npc_kind: kindKey,
       npc_form: form,
       custom_kind: kind?.custom ? custom : null,
-      stock: form === "stock" ? { rating, specializations: [], notes: "" } : null,
+      stock: form === "stock" ? { rating, count, specializations: [], notes: "" } : null,
     };
     const npc = await unwrap(api.POST("/api/troupes/{troupe_id}/npcs", { ...path, body }));
     // A sheeted NPC opens its sheet; a Stock NPC, which has none, opens its own page (#1040).
@@ -91,15 +94,26 @@ export function NewNpc({ troupeId }: { troupeId: string }) {
         </span>
       </div>
       {form === "stock" && (
-        <Field label="Rating" hint={`1 to ${kind?.rating_max ?? 5}: its test pool is twice this (p. 489).`}>
-          <Select value={rating} onChange={(e) => setRating(Number(e.target.value))}>
-            {upTo(1, kind?.rating_max ?? 5).map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Rating" hint={`1 to ${kind?.rating_max ?? 5}: its test pool is twice this (p. 489).`}>
+            <Select value={rating} onChange={(e) => setRating(Number(e.target.value))}>
+              {upTo(1, kind?.rating_max ?? 5).map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="How many" hint="More than 1 makes a group: one card, a health track each.">
+            <Select value={count} onChange={(e) => setCount(Number(e.target.value))}>
+              {upTo(1, GROUP_MAX).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
       )}
       <ErrorText error={create.error} />
       {form === "sheeted" ? (
