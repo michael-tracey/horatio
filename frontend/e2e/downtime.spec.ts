@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { backstoryOptional, characterTab, inSteps, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, openSections, pagePart, settingsPart, addList, aboutChoice, chooseIn } from "./support";
+import { backstoryOptional, characterTab, inSteps, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, openSections, pagePart, settingsPart, addList, aboutChoice, chooseIn, makeChanges } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -140,6 +140,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(part("Expended").getByText("Healthy")).toHaveCount(0);
   // Changes wait in the cart, with what each costs, until Spend XP.
   const cart = p.getByRole("list", { name: "Changes in the cart" });
+  await makeChanges(p);
   await part("Backgrounds").getByRole("button", { name: "Add" }).click();
   await p.getByRole("combobox", { name: "Search Backgrounds", exact: true }).fill("Elite");
   await p.getByRole("option", { name: "Influences: The Elite", exact: true }).click();
@@ -157,6 +158,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("Available", { exact: true })).toBeVisible();
   await expect(p.getByText("18", { exact: true })).toBeVisible();
   // Merits that give other traits apply them: Rugged adds a health level to each track.
+  await makeChanges(p);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   // Every Ventrue merit, though Agnes is Brujah and cannot take them.
   await p.getByLabel("Show").selectOption({ label: "For Ventrue" });
@@ -238,6 +240,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 
   // Once accepted, a discipline dot waits on the home troupe, with the XP held.
   await characterTab(p, "Sheet");
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Celerity" }).click();
   await expect(cart.getByText("Celerity 2 → 3 · 9 XP")).toBeVisible();
   await expect(cart.getByText("Needs approval")).toBeVisible();
@@ -404,9 +407,10 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("Talisman is always held at one rating (3 by the book).", { exact: false })).toBeVisible();
   await lead.page.getByRole("button", { name: "Cancel" }).click();
   await characterTab(p, "Sheet");
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Investigation" }).click();
   // Until it is spent, the sheet shows what the rating would become.
-  const investigation = p.locator("li", { has: p.getByRole("button", { name: "Raise Investigation" }) });
+  const investigation = p.locator(`li[data-trait="Investigation"]`);
   await expect(investigation.getByLabel("1 dots, 2 after the changes in the cart")).toHaveText("1 → 2");
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("Spent 1 XP.")).toBeVisible();
@@ -426,6 +430,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(elite.getByText("Finance, Police")).toBeVisible();
   await characterTab(p, "Sheet");
   await p.reload(); // to see the list the lead has just set
+  await makeChanges(p);
   await p.getByRole("button", { name: "Add to Influence: Elite" }).click();
   await p.getByRole("button", { name: "Police", exact: true }).click();
   await expect(p.getByRole("button", { name: "Remove Police" })).toBeVisible();
@@ -435,6 +440,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("option", { name: /^Contacts/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByRole("list", { name: "Changes in the cart" })).toHaveCount(0);
+  await makeChanges(p);
   await p.getByRole("button", { name: "Add to Contacts Specialisations" }).click();
   const contact = p.getByRole("listitem").filter({ has: p.getByLabel("Name a Contacts Specialisations") });
   await contact.getByLabel("Name a Contacts Specialisations").fill("Reyes");
@@ -670,6 +677,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.goto(sheetPage);
   await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
   // A change in the cart shows as outlined pips, not yet spent; Clear empties the cart.
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Investigation" }).click();
   await expect(p.getByRole("img", { name: "2 dots, 3 after the changes in the cart" })).toBeVisible();
   await p.screenshot(shots("sheet-pips"));

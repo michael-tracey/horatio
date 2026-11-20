@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, tapMid, tabSettings, aboutChoice, addList } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, makeChanges, tapMid, tabSettings, aboutChoice, addList } from "./support";
 
 /** The XP cart: changes on the sheet wait in it until Spend XP makes them. */
 
@@ -40,6 +40,7 @@ test("Generation changes in the cart until a home troupe accepts the character, 
   const cart = p.getByRole("list", { name: "Changes in the cart" });
 
   // No troupe has accepted her yet, so Generation still goes up in the cart: 4 XP, and the earlier buys at Generation 2's prices.
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Generation" }).click();
   const line = cart.getByRole("listitem").filter({ hasText: "Generation 1 → 2" });
   await expect(line).toContainText("Generation 1 → 2 · 12 XP");
@@ -53,6 +54,7 @@ test("Generation changes in the cart until a home troupe accepts the character, 
 
   // Down again refunds the dot and reprices back; the creation pick stays.
   await p.goto(`/characters/${id}`);
+  await makeChanges(p);
   await p.getByRole("button", { name: "Lower Generation" }).click();
   await expect(cart.getByRole("listitem").filter({ hasText: "Generation 2 → 1" })).toContainText("8 XP back in all");
   await expect(p.getByRole("button", { name: "Lower Generation" })).toBeDisabled();
@@ -71,6 +73,7 @@ test("Generation changes in the cart until a home troupe accepts the character, 
 
   // Once accepted, Generation is fixed.
   await p.reload();
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Generation" }).click();
   await expect(cart.getByRole("listitem").filter({ hasText: "Generation 2 → 3" })).toContainText(
     "Generation can't change once a home troupe has accepted the character.",
@@ -121,6 +124,7 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
     await held;
     await route.continue();
   });
+  await makeChanges(p);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Ventrue Royalty");
   await p.getByRole("option", { name: /^Ventrue Royalty/ }).click();
@@ -151,6 +155,7 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   await p.screenshot(shots("royalty-placed"));
 
   // A dot bought above the free ones stays bought (#575): Herd's fourth costs 4 XP.
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Herd" }).click();
   await expect(cart.getByRole("listitem").filter({ hasText: "Herd 3 → 4" })).toContainText("4 XP");
   await p.getByRole("button", { name: "Spend XP" }).click();
@@ -222,6 +227,7 @@ test("Walking Atrocity gives a bonus attribute dot for each dot of Morality belo
   const power = "Daimoinon: Walking Atrocity";
 
   // The Add panel asks where the dot goes as the power goes in.
+  await makeChanges(p);
   await part("Disciplines").getByRole("button", { name: "Add" }).click();
   await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Elder Disciplines/ }).click();
   await (await addList(p, "Elder Disciplines")).getByRole("option", { name: new RegExp(`^${power}`) }).click();
@@ -300,6 +306,7 @@ test("once accepted, a merit or flaw is asked of the home troupe: one declined, 
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   const cart = p.getByRole("list", { name: "Changes in the cart" });
   const trait = (name: string) => p.locator(`li[data-trait="${name}"]`);
+  await makeChanges(p);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Rugged");
   await p.getByRole("option", { name: /^Rugged/ }).click();
@@ -390,6 +397,7 @@ test("a finished Nosferatu asks staff for Bloodline: Creeps by exception, spends
   await p.goto(`/characters/${id}`);
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   const cart = p.getByRole("list", { name: "Changes in the cart" });
+  await makeChanges(p);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Bloodline: Creeps");
   await p.getByRole("option", { name: /^Bloodline: Creeps/ }).click();
@@ -478,6 +486,7 @@ test("with free changes by games played, a new character drops a skill for its f
   const total = (name: string) => p.locator("#experience > div").filter({ hasText: name }).locator("dd").first();
   const earned = await total("Earned").innerText();
   const spent = Number(await total("Spent").innerText());
+  await makeChanges(p);
   await tapMid(p, "Lower Stealth");
   await tapMid(p, "Lower Stealth");
   const cart = p.getByRole("list", { name: "Changes in the cart" });
@@ -560,6 +569,7 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   await expect(part("Skills").getByText("Medicine")).toHaveCount(0);
 
   // Two dots of Dodge, priced dot by dot: nothing is spent yet, and the sheet shows what it would be.
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Dodge" }).click();
   await p.getByRole("button", { name: "Raise Dodge" }).click();
   await expect(cart.getByText("Dodge 3 → 5 · 9 XP")).toBeVisible();
@@ -616,7 +626,7 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("Spent 7 XP.")).toBeVisible(); // 9 for Dodge, less 2 for Archaic
   await expect(p.getByText("23", { exact: true })).toBeVisible();
-  await expect(p.locator("li", { has: p.getByRole("button", { name: "Raise Dodge" }) }).getByLabel("5 dots", { exact: true })).toHaveText("5");
+  await expect(p.locator(`li[data-trait="Dodge"]`).getByLabel("5 dots", { exact: true })).toHaveText("5");
   await characterTab(p, "Experience");
   await expect(p.getByText("Dodge 3 → 5")).toBeVisible();
 });
@@ -731,6 +741,7 @@ test("a Neonate Crusader with Hard as Steel buys one Fortitude elder power throu
   const cart = p.getByRole("list", { name: "Changes in the cart" });
 
   // The picker offers Fortitude's elder powers at the merit's price, and no others.
+  await makeChanges(p);
   await disciplines.getByRole("button", { name: "Add" }).click();
   await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
   const elder = await addList(p, "Elder Disciplines");
@@ -777,6 +788,7 @@ test("in the picker, a technique, an elder power and a discipline open to say wh
 
   // A technique's chevron shows what it does under the list, one at a time, choosing none.
   const about = aboutChoice(p);
+  await makeChanges(p);
   await disciplines.getByRole("button", { name: "Add" }).click();
   await chips.getByRole("button", { name: /^Techniques/ }).click();
   await p.getByLabel("Show").selectOption({ label: "Everything" });
@@ -851,6 +863,7 @@ test("in the cart, a second Retainer and a second Alternate Identity are each bo
   // A second Retainer is bought from under Bocephus's row, where the sheet says what the dots are (#586).
   // It is named as it goes in, and priced from its own first dot: 1 + 2 at Generation 1.
   await expect(part("Backgrounds").getByText("Each Retainer is bought on its own; its dots are how capable it is.")).toBeVisible();
+  await makeChanges(p);
   await part("Backgrounds").getByRole("button", { name: "Buy another Retainer" }).click();
   await expect(p.getByText("Each Retainer is bought on its own, with its own dots, up to 5.")).toBeVisible();
   await p.getByPlaceholder("Such as Bocephus").fill("Rook");
@@ -873,6 +886,7 @@ test("in the cart, a second Retainer and a second Alternate Identity are each bo
   await expect(p.getByText("Spent 8 XP.")).toBeVisible();
 
   // Each is on the sheet by name, with its own dots.
+  await makeChanges(p);
   const backgrounds = part("Backgrounds");
   for (const name of ["Retainers: Bocephus", "Retainers: Rook", "Alternate Identity: Dr. Ellen Marsh, coroner", "Alternate Identity: Father Kell"])
     await expect(backgrounds.getByRole("button", { name: `Raise ${name}`, exact: true })).toBeVisible();

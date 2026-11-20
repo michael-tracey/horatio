@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, undoInHeader, characterTab } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, undoInHeader, characterTab, makeChanges } from "./support";
 
 /** A troupe's own merits, what they do on the sheet, and using them at a game. */
 
@@ -67,6 +67,7 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   // Building for the troupe, she is offered the one players can take, not the one staff give.
   await p.goto(`/characters/${lune}`);
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await makeChanges(p);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Favour of the");
   await expect(p.getByRole("option", { name: /^Favour of the Crossroads/ })).toHaveCount(0);
@@ -96,6 +97,7 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   // A character only visiting the troupe is offered neither, by the player's list or by staff.
   const visitor = await build("Isaure", null);
   await p.goto(`/characters/${visitor}`);
+  await makeChanges(p);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Child of the");
   await expect(p.getByRole("option", { name: /^Child of the Stars/ })).toHaveCount(0);
@@ -203,6 +205,7 @@ test("a house merit's effects: the ST builds Old Money from blocks, previews it,
 
   await p.goto(`/characters/${id}`);
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await makeChanges(p);
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Old Money");
   // Listed once checked, as one she can take: its free dots meet its own "needs Resources 1".
