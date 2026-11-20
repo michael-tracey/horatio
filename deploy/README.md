@@ -84,6 +84,35 @@ docker logs --tail 100 horatio-api                   # also in Cloud Logging (gc
 docker exec -it horatio-db psql -U horatio horatio
 ```
 
+## Links with a secret in them
+
+A password reset, an email change, an NPC's claim, an unsubscribe, a calendar and a
+check-in link each carry their secret in the path, and Discord's callback its code in
+the query (#1060). Neither access log keeps them: nginx's (`/var/log/nginx/access.log`,
+in the `horatio` format of `nginx-horatio.conf.j2`) and the app's (uvicorn's, in
+`docker logs` and Cloud Logging) write `REDACTED` in the secret's place, and nginx
+logs only the origin of a Referer. The patterns are in `horatio.secret_links` and
+nginx's `map`; `tests/test_secret_links.py` finds every route with a token or code in
+its path and fails until both cover it. Every answer also sends
+`Referrer-Policy: no-referrer`, so a page opened from such a link never passes its
+address on, to Horatio's own API or to another site.
+
+nginx's error log still names the request when nginx itself fails it (a 502 while the
+app restarts, say), secret and all; its format can't be changed.
+
+Logs from before this change hold the secrets as they were. How long each stays good:
+a reset link 24 hours and once; an email change 7 days; a claim link 30 days, or
+until used; an unsubscribe link until the address changes; a calendar link until its
+person resets it; a check-in code while check-in is open. To clear them, on the host:
+
+```bash
+sudo sh -c 'truncate -s 0 /var/log/nginx/access.log; rm -f /var/log/nginx/access.log.*'
+```
+
+Cloud Logging keeps the app's lines for its bucket's retention (30 days by default),
+and single entries can't be deleted, so they age out. Who can read them is the GCP
+project's Logging viewers.
+
 ## Compression and caching
 
 nginx gzips the app's text responses (`nginx-horatio.conf.j2`): JSON, JavaScript,

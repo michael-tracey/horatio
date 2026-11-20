@@ -1,5 +1,6 @@
 import asyncio
 import html
+import logging
 import re
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -9,7 +10,7 @@ from pathlib import Path, PurePosixPath
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
-from horatio import delivery
+from horatio import delivery, secret_links
 from horatio.api import (
     account_merges,
     appearance,
@@ -169,6 +170,34 @@ async def require_csrf_header(
     if request.method not in SAFE_METHODS and CSRF_HEADER not in request.headers:
         return JSONResponse({"detail": f"Missing the {CSRF_HEADER} header."}, status_code=403)
     return await call_next(request)
+
+
+# No page tells anyone, Horatio included, the address it was opened at (issue #1060):
+# a reset, claim, unsubscribe or calendar link's address is its secret
+# (horatio.secret_links), and the browser would otherwise send it as the Referer of
+# the page's every request. In production nginx sends the same, on its own error
+# pages too (deploy/nginx-horatio.conf.j2).
+SECURITY_HEADERS = {
+    "Referrer-Policy": "no-referrer",
+}
+
+
+@app.middleware("http")
+async def send_security_headers(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Add SECURITY_HEADERS to every answer: the app's pages, the API, and its errors.
+
+    Added after the CSRF check, so it wraps it and that refusal carries them too.
+    """
+    response = await call_next(request)
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
+
+
+# uvicorn logs every request's path, and production keeps its logs in Cloud Logging.
+logging.getLogger("uvicorn.access").addFilter(secret_links.RedactSecrets())
 
 
 # While the custodian views as someone, nothing changes (horatio.auth.viewing).
