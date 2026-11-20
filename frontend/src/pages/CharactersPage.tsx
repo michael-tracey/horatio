@@ -10,10 +10,10 @@ import type { TroupeOut } from "../api/types";
 import { Badge, Button, Card, CountBubble, Empty, ErrorText, Field, Input, Loading, PageTitle, Select } from "../components/ui";
 import { LinkButton } from "../components/LinkButton";
 import { useAction, useMe } from "../hooks";
-import { useDates } from "../dates";
 import { BuildFor } from "./character/BuildFor";
 import { seenUpTo } from "./character/resultsSeen";
-import { standing, waiting } from "./characterList";
+import { standing } from "./characterList";
+import { NextLine, useNextSteps } from "./character/NextSteps";
 import { splatsFor, useSplats } from "./character/splats";
 import { roleLabel } from "./troupe/roles";
 import { useWaiting, WaitingList } from "./troupe/WaitingList";
@@ -22,8 +22,9 @@ import { waitingTotal } from "./troupe/waiting";
 export function CharactersPage() {
   const navigate = useNavigate();
   const me = useMe();
-  const dates = useDates();
   const characters = useQuery({ queryKey: ["characters"], queryFn: () => unwrap(api.GET("/api/characters")) });
+  // What is next for each (#1051), in one request for them all.
+  const next = useNextSteps();
   const [name, setName] = useState("");
   const nameInput = useRef<HTMLInputElement>(null);
   const [wanted, setSplat] = useState("vampire");
@@ -118,7 +119,7 @@ export function CharactersPage() {
                           {c.clan && ` · ${clanNamed(c.clan, c.assamite_name)}`}
                         </span>
                         <span className="mt-1 flex min-w-0 flex-wrap gap-1.5">
-                          {[...standing(c), ...waiting(c, seenUpTo(c.id), dates)].map((n) => (
+                          {standing(c).map((n) => (
                             <Badge key={n.label} tone={n.tone} className="max-w-full truncate">
                               {n.label}
                             </Badge>
@@ -126,6 +127,7 @@ export function CharactersPage() {
                         </span>
                       </span>
                     </Link>
+                    <NextLine steps={next.data?.find((n) => n.character_id === c.id)?.steps} seen={seenUpTo(c.id)} className="-mt-1 pb-3 pl-12" />
                   </li>
                 ))}
               </ul>

@@ -908,6 +908,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Next Steps
+         * @description What is next for each of the player's characters, for the Characters page, in a
+         *     few queries for all of them. Those with nothing next are left out.
+         */
+        get: operations["my_next_steps_api_characters_next_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}": {
         parameters: {
             query?: never;
@@ -2667,6 +2688,27 @@ export interface paths {
          *     only with a reason.
          */
         post: operations["move_character_api_characters__character_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Next Steps
+         * @description What is next for the character, for the card at the top of its page: its
+         *     player's alone to see.
+         */
+        get: operations["character_next_steps_api_characters__character_id__next_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -18326,6 +18368,20 @@ export interface components {
             /** Status */
             status: string;
         };
+        /**
+         * CharacterNextOut
+         * @description What is next for one character: its player's steps, then staff's, then what is
+         *     coming up. No steps when there is nothing.
+         */
+        CharacterNextOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Steps */
+            steps: components["schemas"]["NextStepOut"][];
+        };
         /** CharacterOut */
         CharacterOut: {
             /** Asking Troupe Id */
@@ -27066,6 +27122,27 @@ export interface components {
              * @constant
              */
             type: "news_agency";
+        };
+        /**
+         * NextStepOut
+         * @description One thing next for a character (horatio.next_steps).
+         */
+        NextStepOut: {
+            /** At */
+            at: string | null;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Link */
+            link: string;
+            /** Since */
+            since: string | null;
+            /**
+             * Who
+             * @enum {string}
+             */
+            who: "player" | "staff" | "coming";
         };
         /** NominationIn */
         NominationIn: {
@@ -39561,6 +39638,26 @@ export interface operations {
             };
         };
     };
+    my_next_steps_api_characters_next_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterNextOut"][];
+                };
+            };
+        };
+    };
     read_character_api_characters__character_id__get: {
         parameters: {
             query?: never;
@@ -43017,6 +43114,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_next_steps_api_characters__character_id__next_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterNextOut"];
+                };
             };
             /** @description Validation Error */
             422: {
