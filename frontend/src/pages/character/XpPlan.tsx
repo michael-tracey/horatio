@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
@@ -9,13 +9,13 @@ import { ChoiceBox, type BoxChoice } from "../../components/ChoiceBox";
 import { useClanName } from "../../components/ClanNames";
 import { Toggle } from "../../components/Toggle";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
-import { costText, describe, setRating, useCart, type CartLine } from "./cart";
+import { costText, describe, ordered, plannedRating, setRating, toChange, useCart, type CartChange, type CartLine } from "./cart";
 import { ChoiceSelect } from "./ChoiceSelect";
 import { useChoices } from "./choices";
 import { detailNeed, fieldSkills } from "./fields";
 import { rulesTroupe } from "./rules";
 import { addableByGroup, useSheet } from "./SheetTab";
-import { whenText } from "./xpPlan";
+import { awardText, cartText, whenText } from "./xpPlan";
 
 type PlanLine = components["schemas"]["XpPlanLineOut"];
 type Kept = components["schemas"]["XpPlanLineIn"];
@@ -30,26 +30,36 @@ function asCartLine(l: PlanLine): CartLine {
 
 /**
  * The plan (#1052): traits the player means to buy with XP later, in order, each
- * priced as the cart would price it now, with a running total against the XP
- * unspent and roughly how many games of the troupe's usual award until each is
- * affordable. One tap moves a line that can be bought into the cart. It is the
- * player's own; the staff who see the sheet see it only while it is shared.
+ * priced as the cart would price it now, after what is in the cart (#1086), with a
+ * running total against the XP the cart leaves and roughly how many games of the
+ * troupe's usual award (its downtime XP too) until each is affordable. It reprices
+ * when the cart changes. One tap moves a line that can be bought into the cart. It
+ * is the player's own; the staff who see the sheet see it only while it is shared.
+ * A retired character's plan stays as it was.
  */
 export function XpPlan({ character, mine }: { character: CharacterOut; mine: boolean }) {
-  const key = ["xp-plan", character.id];
+  const retired = character.status === "retired";
+  const cart = useCart(character.id);
+  // The cart lives in this browser, so it goes with the request; a retired character buys nothing.
+  const inCart = retired ? [] : cart.lines.map(toChange);
+  const keyFor = (changes: CartChange[]) => ["xp-plan", character.id, changes];
   const client = useQueryClient();
   const plan = useQuery({
-    queryKey: key,
-    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/xp-plan", { params: { path: { character_id: character.id } } })),
+    queryKey: keyFor(inCart),
+    queryFn: () =>
+      unwrap(api.POST("/api/characters/{character_id}/xp-plan/price", { params: { path: { character_id: character.id } }, body: { cart: inCart } })),
     // Staff see it only if it is shared; otherwise there is nothing to show them.
     retry: false,
+    // While it reprices for a changed cart, the plan stays on screen.
+    placeholderData: keepPreviousData,
   });
   const save = useMutation({
-    mutationFn: (body: { lines: Kept[]; shared: boolean }) =>
+    mutationFn: (body: { lines: Kept[]; shared: boolean; cart: CartChange[] }) =>
       unwrap(api.PUT("/api/characters/{character_id}/xp-plan", { params: { path: { character_id: character.id } }, body })),
-    onSuccess: (data) => client.setQueryData(key, data),
+    // A pricing still on its way would bring back the plan as it was.
+    onMutate: () => client.cancelQueries({ queryKey: ["xp-plan", character.id] }),
+    onSuccess: (data, body) => client.setQueryData(keyFor(body.cart), data),
   });
-  const cart = useCart(character.id);
   const [adding, setAdding] = useState(false);
   const [moved, setMoved] = useState<string | null>(null);
 
@@ -57,18 +67,28 @@ export function XpPlan({ character, mine }: { character: CharacterOut; mine: boo
   if (plan.isPending) return <Loading />;
   if (plan.error) return <ErrorText error={plan.error} />;
   const p = plan.data;
+  const editable = p.mine && !retired;
   const lines = p.lines.map(kept);
-  const keep = (next: Kept[], shared = p.shared) => save.mutate({ lines: next, shared });
+  const keep = (next: Kept[], shared = p.shared) => save.mutate({ lines: next, shared, cart: inCart });
   const move = (from: number, to: number) => {
     const next = [...lines];
     const [line] = next.splice(from, 1);
     next.splice(to, 0, line!);
     keep(next);
   };
+  // The plan is saved, priced after the cart as it will be, before the line goes in the
+  // cart: so it is never shown priced after both.
   const toCart = (l: PlanLine, i: number) => {
-    cart.update((c) => setRating(c, { category: l.category, name: l.name, detail: l.detail, rating: l.from_rating }, l.rating));
-    setMoved(describe(asCartLine(l)));
-    keep(lines.filter((_, j) => j !== i));
+    const raise = (c: CartLine[]) => setRating(c, { category: l.category, name: l.name, detail: l.detail, rating: l.from_rating }, l.rating);
+    save.mutate(
+      { lines: lines.filter((_, j) => j !== i), shared: p.shared, cart: ordered(raise(cart.lines)).map(toChange) },
+      {
+        onSuccess: () => {
+          cart.update(raise);
+          setMoved(describe(asCartLine(l)));
+        },
+      },
+    );
   };
   const last = p.lines.at(-1);
 
@@ -76,7 +96,7 @@ export function XpPlan({ character, mine }: { character: CharacterOut; mine: boo
     <Card
       title={mine ? "Plan" : "Plan, shared by its player"}
       actions={
-        p.mine && (
+        editable && (
           <Button variant="ghost" aria-expanded={adding} disabled={save.isPending} onClick={() => setAdding(!adding)}>
             {adding ? "Close" : "Add to plan"}
           </Button>
@@ -84,14 +104,20 @@ export function XpPlan({ character, mine }: { character: CharacterOut; mine: boo
       }
     >
       <p className="mb-3 text-sm text-mist">
-        {p.mine ? "What you mean to buy next, in order" : "What its player means to buy next, in order"}, each priced as the cart would price it now.{" "}
-        {p.balance} XP unspent
-        {p.award ? `; about ${p.award.per_game} XP a game, from ${p.award.source}.` : "."}
+        {p.mine ? "What you mean to buy next, in order" : "What its player means to buy next, in order"}, each priced as the cart would price it now
+        {p.cart_cost ? ", after what is in the cart" : ""}. {p.balance} XP unspent
+        {cartText(p.cart_cost)}
+        {p.award ? `; ${awardText(p.award)}.` : "."}
       </p>
-      {!p.priced && <Notice>Prices aren't worked out while you view as someone.</Notice>}
+      {retired ? (
+        <Notice>{character.name} is retired, so the plan stays as it was.</Notice>
+      ) : (
+        !p.priced && <Notice>Prices aren't worked out while you view as someone.</Notice>
+      )}
       {adding && (
         <AddToPlan
           character={character}
+          inCart={cart.lines}
           planned={p.lines}
           onAdd={(line) => {
             keep([...lines, line]);
@@ -126,13 +152,15 @@ export function XpPlan({ character, mine }: { character: CharacterOut; mine: boo
                   {l.refused ? (
                     <p className="text-xs text-blood-bright">{l.refused}</p>
                   ) : (
-                    p.priced && <p className={`text-xs ${l.affordable ? "text-gold" : "text-mist"}`}>{whenText(l, p.balance)}</p>
+                    p.priced && (
+                      <p className={`text-xs ${l.affordable ? "text-gold" : "text-mist"}`}>{whenText(l, p.balance - p.cart_cost, (p.award?.downtime ?? 0) > 0)}</p>
+                    )
                   )}
                   {l.because && <p className="text-xs text-mist">{l.because}.</p>}
                   {l.teacher && <p className="text-xs text-mist">Needs a teacher ({l.teacher.rule}), chosen in the cart.</p>}
                   {l.needs_approval && !l.refused && <p className="text-xs text-mist">Waits on the home troupe once bought.</p>}
                 </div>
-                {p.mine && (
+                {editable && (
                   <div className="flex shrink-0 flex-wrap items-center gap-1">
                     {l.buyable && (
                       <Button variant="secondary" className="min-h-9" disabled={save.isPending} onClick={() => toCart(l, i)} aria-label={`Move ${what} to the cart`}>
@@ -169,7 +197,7 @@ export function XpPlan({ character, mine }: { character: CharacterOut; mine: boo
       )}
       {last && p.priced && <p className="mt-2 text-sm">All of it: {last.total} XP.</p>}
       <ErrorText error={save.error} />
-      {p.mine && (
+      {editable && (
         <Toggle
           label="Share with staff"
           hint="The staff who see the sheet see this plan too. Off, only you do."
@@ -186,10 +214,10 @@ export function XpPlan({ character, mine }: { character: CharacterOut; mine: boo
 /**
  * Choose a trait for the plan, and the rating to take it to: from the explaining
  * drop-down (ChoiceBox) of a category's traits, those held showing the rating the
- * plan leaves them at. What the character can't take is greyed with the reason,
- * judged on the sheet as the plan before it would leave it.
+ * cart and the plan leave them at. What the character can't take is greyed with the
+ * reason, judged on the sheet as the cart and the plan before it would leave it.
  */
-function AddToPlan(props: { character: CharacterOut; planned: PlanLine[]; onAdd: (line: Kept) => void; onClose: () => void }) {
+function AddToPlan(props: { character: CharacterOut; inCart: CartLine[]; planned: PlanLine[]; onAdd: (line: Kept) => void; onClose: () => void }) {
   const catalogue = useCatalogue(props.character.splat, rulesTroupe(props.character));
   const sheet = useSheet(props.character.id);
   if (catalogue.isPending || sheet.isPending) return <Loading compact />;
@@ -201,6 +229,7 @@ function PlanPicker({
   character,
   catalogue,
   held,
+  inCart,
   planned,
   onAdd,
   onClose,
@@ -208,6 +237,7 @@ function PlanPicker({
   character: CharacterOut;
   catalogue: CatalogueOut;
   held: SheetTraitOut[];
+  inCart: CartLine[];
   planned: PlanLine[];
   onAdd: (line: Kept) => void;
   onClose: () => void;
@@ -218,14 +248,17 @@ function PlanPicker({
   const [chosen, setChosen] = useState<{ name: string; detail: string } | null>(null);
   const [detail, setDetail] = useState("");
   const [rating, setRating] = useState(1);
-  const lines = planned.filter((l) => !l.held).map(asCartLine);
+  // The plan's lines raise from where the cart leaves each trait, so they follow it.
+  const lines = [...inCart, ...planned.filter((l) => !l.held).map(asCartLine)];
   const choices = useChoices(character.id, catalogue, [category], held, lines);
   const current = choices[0];
   const cat = catalogue.categories.find((c) => c.key === category);
-  // The rating each trait is at once the plan so far is bought.
+  // The rating each trait is at once the cart and the plan so far are bought.
   const at = (name: string, d: string) =>
     Math.max(
-      held.find((h) => h.category === category && h.name === name && h.detail === d)?.rating ?? 0,
+      plannedRating(inCart, { category, name, detail: d }) ??
+        held.find((h) => h.category === category && h.name === name && h.detail === d)?.rating ??
+        0,
       ...planned.filter((l) => same(l, { category, name, detail: d, rating: 0 })).map((l) => l.rating),
     );
   // Held with a detail of its own (Performance: Singing, a Retainer by name): raised as it is.
@@ -307,7 +340,7 @@ function PlanPicker({
             )
           )}
           {fixed === null && (
-            <Field label="Up to" hint={from ? `At ${from} once the plan before it is bought.` : undefined}>
+            <Field label="Up to" hint={from ? `At ${from} once ${inCart.length ? "the cart and the plan before it are" : "the plan before it is"} bought.` : undefined}>
               <Input type="number" min={from + 1} max={max} value={rating} onChange={(e) => setRating(Number(e.target.value))} className="w-24" />
             </Field>
           )}

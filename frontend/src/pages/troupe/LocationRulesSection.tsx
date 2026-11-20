@@ -10,6 +10,7 @@ import { Toggle } from "../../components/Toggle";
 import { Badge, Button, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { fullSuggestion, parseSuggestions, suggestionLines, suggestionText } from "./locations";
+import { SETTINGS } from "./settingsIndex";
 
 const LIMITS = [
   { value: "refuse", label: "Refuse", meaning: "A character can't take control of a location that would put them over their limit. Staff see why." },
@@ -45,7 +46,7 @@ export function LocationRulesSection({ troupeId, canEdit }: { troupeId: string; 
   return (
     <div className="flex flex-col gap-6">
       <SettingCard
-        title="House options"
+        setting={SETTINGS.locationOptions}
         readOnly={!canEdit}
         about={`Changes to the book's Stock Locations (${c.book}, pp. 117–133) that many troupes play. Each is on unless switched off here.`}
       >
@@ -77,7 +78,7 @@ export function LocationRulesSection({ troupeId, canEdit }: { troupeId: string; 
       </SettingCard>
 
       <SettingCard
-        title="Control limit"
+        setting={SETTINGS.controlLimit}
         readOnly={!canEdit}
         about={`A character controls up to five locations, and one more for each dot of Retainers (p. ${c.pages.control_page ?? "119"}). Havens don't count, nor a conglomerate whose every subsidiary they control.`}
       >
@@ -117,9 +118,8 @@ function OwnQualities({ troupeId, catalogue, canEdit }: { troupeId: string; cata
   );
   return (
     <SettingCard
-      title="The troupe's qualities"
+      setting={SETTINGS.ownQualities}
       readOnly={!canEdit}
-      about="Location qualities of the troupe's own, marked ★, with what a quest for one should ask for."
       actions={
         canEdit &&
         editing === null && (
@@ -240,8 +240,7 @@ function Catalogue({ catalogue }: { catalogue: LocationCatalogueOut }) {
   const groups = KINDS.map((k) => ({ ...k, qualities: catalogue.qualities.filter((q) => q.kind === k.value) }));
   return (
     <SettingCard
-      title="The catalogue"
-      about="Each quality as played here, with its page and what a quest for it should ask for, by the location's rating. A standard location has up to its rating in qualities, a prestige or iconic one twice that; only an iconic one has iconic qualities, and no location more than one supernatural quality."
+      setting={SETTINGS.qualityCatalogue}
     >
       <div className="flex flex-col gap-2">
         {groups.map((g) => (

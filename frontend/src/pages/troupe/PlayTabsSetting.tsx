@@ -5,6 +5,7 @@ import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { Toggle } from "../../components/Toggle";
 import { Button, ErrorText } from "../../components/ui";
 import { TABS, tabNames, tabsOn, troupeTabs, type Tab } from "../play/tabs";
+import { SETTINGS } from "./settingsIndex";
 
 // What a few of the tabs bring with them, under their switches.
 const NOTES: Partial<Record<Tab, string>> = {
@@ -34,9 +35,8 @@ export function PlayTabsSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdi
   };
   return (
     <SettingCard
-      title="Play View tabs"
+      setting={SETTINGS.playTabs}
       readOnly={!canEdit}
-      about="The tabs players see on the Play View at games. Staff always see every tab on NPCs. Turn them all off if your players keep their sheets here but don't play from Horatio."
     >
       {!canEdit ? (
         <p className="text-sm">{on.length === 0 ? "The troupe doesn't use the Play View for players." : on.length === every ? "Players see every tab." : `Players see ${tabNames(on)}.`}</p>

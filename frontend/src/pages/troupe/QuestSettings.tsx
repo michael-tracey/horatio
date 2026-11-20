@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
 import { SettingCard, SettingForm, useSettingForm } from "../../components/SettingCard";
 import { ErrorText, Field, Input, Loading } from "../../components/ui";
+import { SETTINGS } from "./settingsIndex";
 
 /**
  * How many quests a character may ask for each cycle, in the Quests tab's Settings (#785, #909).
@@ -20,9 +21,8 @@ export function QuestSettings({ troupeId, canEdit }: { troupeId: string; canEdit
 
   return (
     <SettingCard
-      title="Quest requests"
+      setting={SETTINGS.questRequests}
       readOnly={!canEdit}
-      about="Quests (MET: VTM Vol. II Issue 1, pp. 99-110): players ask for them, staff build them with requirements and scenarios, and Horatio keeps track as the party meets them. A request staff answer as not needed, or one withdrawn, does not count. Quests are switched on and off in the Features list, on Troupe settings."
     >
       {canEdit ? (
         <SettingForm form={form}>

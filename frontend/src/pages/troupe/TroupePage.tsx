@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes, useParams } from "react-router";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Avatar } from "../../components/Avatar";
 import { NotOpenHere } from "../../components/NotOpenHere";
@@ -14,6 +14,7 @@ import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { EquipmentTab } from "./EquipmentTab";
 import { PartSettings, TabSettings } from "./FeatureSettings";
+import { FindSetting } from "./FindSetting";
 import { GameNightPage } from "./GameNight";
 import { HouseRulesTab } from "./HouseRulesTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
@@ -64,6 +65,7 @@ const ObligationWeb = lazy(() => import("./ObligationWeb").then((m) => ({ defaul
 
 export function TroupePage() {
   const { troupeId = "" } = useParams();
+  const { pathname } = useLocation();
   const me = useMe();
   const troupe = useQuery({
     queryKey: ["troupe", troupeId],
@@ -93,6 +95,14 @@ export function TroupePage() {
   // them, and its storytellers change them while the troupe is in play.
   const settings = can.running;
   const changes = can.storyteller && !t.archived;
+  const groups = troupeTabGroups(t, can, {
+    ...counts,
+    building: building.data?.count,
+    newsUnread: glance.data?.news_unread,
+    announcementsUnread: glance.data?.announcements_unread,
+  });
+  // On any Customise tab, Find a setting is at the top (#1047).
+  const customising = groups.some((g) => g.label === "Customise" && g.tabs.some((tab) => pathname === tab.to || pathname.startsWith(`${tab.to}/`)));
 
   return (
     <>
@@ -111,15 +121,8 @@ export function TroupePage() {
           {t.name}
         </span>
       </PageTitle>
-      <GroupedTabs
-        label="Troupe sections"
-        groups={troupeTabGroups(t, can, {
-          ...counts,
-          building: building.data?.count,
-          newsUnread: glance.data?.news_unread,
-          announcementsUnread: glance.data?.announcements_unread,
-        })}
-      />
+      <GroupedTabs label="Troupe sections" groups={groups} />
+      {customising && <FindSetting troupe={t} can={can} />}
       {!can.staff && !t.archived && <PlayHere troupe={t} />}
       <Routes>
         <Route index element={<OverviewTab troupe={t} can={can} />} />

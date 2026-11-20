@@ -6,7 +6,7 @@ import type { TroupeOut } from "../../api/types";
 import { Checkbox } from "../../components/Checkbox";
 import { SectionLabel } from "../../components/Headings";
 import { PartPicker } from "../../components/PartPicker";
-import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
+import { SettingCard, showFound, useSaveOnChange } from "../../components/SettingCard";
 import { ErrorText, Loading } from "../../components/ui";
 import { ClanNamesSetting } from "./ClanNamesSetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
@@ -17,21 +17,12 @@ import { NewCharacterIncentive } from "./NewCharacterIncentive";
 import { SettingStyle } from "./SettingStyle";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { FeaturesList } from "./FeaturesList";
-import { features, settingsAnchor, troupeSettings, type FeatureKey, type TroupeSettingsPart } from "./features";
+import { features, settingsAnchor, troupeSettings, type FeatureKey } from "./features";
+import { SETTINGS, TROUPE_SETTINGS_PARTS } from "./settingsIndex";
 import { StatusBanClans } from "./StatusBanClans";
 import { StatusSetting, TitlesSetting } from "./StatusSetting";
 import { XpRangeCard } from "./XpRange";
 import { useCatalogue } from "../../catalogue";
-
-/** The parts of Troupe settings after the Features list, in order (#908). */
-const PARTS: { part: TroupeSettingsPart; label: string }[] = [
-  { part: "setting", label: "The setting" },
-  { part: "joining", label: "Who may join" },
-  { part: "xp", label: "XP" },
-  { part: "status", label: "Status and titles" },
-  { part: "blood", label: "Blood, diablerie and feeding" },
-  { part: "names", label: "Names" },
-];
 
 /**
  * The settings for the whole troupe, set once a season or so, a part for each purpose (#908):
@@ -49,7 +40,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
   return (
     <PartPicker
       label="Troupe settings"
-      parts={[{ to: settings, label: "Features", end: true }, ...PARTS.map((p) => ({ to: `${base}/${troupeSettings(p.part)}`, label: p.label }))]}
+      parts={[{ to: settings, label: "Features", end: true }, ...TROUPE_SETTINGS_PARTS.map((p) => ({ to: `${base}/${troupeSettings(p.part)}`, label: p.label }))]}
     >
       <Routes>
         <Route index element={<FeaturesPart troupe={troupe} canEdit={canEdit} />} />
@@ -157,21 +148,26 @@ function FeaturesPart({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean
 /**
  * Landing on a card's anchor (`settings/blood#feature-feeding`), scrolls to it once the cards
  * above it have loaded and taken their height: again each time a load ends, until none is left.
+ * The card glows a moment as it is found (#1047), each time it is landed on.
  */
 function useLandOnCard() {
-  const { pathname, hash } = useLocation();
+  const { hash, key } = useLocation();
   const client = useQueryClient();
   const fetching = useIsFetching();
   const landed = useRef<string | null>(null);
+  const shown = useRef<string | null>(null);
   useEffect(() => {
-    const here = pathname + hash;
-    if (!hash || landed.current === here) return;
+    if (!hash || landed.current === key) return;
     // Not there yet, as on the Features list an old anchor is sent on from: tried again once it is.
     const card = document.getElementById(hash.slice(1));
     if (!card) return;
     card.scrollIntoView({ block: "start" });
-    if (client.isFetching() === 0) landed.current = here;
-  }, [pathname, hash, fetching, client]);
+    if (shown.current !== key) {
+      shown.current = key;
+      showFound(card);
+    }
+    if (client.isFetching() === 0) landed.current = key;
+  }, [key, hash, fetching, client]);
 }
 
 /** A feature's settings card, where the Features list's Settings link lands. */
@@ -227,11 +223,7 @@ function SectsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean })
   const sects = (catalogue.data?.traits ?? []).filter((t) => t.category === "sect").map((t) => t.name);
 
   return (
-    <SettingCard
-      title="Sects"
-      about={canEdit ? "Which sects player characters may join from. Leave all unticked to take any sect. NPCs are not limited." : undefined}
-      readOnly={!canEdit}
-    >
+    <SettingCard setting={SETTINGS.sects} about={canEdit ? undefined : null} readOnly={!canEdit}>
       {!canEdit ? (
         <p className="text-sm">{sectsText(allowed)}</p>
       ) : (
@@ -262,15 +254,7 @@ function SplatsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }
   const allowed = troupe.allowed_splats;
 
   return (
-    <SettingCard
-      title="Splats"
-      about={
-        canEdit
-          ? "Which splats player characters may be. Tick at least one: new characters built for the troupe, and those joining it, must be one of these. NPCs are not limited."
-          : undefined
-      }
-      readOnly={!canEdit}
-    >
+    <SettingCard setting={SETTINGS.splats} about={canEdit ? undefined : null} readOnly={!canEdit}>
       {!canEdit ? (
         <p className="text-sm">{text} player characters may join.</p>
       ) : (

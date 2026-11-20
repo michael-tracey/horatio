@@ -3,6 +3,7 @@ import { api, unwrap } from "../../api/client";
 import { RadioList } from "../../components/RadioList";
 import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { ErrorText } from "../../components/ui";
+import { SETTINGS } from "./settingsIndex";
 
 type Setting = "leave" | "remove" | "keep_xp";
 
@@ -34,9 +35,8 @@ export function DiablerieFlaws({ troupeId, canEdit }: { troupeId: string; canEdi
   const current = OPTIONS.find((o) => o.value === now) ?? OPTIONS[0]!;
   return (
     <SettingCard
-      title="Diablerie and Lesser Generation"
+      setting={SETTINGS.diablerie}
       readOnly={!canEdit}
-      about="What recording a diablerie does to a character who holds Lesser Generation or Thin Blooded. The diablerie form shows staff what this will do before they confirm."
     >
       {!canEdit ? (
         <p className="text-sm">

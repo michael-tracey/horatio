@@ -6,6 +6,7 @@ import { Checkbox } from "../../components/Checkbox";
 import { CardHeading } from "../../components/Headings";
 import { SettingCard, useSaveOnChange } from "../../components/SettingCard";
 import { Badge, Button, ErrorText } from "../../components/ui";
+import { SETTINGS } from "./settingsIndex";
 
 type Ban = ClanBansOut["bans"][number];
 
@@ -44,9 +45,8 @@ export function StatusBanClans({ troupeId, canEdit }: { troupeId: string; canEdi
   if (!bans.data.bans.length) return null;
   return (
     <SettingCard
-      title="Status bans on clans"
+      setting={SETTINGS.statusBans}
       readOnly={!canEdit}
-      about="Which clans the sects' status bans name here: who counts as a pillar clan, say, which the books change from one edition to the next. A bloodline goes with its clan. Staff can still say a ban applies to a character, or exempt one, on its Status."
     >
       <div className="flex flex-col gap-4">
         {bans.data.bans.map((ban) => (

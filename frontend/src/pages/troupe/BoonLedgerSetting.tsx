@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
-import { BOON_PAGE } from "../../boons";
 import { RadioList } from "../../components/RadioList";
 import { useToast } from "../../components/Toast";
 import { Toggle } from "../../components/Toggle";
@@ -12,6 +11,7 @@ import { ApprovalKinds } from "./BoonApproval";
 import { approvalSummary } from "./boonApproval";
 import { ToldOfReports } from "./BoonReportsTold";
 import { TalonsSetting } from "./BoonTalons";
+import { SETTINGS } from "./settingsIndex";
 
 /**
  * How the troupe keeps its boon ledger (#685): what players see, review, the Harpy, talons
@@ -23,10 +23,9 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
   const on = troupe.boons ?? false;
   return (
     <SettingCard
-      title="Boons"
+      setting={SETTINGS.boonLedger}
       state={on ? "On" : "Off"}
       readOnly={!canEdit}
-      about={`The troupe's boon ledger: the debts characters owe each other, registered with the Harpy (${BOON_PAGE}). A boon made off the record isn't tracked here, and isn't enforced. Storytellers and assistant storytellers register boons, and edit, trade, pass on, settle and void them, each with its own log.`}
     >
       {!canEdit ? (
         <p className="text-sm">{on ? "The troupe keeps a boon ledger." : "The troupe doesn't keep a boon ledger."}</p>

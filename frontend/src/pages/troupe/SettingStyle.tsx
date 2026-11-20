@@ -10,6 +10,7 @@ import { Toggle } from "../../components/Toggle";
 import { Button, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { moved, type Kind } from "./settingStyle";
+import { SETTINGS, type CardSetting } from "./settingsIndex";
 
 const NOUNS: Record<Kind, string> = {
   theme: "theme",
@@ -41,8 +42,8 @@ export function SettingStyle({ troupeId }: { troupeId: string }) {
       <ShowCard troupeId={troupeId} setting={s} />
       <TitleCard troupeId={troupeId} setting={s} />
       <ScopeCard troupeId={troupeId} setting={s} />
-      <Entries troupeId={troupeId} kind="theme" title="Themes" entries={s.themes} canEdit={s.can_edit} />
-      <Entries troupeId={troupeId} kind="mood" title="Moods" entries={s.moods} canEdit={s.can_edit} />
+      <Entries troupeId={troupeId} kind="theme" setting={SETTINGS.themes} entries={s.themes} canEdit={s.can_edit} />
+      <Entries troupeId={troupeId} kind="mood" setting={SETTINGS.moods} entries={s.moods} canEdit={s.can_edit} />
       <Notes troupeId={troupeId} entries={s.notes} canEdit={s.can_edit} />
     </>
   );
@@ -61,7 +62,7 @@ function ShowCard({ troupeId, setting }: { troupeId: string; setting: SettingOut
   );
   return (
     <SettingCard
-      title="Where players read it"
+      setting={SETTINGS.whereRead}
       readOnly={!setting.can_publish}
       about={
         <>
@@ -115,7 +116,7 @@ function TitleCard({ troupeId, setting }: { troupeId: string; setting: SettingOu
   const name = setting.chronicle || "No chronicle name yet";
   if (!setting.can_edit) {
     return (
-      <SettingCard title="Title and teaser" readOnly={WRITERS}>
+      <SettingCard setting={SETTINGS.titleTeaser} about={null} readOnly={WRITERS}>
         <p className="text-parchment">{name}</p>
         {setting.subtitle && <p className="text-sm text-mist">{setting.subtitle}</p>}
         <div className="mt-3">{setting.teaser ? <Markdown text={setting.teaser} /> : <p className="text-sm text-mist">No teaser yet.</p>}</div>
@@ -124,7 +125,7 @@ function TitleCard({ troupeId, setting }: { troupeId: string; setting: SettingOu
   }
   const { subtitle, teaser } = form.value;
   return (
-    <SettingCard title="Title and teaser" about="The chronicle's name, and the chronicle as its characters know it.">
+    <SettingCard setting={SETTINGS.titleTeaser}>
       <SettingForm form={form} className="gap-3">
         <p className="text-sm">
           <span className="text-mist">Chronicle: </span>
@@ -161,10 +162,9 @@ function TitleCard({ troupeId, setting }: { troupeId: string; setting: SettingOu
 function ScopeCard({ troupeId, setting }: { troupeId: string; setting: SettingOut }) {
   const form = useSettingForm({ power: setting.power, agency: setting.agency }, (change) => saveText(troupeId, setting, change));
   const locale = setting.locale || "Not set";
-  const about = "Where the chronicle is, and how far its characters reach (MET: VTM pp. 329–330).";
   if (!setting.can_edit) {
     return (
-      <SettingCard title="Scope" about={about} readOnly={WRITERS}>
+      <SettingCard setting={SETTINGS.scope} readOnly={WRITERS}>
         <dl className="flex flex-col gap-2 text-sm">
           <ScopeEntry label="Locale">{locale}</ScopeEntry>
           <ScopeEntry label="Power">{setting.power || "Not set"}</ScopeEntry>
@@ -174,7 +174,7 @@ function ScopeCard({ troupeId, setting }: { troupeId: string; setting: SettingOu
     );
   }
   return (
-    <SettingCard title="Scope" about={about}>
+    <SettingCard setting={SETTINGS.scope}>
       <SettingForm form={form} className="gap-3">
         <p className="text-sm">
           <span className="text-mist">Locale: </span>
@@ -247,13 +247,13 @@ function useDrag(entries: SettingEntryOut[], reorder: (ids: string[]) => void, e
 function Entries({
   troupeId,
   kind,
-  title,
+  setting,
   entries,
   canEdit,
 }: {
   troupeId: string;
   kind: "theme" | "mood";
-  title: string;
+  setting: CardSetting;
   entries: SettingEntryOut[];
   canEdit: boolean;
 }) {
@@ -267,7 +267,7 @@ function Entries({
   const ids = entries.map((e) => e.id);
   return (
     <SettingCard
-      title={title}
+      setting={setting}
       readOnly={!canEdit && WRITERS}
       actions={
         canEdit && (
@@ -280,7 +280,7 @@ function Entries({
       {entries.length === 0 ? (
         <p className="text-sm text-mist">No {kind}s yet.</p>
       ) : (
-        <ul aria-label={title} className="flex flex-wrap gap-2">
+        <ul aria-label={setting.title} className="flex flex-wrap gap-2">
           {entries.map((e) => (
             <li key={e.id} {...drag(e)} className={canEdit ? "cursor-grab" : undefined}>
               <button
@@ -359,7 +359,7 @@ function Notes({ troupeId, entries, canEdit }: { troupeId: string; entries: Sett
   const ids = entries.map((e) => e.id);
   return (
     <SettingCard
-      title="Storyteller notes"
+      setting={SETTINGS.storytellerNotes}
       readOnly={!canEdit && WRITERS}
       actions={
         canEdit && (

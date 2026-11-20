@@ -1,5 +1,5 @@
 """A character's plan of XP purchases to come (horatio.xp_plans): its player's own,
-seen by staff only while shared."""
+seen by staff only while shared, and priced after what is in the cart."""
 
 import uuid
 
@@ -8,10 +8,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from horatio import sheets, xp_plans
-from horatio.api.cart import TeacherNeedOut, teacher_need_out
+from horatio.api.cart import CartChangeIn, TeacherNeedOut, teacher_need_out, to_change
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.auth.viewing import read_only
 from horatio.models import Character, User
 from horatio.permissions import visible_character
 
@@ -31,6 +30,13 @@ class XpPlanIn(BaseModel):
     lines: list[XpPlanLineIn] = Field(max_length=xp_plans.MAX_LINES)
     # The staff who see the sheet see the plan too.
     shared: bool = False
+    # What is in the cart, as `POST /cart` is sent it: the plan is priced after it.
+    cart: list[CartChangeIn] = Field(default=[], max_length=100)
+
+
+class XpPlanPriceIn(BaseModel):
+    # What is in the cart, as `POST /cart` is sent it: the plan is priced after it.
+    cart: list[CartChangeIn] = Field(default=[], max_length=100)
 
 
 class XpPlanLineOut(BaseModel):
@@ -45,11 +51,13 @@ class XpPlanLineOut(BaseModel):
     cost: int | None
     # Why the cart would refuse it even with the XP for it; null if it wouldn't.
     refused: str | None
-    # Already held at its rating or more.
+    # Already held at its rating or more, once the cart is bought.
     held: bool
+    # Held at its rating only once the cart is bought: the cart takes it there.
+    in_cart: bool
     # What this line and those before it cost together.
     total: int
-    # The XP unspent now pays for it and every line before it.
+    # The XP unspent now pays for the cart, it and every line before it.
     affordable: bool
     # Roughly how many games of the usual award until it is affordable; null if
     # there is no usual award to tell by.
@@ -69,6 +77,11 @@ class XpPlanAwardOut(BaseModel):
     per_game: int
     # Where that comes from: "the troupe's session XP".
     source: str
+    # Downtime XP a game's worth of time usually brings as well, to one decimal place.
+    downtime: float
+    # How that is told: "12 XP from 6 downtime cycles over 6 games in the last year";
+    # null if there is none.
+    downtime_source: str | None
 
 
 class XpPlanOut(BaseModel):
@@ -77,6 +90,8 @@ class XpPlanOut(BaseModel):
     mine: bool
     # XP unspent now.
     balance: int
+    # What the cart's changes spend, bought before the plan's lines.
+    cart_cost: int
     # The usual award for a game, to tell how far off a line is; null without a home troupe.
     award: XpPlanAwardOut | None
     # Whether the lines are priced: not while the custodian views as someone.
@@ -85,17 +100,23 @@ class XpPlanOut(BaseModel):
 
 
 def plan_out(
-    db: Session, user: User, character: Character, lines: list[xp_plans.Line], shared: bool
+    db: Session,
+    user: User,
+    character: Character,
+    lines: list[xp_plans.Line],
+    shared: bool,
+    in_cart: list[CartChangeIn],
 ) -> XpPlanOut:
     balance = sheets.xp_balance(db, character)
     award = xp_plans.usual_award(db, character)
-    priced = xp_plans.price(db, character, lines)
-    held_now = {row.key: row.trait.rating or 0 for row in sheets.sheet_rows(db, character)}
+    pricing = xp_plans.price(db, character, lines, [to_change(c) for c in in_cart])
+    # What is left for the plan once the cart is bought.
+    spare = balance - pricing.cart_cost
     out: list[XpPlanLineOut] = []
     total = 0
-    for p in priced:
+    for p in pricing.lines:
         total += p.cost or 0
-        affordable = not p.held and p.cost is not None and balance >= 0 and total <= balance
+        affordable = not p.held and p.cost is not None and spare >= 0 and total <= spare
         out.append(
             XpPlanLineOut(
                 category=p.line.category,
@@ -106,12 +127,11 @@ def plan_out(
                 cost=p.cost,
                 refused=p.refused,
                 held=p.held,
+                in_cart=p.in_cart,
                 total=total,
                 affordable=affordable,
-                games=None if p.held else xp_plans.games_away(total - balance, award),
-                buyable=affordable
-                and p.refused is None
-                and held_now.get(p.line.key, 0) == p.from_rating,
+                games=None if p.held else xp_plans.games_away(total - spare, award),
+                buyable=affordable and p.refused is None and p.next_step,
                 needs_approval=p.needs_approval,
                 because=p.because,
                 teacher=teacher_need_out(p.teacher),
@@ -121,8 +141,16 @@ def plan_out(
         shared=shared,
         mine=xp_plans.is_players(character, user),
         balance=balance,
-        award=XpPlanAwardOut(per_game=award.per_game, source=award.source) if award else None,
-        priced=not read_only(db),
+        cart_cost=pricing.cart_cost,
+        award=XpPlanAwardOut(
+            per_game=award.per_game,
+            source=award.source,
+            downtime=round(float(award.downtime), 1),
+            downtime_source=award.downtime_source,
+        )
+        if award
+        else None,
+        priced=pricing.priced,
         lines=out,
     )
 
@@ -135,14 +163,32 @@ def read_plan(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> XpPl
     plan = xp_plans.find(db, character)
     if not xp_plans.visible_to(character, user, plan):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No plan is shared.")
-    return plan_out(db, user, character, xp_plans.lines_of(plan), plan.shared if plan else False)
+    return plan_out(
+        db, user, character, xp_plans.lines_of(plan), plan.shared if plan else False, []
+    )
+
+
+@router.post("/xp-plan/price")
+def price_plan(
+    character_id: uuid.UUID, body: XpPlanPriceIn, db: DbSession, user: CurrentUser
+) -> XpPlanOut:
+    """The plan, as `GET /xp-plan` gives it, but priced as if the cart's changes were
+    bought first: the cart is kept in the browser, so it is sent. Nothing is saved."""
+    character = visible_character(db, user, character_id)
+    plan = xp_plans.find(db, character)
+    if not xp_plans.visible_to(character, user, plan):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No plan is shared.")
+    return plan_out(
+        db, user, character, xp_plans.lines_of(plan), plan.shared if plan else False, body.cart
+    )
 
 
 @router.put("/xp-plan")
 def save_plan(
     character_id: uuid.UUID, body: XpPlanIn, db: DbSession, user: CurrentUser
 ) -> XpPlanOut:
-    """Keep the plan's lines, in order, and whether it is shared. Its player's alone."""
+    """Keep the plan's lines, in order, and whether it is shared. Its player's alone,
+    and not once the character is retired. It comes back priced after the cart sent."""
     character = players_character(db, user, character_id)
     plan = xp_plans.save(
         db,
@@ -151,4 +197,4 @@ def save_plan(
         shared=body.shared,
     )
     db.commit()
-    return plan_out(db, user, character, xp_plans.lines_of(plan), plan.shared)
+    return plan_out(db, user, character, xp_plans.lines_of(plan), plan.shared, body.cart)
