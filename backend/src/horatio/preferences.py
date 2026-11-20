@@ -6,7 +6,8 @@ settings someone has changed (`users.preferences`), so changing a default here
 changes it for everyone who kept it. The tickets that follow #100 each give a
 setting its effect: #101 ratings, #102 time zone and dates, #104 paper and
 badge size, #105 the Play View, #106 notifications by email, #107 text size,
-#635 the theme, #671 the Throws tab's pictures.
+#635 the theme, #671 the Throws tab's pictures. Where each kind of notification
+comes (#1053) is kept alongside them (horatio.notification_choices).
 """
 
 import uuid
@@ -16,6 +17,7 @@ from zoneinfo import available_timezones
 from fastapi import HTTPException, status
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
+from horatio import notification_choices
 from horatio.models import User
 
 
@@ -46,24 +48,11 @@ class Preferences(BaseModel):
     # Dark, or Ultra goth: deep red on matte black (#635). Light isn't kept: it
     # only ever signs the person out (the frontend's Sunrise).
     theme: Literal["dark", "ultragoth"] = "dark"
-    # Which notifications also come by email, not only to the bell: each is off
-    # until the person turns it on, but announcements (#106,
-    # horatio.notification_emails.TOPICS).
-    email_downtime: bool = False
-    email_downtime_reminders: bool = False
-    email_approvals: bool = False
-    email_troupe_requests: bool = False
-    email_renames: bool = False
-    email_pictures: bool = False
-    email_titles: bool = False
-    # The troupe's news (#510): in the bell unless the person turns it off; by email
-    # only if they turn it on, so a busy week of news doesn't flood inboxes.
-    bell_news: bool = True
-    email_news: bool = False
-    # The troupe's announcements (#511): in the bell and by email unless the person
-    # turns them off, as they are often practical. An important one emails anyway.
-    bell_announcements: bool = True
-    email_announcements: bool = True
+    # Where each kind of notification comes, the bell or email, is kept here too, as
+    # `email_downtime`, `bell_news` and so on, but isn't one of these: the topics of
+    # horatio.notification_choices name them (#1053). `change` takes them, and `read`
+    # leaves them out.
+
     # Each email as it happens, or everything gathered into one a day.
     email_digest: Literal["at_once", "daily"] = "at_once"
     # Troupes' Who's Who names the player by their handle, not their name (#264).
@@ -100,23 +89,41 @@ def read(user: User) -> Preferences:
 
 def change(user: User, changes: dict[str, Any]) -> Preferences:
     """Apply changes to some settings, refusing unknown settings and values. Only
-    settings that differ from the default are kept on the account."""
-    unknown = set(changes) - set(Preferences.model_fields)
+    settings that differ from the default are kept on the account. Where a kind of
+    notification comes is among them (horatio.notification_choices)."""
+    unknown = set(changes) - set(Preferences.model_fields) - set(notification_choices.SETTINGS)
     if unknown:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, f"No such setting: {', '.join(sorted(unknown))}."
         )
     try:
-        merged = Preferences.model_validate({**read(user).model_dump(), **changes})
+        choices = notification_choices.kept(changes)
+    except ValueError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
+    others = {k: v for k, v in changes.items() if k not in choices}
+    try:
+        merged = Preferences.model_validate({**read(user).model_dump(), **others})
     except ValidationError as error:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             error.errors()[0]["msg"].removeprefix("Value error, "),
         ) from error
     defaults = Preferences()
-    user.preferences = {
+    stored = user.preferences or {}
+    notices = {
         name: value
-        for name, value in merged.model_dump().items()
-        if value != getattr(defaults, name)
+        for name, value in {
+            **{k: v for k, v in stored.items() if k in notification_choices.SETTINGS},
+            **choices,
+        }.items()
+        if value != notification_choices.SETTINGS[name]
+    }
+    user.preferences = {
+        **{
+            name: value
+            for name, value in merged.model_dump().items()
+            if value != getattr(defaults, name)
+        },
+        **notices,
     }
     return merged

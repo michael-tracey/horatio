@@ -88,7 +88,7 @@ function Theme() {
 }
 
 /** An on/off setting kept with the others. */
-function PreferenceSwitch({ name, label, hint }: { name: "quick_notes" | "keep_awake" | "bell_news" | "bell_announcements"; label: string; hint?: ReactNode }) {
+function PreferenceSwitch({ name, label, hint }: { name: "quick_notes" | "keep_awake"; label: string; hint?: ReactNode }) {
   const prefs = usePreferences();
   const save = useSaveSetting();
   return (
@@ -301,12 +301,6 @@ export function PreferencesPage() {
               ]}
             />
           </SettingRow>
-          <PreferenceSwitch name="bell_news" label="Troupe news in the bell" hint="Each new story from your troupes' news agencies. Email for it is under Sign-in and email." />
-          <PreferenceSwitch
-            name="bell_announcements"
-            label="Troupe announcements in the bell"
-            hint="Each announcement from your troupes' staff, such as a game moved. Email for it is under Sign-in and email."
-          />
         </SettingCard>
       </PreferenceCards>
     </div>

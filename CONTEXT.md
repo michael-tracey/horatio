@@ -345,6 +345,10 @@ _Avoid_: Sign-off, review
 Something in a person's bell. A task is work waiting on them, such as an approval to decide; it goes when the work is done. A message tells them something happened, such as downtime results arriving; it stays until read.
 _Avoid_: Alert, inbox item
 
+**Notification Settings**:
+Each person's own choice, on Account › Notifications, of where each kind of notification comes to them: the bell, email, both or neither, with emails at once or gathered into one a day. Some always come: a task stays in the bell until its work is done, and word about their account's safety always comes. Whether they're told at all of some goes with a role, and is chosen beside it, such as staff, the Harpy and Lesser Harpies choosing to be told of reported boons; the page shows those choices too. What a troupe also sends through its connectors is the troupe's choice, not theirs.
+_Avoid_: Subscriptions, alert settings, notification preferences
+
 **Discipline Purchase**:
 A discipline dot bought once the character has a home troupe. The experience is spent at once and the dot shows as awaiting approval until the home troupe decides; declining, withdrawing or leaving the troupe takes the dot back and refunds the experience.
 _Avoid_: Discipline request, teaching

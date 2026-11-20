@@ -8,18 +8,21 @@ their own choice, which only they change:
   when given access, and again when given that right (`BoonTalon.told_of_reports`).
   One who may not approve them is never told.
 The Harpy and a Lesser Harpy choose on their ledger in the Play View. Nobody is told
-of their own report, and each person once (horatio.boon_harpy.tell).
+of their own report, and each person once (horatio.boon_harpy.tell). Account ›
+Notifications lists every one of a person's choices (`choices_of`, #1053) and changes
+them here, so each is kept in one place.
 """
 
 import uuid
 from dataclasses import dataclass
+from typing import Literal
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from horatio import boon_harpy, boon_talons, boons, notifications, titles
 from horatio.models import BoonReportStaff, BoonTalon, Character, CharacterTitle, Troupe, User
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, allows, member_troupe_ids, troupe_role
 
 
 @dataclass(frozen=True)
@@ -127,6 +130,39 @@ def set_keeper(db: Session, user: User, troupe: Troupe, on: bool) -> bool:
         )
     db.flush()
     return True
+
+
+@dataclass(frozen=True)
+class Choice:
+    """One of a person's choices to be told, in one troupe: as staff, or as its Harpy or
+    a Lesser Harpy (`keeper`), playing `character`."""
+
+    troupe: Troupe
+    role: Literal["staff", "keeper"]
+    on: bool
+    character: Character | None = None
+    # A keeper's office, as the troupe names it: "Harpy", "Lesser Harpy" or "Talon".
+    office: str | None = None
+
+
+def choices_of(db: Session, user: User) -> list[Choice]:
+    """Every choice the person has, in the troupes they run or play in that keep a
+    ledger, by troupe name."""
+    found: list[Choice] = []
+    troupes = db.scalars(select(Troupe).where(Troupe.id.in_(member_troupe_ids(db, user))))
+    for troupe in sorted(troupes, key=lambda t: t.name.casefold()):
+        if not boons.tracked(troupe):
+            continue
+        staff = staff_told(db, user, troupe)
+        if staff is not None:
+            found.append(Choice(troupe, "staff", staff))
+        keeper = keeper_of(db, user, troupe)
+        if keeper is not None:
+            character, talon = keeper
+            office = boon_talons.ONE[troupe.boon_talon_word] if talon else "Harpy"
+            on = talon.told_of_reports if talon else harpy_told(db, troupe, character)
+            found.append(Choice(troupe, "keeper", on, character, office))
+    return found
 
 
 def told(db: Session, troupe: Troupe, waits: bool) -> list[Told]:

@@ -10,6 +10,7 @@ import { Button, Card, ErrorText, Field, Input, Loading, PageTitle, Tabs, Textar
 import { useAction, useLeaveWarning, useMe } from "../hooks";
 import { DevicePanel } from "../offline/DevicePanel";
 import { LinesVeilsForm } from "./LinesVeilsForm";
+import { NotificationsPage } from "./settings/NotificationsPage";
 import { PreferencesPage } from "./settings/PreferencesPage";
 import { SignInPage } from "./settings/SignInPage";
 
@@ -26,13 +27,15 @@ const TABS = [
   { to: "/account", label: "Profile", end: true },
   { to: "/account/lines-veils", label: "Lines and veils" },
   { to: "/account/preferences", label: "Preferences" },
+  { to: "/account/notifications", label: "Notifications" },
   { to: "/account/sign-in", label: "Sign-in and email" },
   { to: "/account/device", label: "This device" },
 ];
 
 /** The signed-in player's own profile, as others see it on their player page;
- * their lines and veils, which are never public; their preferences; how they sign
- * in and what they are sent; and what this device keeps for games with no signal. */
+ * their lines and veils, which are never public; their preferences; which
+ * notifications come and how (#1053); how they sign in; and what this device keeps
+ * for games with no signal. */
 export function AccountPage() {
   const me = useMe();
   const id = me.data?.id ?? "";
@@ -74,6 +77,7 @@ export function AccountPage() {
         <Route index element={<ProfileForm key={player.data.id} player={player.data} />} />
         <Route path="lines-veils" element={player.data.lines_veils && <LinesVeilsForm key={`${player.data.id}-lines-veils`} value={player.data.lines_veils} />} />
         <Route path="preferences" element={<PreferencesPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="sign-in" element={<SignInPage player={player.data} />} />
         <Route path="settings" element={<SettingsMoved />} />
       </Routes>
@@ -83,11 +87,11 @@ export function AccountPage() {
 
 /**
  * Account › Settings became Preferences and Sign-in and email (#910). Its old address,
- * in emails already sent, lands on Preferences, or on the email notifications it named.
+ * in emails already sent, lands on Preferences, or on the notifications it named (#1053).
  */
 function SettingsMoved() {
   const { hash } = useLocation();
-  return <Navigate replace to={hash === "#notifications" ? "/account/sign-in#notifications" : "/account/preferences"} />;
+  return <Navigate replace to={hash === "#notifications" ? "/account/notifications" : "/account/preferences"} />;
 }
 
 type Profile = Pick<PlayerOut, "display_name" | "links"> & { pronouns: string; bio: string; discord_handle: string };

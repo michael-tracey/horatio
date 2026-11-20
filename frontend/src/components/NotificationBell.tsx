@@ -108,7 +108,7 @@ export function NotificationBell() {
             />
           )}
           <div className="px-4 py-2.5 text-right">
-            <Link to="/account/sign-in#notifications" onClick={() => setOpen(false)} className="text-xs text-mist underline hover:text-parchment">
+            <Link to="/account/notifications" onClick={() => setOpen(false)} className="text-xs text-mist underline hover:text-parchment">
               Notification settings
             </Link>
           </div>

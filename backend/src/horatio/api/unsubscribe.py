@@ -12,7 +12,7 @@ router = APIRouter(prefix="/unsubscribe", tags=["unsubscribe"])
 
 NOT_A_LINK = (
     "This unsubscribe link doesn't work. Sign in and choose which notifications "
-    "come by email in Account → Sign-in and email."
+    "come by email in Account › Notifications."
 )
 
 
@@ -50,7 +50,7 @@ def unsubscribe_for(token: str, db: DbSession) -> Unsubscribe:
 
 @router.post("/{token}")
 def unsubscribe(token: str, db: DbSession) -> Unsubscribe:
-    """Stop the emails the link is about. The bell still shows them."""
+    """Stop the emails the link is about. The bell stays as the person set it."""
     user, topic = unsubscribing(db, token)
     notification_emails.unsubscribe(user, topic)
     db.commit()
