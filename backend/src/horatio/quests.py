@@ -49,12 +49,12 @@ happened, and staff edit and approve it as the official account.
 """
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any, Literal
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import ColumnElement, and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, delivery, quest_requirements
@@ -804,26 +804,34 @@ def role_of(db: Session, quest: Quest, character: Character) -> Role_ | None:
     return None
 
 
+def maybe_seen_by(character_ids: Collection[uuid.UUID]) -> ColumnElement[bool]:
+    """The quests one of the characters may see, as a condition on Quest joined to its
+    Troupe: more than they may, as `role_of` has the last word on each (horatio.search
+    asks it too)."""
+    ids = list(character_ids)
+    member_of = select(QuestMember.quest_id).where(QuestMember.character_id.in_(ids))
+    troupes = select(TroupeMembership.troupe_id).where(
+        TroupeMembership.character_id.in_(ids), TroupeMembership.left_at.is_(None)
+    )
+    return and_(
+        Quest.sent_at.is_not(None),
+        Troupe.quests_enabled,
+        or_(
+            Quest.leader_id.in_(ids),
+            Quest.id.in_(member_of),
+            (Quest.status == "active")
+            & Quest.offer.in_(("troupe", "unlocked"))
+            & Quest.troupe_id.in_(troupes),
+        ),
+    )
+
+
 def visible_quests(db: Session, character: Character) -> list[tuple[Quest, Role_]]:
     """The quests the character may see, newest first."""
-    member_of = select(QuestMember.quest_id).where(QuestMember.character_id == character.id)
-    troupes = select(TroupeMembership.troupe_id).where(
-        TroupeMembership.character_id == character.id, TroupeMembership.left_at.is_(None)
-    )
     candidates = db.scalars(
         select(Quest)
         .join(Troupe, Quest.troupe_id == Troupe.id)
-        .where(
-            Quest.sent_at.is_not(None),
-            Troupe.quests_enabled,
-            or_(
-                Quest.leader_id == character.id,
-                Quest.id.in_(member_of),
-                (Quest.status == "active")
-                & Quest.offer.in_(("troupe", "unlocked"))
-                & Quest.troupe_id.in_(troupes),
-            ),
-        )
+        .where(maybe_seen_by([character.id]))
         .order_by(Quest.sent_at.desc())
     )
     found: list[tuple[Quest, Role_]] = []

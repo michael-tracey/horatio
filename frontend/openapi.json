@@ -24110,6 +24110,37 @@
         "title": "GolcondaIn",
         "type": "object"
       },
+      "GroupOut": {
+        "properties": {
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/HitOut"
+            },
+            "title": "Hits",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "more": {
+            "title": "More",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "hits",
+          "more"
+        ],
+        "title": "GroupOut",
+        "type": "object"
+      },
       "Guidance": {
         "properties": {
           "requirements": {
@@ -25113,6 +25144,60 @@
           "findable"
         ],
         "title": "HistoryEntryOut",
+        "type": "object"
+      },
+      "HitOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "detail",
+          "to",
+          "troupe_id",
+          "troupe"
+        ],
+        "title": "HitOut",
         "type": "object"
       },
       "HolderOut": {
@@ -47689,6 +47774,22 @@
           "ends_at"
         ],
         "title": "ScheduledGameOut",
+        "type": "object"
+      },
+      "SearchOut": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "SearchOut",
         "type": "object"
       },
       "Seats": {
@@ -83341,6 +83442,68 @@
         "summary": "Power Notes",
         "tags": [
           "rules"
+        ]
+      }
+    },
+    "/api/search": {
+      "get": {
+        "description": "What `q` finds among what the person may see, each kind a group, the hits of\n`troupe_id` (the troupe they are in now) first. Nothing for fewer than two letters.",
+        "operationId": "search_everything_api_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Everything",
+        "tags": [
+          "search"
         ]
       }
     },

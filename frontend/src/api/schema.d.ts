@@ -7403,6 +7403,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Everything
+         * @description What `q` finds among what the person may see, each kind a group, the hits of
+         *     `troupe_id` (the troupe they are in now) first. Nothing for fewer than two letters.
+         */
+        get: operations["search_everything_api_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/setting-presets": {
         parameters: {
             query?: never;
@@ -23022,6 +23043,17 @@ export interface components {
             /** On */
             on: boolean;
         };
+        /** GroupOut */
+        GroupOut: {
+            /** Hits */
+            hits: components["schemas"]["HitOut"][];
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** More */
+            more: boolean;
+        };
         /** Guidance */
         Guidance: {
             /** Requirements */
@@ -23446,6 +23478,24 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /** HitOut */
+        HitOut: {
+            /** Detail */
+            detail: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** To */
+            to: string;
+            /** Troupe */
+            troupe: string | null;
+            /** Troupe Id */
+            troupe_id: string | null;
         };
         /** HolderOut */
         HolderOut: {
@@ -32467,6 +32517,11 @@ export interface components {
              * Format: date-time
              */
             starts_at: string;
+        };
+        /** SearchOut */
+        SearchOut: {
+            /** Groups */
+            groups: components["schemas"]["GroupOut"][];
         };
         /** Seats */
         Seats: {
@@ -52010,6 +52065,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PowerNotesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_everything_api_search_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                troupe_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchOut"];
                 };
             };
             /** @description Validation Error */

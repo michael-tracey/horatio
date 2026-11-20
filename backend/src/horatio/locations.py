@@ -35,13 +35,13 @@ log, which its player can read.
 
 import uuid
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import ColumnElement, or_, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, links
@@ -427,13 +427,14 @@ def control_limit(db: Session, character: Character) -> tuple[int, str]:
 
 def held_by(db: Session, character_id: uuid.UUID) -> list[Location]:
     """The locations the character controls, alone or jointly, in every troupe."""
-    return list(
-        db.scalars(
-            select(Location)
-            .where(or_(Location.controller_id == character_id, Location.joint_id == character_id))
-            .order_by(Location.name)
-        )
-    )
+    return list(db.scalars(select(Location).where(held([character_id])).order_by(Location.name)))
+
+
+def held(character_ids: Collection[uuid.UUID]) -> ColumnElement[bool]:
+    """The locations any of the characters controls, alone or jointly, as a condition
+    on Location: what their players learn the names of (horatio.search too)."""
+    ids = list(character_ids)
+    return or_(Location.controller_id.in_(ids), Location.joint_id.in_(ids))
 
 
 def subsidiaries(db: Session, location: Location) -> list[Location]:

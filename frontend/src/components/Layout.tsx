@@ -6,6 +6,7 @@ import { useNext, withNext } from "../next";
 import { NeedsConnection } from "../offline/NeedsConnection";
 import { OfflineStrip, useSendWaiting, useSignOut } from "../offline/Offline";
 import { NotificationBell } from "./NotificationBell";
+import { SiteSearch } from "./SiteSearch";
 import { Splash } from "./Splash";
 import { ErrorText } from "./ui";
 import { usePageWidth, WidePages } from "./widePage";
@@ -44,7 +45,9 @@ export function Layout() {
           {/* Signed out: the manual, which is for anyone, and the ways in (#907). */}
           {!me.data && <SignedOutLinks link={link} />}
           {me.data && (
-            <>
+            <div className="flex min-w-0 items-center gap-1 lg:gap-4">
+              {/* Search everything (#1046), on every screen, before the bar's links. */}
+              <SiteSearch />
               {/* The whole bar from lg up; below it, the bell and a menu, so the bar stays one line (#746). */}
               <nav aria-label="Main" className="hidden items-center gap-x-4 text-sm whitespace-nowrap lg:flex">
                 <SiteLinks isCustodian={me.data.is_custodian} link={link} />
@@ -58,7 +61,7 @@ export function Layout() {
                 <NotificationBell />
                 <SiteMenu name={me.data.display_name} isCustodian={me.data.is_custodian} onSignOut={signOut.signOut} />
               </div>
-            </>
+            </div>
           )}
         </div>
         {signOut.error !== null && (

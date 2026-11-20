@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useState, type ReactNode } from "react";
-import { Navigate, Route, Routes, useParams } from "react-router";
+import { Navigate, Route, Routes, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Empty, ErrorText, Loading, Select } from "../../components/ui";
 import { BackLink } from "../../components/BackLink";
@@ -39,7 +39,9 @@ export function HarpyLedgerPage() {
     queryKey: ["harpy-ledgers", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/harpy-ledgers", { params: { path: { character_id: characterId } } })),
   });
-  const [picked, setPicked] = useState<string | null>(null);
+  // A link can name the troupe whose ledger to open (`?troupe=`), as the top bar's search does (#1046).
+  const [params] = useSearchParams();
+  const [picked, setPicked] = useState<string | null>(() => params.get("troupe"));
   const found = ledgers.isSuccess ? ledgers.data : [];
   const shown = found.find((l) => l.troupe_id === picked) ?? found[0];
   const keeper: LedgerKeeper | null = shown

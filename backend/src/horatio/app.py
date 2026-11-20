@@ -100,6 +100,7 @@ from horatio.api import (
     roster,
     rules,
     scenes,
+    search,
     sect_status,
     setting_style,
     setup,
@@ -331,6 +332,7 @@ for module in (
     tools,
     vtes_symbols,
     jyhad_card,
+    search,
 ):
     api.include_router(module.router)
 # The signed-in person's choice of throw pictures (#671), beside the troupe's own.
