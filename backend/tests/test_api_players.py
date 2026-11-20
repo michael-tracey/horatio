@@ -206,6 +206,26 @@ def test_a_profile_lists_every_character_with_where_it_stands(troupe: Troupe) ->
     ]
 
 
+def test_the_custodian_sees_the_characters_a_player_deleted(troupe: Troupe) -> None:
+    """Once for each, though one deleted after leaving two troupes has two entries (#1063)."""
+    shark = new_character(troupe, troupe.player, "Shark Fighter", finished=False)
+    agnes = member(troupe, "Agnes")
+    other = troupe.custodian.client.post(
+        "/troupes", json={"name": "Court of Ash", "lead_handle": troupe.lead.handle}
+    ).json()["id"]
+    troupe.player.client.post(f"/characters/{agnes}/troupes", json={"troupe_id": other})
+    for troupe_id in (troupe.id, other):
+        troupe.player.client.delete(f"/characters/{agnes}/troupes/{troupe_id}")
+    for character_id in (shark, agnes):
+        assert troupe.player.client.delete(f"/characters/{character_id}").status_code == 204
+
+    deleted = profile(troupe.custodian, troupe.player.id)["deleted_characters"]
+    assert sorted(d["name"] for d in deleted) == ["Agnes", "Shark Fighter"]
+    assert profile(troupe.custodian, troupe.player.id)["characters"] == []
+    assert profile(troupe.player, troupe.player.id)["deleted_characters"] == []
+    assert profile(troupe.lead, troupe.player.id)["deleted_characters"] == []
+
+
 @pytest.mark.parametrize(
     ("changes", "refusal"),
     [

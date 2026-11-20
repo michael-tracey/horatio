@@ -159,6 +159,20 @@ everyone, check it with `docker exec horatio-api printenv FORWARDED_ALLOW_IPS`.
 The e2e suite runs with `HORATIO_AUTH_LIMITS=false`, as it signs everyone up from
 one address; nothing else should.
 
+## Security headers
+
+No other site may show Horatio in a frame (#1061): every answer carries
+`Content-Security-Policy: frame-ancestors 'none'` and `X-Frame-Options: DENY`. The
+app sends them (`horatio.app.SECURITY_HEADERS`), and nginx drops the app's copies and
+sends its own with `always`, so its own error pages (a 502 while the app restarts, a
+413) carry them too, beside HSTS. nginx gives a location the server's `add_header`s
+only while it has none of its own, so a location that adds a header must repeat them
+all. To check it, after a deploy:
+
+```bash
+curl -s -o /dev/null -D - https://horatio.lotslarp.org/ | grep -i -E 'frame|strict'
+```
+
 ## What is live
 
 **Custodian → System** shows the commit the running image was built from (linked to

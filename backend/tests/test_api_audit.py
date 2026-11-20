@@ -127,6 +127,51 @@ def test_every_event_for_one_character(troupe: Troupe, session: Session) -> None
     assert len(messages(troupe.custodian, character_id=agnes, troupe_id=other)) == 1
 
 
+def test_a_character_never_in_a_troupe_is_on_record_once_deleted(troupe: Troupe) -> None:
+    shark = new_character(troupe, troupe.player, "Shark Fighter", finished=False)
+
+    assert troupe.player.client.delete(f"/characters/{shark}").status_code == 204
+
+    # Its name finds it, though the character it was is gone (#1063).
+    found = search(troupe.custodian, q="shark fighter")["entries"]
+    assert [(e["troupe_name"], e["action"], e["message"]) for e in found] == [
+        (None, "character.deleted", "player deleted Shark Fighter.")
+    ]
+    assert (found[0]["character_id"], found[0]["level"]) == (None, "notice")
+    assert messages(troupe.custodian, level="notice", q="shark") == [
+        "player deleted Shark Fighter."
+    ]
+    data = found[0]["data"]
+    assert (data["splat"], data["kind"], data["creation_complete"]) == ("vampire", "pc", False)
+    assert datetime.fromisoformat(data["created_at"]) <= datetime.now(UTC)
+    assert messages(troupe.custodian, group="sheets") == ["player deleted Shark Fighter."]
+    assert messages(troupe.custodian, person=troupe.player.handle, q="deleted") == [
+        "player deleted Shark Fighter."
+    ]
+
+
+def test_a_character_deleted_after_its_troupes_is_on_record_in_each(troupe: Troupe) -> None:
+    agnes = new_character(troupe, troupe.player)
+    other = second_troupe(troupe)
+    for troupe_id in (troupe.id, other):
+        troupe.player.client.post(f"/characters/{agnes}/troupes", json={"troupe_id": troupe_id})
+        troupe.player.client.delete(f"/characters/{agnes}/troupes/{troupe_id}")
+    npc = troupe.storyteller.client.post(f"/troupes/{troupe.id}/npcs", json={"name": "Marta"})
+
+    assert troupe.player.client.delete(f"/characters/{agnes}").status_code == 204
+    assert troupe.lead.client.delete(f"/characters/{npc.json()['id']}").status_code == 204
+
+    # Each troupe's entry is the custodian's too: none is added outside them.
+    found = search(troupe.custodian, q="deleted")["entries"]
+    assert sorted((e["troupe_name"], e["message"]) for e in found) == [
+        ("Court of Ash", "player deleted Agnes."),
+        ("Lords of the Night", "lead deleted the NPC Marta."),
+        ("Lords of the Night", "player deleted Agnes."),
+    ]
+    assert sorted(e["data"]["kind"] for e in found) == ["npc", "pc", "pc"]
+    assert messages(troupe.custodian, group="npcs", q="deleted") == ["lead deleted the NPC Marta."]
+
+
 def test_groups_and_words(troupe: Troupe, session: Session) -> None:
     record_debug(session)
     agnes = new_character(troupe, troupe.player)

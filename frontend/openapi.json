@@ -16291,6 +16291,25 @@
         "title": "DefaultBloodlinesOut",
         "type": "object"
       },
+      "DeletedCharacter": {
+        "properties": {
+          "deleted_at": {
+            "format": "date-time",
+            "title": "Deleted At",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "deleted_at"
+        ],
+        "title": "DeletedCharacter",
+        "type": "object"
+      },
       "DeliverIn": {
         "properties": {
           "partial": {
@@ -38987,6 +39006,14 @@
               "$ref": "#/components/schemas/PlayerCharacter"
             },
             "title": "Characters",
+            "type": "array"
+          },
+          "deleted_characters": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DeletedCharacter"
+            },
+            "title": "Deleted Characters",
             "type": "array"
           },
           "discord_handle": {

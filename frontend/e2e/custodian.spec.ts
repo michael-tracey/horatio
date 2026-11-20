@@ -463,6 +463,19 @@ test("the custodian searches the audit log across troupes by person, days and ch
   }
   await found.first().getByRole("link", { name: /Camarilla/ }).click();
   await expect(c).toHaveURL(new RegExp(`/characters/${made.id}`));
+
+  // A character deleted before it was ever in a troupe is still on record, found by its name (#1063).
+  const shark = `Shark Fighter ${run}`;
+  const doomed = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: shark });
+  const deleted = await player.page.request.delete(`/api/characters/${doomed.id}`, { headers: { "X-Horatio": "1" } });
+  expect(deleted.status(), await deleted.text()).toBe(204);
+  await c.goBack();
+  await c.getByRole("button", { name: "Clear" }).click();
+  await expect(c.getByLabel("Character", { exact: true })).toHaveValue("");
+  await c.getByLabel("Words", { exact: true }).fill(shark);
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(found).toHaveCount(1);
+  await expect(found.first()).toContainText(`logsearch-play deleted ${shark}.`);
 });
 
 test("the custodian suspends a lead storyteller, who can't sign in until it is lifted", async ({ browser }) => {
@@ -594,6 +607,9 @@ test("the custodian opens a player's row on People to see every character they h
   const retired = await p.request.post(`/api/characters/${gone}/retire`, { headers, data: { reason: "final_death", note: "", listed: false } });
   expect(retired.status(), await retired.text()).toBe(200);
   const active = await make("Rosalind Vane");
+  // And one was deleted (#1063).
+  const deleted = await p.request.delete(`/api/characters/${await make("Shark Fighter")}`, { headers });
+  expect(deleted.status(), await deleted.text()).toBe(204);
   const picture = await p.request.post(`/api/characters/${active}/picture`, {
     headers,
     multipart: { file: { name: "portrait.jpg", mimeType: "image/jpeg", buffer: readFileSync("e2e/portrait.jpg") } },
@@ -639,6 +655,9 @@ test("the custodian opens a player's row on People to see every character they h
   await expect(bartholomew.getByText("Retired: Final Death", { exact: true })).toBeVisible();
   await expect(bartholomew.getByText("BC", { exact: true })).toBeVisible();
   await expect(bartholomew.locator("img")).toHaveCount(0);
+  // Under them, the deleted one, which leads to the audit log's entries for its name.
+  await expect(characters.getByText(/^Deleted: Shark Fighter on /)).toBeVisible();
+  await expect(characters.getByRole("link", { name: "Shark Fighter" })).toHaveAttribute("href", "/custodian/audit?words=Shark+Fighter");
   await c.screenshot(shots("people-characters"));
 
   // The ⋯ has no Characters any more: the chevron does its job.

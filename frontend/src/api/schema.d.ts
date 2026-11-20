@@ -20003,6 +20003,16 @@ export interface components {
             /** Setting */
             setting: string | null;
         };
+        /** DeletedCharacter */
+        DeletedCharacter: {
+            /**
+             * Deleted At
+             * Format: date-time
+             */
+            deleted_at: string;
+            /** Name */
+            name: string;
+        };
         /** DeliverIn */
         DeliverIn: {
             /**
@@ -29006,6 +29016,11 @@ export interface components {
             bio: string | null;
             /** Characters */
             characters: components["schemas"]["PlayerCharacter"][];
+            /**
+             * Deleted Characters
+             * @default []
+             */
+            deleted_characters: components["schemas"]["DeletedCharacter"][];
             /** Discord Handle */
             discord_handle: string | null;
             /**
