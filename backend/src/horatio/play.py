@@ -52,7 +52,11 @@ player lets them go with a tap when the book says they fade.
 A Stock NPC (issue #215) has only two trackers, from its stat block
 (horatio.rules.stock): its kind's resource in Blood's place (Rage for a werewolf)
 and its health levels, as one track. It has no Willpower, Morality or Beast
-traits (MET: VTM p. 490), so taps on those change nothing.
+traits (MET: VTM p. 490), so taps on those change nothing. A group of Stock NPCs
+(issue #1056) has no tracker of its own but a pair for each member, from 1:
+"member:<n>/health", marked as "health" is, and "member:<n>/blood", counting down
+from full as a Retainer's do. A member whose every level is marked is out of the
+fight (p. 490).
 
 A splat's Blood and panels follow its properties (horatio.rules.splats.Splat).
 A ghoul's Blood is part vitae and part human (core p. 297): "blood" is its vitae,
@@ -149,6 +153,8 @@ RETAINER = "retainer:"
 ALLY = "ally:"
 # Equipping an item: +1 equips it, -1 takes it off.
 EQUIP = "equip:"
+# A member of a group of Stock NPCs (issue #1056): "member:2/health", "member:2/blood".
+MEMBER = "member:"
 # Weapons in hand take at most two hands (MET: VTM p. 516).
 HANDS = 2
 WEAPONS = ("melee", "ranged")
@@ -244,6 +250,21 @@ def ally_key(summon: str, number: int) -> str:
     return f"{ALLY}{summon}#{number}"
 
 
+def member_key(number: int, what: str) -> str:
+    return f"{MEMBER}{number}/{what}"
+
+
+def member_number(tracker: str) -> str:
+    """The member a tap names, as its state keeps it: "2" for "member:2/health"."""
+    return tracker.removeprefix(MEMBER).partition("/")[0]
+
+
+def marked(tracker: str) -> bool:
+    """A tracker of health levels, marked with normal or aggravated damage: the
+    character's own, or a member's of a group of Stock NPCs."""
+    return tracker == "health" or (tracker.startswith(MEMBER) and tracker.endswith("/health"))
+
+
 @dataclass(frozen=True)
 class HeldItem:
     """An item the character holds, as equipping it needs it."""
@@ -332,6 +353,9 @@ class Limits:
     charges: tuple[reference.Counter, ...] = ()
     # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
     blood_name: str = "Blood"
+    # The members of a group of Stock NPCs (issue #1056), each with `health` and `blood`
+    # of its own; 0 for anyone else, a single Stock NPC too.
+    members: int = 0
     # The fixed trackers the character has; a Stock NPC has no Willpower and so on.
     trackers: frozenset[str] = frozenset(TRACKERS)
     # The Play View's panels for this character (horatio.rules.splats.Panels).
@@ -406,6 +430,18 @@ class Limits:
 
     def ally_trackers(self) -> dict[str, int]:
         return {k: most for a in self.ally_slots() for k, most in a.trackers().items()}
+
+    def member(self, tracker: str) -> tuple[int, str] | None:
+        """The member of a group a tap names, and which of its trackers ("health",
+        "blood"); None for a member it hasn't."""
+        number, _, what = tracker.removeprefix(MEMBER).partition("/")
+        if not number.isdigit() or what not in ("health", "blood"):
+            return None
+        return (int(number), what) if 1 <= int(number) <= self.members else None
+
+    def member_trackers(self) -> dict[str, int]:
+        """Each member's resource, full as a game starts."""
+        return {member_key(n, "blood"): self.starting_blood for n in range(1, self.members + 1)}
 
     @property
     def health_boxes(self) -> int:
@@ -534,6 +570,11 @@ class Limits:
             if found is None:
                 return None
             return 1 if found[1] is None else found[0].trackers()[tracker]
+        if tracker.startswith(MEMBER):
+            member = self.member(tracker)
+            if member is None:
+                return None
+            return self.health_boxes if member[1] == "health" else self.blood
         if tracker.startswith(reference.CHARGE):
             counter = self.charge(tracker)
             return counter.most if counter else None
@@ -567,12 +608,15 @@ class Limits:
             "uses": {e.key: e.uses for e in self.expendables}
             | self.retainer_trackers()
             | self.ally_trackers()
+            | self.member_trackers()
             # A power's charges start at none each game (issue #826): Kineticism's
             # don't outlast a fight (Vol. 2 p. 72).
             | {c.key: 0 for c in self.charges},
             # The allies called up (issue #827), in the order they were: none, as a
             # game starts.
             "allies": [],
+            # Each member's health levels marked, by its number (issue #1056): none.
+            "members": {str(n): [] for n in range(1, self.members + 1)},
             # Forms and powers switched on: none, as a game starts, but for the
             # effects kept until undone (issue #822).
             "on": list(
@@ -635,6 +679,11 @@ class Limits:
             slot, _, what = tracker.partition("/")
             name = ally[0].name if ally else slot.removeprefix(ALLY).replace("#", " ")
             return f"{name}: {'Blood' if what == 'blood' else 'health'}" if what else name
+        if tracker.startswith(MEMBER):
+            number, _, what = tracker.removeprefix(MEMBER).partition("/")
+            return f"{npcs.member_name(int(number)) if number.isdigit() else 'A member'}: " + (
+                self.blood_name if what == "blood" else "health"
+            )
         # A trait no longer on the sheet: "trait:backgrounds/Herd/" reads "Herd".
         parts = tracker.removeprefix("trait:").split("/")
         return ": ".join(p for p in parts[1:] if p) if len(parts) == 3 else tracker
@@ -695,6 +744,7 @@ def known_tracker(tracker: str) -> bool:
         or tracker == DRANK
         or tracker.startswith(("trait:", "counter:", RETAINER))
         or (tracker.startswith(ALLY) and "#" in tracker)
+        or (tracker.startswith(MEMBER) and "/" in tracker)
         or (tracker.startswith(reference.CHARGE) and len(tracker) > len(reference.CHARGE))
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or (tracker.startswith(PICK) and "/" in tracker)
@@ -1162,9 +1212,10 @@ def lent_teaching(db: Session, character: Character, game: PlayGame | None) -> i
 def stock_limits(db: Session, character: Character) -> Limits:
     """A Stock NPC's trackers, from its stat block (MET: VTM p. 490): its kind's
     resource, full at each game and spent as the kind says, and its health levels
-    (twice its rating for a werewolf or a Blood Brother)."""
-    _, block = npcs.stat_block(db, character)
+    (twice its rating for a werewolf or a Blood Brother); for a group, each member's."""
+    row, block = npcs.stat_block(db, character)
     resource = block.resource
+    group = row.count > 1
     return Limits(
         generation=0,
         blood=resource.size,
@@ -1175,7 +1226,9 @@ def stock_limits(db: Session, character: Character) -> Limits:
         morality=0,
         morality_name=None,
         blood_name=resource.name,
-        trackers=STOCK_TRACKERS,
+        # A group's members each have their own (issue #1056), and it none of its own.
+        trackers=frozenset() if group else STOCK_TRACKERS,
+        members=row.count if group else 0,
     )
 
 
@@ -1377,8 +1430,12 @@ def apply(
         return equip(state, limits, event, said)
     if event.tracker.startswith(ALLY):
         return ally(state, limits, event.tracker, event.amount)
-    if event.tracker == "health":
-        marks: list[str] = state["health"]
+    if marked(event.tracker):
+        marks: list[str] = (
+            state["health"]
+            if event.tracker == "health"
+            else state.setdefault("members", {}).setdefault(member_number(event.tracker), [])
+        )
         before = len(marks)
         damage = event.damage or "normal"
         if event.amount > 0:
@@ -1572,12 +1629,13 @@ def describe(
         if event.before is not None and event.after is not None:
             text += f": Vitae {event.before} → {event.after}"
         return text
-    if event.tracker == "health":
+    if marked(event.tracker):
         verb = "took" if event.amount > 0 else "healed"
-        text = f"Health: {verb} {abs(event.amount)} {event.damage or 'normal'}"
+        whose = "Health" if event.tracker == "health" else name.removesuffix(": health")
+        text = f"{whose}: {verb} {abs(event.amount)} {event.damage or 'normal'}"
         if event.before is not None and event.after is not None:
-            text += f" ({event.before} → {event.after} marked)"
-        return text
+            return f"{text} ({event.before} → {event.after} marked)"
+        return f"{text} (not on the sheet now)"
     if event.before is not None and event.after is not None:
         return f"{name} {event.before} → {event.after}"
     sign = "+" if event.amount > 0 else "−"
@@ -1793,7 +1851,7 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
             kind=tap.kind,
             tracker=tap.tracker if tap.kind == "change" else "",
             amount=tap.amount if tap.kind == "change" else 0,
-            damage=tap.damage if tap.tracker == "health" and tap.kind == "change" else None,
+            damage=tap.damage if marked(tap.tracker) and tap.kind == "change" else None,
             note=tap.note.strip(),
             undoes_id=target.id if target is not None else None,
             learned=tap.learned if tap.kind == "change" else None,

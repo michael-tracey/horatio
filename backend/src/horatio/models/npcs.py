@@ -12,10 +12,14 @@ from horatio.models.base import Record
 class StockNpc(Record):
     """What a Stock NPC has in place of a sheet (MET: VTM pp. 489–490; see
     horatio.rules.stock): its NPC rating and specializations, and staff's notes.
-    Its name, kind and picture are on its character."""
+    Its name, kind and picture are on its character. It may stand for a group of
+    identical Stock NPCs (issue #1056), each with its own health and resource."""
 
     __tablename__ = "stock_npcs"
-    __table_args__ = (CheckConstraint("rating >= 1", name="rating"),)
+    __table_args__ = (
+        CheckConstraint("rating >= 1", name="rating"),
+        CheckConstraint("count >= 1", name="count"),
+    )
 
     character_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("characters.id", ondelete="CASCADE"), unique=True
@@ -27,6 +31,11 @@ class StockNpc(Record):
         JSONB, default=list, server_default="[]"
     )
     notes: Mapped[str] = mapped_column(default="", server_default="")
+    # How many members it stands for: 1 for a single Stock NPC.
+    count: Mapped[int] = mapped_column(default=1, server_default="1")
+    # In a group, the member who carries each item, by the item's id: {"<id>": 2}. An
+    # item not here is carried by the group as a whole.
+    item_members: Mapped[dict[str, int]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class NpcClaim(Record):

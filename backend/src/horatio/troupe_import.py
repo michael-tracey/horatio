@@ -269,7 +269,8 @@ def checked_kind(document: backup.CharacterDocument) -> tuple[str, str, dict[str
 def set_stock(
     db: Session, npc: Character, troupe: Troupe, document: backup.CharacterDocument
 ) -> None:
-    """A Stock NPC's rating and specializations, as the Stock NPC rules allow them."""
+    """A Stock NPC's rating, specializations and count, as the Stock NPC rules allow
+    them."""
     found = document.stock or backup.BackupStock(rating=1)
     chosen: list[stock.Specialization] = []
     for s in found.specializations:
@@ -293,6 +294,7 @@ def set_stock(
         db.add(row)
     row.rating = found.rating
     row.specializations = [{"type": s.type, "name": s.name} for s in chosen]
+    row.count = found.count
 
 
 def fill_npc(

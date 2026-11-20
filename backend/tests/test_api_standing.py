@@ -321,7 +321,7 @@ def test_deleting_a_character_after_it_leaves_every_troupe(troupe: Troupe) -> No
     assert troupe.player.client.get("/characters").json() == []
     # The storytellers can see what happened, by name.
     messages = log(troupe.lead, troupe.id)
-    assert messages[0] == "Agnes was deleted by its player."
+    assert messages[0] == "player deleted Agnes."
     left = "Agnes left Lords of the Night as its home troupe, and has no home troupe now."
     assert left in messages
 
@@ -330,7 +330,8 @@ def test_a_character_never_in_a_troupe_is_deleted_quietly(troupe: Troupe) -> Non
     character_id = new_character(troupe, troupe.player)
 
     assert troupe.player.client.delete(f"/characters/{character_id}").status_code == 204
-    assert log(troupe.lead, troupe.id)[0] != "Agnes was deleted by its player."
+    # No troupe's log hears of it; the custodian's search does (test_api_audit).
+    assert "player deleted Agnes." not in log(troupe.lead, troupe.id)
 
 
 def test_a_character_played_at_a_game_is_deleted_with_its_game(troupe: Troupe) -> None:

@@ -569,8 +569,12 @@ test("a storyteller sends a claim link, and a newcomer signs up through it and c
   await expect(p.getByRole("row", { name: /Bastien Roux/ }).getByText("Claim link out")).toBeVisible();
 
   // Someone with no account opens it, sees whose it is, and signs up to claim it.
+  // The page sends no Referer, which would carry the link's secret (#1060).
   const n = await (await browser.newContext()).newPage();
-  await n.goto(new URL(url).pathname);
+  const claimRead = n.waitForRequest((r) => new URL(r.url()).pathname.startsWith("/api/claims/"));
+  const opened = await n.goto(new URL(url).pathname);
+  expect(opened?.headers()["referrer-policy"]).toBe("no-referrer");
+  expect(await (await claimRead).headerValue("referer")).toBeNull();
   await expect(n.getByText("Bastien Roux", { exact: true })).toBeVisible();
   await n.getByRole("link", { name: "Sign up to claim it" }).click();
   await n.getByLabel("Your name").fill("claim-newcomer");

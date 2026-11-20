@@ -39,6 +39,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     expendables: [{ key: "trait:backgrounds/Herd/", name: "Herd", detail: "", group: "Backgrounds", uses: 2, left: 2, counter_id: null, owed: 0 }],
     equipment: [],
     stock_items: [],
+    stock_members: [],
     equipped: [],
     influence: [],
     powers: [],
@@ -242,6 +243,41 @@ describe("items equipped (#306)", () => {
     const shown = withPending(view({ equipment: items, equipped: ["i1", "i2"] }), [give]);
     expect(shown.equipped).toEqual(["i2"]);
     expect(shown.equipment.map((i) => i.name)).toEqual(["Flak Vest", "Chain Mail"]);
+  });
+});
+
+describe("a group of Stock NPCs (#1056)", () => {
+  const member = (number: number) => ({ number, name: `Member ${number}`, marks: [] as string[], blood: { value: 10, most: 10, start: 10 } });
+  const group = () =>
+    view({
+      npc_form: "stock",
+      stock: { count: 3, item_members: {}, stats: { health: 2 } } as unknown as PlayView["stock"],
+      stock_members: [member(1), member(2), member(3)],
+    });
+
+  it("marks each member's health apart, up to the stat block's levels, as the server does", () => {
+    const shown = withPending(group(), [change("member:2/health", 1, 1, "normal"), change("member:3/health", 5, 2, "aggravated"), change("member:1/blood", -2, 3)]);
+
+    expect(shown.stock_members.map((m) => [m.marks, m.blood.value])).toEqual([
+      [[], 8],
+      [["normal"], 10],
+      [["aggravated", "aggravated"], 10],
+    ]);
+    expect(shown.log.map((e) => e.text)).toEqual(["Member 1: Blood 10 → 8", "Member 3: took 5 aggravated (0 → 2 marked)", "Member 2: took 1 normal (0 → 1 marked)"]);
+    // The group's own health is no one's.
+    expect(shown.health.marks).toEqual([]);
+  });
+
+  it("knows no member past the count", () => {
+    const shown = withPending(group(), [change("member:4/health", 1, 1, "normal")]);
+
+    expect(shown.log[0]!.text).toBe("Member 4: took 1 normal (not on the sheet now)");
+    expect(shown.stock_members.every((m) => m.marks.length === 0)).toBe(true);
+  });
+
+  it("says in the toast which member took it", () => {
+    expect(tapToast(withPending(group(), []), change("member:2/health", 1, 1, "aggravated"))).toBe("Member 2 took 1 aggravated · 1/2 marked");
+    expect(tapToast(withPending(group(), []), change("member:3/blood", -1, 1))).toBe("Member 3 spent 1 Blood · 9/10");
   });
 });
 

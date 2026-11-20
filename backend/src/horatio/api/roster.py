@@ -73,6 +73,8 @@ class RosterEntry(BaseModel):
     npc_kind_name: str | None
     npc_form: str | None
     stock_rating: int | None
+    # How many a Stock NPC stands for (issue #1056); None for anyone else.
+    stock_count: int | None = None
     # Staff list the NPC on the troupe's Who's Who though it holds no title there.
     on_whos_who: bool
     # When the NPC's open claim link expires (horatio.npc_gifts), if it has one.
@@ -153,8 +155,8 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         )
     )
     npc_ids = [c.id for _, c, _ in rows if c.kind == "npc"]
-    stock_ratings = {
-        row.character_id: row.rating
+    stock_rows = {
+        row.character_id: row
         for row in db.scalars(select(StockNpc).where(StockNpc.character_id.in_(npc_ids)))
     }
     claims = {
@@ -183,7 +185,8 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             npc_kind=c.npc_kind if c.kind == "npc" else None,
             npc_kind_name=kind_name(c.npc_kind, c.npc_custom_kind) if c.kind == "npc" else None,
             npc_form=c.npc_form if c.kind == "npc" else None,
-            stock_rating=stock_ratings.get(c.id),
+            stock_rating=stock_rows[c.id].rating if c.id in stock_rows else None,
+            stock_count=stock_rows[c.id].count if c.id in stock_rows else None,
             on_whos_who=c.kind == "npc" and c.on_whos_who,
             claim_expires_at=claims.get(c.id),
             titles=held[c.id],
@@ -315,7 +318,7 @@ MESSAGES: dict[str, str] = {
     "troupe.leave.home": "{character} left {troupe} as its home troupe, and has no home troupe"
     " now.",
     "troupe.leave.visit": "{character} stopped visiting {troupe}.",
-    "character.deleted": "{character} was deleted by its player.",
+    "character.deleted": "{actor} deleted {character}.",
     "character.imported": "{actor} imported {character} from a backup file {whence}; parts"
     " left out: {left_out}.",
     "approval.request": "{actor} asked for {character} to be approved.",
@@ -565,6 +568,8 @@ MESSAGES: dict[str, str] = {
     "character.copied_as_npc": "{actor} made the NPC {npc} from a copy of {character}, which"
     " stays as it was.",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
+    "npc.stock_item_member": "{actor} set who carries {item} in the Stock NPC group"
+    " {character}: {member}.",
     "npc.pick_placed": "{actor} placed a creation pick of {pick} on {name} for the NPC"
     " {character}.",
     "npc.pick_taken_off": "{actor} took the creation pick off {name} for the NPC {character}.",
