@@ -146,24 +146,25 @@ def test_a_notification_names_the_clan_as_the_troupe_calls_it_then(
 
     player, troupe_id = uuid.UUID(troupe.player.id), uuid.UUID(troupe.id)
     said = "An Assamite was Embraced."
-    notifications.notify(session, [player], "test.before", said, "/", troupe_id=troupe_id)
+    # Three kinds, to tell them apart.
+    notifications.notify(session, [player], "sheet.embrace", said, "/", troupe_id=troupe_id)
     assert call_it(troupe.storyteller, troupe, "Assamite").status_code == 200
     session.expire_all()
-    notifications.notify(session, [player], "test.after", said, "/", troupe_id=troupe_id)
-    notifications.notify(session, [player], "test.no_troupe", "Assamites, everywhere.", "/")
+    notifications.notify(session, [player], "sheet.given", said, "/", troupe_id=troupe_id)
+    notifications.notify(session, [player], "sheet.diablerie", "Assamites, everywhere.", "/")
 
     summaries = dict(
         session.execute(
             select(Notification.kind, Notification.summary).where(
-                Notification.user_id == player, Notification.kind.startswith("test.")
+                Notification.user_id == player, Notification.kind.startswith("sheet.")
             )
         ).all()
     )
     # The first keeps the name it was written with.
     assert summaries == {
-        "test.before": "A Banu Haqim was Embraced.",
-        "test.after": "An Assamite was Embraced.",
-        "test.no_troupe": "Banu Haqim, everywhere.",
+        "sheet.embrace": "A Banu Haqim was Embraced.",
+        "sheet.given": "An Assamite was Embraced.",
+        "sheet.diablerie": "Banu Haqim, everywhere.",
     }
 
 

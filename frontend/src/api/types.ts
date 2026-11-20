@@ -431,3 +431,5 @@ export type BundleImportOut = Schemas["BundleImportOut"];
 export type BundleEntryOut = Schemas["BundleEntryOut"];
 export type TroupeImportOut = Schemas["TroupeImportOut"];
 export type TroupeEntryOut = Schemas["TroupeEntryOut"];
+export type NotificationSettingsOut = Schemas["NotificationSettingsOut"];
+export type NotificationTopicOut = Schemas["NotificationTopicOut"];

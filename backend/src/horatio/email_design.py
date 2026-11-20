@@ -742,7 +742,7 @@ def sample(name: str) -> Sample:
                 Line("You get this because you're Horatio's custodian."),
                 Line(
                     "Choose which emails you get.",
-                    f"{site()}/account/sign-in#notifications",
+                    f"{site()}/account/notifications",
                     "Notification settings",
                 ),
             ),

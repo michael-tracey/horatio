@@ -7,6 +7,7 @@ from horatio.models.approvals import (
     ReconciliationItem,
 )
 from horatio.models.audit import AuditEvent
+from horatio.models.auth_attempt import AuthAttempt
 from horatio.models.backstories import (
     Backstory,
     BackstoryAnswer,
@@ -212,6 +213,7 @@ __all__ = [
     "TroupeConnector",
     "Approval",
     "AuditEvent",
+    "AuthAttempt",
     "AuthIdentity",
     "Base",
     "Character",

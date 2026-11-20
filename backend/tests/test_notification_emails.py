@@ -67,6 +67,20 @@ def waiting(session: Session) -> list[EmailNotice]:
     )
 
 
+def emailed(person: Person, *topics: str) -> tuple[bool, ...]:
+    """Whether each of these comes to the person by email, as their Notifications page
+    shows it."""
+    groups = person.client.get("/notification-settings").json()["groups"]
+    on = {
+        t["name"]: r["on"]
+        for g in groups
+        for t in g["topics"]
+        for r in t["routes"]
+        if r["way"] == "email"
+    }
+    return tuple(on[t] for t in topics)
+
+
 def unsubscribe_token(message: EmailMessage) -> str:
     found = re.search(r"http://localhost:5173/unsubscribe/(\S+)", text_of(message))
     assert found, text_of(message)
@@ -74,23 +88,21 @@ def unsubscribe_token(message: EmailMessage) -> str:
 
 
 def test_each_kind_is_off_until_chosen(client_for: Callable[[], TestClient]) -> None:
-    """All but troupe announcements, which are often practical (#511)."""
+    """All but troupe announcements, which are often practical (#511). Each is on
+    Account › Notifications (#1053; horatio.notification_choices)."""
     person = sign_up(client_for, "settler")
-    shown = person.client.get("/preferences").json()
-    assert shown.pop("email_announcements") is True
-    assert {name for name in shown if name.startswith("email_")} == {
-        "email_downtime",
-        "email_downtime_reminders",
-        "email_approvals",
-        "email_troupe_requests",
-        "email_renames",
-        "email_pictures",
-        "email_titles",
-        "email_news",
-        "email_digest",
+    groups = person.client.get("/notification-settings").json()["groups"]
+    emailed = {
+        t["name"]: r["on"]
+        for g in groups
+        for t in g["topics"]
+        for r in t["routes"]
+        if r["way"] == "email" and not r["always"]
     }
-    assert not any(v for k, v in shown.items() if k.startswith("email_") and k != "email_digest")
-    assert shown["email_digest"] == "at_once"
+    assert emailed.pop("announcements") is True
+    assert not any(emailed.values())
+    assert {"downtime", "downtime_reminders", "renames", "pictures", "news"} <= set(emailed)
+    assert person.client.get("/preferences").json()["email_digest"] == "at_once"
     assert person.client.patch("/preferences", json={"email_digest": "weekly"}).status_code == 422
 
 
@@ -281,8 +293,7 @@ def test_the_link_in_an_email_turns_that_kind_off(
     stopped = stranger.post(f"/unsubscribe/{token}")
     assert stopped.status_code == 200, stopped.text
     assert stopped.json()["subscribed"] is False
-    prefs = custodian.client.get("/preferences").json()
-    assert (prefs["email_troupe_requests"], prefs["email_renames"]) == (False, True)
+    assert emailed(custodian, "troupe_requests", "renames") == (False, True)
 
 
 def test_a_digest_link_turns_every_kind_off(
@@ -298,8 +309,7 @@ def test_a_digest_link_turns_every_kind_off(
         custodian.client.post(f"/unsubscribe/{token.group(1).rstrip('>')}").json()["about"]
         == "any notification"
     )
-    prefs = custodian.client.get("/preferences").json()
-    assert (prefs["email_troupe_requests"], prefs["email_renames"]) == (False, False)
+    assert emailed(custodian, "troupe_requests", "renames") == (False, False)
 
 
 def test_a_made_up_link_does_nothing(
@@ -319,5 +329,5 @@ def test_a_made_up_link_does_nothing(
     ):
         refused = custodian.client.post(f"/unsubscribe/{forged}")
         assert refused.status_code == 404, forged
-        assert "Account → Sign-in and email" in refused.json()["detail"]
-    assert custodian.client.get("/preferences").json()["email_troupe_requests"] is True
+        assert "Account › Notifications" in refused.json()["detail"]
+    assert emailed(custodian, "troupe_requests") == (True,)

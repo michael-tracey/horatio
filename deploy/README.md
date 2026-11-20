@@ -167,6 +167,27 @@ curl -s -o /dev/null -D - -H 'Accept-Encoding: gzip' -b 'horatio_session=…' \
 
 It shows `etag: W/"…"`; the same with `-H 'If-None-Match: W/"…"'` gives 304.
 
+## Client addresses
+
+The limits on failed sign-ins and on sign-ups (`horatio.auth.attempts`, #1059) count
+by the address a request comes from. nginx says what that is in `X-Forwarded-For`,
+and uvicorn believes the header only from the addresses in `FORWARDED_ALLOW_IPS`,
+so no one can make up an address of their own by sending one. Anyone else's is
+ignored, and the request counts as coming from wherever it came from.
+
+nginx reaches the app through its published port, `127.0.0.1:8100`. Docker hands
+that connection on to the container from the gateway of the `horatio` network, so
+that is the address nginx's requests arrive from. `playbook.yml` looks the gateway
+up and sets `FORWARDED_ALLOW_IPS` to it on `horatio-api`; nothing else on the
+network (Postgres) is believed.
+
+Unset, uvicorn believes only loopback, which nginx never is from inside the
+container: every request would then seem to come from the gateway, and the limits
+would count the whole site as one address. If sign-ins are being turned away for
+everyone, check it with `docker exec horatio-api printenv FORWARDED_ALLOW_IPS`.
+The e2e suite runs with `HORATIO_AUTH_LIMITS=false`, as it signs everyone up from
+one address; nothing else should.
+
 ## Security headers
 
 No other site may show Horatio in a frame (#1061): every answer carries

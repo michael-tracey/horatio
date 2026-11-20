@@ -127,6 +127,11 @@
       community.docker.docker_network:
         name: "{{ network }}"
 
+    - name: Inspect the app's network gateway
+      community.docker.docker_network_info:
+        name: "{{ network }}"
+      register: app_network
+
     - name: Run Postgres
       community.docker.docker_container:
         name: horatio-db
@@ -188,6 +193,10 @@
           - name: "{{ network }}"
         networks_cli_compatible: yes
         env_file: "{{ app_dir }}/app.env"
+        env:
+          # The published app port reaches the container through this network
+          # gateway; trust only it for forwarded client IP headers.
+          FORWARDED_ALLOW_IPS: "{{ app_network.network.IPAM.Config[0].Gateway }}"
         volumes:
           - "{{ app_dir }}/backups:/backups"
           - "{{ app_dir }}/uploads:/uploads"

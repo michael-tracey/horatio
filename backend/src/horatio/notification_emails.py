@@ -1,10 +1,11 @@
 """Notifications that also come by email (issue #106).
 
-Each person chooses in Account → Sign-in and email which kinds of notification reach them
-by email as well as in the bell (`TOPICS`, a setting each, all off until they
-turn one on but announcements, which are on), and whether each email goes at
-once or everything waiting is gathered into one a day, at `DIGEST_HOUR` in their
-time zone (UTC while they follow their device's, which the server cannot know).
+Each person chooses in Account › Notifications which kinds of notification reach them
+by email as well as in the bell (the topics of horatio.notification_choices, a
+setting each, all off until they turn one on but announcements, which are on), and
+whether each email goes at once or everything waiting is gathered into one a day,
+at `DIGEST_HOUR` in their time zone (UTC while they follow their device's, which the
+server cannot know).
 
 `queue` keeps an `EmailNotice` for each person who wants that kind, in the same
 transaction as what happened; nothing is kept while the server has no email set
@@ -32,7 +33,6 @@ import html
 import logging
 import uuid
 from collections.abc import Iterable
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 from email.utils import formataddr
@@ -47,6 +47,7 @@ from horatio import (
     delivery,
     email_design,
     mail_sender,
+    notification_choices,
     preferences,
     suspensions,
 )
@@ -55,6 +56,7 @@ from horatio.connectors import SendError, email
 from horatio.email_design import Body, Design, Line, compose, text_html
 from horatio.mail_sender import Sender
 from horatio.models import EmailNotice, Troupe, User
+from horatio.notification_choices import BY_NAME, TOPICS, Topic
 from horatio.preferences import Preferences
 
 log = logging.getLogger(__name__)
@@ -62,50 +64,22 @@ log = logging.getLogger(__name__)
 GAVE_UP = "mail.gave_up"
 
 
-@dataclass(frozen=True)
-class Topic:
-    # As links name it; its setting is `email_<name>` (horatio.preferences).
-    name: str
-    title: str
-    # The notification kinds it covers: a kind, or the first part of several
-    # ("approval" for approval.discipline, approval.review…).
-    kinds: tuple[str, ...]
-
-    @property
-    def setting(self) -> str:
-        return f"email_{self.name}"
-
-
-TOPICS = (
-    Topic("downtime", "Downtime results", ("downtime.delivered",)),
-    Topic("downtime_reminders", "Downtime reminders", ("downtime.reminder",)),
-    Topic("approvals", "Approvals waiting", ("approval",)),
-    Topic("troupe_requests", "Troupe requests", ("troupe_request",)),
-    Topic("renames", "Character renames", ("character.renamed",)),
-    Topic("pictures", "Pictures removed", ("picture.removed",)),
-    Topic("titles", "Titles chosen", ("title",)),
-    Topic("news", "Troupe news", ("news.published",)),
-    Topic("announcements", "Troupe announcements", ("announcement.published",)),
-)
-BY_NAME = {topic.name: topic for topic in TOPICS}
 # An unsubscribe link that turns off every kind, as a digest carries.
 ALL = "all"
+# Where each person chooses (#1053).
+SETTINGS_PAGE = "/account/notifications"
 
 # When the daily digest goes, in the person's time zone.
 DIGEST_HOUR = 8
 
 
-def topic_for(kind: str) -> Topic | None:
-    """The setting a kind of notification comes under, or None if it never
-    comes by email."""
-    for topic in TOPICS:
-        if any(kind == k or kind.startswith(f"{k}.") for k in topic.kinds):
-            return topic
-    return None
+def by_email(topic: Topic) -> bool:
+    """Whether the person chooses if `topic` comes by email: those its links can stop."""
+    return topic.choosable("email")
 
 
-def wants(prefs: Preferences, topic: Topic) -> bool:
-    return bool(getattr(prefs, topic.setting))
+def wants(user: User, topic: Topic) -> bool:
+    return notification_choices.chosen(user, topic, "email")
 
 
 def next_digest(prefs: Preferences, after: datetime) -> datetime:
@@ -130,16 +104,16 @@ def queue(
     """Keep the notification to email to each of `user_ids` who wants this kind by
     email, at once or with their digest; `forced`, to each of them whether they
     want it or not (an important announcement)."""
-    topic = topic_for(kind)
+    topic = notification_choices.topic_for(kind)
     ids = list(dict.fromkeys(user_ids))
-    if topic is None or not ids or not email.configured():
+    if "email" not in topic.routes or not ids or not email.configured():
         return
     troupe = db.get_one(Troupe, troupe_id).name if troupe_id is not None else None
     at = delivery.now()
     # Someone suspended gets no notification emails (horatio.suspensions).
     for user in db.scalars(select(User).where(User.id.in_(ids), ~suspensions.suspended_user())):
         prefs = preferences.read(user)
-        if not forced and not wants(prefs, topic):
+        if not forced and not wants(user, topic):
             continue
         db.add(
             EmailNotice(
@@ -171,7 +145,7 @@ def unsubscribing(db: Session, token: str) -> tuple[User, str] | None:
     """Whose link this is and what it turns off, or None if it is not a real one."""
     user_id, _, rest = token.partition(".")
     topic, _, given = rest.partition(".")
-    if topic != ALL and topic not in BY_NAME:
+    if topic != ALL and not (topic in BY_NAME and by_email(BY_NAME[topic])):
         return None
     try:
         user = db.get(User, uuid.UUID(user_id))
@@ -182,18 +156,19 @@ def unsubscribing(db: Session, token: str) -> tuple[User, str] | None:
     return user, topic
 
 
-def settings_for(topic: str) -> list[str]:
-    return [t.setting for t in TOPICS] if topic == ALL else [BY_NAME[topic].setting]
+def topics_for(topic: str) -> list[Topic]:
+    """The topics a link stops by email: one, or for `ALL` every one the person chooses."""
+    return [t for t in TOPICS if by_email(t)] if topic == ALL else [BY_NAME[topic]]
 
 
 def subscribed(user: User, topic: str) -> bool:
     """Whether any of the emails the link stops are on."""
-    prefs = preferences.read(user)
-    return any(getattr(prefs, setting) for setting in settings_for(topic))
+    return any(wants(user, t) for t in topics_for(topic))
 
 
 def unsubscribe(user: User, topic: str) -> None:
-    preferences.change(user, dict.fromkeys(settings_for(topic), False))
+    """Turn off by email what the link stops, as Account › Notifications would."""
+    preferences.change(user, {t.setting("email"): False for t in topics_for(topic)})
 
 
 def about(topic: str) -> str:
@@ -223,7 +198,7 @@ def footer(user: User, topic: str) -> list[Line]:
         ),
         Line(
             "Choose which notifications come by email.",
-            absolute("/account/sign-in#notifications"),
+            absolute(SETTINGS_PAGE),
             "Notification settings",
         ),
     ]
@@ -324,7 +299,7 @@ def send_to(db: Session, user: User, notices: list[EmailNotice], at: datetime) -
     wanted: list[EmailNotice] = []
     for notice in notices:
         topic = BY_NAME.get(notice.topic)
-        if suspended or topic is None or not (notice.forced or wants(prefs, topic)):
+        if suspended or topic is None or not (notice.forced or wants(user, topic)):
             db.delete(notice)
         else:
             wanted.append(notice)

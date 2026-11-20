@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -1221,10 +1221,10 @@ test("a lead bans a merit on the Book traits page: it is greyed out with the rea
   const part = p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
   await part.getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Show").selectOption("all");
-  await p.getByLabel("Search Merits").fill("Lucky");
-  const lucky = p.getByRole("button", { name: /^Lucky/ });
+  await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Lucky");
+  const lucky = p.getByRole("option", { name: /^Lucky/ });
   await expect(lucky).toBeDisabled();
-  await expect(lucky).toContainText("Lucky is banned in this troupe. Too swingy at our table.");
+  await expect(lucky).toHaveAccessibleDescription("Lucky is banned in this troupe. Too swingy at our table.");
 
   // The troupe's House rules list it as banned.
   await p.goto(`/troupes/${troupeId}/house-rules`);
@@ -1328,10 +1328,10 @@ test("a lead makes Soul Shard a general flaw on the Book traits page, and a play
   await part.getByRole("button", { name: "Add" }).click();
   await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Flaws/ }).click();
   await p.getByLabel("Show").selectOption("kind:General");
-  await p.getByLabel("Search Flaws").fill("Soul Shard");
-  await expect(p.getByRole("button", { name: /^Soul Shard/ })).toBeVisible();
+  await p.getByRole("combobox", { name: "Search Flaws", exact: true }).fill("Soul Shard");
+  await expect(p.getByRole("option", { name: /^Soul Shard/ })).toBeVisible();
   await p.getByLabel("Show").selectOption("kind:Sabbat");
-  await expect(p.getByRole("button", { name: /^Soul Shard/ })).toHaveCount(0);
+  await expect((await addList(p, "Flaws")).getByRole("option", { name: /^Soul Shard/ })).toHaveCount(0);
 
   // The troupe's House rules list the change.
   await p.goto(`/troupes/${troupeId}/house-rules`);

@@ -24,6 +24,8 @@ Each page names itself in the browser's tab, its bookmarks and its history, the 
 
 Horatio keeps you signed in on that browser for about a month. To sign out, choose **Sign out** at the right of the menu. Signing out also clears whatever Horatio kept on that device for you; if taps from the Play View haven't been sent yet, it asks first.
 
+After several wrong passwords, Horatio stops trying them for a while, and the page says "Too many failed sign-ins from here." Wait a quarter of an hour and try again, or reset your password (below). Only the network you were on is held back, never your account everywhere.
+
 ![The sign-in page](images/getting-started/sign-in.png)
 
 ### Forgotten your password
@@ -36,7 +38,7 @@ The link works for a limited time. If nothing arrives after a few minutes, check
 
 ## Your account
 
-Choose your name at the right of the menu to open **Your account**. It has five tabs: **Profile**, **Lines and veils**, **Preferences**, **Sign-in and email** and **This device**, which keeps your characters on your phone for games with no signal (see [Using Horatio at a game with no signal](players.md#using-horatio-at-a-game-with-no-signal)). **See your profile** at the top shows your [profile](glossary.md#profile) the way other people see it.
+Choose your name at the right of the menu to open **Your account**. It has six tabs: **Profile**, **Lines and veils**, **Preferences**, **Notifications**, **Sign-in and email** and **This device**, which keeps your characters on your phone for games with no signal (see [Using Horatio at a game with no signal](players.md#using-horatio-at-a-game-with-no-signal)). **See your profile** at the top shows your [profile](glossary.md#profile) the way other people see it.
 
 ### Your profile
 
@@ -71,11 +73,11 @@ The **Preferences** tab of your account holds how Horatio looks and behaves for 
 - **Sheets**: show ratings as **Numbers** or **Pips**; the **Paper** printed sheets and badges are laid out for (US Letter or A4); and your **Badge size**.
 - **Dates and times**: your **Time zone** (leave it empty to follow your device), how **Dates** look (such as 20 Oct 2026), and a 12- or 24-hour **Clock**. Deadlines always show with their time zone, so players in other places agree on them.
 - **At game**: **Quick notes** (the Play View asks what each use was for), **Keep the screen awake** while the Play View is open, and which tab **The Play View opens on** (only the tabs your troupes have switched on).
-- **Troupes**: whether a troupe's Who's Who shows you by your name or by your handle, and whether your troupes' news and announcements come to the bell.
+- **Troupes**: whether a troupe's Who's Who shows you by your name or by your handle.
 
 ## Sign-in and email
 
-The **Sign-in and email** tab of your account holds how you sign in and what Horatio sends you: your email, your handle, your password, your Discord account and [which notifications come by email](#notifications-by-email).
+The **Sign-in and email** tab of your account holds how you sign in: your email, your handle, your password and your Discord account. Which notifications come, and how, is on [the Notifications tab](#choosing-your-notifications).
 
 ### Changing your email
 
@@ -108,27 +110,26 @@ The bell in the menu shows a number when something is waiting for you. Open it t
 - **Waiting on you**: work for you to do, such as an approval to decide. It goes away once the work is done.
 - **Messages**: news, such as downtime results arriving. A message stays until you read it; **Mark all read** clears them all.
 
-Choose any line to go straight to the page it's about. **Notification settings**, at the foot of the list, opens the email settings below.
+Choose any line to go straight to the page it's about. **Notification settings**, at the foot of the list, opens the Notifications tab below.
 
 ![The bell open, with its lists of what's waiting and messages](images/getting-started/bell.png)
 
-### Notifications by email
+### Choosing your notifications
 
-The bell always has every notification. On **Sign-in and email**, under **Notifications by email**, you can also have each kind sent by email, by switching it on:
+The **Notifications** tab of your account lists every kind of notification Horatio sends, in groups: **Your account**, **Your characters**, **Downtimes**, **Boons** and **Troupe news**, and, if you're on a troupe's staff, **Staff work** (the custodian also sees **Custodian**). Each kind has a tick for each way it can come:
 
-| Kind | What it's about |
-| --- | --- |
-| Downtime results | Your downtime results are ready. Some troupes email the results themselves too. |
-| Downtime reminders | Staff remind you that a downtime isn't submitted yet. |
-| Approvals waiting | Requests in troupes where you approve changes. |
-| Troupe requests | New troupes people ask the custodian for, and the answer to your own request. |
-| Character renames | A character you play or run is renamed. |
-| Pictures removed | Someone removes a picture you added. |
-| Titles chosen | A player in a troupe you run chooses, gives up or switches their character's title. |
+- **Bell**: in the bell. Every kind comes to the bell until you untick it.
+- **Email**: by email as well. Every kind is off until you tick it, but troupe announcements, which are on because they're often practical. One the staff mark **Important** is emailed to everyone in the troupe even so.
 
-**Send emails** chooses **At once** or **Once a day**, which gathers them into one email at 8 am in your time zone. Every email has a link to stop that kind. If the server can't send email, the card says so, and notifications come only to the bell.
+Untick both and that kind doesn't come at all. Some always come, and show **Bell, always** or **Email, always** with a lock instead of a tick: work waiting on you, such as an approval to decide or teaching to confirm, stays in the bell until it's done; word that the custodian viewed Horatio as you, merged your accounts or moved a character to or from you always comes to the bell; and emails to set a new password, confirm a new email, or say your account is suspended or let back in always come.
 
-![Notifications by email: a switch for each kind](images/getting-started/email-notifications.png)
+**Boons players report** goes with a role: staff, the Harpy and Lesser Harpies who approve reported boons choose whether they're told at all, for each troupe. The tab lists your choice in each troupe where you have one, the same switch as in the troupe's Boons settings or on your ledger's **To review** tab, so changing it in either place changes both.
+
+Downtime results and quest news may also go out through your troupe's own connectors, to its Discord or by its own email. That's the troupe's choice, set by its storytellers; the tab says which of your troupes do it.
+
+If email is set up, **Send emails** under **Emails** chooses **At once** or **Once a day**, which gathers them into one email at 8 am in your time zone. Every email has a link to stop that kind by email, which unticks it here. If the server can't send email, the tab says so, and notifications come only to the bell.
+
+![The Downtimes group on the Notifications tab: a tick for the bell and for email](images/getting-started/email-notifications.png)
 
 ## The calendar link
 

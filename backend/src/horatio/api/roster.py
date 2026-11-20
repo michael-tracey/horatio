@@ -736,6 +736,12 @@ MESSAGES: dict[str, str] = {
     "account.signed_out": "{actor} signed out.",
     "account.sign_in_failed": "Someone failed to sign in as {member}: wrong password.",
     "account.sign_in_failed.unknown": "Someone failed to sign in to an account that doesn't exist.",
+    "account.sign_in_throttled": "Someone was turned away from signing in as {member}: too many"
+    " failed sign-ins from where they were.",
+    "account.sign_in_throttled.unknown": "Someone was turned away from signing in to an account"
+    " that doesn't exist: too many failed sign-ins from where they were.",
+    "account.sign_up_throttled": "Someone was turned away from signing up: too many sign-ups from"
+    " where they were.",
     "account.suspended": "{actor} suspended {member}{because}.",
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
