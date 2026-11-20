@@ -196,7 +196,9 @@ The same **⋯** has **Import characters and NPCs…**, for a troupe's export fr
 - **A retired character** comes in retired.
 - **What can't come in** says why: a file that isn't a Horatio character, one from a newer Horatio, or a trait this troupe's rules don't have. The rest still come in.
 
-Equipment, titles and status in the files are shown, not imported: give them here as usual. The exception is a new Stock NPC's equipment, which comes in with it, given from the troupe's equipment, with the member of a [group](#a-group-of-stock-npcs) who carries each item. **Import** brings everything in at once, and lists each character with a link to it.
+An NPC's equipment comes in with it, sheeted or Stock, if the file has it: each item given from the troupe's equipment and checked by its rules, with the member of a [group](#a-group-of-stock-npcs) who carries it. An item the rules refuse is left out, saying why. An NPC that **replaces** one here is never given an item twice: what the NPC here holds already, of the same name and kind, is **Kept** as it is, and only what it lacks is given. A group's three knives in the file and two here are two kept and one given. An item the NPC holds that isn't in the file is left alone. The review says which is which, and who carries each now.
+
+A player character's equipment, and titles and status, are shown, not imported: give them here as usual. **Import** brings everything in at once, and lists each character with a link to it.
 
 ### Each character's actions
 
