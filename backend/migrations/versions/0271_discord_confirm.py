@@ -2,7 +2,7 @@
 sign-in a Discord state belongs to, and until when a sign-in is confirmed.
 
 Revision ID: 0271
-Revises: 0269
+Revises: 0270
 Create Date: 2026-11-21 18:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0271"
-down_revision: str | None = "0269"
+down_revision: str | None = "0270"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
