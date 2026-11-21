@@ -15,7 +15,7 @@ from typing import Literal, cast
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from horatio import checkin
@@ -203,5 +203,9 @@ def take_back(
     )
     if rsvp is not None:
         db.delete(rsvp)
+        # The game's entry in the person's calendar feed changed with it
+        # (horatio.calendar_feed): mark the game changed, as the answer that said
+        # so is gone.
+        game.updated_at = func.now()
         db.commit()
     return one_out(db, user, game)

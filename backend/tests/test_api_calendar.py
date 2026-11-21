@@ -1,7 +1,8 @@
 """A troupe's calendar and RSVPs to its games (issue #420): members say whether
 they are coming and staff see who; each member's secret calendar link carries the
 games and the open cycles' dates, validates as iCalendar, names no one, and stops
-working once reset or once its person is no longer a member."""
+working once reset or once its person is no longer a member. Each game in it
+says whether its subscriber is coming (issue #1058)."""
 
 import uuid
 from collections.abc import Callable
@@ -15,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import calendar_feed
-from horatio.models import ScheduledGame, Suspension, TroupeMembership
+from horatio.models import GameRsvp, ScheduledGame, Suspension, TroupeMembership
 from tests.api_helpers import Person, Troupe, sign_up
 from tests.test_api_character_search import member
 from tests.test_api_troupe_profiles import add_game, save
@@ -199,6 +200,96 @@ def test_the_feed_is_icalendar_with_the_games_and_the_open_cycles_dates(
     for person in (troupe.player, troupe.lead, troupe.storyteller):
         assert person.email not in text and person.handle not in text
     assert "Agnes" not in text
+
+
+def test_each_game_in_the_feed_says_whether_its_subscriber_is_coming(
+    troupe: Troupe, visitor: TestClient
+) -> None:
+    # Two characters, one answer: an RSVP is the person's, not a character's.
+    member(troupe, troupe.player, "Agnes", "Brujah")
+    member(troupe, troupe.player, "Beatrix", "Toreador")
+    coming, maybe, away, unsaid = (game(troupe, timedelta(days=d)) for d in (3, 10, 17, 24))
+    for game_id, answer in ((coming, "coming"), (maybe, "maybe"), (away, "not_coming")):
+        assert rsvp(troupe.player, troupe, game_id, answer).status_code == 200
+    # Someone else's answer is theirs alone.
+    assert rsvp(troupe.narrator, troupe, unsaid, "coming").status_code == 200
+    assert rsvp(troupe.narrator, troupe, coming, "not_coming").status_code == 200
+
+    def by_game(url: str) -> dict[str, Any]:
+        response = fetch(visitor, url)
+        assert response.status_code == 200, response.text
+        # A game they're not coming to stays, never cancelled, which calendar
+        # apps take as "delete it".
+        assert "CANCEL" not in response.text
+        parsed = Calendar.from_ical(response.text)
+        assert str(parsed["METHOD"]) == "PUBLISH"
+        return {
+            str(e["UID"]).removeprefix("game-").removesuffix("@horatio"): e
+            for e in parsed.walk("VEVENT")
+        }
+
+    for url in (new_link(troupe.player, troupe.id), new_link(troupe.player, None)):
+        events = by_game(url)
+        assert {g: str(events[g]["SUMMARY"]) for g in (coming, maybe, away, unsaid)} == {
+            coming: "Coming · Game: Lords of the Night",
+            maybe: "Maybe · Game: Lords of the Night",
+            away: "Not coming · Game: Lords of the Night",
+            unsaid: "Game: Lords of the Night",
+        }
+        said = {g: str(events[g]["DESCRIPTION"]) for g in (coming, maybe, away, unsaid)}
+        assert said[coming].startswith("You said you're coming.")
+        assert said[maybe].startswith("You said maybe.")
+        assert said[away].startswith("You said you're not coming.")
+        assert said[unsaid].startswith("You haven't said whether you're coming.")
+        assert all(f"/troupes/{troupe.id}" in text for text in said.values())
+        assert "STATUS" not in events[away]
+        # Still no one named, not even the subscriber or their characters.
+        text = fetch(visitor, url).text
+        assert troupe.player.handle not in text and "Agnes" not in text
+
+    narrators = by_game(new_link(troupe.narrator, troupe.id))
+    assert str(narrators[coming]["SUMMARY"]) == "Not coming · Game: Lords of the Night"
+    assert str(narrators[unsaid]["SUMMARY"]) == "Coming · Game: Lords of the Night"
+    assert str(narrators[maybe]["SUMMARY"]) == "Game: Lords of the Night"
+
+
+def test_a_changed_answer_marks_the_game_changed_in_the_feed(
+    troupe: Troupe, visitor: TestClient, session: Session
+) -> None:
+    member(troupe, troupe.player, "Agnes", "Brujah")
+    soon = game(troupe)
+    url = new_link(troupe.player, troupe.id)
+
+    def changed() -> datetime:
+        found = Calendar.from_ical(fetch(visitor, url).text).walk("VEVENT")[0]
+        return found.decoded("LAST-MODIFIED")
+
+    # Back-date the game and the answer, so each change after them shows.
+    week_ago = (datetime.now(UTC) - timedelta(days=7)).replace(microsecond=0)
+    played = session.get_one(ScheduledGame, uuid.UUID(soon))
+    played.updated_at = week_ago
+    assert rsvp(troupe.player, troupe, soon, "coming").status_code == 200
+    answer = session.scalars(select(GameRsvp).where(GameRsvp.game_id == played.id)).one()
+    answer.updated_at = week_ago + timedelta(days=2)
+    session.flush()
+    # The answer is newer than the game's own edits.
+    assert changed() == week_ago + timedelta(days=2)
+
+    # A new answer moves it on, as an edit to the game does.
+    assert rsvp(troupe.player, troupe, soon, "not_coming").status_code == 200
+    after_change = changed()
+    assert after_change > week_ago + timedelta(days=2)
+
+    # So does taking the answer back, though the answer is gone.
+    answer.updated_at = week_ago + timedelta(days=3)
+    played.updated_at = week_ago
+    session.flush()
+    assert changed() == week_ago + timedelta(days=3)
+    assert rsvp(troupe.player, troupe, soon, None).status_code == 200
+    assert changed() > week_ago + timedelta(days=3)
+    assert str(Calendar.from_ical(fetch(visitor, url).text).walk("VEVENT")[0]["SUMMARY"]) == (
+        "Game: Lords of the Night"
+    )
 
 
 def test_resetting_a_link_stops_the_old_one(troupe: Troupe, visitor: TestClient) -> None:

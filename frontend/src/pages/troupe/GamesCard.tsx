@@ -233,7 +233,7 @@ function Subscribe({ troupe }: { troupe: TroupeOut }) {
   if (links.error) return <ErrorText error={links.error} />;
   return (
     <div className="flex flex-col gap-5 text-sm">
-      <p>Put the troupe's games and downtime dates in your own calendar. It keeps itself up to date.</p>
+      <p>Put the troupe's games and downtime dates in your own calendar, each game with your answer. It keeps itself up to date.</p>
       <LinkRow title={`${troupe.name} only`} troupeId={troupe.id} personal={false} link={links.data.troupe} />
       <LinkRow title="All your troupes" troupeId={troupe.id} personal link={links.data.personal} />
       <section aria-labelledby="calendar-help" className="flex flex-col gap-2">
@@ -297,7 +297,7 @@ function LinkRow({ title, troupeId, personal, link }: { title: string; troupeId:
               Open in your calendar app
             </LinkButton>
           </div>
-          <p className="text-xs text-mist">Keep it to yourself: anyone with it can see these dates.</p>
+          <p className="text-xs text-mist">Keep it to yourself: anyone with it can see these dates and your answers.</p>
           {confirming ? (
             <div className="flex flex-col gap-2 rounded-md border border-blood/60 p-2">
               <p className="text-xs">The old link stops working, and calendars subscribed with it stop updating.</p>

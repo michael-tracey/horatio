@@ -2750,7 +2750,8 @@ test("members say whether they are coming to a game, staff see who, and a calend
   await expect(game.getByText("1 maybe")).toBeVisible();
   await expect(choices.getByRole("button", { name: "Coming", exact: true })).toHaveAttribute("aria-pressed", "false");
 
-  // Her calendar link: the feed has the game, and resetting it stops the old one.
+  // Her calendar link: the feed has the game with her answer (#1058), and
+  // resetting it stops the old one.
   await p.getByRole("button", { name: "Subscribe to the calendar" }).click();
   const dialog = p.getByRole("dialog", { name: "Subscribe to the calendar" });
   const only = dialog.getByRole("region", { name: `${troupeName} only` });
@@ -2767,7 +2768,8 @@ test("members say whether they are coming to a game, staff see who, and a calend
   expect(feed.headers()["content-type"]).toContain("text/calendar");
   const ics = await feed.text();
   expect(ics).toContain("BEGIN:VCALENDAR");
-  expect(ics).toContain(`SUMMARY:Game: ${troupeName}`);
+  expect(ics).toContain(`SUMMARY:Maybe · Game: ${troupeName}`);
+  expect(ics).toContain("DESCRIPTION:You said maybe.");
   expect(ics).toContain("DTSTART:20300309T190000Z");
   expect(ics).not.toContain(player.email);
   await only.getByRole("button", { name: "Reset the link…" }).click();
