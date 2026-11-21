@@ -2,7 +2,7 @@
 account for the top of the phone's tab list.
 
 Revision ID: 0266
-Revises: 0259
+Revises: 0265
 Create Date: 2026-11-21 16:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0266"
-down_revision: str | None = "0259"
+down_revision: str | None = "0265"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
