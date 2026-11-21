@@ -55,7 +55,7 @@ When a recovery code signs you in, or the custodian resets your two-step sign-in
 
 Five wrong codes in a row, or ten minutes, and you start again from your password. Many wrong codes at your account, from anywhere, hold back the second step for a while: "Too many wrong codes."
 
-The custodian must have two-step sign-in, and so must the staff of a troupe whose lead storyteller asks it. Horatio sends them to set it up before anything else; only the bell, and **Sign out**, are there meanwhile. Staff are told in the bell when their troupe starts asking, and can read it before they set it up.
+The custodian must have two-step sign-in, and so must the staff of a troupe whose lead storyteller asks it. Horatio sends them to set it up before anything else; only the bell, and **Sign out**, are there meanwhile. Staff are told in the bell when their troupe starts asking, and can read it before they set it up: there, choosing a notice opens it in full where it is and marks it read, rather than going to its page, and **Set up two-step sign-in** at the foot of the bell takes you back to the setup. Once it's set up, the bell works as usual.
 
 ## Your account
 

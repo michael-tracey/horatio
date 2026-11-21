@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { NotificationOut } from "../api/types";
 import { useDates } from "../dates";
 import { useAction, useNotifications } from "../hooks";
+import { withNext } from "../next";
 import { Avatar } from "./Avatar";
 import { EmptyState } from "./EmptyState";
 import { PlayerInLine } from "./PlayerInLine";
 import { PostThumb } from "./PostThumb";
-import { CountBubble } from "./ui";
+import { Button, CountBubble } from "./ui";
 
 const RELATIVE = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 
@@ -32,15 +33,24 @@ export function timeAgo(at: string, now = Date.now()): string {
   return RELATIVE.format(Math.round(value), "year");
 }
 
+/** The page where someone held to two-step sign-in sets it up (#1057). */
+const TWO_STEP = "/two-step";
+
 /**
  * The bell in the menu bar: work waiting on you, then messages. Each opens where to deal with it.
- * Without `settings`, no link to the notification settings: before setting up two-step sign-in,
- * the bell is all that answers (#1111).
+ *
+ * `beforeSetup`, until they set up two-step sign-in, when the bell is all that answers (#1111):
+ * a notice opens in place, read in full, as its page would only send them back to set it up,
+ * and a player it names is plain text; the foot has a way to the setup form instead of the
+ * notification settings (#1146).
  */
-export function NotificationBell({ settings = true }: { settings?: boolean }) {
+export function NotificationBell({ beforeSetup = false }: { beforeSetup?: boolean }) {
   const bell = useNotifications(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
+  // The notice opened in place, before setup.
+  const [shown, setShown] = useState<string | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const read = useAction((ids?: string[]) => unwrap(api.POST("/api/notifications/read", { body: { ids: ids ?? null } })));
 
@@ -63,8 +73,9 @@ export function NotificationBell({ settings = true }: { settings?: boolean }) {
   const unread = messages.filter((i) => !i.read);
 
   const go = (item: NotificationOut) => {
-    setOpen(false);
     if (!item.task && !item.read) read.mutate([item.id]);
+    if (beforeSetup) return setShown(shown === item.id ? null : item.id);
+    setOpen(false);
     // A link elsewhere, such as a Discord channel or invite (#855), opens in a tab of its own.
     if (/^https?:\/\//i.test(item.link)) window.open(item.link, "_blank", "noopener,noreferrer");
     else navigate(item.link);
@@ -98,13 +109,15 @@ export function NotificationBell({ settings = true }: { settings?: boolean }) {
               <EmptyState title="Nothing waiting.">Tasks waiting on you, and messages for you, show here as they come.</EmptyState>
             </div>
           )}
-          {tasks.length > 0 && <Group title="Waiting on you" items={tasks} onOpen={go} onFollow={() => setOpen(false)} />}
+          {tasks.length > 0 && <Group title="Waiting on you" items={tasks} onOpen={go} onFollow={() => setOpen(false)} inPlace={beforeSetup} shown={shown} />}
           {messages.length > 0 && (
             <Group
               title="Messages"
               items={messages}
               onOpen={go}
               onFollow={() => setOpen(false)}
+              inPlace={beforeSetup}
+              shown={shown}
               action={
                 unread.length > 0 && (
                   <button className="text-xs text-mist hover:text-parchment" onClick={() => read.mutate(undefined)}>
@@ -114,7 +127,20 @@ export function NotificationBell({ settings = true }: { settings?: boolean }) {
               }
             />
           )}
-          {settings && (
+          {beforeSetup ? (
+            <div className="px-4 py-3">
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setOpen(false);
+                  // Back to the form from a page open before setup, such as Help, to come back there after.
+                  if (location.pathname !== TWO_STEP) navigate(withNext(TWO_STEP, location.pathname + location.search + location.hash));
+                }}
+              >
+                Set up two-step sign-in
+              </Button>
+            </div>
+          ) : (
             <div className="px-4 py-2.5 text-right">
               <Link to="/account/notifications" onClick={() => setOpen(false)} className="text-xs text-mist underline hover:text-parchment">
                 Notification settings
@@ -132,6 +158,8 @@ function Group({
   items,
   onOpen,
   onFollow,
+  inPlace = false,
+  shown = null,
   action,
 }: {
   title: string;
@@ -139,6 +167,9 @@ function Group({
   onOpen: (i: NotificationOut) => void;
   /** A link in a line, such as a player's name, was followed (#1131). */
   onFollow: () => void;
+  /** Each line opens in place, `shown` the one open (#1146). */
+  inPlace?: boolean;
+  shown?: string | null;
   action?: React.ReactNode;
 }) {
   const dates = useDates();
@@ -152,8 +183,10 @@ function Group({
         {items.map((item) => {
           // A line naming a player links their name to their profile (#1131). A link can't sit
           // in a button, so its row's button lies over the row, named by the line, and the link over that.
-          const named = Boolean(item.player_id && item.player_name);
+          const named = !inPlace && Boolean(item.player_id && item.player_name);
           const line = `notice-${item.id}`;
+          // In place, a line is cut to two until opened, then read in full with its date and time.
+          const full = inPlace && shown === item.id;
           const inside = (
             <>
               <span aria-hidden="true" className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.task ? "bg-blood-bright" : item.read ? "" : "bg-gold"}`} />
@@ -164,7 +197,7 @@ function Group({
                   <Avatar name="" picture={item.picture} size="sm" />
                 ))}
               <span className="min-w-0">
-                <span id={named ? line : undefined} className={`block text-sm ${item.read ? "text-mist" : "text-parchment"}`}>
+                <span id={named ? line : undefined} className={`block text-sm ${item.read ? "text-mist" : "text-parchment"} ${inPlace && !full ? "line-clamp-2" : ""}`}>
                   {named ? (
                     <PlayerInLine text={item.summary} playerId={item.player_id} playerName={item.player_name} onFollow={onFollow} className="relative z-20" />
                   ) : (
@@ -174,7 +207,7 @@ function Group({
                 <span className="block text-xs text-mist">
                   {item.troupe_name && `${item.troupe_name} · `}
                   <time dateTime={item.at} title={dates.dateTime(item.at)}>
-                    {timeAgo(item.at)}
+                    {full ? dates.dateTime(item.at) : timeAgo(item.at)}
                   </time>
                 </span>
               </span>
@@ -188,7 +221,7 @@ function Group({
                   {inside}
                 </div>
               ) : (
-                <button onClick={() => onOpen(item)} className="flex w-full gap-3 px-4 py-2.5 text-left hover:bg-ash/40">
+                <button onClick={() => onOpen(item)} aria-expanded={inPlace ? full : undefined} className="flex w-full gap-3 px-4 py-2.5 text-left hover:bg-ash/40">
                   {inside}
                 </button>
               )}

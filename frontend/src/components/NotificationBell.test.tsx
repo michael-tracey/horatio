@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
@@ -45,15 +45,15 @@ function Where() {
   return <p>At {pathname + search}</p>;
 }
 
-function show() {
+function show({ beforeSetup = false, at = "/" }: { beforeSetup?: boolean; at?: string } = {}) {
   vi.spyOn(api, "GET").mockImplementation((async (path: string) =>
     path === "/api/notifications"
       ? { data: { items: ITEMS, count: 2 }, response: new Response(null, { status: 200 }) }
       : { error: { detail: "Not found" }, response: new Response(null, { status: 404 }) }) as never);
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <MemoryRouter initialEntries={["/"]}>
-        <NotificationBell />
+      <MemoryRouter initialEntries={[at]}>
+        <NotificationBell beforeSetup={beforeSetup} />
         <Routes>
           <Route path="*" element={<Where />} />
         </Routes>
@@ -82,5 +82,62 @@ describe("the bell", () => {
     fireEvent.click(within(screen.getByRole("dialog", { name: "Notifications" })).getByRole("link", { name: "Nick" }));
     expect(screen.getByText("At /players/u2")).not.toBeNull();
     expect(screen.queryByRole("dialog", { name: "Notifications" })).toBeNull();
+  });
+
+  describe("before two-step sign-in is set up (#1146)", () => {
+    const SETUP = "/two-step?next=%2Ftroupes%2Ft1";
+    const marked = () =>
+      vi.spyOn(api, "POST").mockResolvedValue({ data: null, response: new Response(null, { status: 204 }) } as never);
+
+    it("opens a notice in place, marking it read and showing it in full, without following its link", async () => {
+      const post = marked();
+      show({ beforeSetup: true, at: SETUP });
+      fireEvent.click(await screen.findByRole("button", { name: "Notifications, 2 waiting" }));
+      const bell = screen.getByRole("dialog", { name: "Notifications" });
+      const message = within(bell).getByRole("button", { name: /Your downtime results are in\./ });
+      expect(message.getAttribute("aria-expanded")).toBe("false");
+      expect(message.querySelector(".line-clamp-2")).not.toBeNull();
+
+      fireEvent.click(message);
+
+      await waitFor(() => expect(post).toHaveBeenCalledWith("/api/notifications/read", { body: { ids: ["n1"] } }));
+      expect(screen.getByText(`At ${SETUP}`)).not.toBeNull();
+      expect(screen.getByRole("dialog", { name: "Notifications" })).not.toBeNull();
+      expect(message.getAttribute("aria-expanded")).toBe("true");
+      expect(message.querySelector(".line-clamp-2")).toBeNull();
+      // Its date and time in full, not "now".
+      expect(message.querySelector("time")?.textContent).toMatch(/\d{4}/);
+    });
+
+    it("opens a task in place too, its player's name plain text, as profiles wait for setup", async () => {
+      const post = marked();
+      show({ beforeSetup: true, at: SETUP });
+      fireEvent.click(await screen.findByRole("button", { name: "Notifications, 2 waiting" }));
+      const bell = screen.getByRole("dialog", { name: "Notifications" });
+      expect(within(bell).queryByRole("link")).toBeNull();
+      const task = within(bell).getByRole("button", { name: /Teaching Firearms 1 to Konrad \(Nick\)/ });
+
+      fireEvent.click(task);
+
+      // A task can't be marked read: it goes when done.
+      expect(post).not.toHaveBeenCalled();
+      expect(task.getAttribute("aria-expanded")).toBe("true");
+      expect(screen.getByText(`At ${SETUP}`)).not.toBeNull();
+    });
+
+    it("has a button to the setup form instead of the notification settings, closing the bell", async () => {
+      show({ beforeSetup: true, at: SETUP });
+      fireEvent.click(await screen.findByRole("button", { name: "Notifications, 2 waiting" }));
+      fireEvent.click(within(screen.getByRole("dialog", { name: "Notifications" })).getByRole("button", { name: "Set up two-step sign-in" }));
+      expect(screen.queryByRole("dialog", { name: "Notifications" })).toBeNull();
+      expect(screen.getByText(`At ${SETUP}`)).not.toBeNull();
+    });
+
+    it("goes back to the setup form from a page open before setup, to come back to it after", async () => {
+      show({ beforeSetup: true, at: "/help/players" });
+      fireEvent.click(await screen.findByRole("button", { name: "Notifications, 2 waiting" }));
+      fireEvent.click(within(screen.getByRole("dialog", { name: "Notifications" })).getByRole("button", { name: "Set up two-step sign-in" }));
+      expect(screen.getByText("At /two-step?next=%2Fhelp%2Fplayers")).not.toBeNull();
+    });
   });
 });
