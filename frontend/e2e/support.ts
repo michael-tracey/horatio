@@ -228,7 +228,8 @@ export const isNarrow = (page: Page) => (page.viewportSize()?.width ?? 1280) < 1
 /**
  * Brings out the Sheet tab's −, +, Add and × for its player. Below `lg` the sheet opens
  * for reading, with them behind Make changes (#1055); a wide screen shows them already,
- * and so does a phone while the cart holds changes (its bar at the foot says so).
+ * and so does a phone while the cart holds changes (its bar at the foot says so), or
+ * when Make changes was left on for the character on this device (#1115).
  */
 export async function makeChanges(page: Page) {
   if (!isNarrow(page)) return;
