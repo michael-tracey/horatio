@@ -73,6 +73,7 @@ class TroupeAction(StrEnum):
     MANAGE_BONDS = "manage_bonds"
     MANAGE_BOONS = "manage_boons"
     WRITE_SETTING = "write_setting"
+    WRITE_BLOG = "write_blog"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -160,6 +161,10 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # Writing the chronicle's Setting Style Document: its subtitle, teaser, scope,
     # themes, moods and storyteller notes (horatio.setting_style).
     TroupeAction.WRITE_SETTING: frozenset(_RUNNING),
+    # Writing articles for the site-wide blog, naming the troupe (horatio.blog): any
+    # member of staff of a troupe that isn't archived, narrators too. The custodian
+    # publishes them.
+    TroupeAction.WRITE_BLOG: frozenset(_ALL_STAFF),
 }
 
 

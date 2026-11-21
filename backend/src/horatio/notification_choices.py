@@ -456,6 +456,13 @@ GROUPS = (
                 ("news.missed", "announcement.missed"),
             ),
             Topic(
+                "blog",
+                "Your blog articles",
+                "The custodian publishing an article you wrote for the blog, or your changes to"
+                " it, returning one to you with a note, or unpublishing one.",
+                ("blog.published", "blog.returned", "blog.unpublished"),
+            ),
+            Topic(
                 "merges",
                 "Accounts merged",
                 "The custodian merging two accounts of one person, moving their characters"

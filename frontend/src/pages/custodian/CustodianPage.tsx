@@ -4,6 +4,7 @@ import { BackLink } from "../../components/BackLink";
 import { useMe } from "../../hooks";
 import { AuditTab } from "./AuditTab";
 import { BackupsTab } from "./BackupsTab";
+import { BlogTab, useBlogQueue } from "./BlogTab";
 import { BoonImportTab } from "./BoonImportTab";
 import { ClanLogosTab } from "./ClanLogosTab";
 import { PeopleTab } from "./PeopleTab";
@@ -17,6 +18,7 @@ import { YorickImportTab } from "./YorickImportTab";
 export function CustodianPage() {
   const me = useMe();
   const requests = useTroupeRequests(!!me.data?.is_custodian);
+  const blog = useBlogQueue(!!me.data?.is_custodian);
   if (me.isPending) return <Loading />;
   if (!me.data?.is_custodian) return <Navigate to="/characters" replace />;
 
@@ -27,6 +29,7 @@ export function CustodianPage() {
         tabs={[
           { to: "/custodian/people", label: "People" },
           { to: "/custodian/troupe-management", label: "Troupe management", count: requests.data?.filter((r) => r.status === "pending").length ?? 0 },
+          { to: "/custodian/blog", label: "Blog", count: blog.data?.waiting.length ?? 0 },
           { to: "/custodian/clan-logos", label: "Clan logos" },
           { to: "/custodian/backups", label: "Backups" },
           { to: "/custodian/audit", label: "Audit" },
@@ -41,6 +44,7 @@ export function CustodianPage() {
         {/* Their own tabs until #759; old links land on their sections. */}
         <Route path="troupe-requests" element={<Navigate to="/custodian/troupe-management#requests" replace />} />
         <Route path="archived-troupes" element={<Navigate to="/custodian/troupe-management#archived" replace />} />
+        <Route path="blog" element={<BlogTab />} />
         <Route path="clan-logos" element={<ClanLogosTab />} />
         {/* Moved under Tools (#758); old links, with their ?troupe=, still land there. */}
         <Route path="yorick-import" element={<ToYorickImport />} />

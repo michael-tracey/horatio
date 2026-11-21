@@ -28,6 +28,8 @@ NARRATOR_CAN = {
     TroupeAction.VIEW_RSVPS,
     # Proposing a news story, which only storytellers publish (#510).
     TroupeAction.PROPOSE_NEWS,
+    # Writing for the site-wide blog, which the custodian publishes (#1156).
+    TroupeAction.WRITE_BLOG,
 }
 
 

@@ -14,6 +14,7 @@ Only the custodian can:
 - see archived troupes, and reopen them;
 - look after anyone's account: view Horatio as them, reset their password, change their email, suspend them, merge two of their accounts, and move a character from one player to another;
 - see every account's email address;
+- publish, return, tag and unpublish the articles staff write for [the blog](#the-blog);
 - make and download backups of the whole database;
 - choose the loading animation everyone sees;
 - see the Site tab, the clan logos and the whole audit log, and use the Tools tab.
@@ -263,6 +264,38 @@ Under the table, three cards show what's going on with accounts:
 - **Email changes**: **Waiting to be confirmed**, each with both addresses and **Cancel**, and **Recently**: changes started, confirmed and cancelled.
 
 ![The Suspended, Password resets and Email changes cards under the People table](images/custodian/people-cards.png)
+
+## The blog
+
+Horatio has a blog of its own: articles on playing and running a game, for everyone who uses Horatio, written by the staff of any troupe that isn't archived, narrators included. Nothing is on it until you publish it, and readers can't comment. Its reading pages aren't open yet: for now an article, published or not, is seen only by its author and you.
+
+**Custodian › Blog** holds the articles sent to you, and the tab shows how many are waiting. It has three lists:
+
+- **Waiting**: the articles their authors have sent you, and the changes to published articles, the longest waiting first. A published article's changes are marked **Changes**.
+- **Published**: what is on the blog, the latest first.
+- **Unpublished**: what you've taken down, with why.
+
+Each article shows its title, author, the troupe it names (an author on staff in several chooses one, or none) and its summary. Choose **Read it** to read the whole article, with its picture.
+
+### Publishing or returning an article
+
+1. Open **Custodian › Blog**, and under **Waiting**, choose **Read it** on the article.
+2. To put it up, choose **Publish** (for a published article's changes, **Publish the changes**). Changes take the place of what readers saw, and the article keeps the date it was first published.
+3. To send it back instead, choose **Return with a note…**, say what to change under **Note to the author**, and choose **Return it**. The article is a draft again; for changes, the published article stays up as it was, and the author works on the changes.
+
+Either way the author is told on their bell, with your note.
+
+### Featuring, tagging and unpublishing
+
+Under **Published**, **Feature it** marks an article as featured, and **Stop featuring** undoes it. Tag any article with the chips under it: choosing a tag adds it at once, and choosing it again takes it off. The tags are a list Horatio starts with, such as Storytelling and Safety and consent.
+
+To take an article down, choose **Unpublish…**, say why under **Why unpublish it?**, and choose **Unpublish**. Its author is told why on their bell. They can change it and send it to you again; publishing it then puts it back with its first date.
+
+### An article's address
+
+Each article has an address on the blog, made from its title, such as /blog/running-your-first-elysium. Until it is first published its author can change it, and so can you: choose **Change** beside **Address**. Once it has been published the address stays as it is, even if the title changes, so links to it keep working.
+
+Each step goes in the audit log, under **Blog**.
 
 ## Backups
 
@@ -559,7 +592,7 @@ To find something, fill in any of:
 - **Who did it**: a person.
 - **Character**: any character, whoever's and wherever it is. Type to narrow the list.
 - **Troupe**: archived troupes included.
-- **Kind of change**: such as Approvals, XP, Sheets, Downtimes, Staff, House rules, Troupes, Accounts or System.
+- **Kind of change**: such as Approvals, XP, Sheets, Downtimes, Staff, House rules, Troupes, Accounts, Blog or System.
 - **From** and **To**: the days, both included.
 - **Level**: **Info and notice** leaves out the routine debug events; **Notice only** finds what is kept forever. See [What the log records and keeps](#what-the-log-records-and-keeps) for the levels.
 - **Words**: each word somewhere in what the change says, such as a name, a trait or a reason.
@@ -576,7 +609,7 @@ A troupe's running staff see their own troupe's part of this in its log (**See t
 
 The **Audit log** card at the top of **Custodian › Audit** sets what the log records and how long it keeps it. Each change in the log has a level:
 
-- **Notice**: kept forever. Suspensions, merges, moves, deletions, password resets, changes to the site's settings, and everything Horatio reads back from the log as history, such as title history, the chronicle and a location's log.
+- **Notice**: kept forever. Suspensions, merges, moves, deletions, password resets, changes to the site's settings, your decisions on blog articles, and everything Horatio reads back from the log as history, such as title history, the chronicle and a location's log.
 - **Info**: most changes, as each troupe sees them in its log.
 - **Debug**: routine events, many a day: signing in and out, failed sign-ins, signing up, and someone turned away again for too many sign-ins or sign-ups from one place. Only you see them, here in the audit log; never a troupe's or a character's log.
 

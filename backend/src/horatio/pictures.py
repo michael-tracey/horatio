@@ -21,6 +21,9 @@ Horatio shows, all WebP, in `HORATIO_UPLOAD_DIR`:
   squares as a character's, and the whole picture for moving the crop.
 - a troupe's rock, paper or scissors for the Throws tab (issue #670): the whole
   picture, centred on a transparent square of 128 and 512 px, as a clan logo is.
+- a blog article's hero picture (issue #1156): as a post's, 1200 and 600 px wide.
+  Kept apart from any troupe, under `blog/`, so the blog's public pages can show
+  them (#1158).
 
 Each upload (and each new crop) is kept in a directory of its own, named by a new
 id, so its address changes and no cache ever shows the one it replaced.
@@ -322,6 +325,17 @@ def post_picture_file(
     return path if path.is_file() else None
 
 
+def blog_picture_dir(root: Path, picture_id: uuid.UUID) -> Path:
+    return root / "blog" / str(picture_id)
+
+
+def blog_picture_file(root: Path, picture_id: uuid.UUID, name: str) -> Path | None:
+    if name not in POST_FILES:
+        return None
+    path = blog_picture_dir(root, picture_id) / name
+    return path if path.is_file() else None
+
+
 def agency_portrait_dir(root: Path, troupe_id: uuid.UUID, portrait_id: uuid.UUID) -> Path:
     return troupe_dir(root, troupe_id) / "agency-portraits" / str(portrait_id)
 
@@ -429,6 +443,13 @@ def post_picture_url(troupe_id: uuid.UUID, picture_id: uuid.UUID | None) -> str 
     if picture_id is None:
         return None
     return f"/api/troupes/{troupe_id}/post-pictures/{picture_id}"
+
+
+def blog_picture_url(article_id: uuid.UUID, picture_id: uuid.UUID | None) -> str | None:
+    """Where the app finds a blog article's hero picture: add "/1200.webp" or "/600.webp"."""
+    if picture_id is None:
+        return None
+    return f"/api/blog/articles/{article_id}/pictures/{picture_id}"
 
 
 def agency_portrait_url(agency_id: uuid.UUID, portrait_id: uuid.UUID | None) -> str | None:

@@ -156,6 +156,12 @@ NOTICE: frozenset[str] = frozenset(
         "clan_logo.removed",
         "crypt_templates.uploaded",
         "crypt_templates.removed",
+        # The blog (horatio.blog): the custodian's decisions on each article, and an author
+        # deleting one never published.
+        "blog.published",
+        "blog.returned",
+        "blog.unpublished",
+        "blog.deleted",
     }
 )
 

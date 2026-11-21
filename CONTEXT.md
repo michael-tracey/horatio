@@ -562,3 +562,17 @@ _Avoid_: Property quest, location mission
 **Party**:
 The quest's leader and the characters who joined it. Characters a quest is shared with or offered to see it and may join; only the party sees its results.
 _Avoid_: Group, team, coterie (that is a story group)
+
+### The blog
+
+**Blog**:
+Horatio's game developer blog: articles on playing and running a game, for everyone who uses Horatio, not one troupe. Staff of any troupe that isn't archived write them, narrators included, and the custodian publishes each one. Readers never comment.
+_Avoid_: News (that is a troupe's own), forum, posts (for the blog)
+
+**Article**:
+One piece written for the blog: a title, a summary, the text and a hero picture, with its author and, if they choose, one troupe they're on the staff of, which stays named if they leave it. It is a **draft** while written, **submitted** while it waits for the custodian, **published** once they put it up, and **unpublished** if they take it down, with a reason. One the custodian **returns** is a draft again, with their note. Changing a published article sends its changes to the custodian in turn, while the published version stays up. Its **slug**, its address on the blog, comes from its title and is fixed once it is first published.
+_Avoid_: Post, blog post, story (those are a troupe's news)
+
+**Blog Tag**:
+One of the subjects the custodian keeps for the blog, such as Storytelling or Safety and consent, that they tag articles with.
+_Avoid_: Category, label

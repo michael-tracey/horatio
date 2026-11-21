@@ -43,6 +43,7 @@ class AuditGroup(StrEnum):
     HOUSE_RULES = "house_rules"
     TROUPES = "troupes"
     ACCOUNTS = "accounts"
+    BLOG = "blog"
     SYSTEM = "system"
 
 
@@ -112,6 +113,7 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
         ("troupe.", "troupe_request.", "connector.", "location.", "post.", "agency."),
     ),
     AuditGroup.ACCOUNTS: ("Accounts", ("account.",)),
+    AuditGroup.BLOG: ("Blog", ("blog.",)),
     AuditGroup.SYSTEM: (
         "System",
         (
