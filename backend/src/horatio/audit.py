@@ -118,6 +118,7 @@ NOTICE: frozenset[str] = frozenset(
         "account.two_step_added",
         "account.two_step_removed",
         "account.two_step_reset",
+        "account.two_step_email_failed",
         "account.recovery_codes_made",
         "account.recovery_code_used",
         "troupe.staff_two_step",

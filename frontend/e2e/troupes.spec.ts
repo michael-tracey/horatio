@@ -181,7 +181,8 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   makeCustodian(custodianEmail);
   const { page: lead, handle: leadHandle } = await person(browser, "twostep-lead");
   const { page: st, handle: stHandle } = await person(browser, "twostep-st");
-  const made = await c.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Owls ${run}`, lead_handle: leadHandle } });
+  const owls = `Owls ${run}`;
+  const made = await c.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: owls, lead_handle: leadHandle } });
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
   const staffed = await lead.request.put(`/api/troupes/${troupeId}/staff`, { headers: { "X-Horatio": "1" }, data: { handle: stHandle, role: "storyteller" } });
@@ -213,6 +214,21 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await expect(st.getByText(`You need two-step sign-in as staff of Owls ${run}.`)).toBeVisible();
   await expect(st.getByRole("navigation", { name: "Main" })).toHaveCount(0);
   await st.screenshot(shots("two-step-setup-required"));
+
+  // Once set up, the bell says why it was asked (#1096).
+  const stCdp = await st.context().newCDPSession(st);
+  await stCdp.send("WebAuthn.enable");
+  await stCdp.send("WebAuthn.addVirtualAuthenticator", {
+    options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true },
+  });
+  await st.getByRole("button", { name: "Add a passkey" }).click();
+  await st.getByRole("button", { name: "I've kept them" }).click();
+  await st.goto("/");
+  await st.getByRole("button", { name: /^Notifications/ }).click();
+  const notice = st.getByRole("dialog", { name: "Notifications" }).getByRole("button", { name: /asked the troupe's staff to sign in with two steps/ });
+  await expect(notice).toHaveCount(1);
+  await expect(notice).toContainText(owls);
+  await expect(notice).toContainText("Set it up in Account › Sign-in and email");
 });
 
 test("a troupe's or character's tab that isn't there, or isn't open to them, says so with the way back (#907)", async ({ browser }) => {

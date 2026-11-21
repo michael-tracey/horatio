@@ -25,6 +25,10 @@ request of theirs is refused but those that set one up, and the app sends them t
 that first (`two_step_first`). The custodian resets the second steps of anyone who
 has lost theirs, as a notice; on the server, `python -m horatio.auth.two_step reset
 EMAIL` does it for the custodian.
+
+**Telling them.** A reset, and a recovery code used to sign in, are in the person's
+bell and come by email (#1096), whatever they chose for other email: each is about
+their account's safety, and says what to do if it wasn't them.
 """
 
 import base64
@@ -36,6 +40,7 @@ import time
 import uuid
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime, timedelta
+from email.utils import formataddr
 from typing import Annotated, Any
 
 import pyotp
@@ -46,11 +51,14 @@ from pyotp.totp import TOTP
 from sqlalchemy import delete, exists, func, or_, select, update
 from sqlalchemy.orm import Session
 
+from horatio import email_design, mail_sender, notifications, suspensions
 from horatio.audit import record
 from horatio.auth import passkeys
 from horatio.auth.sessions import hash_token, user_for_token
 from horatio.config import get_settings
+from horatio.connectors import SendError, email
 from horatio.db import get_session, get_sessionmaker
+from horatio.email_design import Body, compose
 from horatio.models import (
     AuthenticatorApp,
     Passkey,
@@ -430,6 +438,109 @@ def two_step_first(request: Request, db: Annotated[Session, Depends(get_session)
         raise HTTPException(status.HTTP_403_FORBIDDEN, NEEDED)
 
 
+# --- telling them by email ----------------------------------------------------------------
+
+# Where they set up their second steps again, or make new recovery codes.
+ACCOUNT_PAGE = "/account/sign-in"
+EMAIL_FAILED = "account.two_step_email_failed"
+
+
+def account_url() -> str:
+    return f"{get_settings().public_url.rstrip('/')}{ACCOUNT_PAGE}"
+
+
+def reset_email_text(user: User, at: datetime, by: User | None, reason: str | None) -> str:
+    """What the email says when their second steps are reset: by the custodian `by`,
+    or on the server (None)."""
+    when = suspensions.when(user, at)
+    if by is None:
+        what = (
+            f"Two-step sign-in for your Horatio account ({user.email}) was reset on the"
+            f" server on {when}."
+        )
+    else:
+        because = f": {reason.strip().rstrip('.')}." if reason else "."
+        what = (
+            f"{by.display_name}, Horatio's custodian, reset two-step sign-in for your Horatio"
+            f" account ({user.email}) on {when}{because}"
+        )
+    return (
+        f"Hello {user.display_name},\n\n{what}\n\n"
+        "Your authenticator app, passkeys and recovery codes no longer sign you in. Your"
+        " password alone does, until you set two-step sign-in up again in Account ›"
+        " Sign-in and email.\n\n"
+        f"If you didn't ask for this, {suspensions.contact()} at once, and change your"
+        " password."
+    )
+
+
+def recovery_code_email_text(user: User, at: datetime, left: int) -> str:
+    """What the email says when one of their recovery codes signed someone in."""
+    remaining = "none" if left == 0 else str(left)
+    return (
+        f"Hello {user.display_name},\n\n"
+        f"Someone, hopefully you, signed in to your Horatio account ({user.email}) with one"
+        f" of your recovery codes on {suspensions.when(user, at)}. That code is used now:"
+        f" you have {remaining} left.\n\n"
+        "If it was you, make new recovery codes in Account › Sign-in and email before they"
+        " run out, and set up your second step again if you've lost it.\n\n"
+        "If it wasn't you, someone has your password and one of your recovery codes. Sign"
+        " in, change your password and make new recovery codes in Account › Sign-in and"
+        " email, which stops the old ones. If you can't sign in,"
+        f" {suspensions.contact()} at once."
+    )
+
+
+def email_them(
+    db: Session, user: User, subject: str, text: str, kind: str, by: User | None
+) -> str | None:
+    """Email `user` about their two-step sign-in, whatever they chose for other email:
+    it's about their account's safety. A refusal is logged, as `by`'s, and returned."""
+    if not email.configured():
+        return None
+    mail = email.new_message(
+        formataddr((user.display_name, user.email)), subject, mail_sender.sender(db)
+    )
+    body = Body(text=text, action=("Open your sign-in settings", account_url()))
+    compose(mail, body, email_design.current(db))
+    try:
+        email.deliver(mail)
+    except SendError as error:
+        record(
+            db,
+            by,
+            EMAIL_FAILED,
+            member=user.display_name,
+            user_id=user.id,
+            kind=kind,
+            error=str(error),
+        )
+        return str(error)
+    return None
+
+
+def email_reset(
+    db: Session, user: User, at: datetime, by: User | None, reason: str | None = None
+) -> str | None:
+    """Tell `user` by email that the custodian `by` (or None, on the server) reset
+    their second steps at `at`."""
+    text = reset_email_text(user, at, by, reason)
+    return email_them(db, user, "Your Horatio two-step sign-in was reset", text, "reset", by)
+
+
+def email_recovery_code_used(db: Session, user: User, at: datetime, left: int) -> str | None:
+    """Tell `user` by email that one of their recovery codes signed someone in at `at`,
+    with `left` left."""
+    return email_them(
+        db,
+        user,
+        "A recovery code was used to sign in to Horatio",
+        recovery_code_email_text(user, at, left),
+        "recovery_code",
+        user,
+    )
+
+
 # --- on the server -------------------------------------------------------------------------
 
 USAGE = (
@@ -438,29 +549,45 @@ USAGE = (
 )
 
 
-def reset_on_server(email: str) -> int:
+RESET_ON_SERVER = (
+    "Your two-step sign-in was reset on the server. Your password alone signs you in until"
+    " you set it up again."
+)
+
+
+def reset_by_server(db: Session, address: str) -> int:
+    """Reset the second steps of the account with email `address`, as Horatio itself:
+    a notice, in their bell, and emailed to them. What the command exits with."""
+    user = db.scalar(
+        select(User).where(func.lower(User.email) == address.lower(), User.merged_into_id.is_(None))
+    )
+    if user is None:
+        print(f"No account with email {address}.", file=sys.stderr)
+        return 1
+    forget_all(db, user)
+    record(
+        db,
+        None,
+        "account.two_step_reset",
+        member=user.display_name,
+        user_id=user.id,
+        kind="server",
+    )
+    notifications.notify(db, [user.id], "account.two_step_reset", RESET_ON_SERVER, ACCOUNT_PAGE)
+    refused = email_reset(db, user, datetime.now(UTC), None)
+    print(f"{address} has no second step now, and can sign in with their password.")
+    if refused is not None:
+        print(f"Horatio could not email them about it: {refused}", file=sys.stderr)
+    elif email.configured():
+        print("They have been emailed about it.")
+    return 0
+
+
+def reset_on_server(address: str) -> int:
     """For the custodian who has lost their own second step, with no other custodian
     to reset it: run on the server, recorded as a notice by Horatio itself."""
     with get_sessionmaker()() as db, db.begin():
-        user = db.scalar(
-            select(User).where(
-                func.lower(User.email) == email.lower(), User.merged_into_id.is_(None)
-            )
-        )
-        if user is None:
-            print(f"No account with email {email}.", file=sys.stderr)
-            return 1
-        forget_all(db, user)
-        record(
-            db,
-            None,
-            "account.two_step_reset",
-            member=user.display_name,
-            user_id=user.id,
-            kind="server",
-        )
-    print(f"{email} has no second step now, and can sign in with their password.")
-    return 0
+        return reset_by_server(db, address)
 
 
 def main(argv: list[str]) -> int:
