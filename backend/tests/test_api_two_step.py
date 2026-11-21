@@ -167,6 +167,8 @@ def test_setting_up_an_authenticator_app_gives_recovery_codes_and_keeps_the_secr
         "required_by": [],
         "needed": False,
         "has_password": True,
+        "can_confirm_with_discord": False,
+        "confirmed_until": None,
     }
 
     started = agnes.client.post("/two-step/app").json()

@@ -575,7 +575,7 @@ def test_merging_moves_the_discord_link_and_its_row_where_the_staying_one_has_no
     assert visitor.get("/auth/me").json()["handle"] == "agnes"
 
 
-def test_an_account_made_with_discord_is_told_it_needs_a_password_and_can_still_set_up_an_app(
+def test_an_account_made_with_discord_is_asked_to_confirm_with_it_and_can_still_set_up_an_app(
     fake_discord: FakeDiscord, client_for: Callable[[], TestClient]
 ) -> None:
     visitor = client_for()
@@ -587,6 +587,7 @@ def test_an_account_made_with_discord_is_told_it_needs_a_password_and_can_still_
     for path in ("/two-step/passkeys/options", "/two-step/recovery-codes", "/two-step/app/remove"):
         refused = visitor.post(path, json={"password": "anything at all"})
         assert refused.status_code == 409, path
-        assert refused.json()["detail"] == two_step_api.NO_PASSWORD
+        # Not a password, which it hasn't: Discord, which it has (#1140).
+        assert refused.json()["detail"] == two_step_api.CONFIRM_FIRST
     # Setting up an authenticator app asks for no password.
     assert visitor.post("/two-step/app").status_code == 200

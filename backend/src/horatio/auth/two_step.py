@@ -432,6 +432,12 @@ def two_step_first(request: Request, db: Annotated[Session, Depends(get_session)
     route = request.scope.get("route")
     if getattr(route, "endpoint", None) in ALLOWED_FIRST:
         return
+    set_up_first(request, db)
+
+
+def set_up_first(request: Request, db: Session) -> None:
+    """Refuse someone signed in who must set up a second step and hasn't: for a route
+    allowed first that does other things too, such as Discord's one callback."""
     token = request.cookies.get(get_settings().session_cookie_name)
     user = user_for_token(db, token) if token else None
     if user is not None and needed(db, user):

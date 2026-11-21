@@ -21,6 +21,7 @@ from horatio.auth.passwords import verify_password
 from horatio.auth.sessions import hash_token
 from horatio.auth.two_step import allowed_first
 from horatio.config import get_settings
+from horatio.connectors import discord
 from horatio.models import Passkey, Troupe, TroupeStaff, User
 from horatio.models import Session as SignInSession
 from horatio.notifications import notify
@@ -55,6 +56,12 @@ class TwoStepOut(BaseModel):
     # They have a password, which the changes above ask for again. An account made
     # with Discord (#1128) has none until they set one with a reset link.
     has_password: bool = True
+    # With no password, they can confirm it's them with Discord instead (#1140): it is
+    # linked, and set up on this server.
+    can_confirm_with_discord: bool = False
+    # Until when this sign-in is confirmed with Discord, standing in for the password
+    # once; None if it isn't.
+    confirmed_until: datetime | None = None
 
 
 class AppSetup(BaseModel):
@@ -120,7 +127,9 @@ def passkey_out(p: Passkey) -> PasskeyOut:
     )
 
 
-def state(db: DbSession, user: User) -> TwoStepOut:
+def state(request: Request, db: DbSession, user: User) -> TwoStepOut:
+    session = own_session(request, db, user)
+    confirmed = session is not None and live(session.confirmed_until)
     return TwoStepOut(
         app=two_step.has_app(db, user),
         apps_available=two_step.apps_available(),
@@ -130,7 +139,18 @@ def state(db: DbSession, user: User) -> TwoStepOut:
         required_by=two_step.required_by(db, user),
         needed=two_step.needed(db, user),
         has_password=user.password_hash is not None,
+        can_confirm_with_discord=can_confirm_with_discord(user),
+        confirmed_until=session.confirmed_until if session is not None and confirmed else None,
     )
+
+
+def can_confirm_with_discord(user: User) -> bool:
+    """Whether they confirm it's them with Discord, having no password (#1140)."""
+    return user.password_hash is None and user.discord_user_id is not None and discord.configured()
+
+
+def live(until: datetime | None) -> bool:
+    return until is not None and until > datetime.now(UTC)
 
 
 # Told to someone held back from giving their password here: the limit is the one on
@@ -139,8 +159,12 @@ PASSWORD_WAIT = "Too many tries at your password. Try again later."
 
 
 NO_PASSWORD = (
-    "This asks for your password, and you have none yet: you sign in with Discord. Set one"
-    " with Forgot your password? on the sign-in page, then try again."
+    "This asks for your password, and you have none yet. Set one with Forgot your password?"
+    " on the sign-in page, then try again."
+)
+CONFIRM_FIRST = (
+    "This asks you to confirm it's you, and you have no password: confirm with Discord,"
+    " then try again."
 )
 
 
@@ -148,10 +172,18 @@ def check_password(request: Request, db: DbSession, user: User, password: str) -
     """Adding, replacing or removing a passkey, turning off the app, or making new
     recovery codes asks for the password again, so a sign-in left open somewhere can't
     (#1110). Each try, right or wrong, counts towards the limit on password tries at
-    the account, as changing the password does, checked before the password is. An
-    account with no password (one made with Discord, #1128) is told how to set one."""
+    the account, as changing the password does, checked before the password is.
+
+    An account with no password (one made with Discord, #1128) confirms it's them with
+    Discord instead (#1140, horatio.api.discord_confirm): this sign-in's confirmation
+    from the last few minutes stands in for the password, and is used up once whatever
+    asked is done (`used_up`). That try was counted when they confirmed. Without
+    Discord linked, they are told how to set a password."""
     if user.password_hash is None:
-        raise HTTPException(status.HTTP_409_CONFLICT, NO_PASSWORD)
+        if not live(this_session(request, db, user).confirmed_until):
+            detail = CONFIRM_FIRST if can_confirm_with_discord(user) else NO_PASSWORD
+            raise HTTPException(status.HTTP_409_CONFLICT, detail)
+        return
     if (held := attempts.password_change_held_back(db, user.id)) is not None:
         record(
             db,
@@ -172,11 +204,19 @@ def check_password(request: Request, db: DbSession, user: User, password: str) -
         raise HTTPException(status.HTTP_403_FORBIDDEN, "That's not your password.")
 
 
+def used_up(request: Request, db: DbSession, user: User) -> None:
+    """What a confirmation with Discord stood in for is done: it is used (#1140). Not
+    before, so a change refused, or a passkey's prompt cancelled, leaves it to try again."""
+    session = own_session(request, db, user)
+    if session is not None:
+        session.confirmed_until = None
+
+
 @router.get("")
 @allowed_first
-def two_step_state(db: DbSession, user: CurrentUser) -> TwoStepOut:
+def two_step_state(request: Request, db: DbSession, user: CurrentUser) -> TwoStepOut:
     """The signed-in person's second steps, and whether they must have one."""
-    return state(db, user)
+    return state(request, db, user)
 
 
 @router.post("/app")
@@ -215,15 +255,20 @@ def first_codes(db: DbSession, user: User) -> list[str]:
     return codes
 
 
-def this_session(request: Request, db: DbSession, user: User) -> SignInSession:
-    """The sign-in session this request comes with: a passkey being added keeps its
-    challenge there."""
+def own_session(request: Request, db: DbSession, user: User) -> SignInSession | None:
+    """The sign-in session this request comes with, if it is `user`'s own."""
     token = request.cookies.get(get_settings().session_cookie_name, "")
-    session = db.scalar(
+    return db.scalar(
         select(SignInSession).where(
             SignInSession.token_hash == hash_token(token), SignInSession.user_id == user.id
         )
     )
+
+
+def this_session(request: Request, db: DbSession, user: User) -> SignInSession:
+    """The sign-in session this request comes with: a passkey being added keeps its
+    challenge there, and a confirmation with Discord its time (#1140)."""
+    session = own_session(request, db, user)
     if session is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Sign in first.")
     return session
@@ -252,7 +297,9 @@ def add_passkey(
 ) -> RecoveryCodes:
     """Keep the passkey the browser made. With someone's first second step come ten
     recovery codes."""
-    passkey = passkeys.add(db, this_session(request, db, user), user, body.credential, body.name)
+    session = this_session(request, db, user)
+    passkey = passkeys.add(db, session, user, body.credential, body.name)
+    used_up(request, db, user)
     record(
         db,
         user,
@@ -280,6 +327,7 @@ def remove_passkey(
     db.delete(passkey)
     db.flush()
     forget_if_none_left(db, user)
+    used_up(request, db, user)
     record(
         db, user, "account.two_step_removed", kind="passkey", member=user.display_name, name=name
     )
@@ -325,6 +373,7 @@ def replace_passkey(
     old = replaceable(db, user, passkey_id)
     session = this_session(request, db, user)
     new = passkeys.add(db, session, user, body.credential, old.name, alone=True)
+    used_up(request, db, user)
     db.delete(old)
     db.flush()
     record(
@@ -365,6 +414,7 @@ def remove_app(body: Password, request: Request, db: DbSession, user: CurrentUse
     keep_one(db, user)
     two_step.remove_app(db, user)
     forget_if_none_left(db, user)
+    used_up(request, db, user)
     record(db, user, "account.two_step_removed", kind="app", member=user.display_name)
     db.commit()
 
@@ -380,6 +430,7 @@ def new_recovery_codes(
             status.HTTP_409_CONFLICT, "Set up a second step first: recovery codes stand in for it."
         )
     codes = two_step.new_recovery_codes(db, user)
+    used_up(request, db, user)
     record(db, user, "account.recovery_codes_made", member=user.display_name)
     db.commit()
     return RecoveryCodes(recovery_codes=codes)

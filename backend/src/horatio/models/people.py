@@ -115,7 +115,10 @@ class DiscordSignIn(Record):
 
     With `discord_user_id`, Discord has said who they are and Horatio has no account
     for them: it waits on them choosing their name and handle, as sign-up asks, with
-    the email Discord verified. A cookie names it too, and it is good for 30 minutes."""
+    the email Discord verified. A cookie names it too, and it is good for 30 minutes.
+
+    With `session_id`, it is someone signed in with no password confirming it's them
+    with Discord instead (#1140), from that sign-in only: good for 10 minutes too."""
 
     __tablename__ = "discord_sign_ins"
 
@@ -131,6 +134,10 @@ class DiscordSignIn(Record):
     # Discord's username, and the name they show there, to start the sign-up form with.
     discord_username: Mapped[str | None]
     discord_name: Mapped[str | None]
+    # The sign-in confirming it's them with Discord (#1140); None for signing in or up.
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sessions.id", ondelete="CASCADE"), index=True
+    )
 
 
 class Session(Record):
@@ -145,6 +152,9 @@ class Session(Record):
     # The challenge a passkey being added from this sign-in must sign (#1057), until
     # it is added.
     passkey_challenge: Mapped[bytes | None] = mapped_column(LargeBinary)
+    # Until when someone with no password has confirmed it's them with Discord, from
+    # this sign-in (#1140): it stands in for the password once, for a few minutes.
+    confirmed_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class PasswordReset(Record):

@@ -163,6 +163,8 @@ def take(db: Session, token: str, *, signing_up: bool) -> DiscordSignIn | None:
         .where(
             DiscordSignIn.token_hash == hash_token(token),
             DiscordSignIn.expires_at > func.now(),
+            # Not someone signed in confirming it's them (horatio.api.discord_confirm).
+            DiscordSignIn.session_id.is_(None),
             waiting,
         )
         .with_for_update()
