@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList, chooseIn, makeChanges } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList, chooseIn, makeChanges, openSections } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -2012,7 +2012,7 @@ test("staff award XP, give equipment and print from a character's ⋯ on the Cha
     await characters.getByRole("link", { name: "Lines and veils" }).click();
   } else {
     const sections = n.getByRole("navigation", { name: "Troupe sections" });
-    await expect(sections.getByRole("link", { name: "Downtimes", exact: true })).toBeVisible();
+    await expect(sections.getByRole("link", { name: "Between games", exact: true })).toBeVisible();
     await sections.getByRole("link", { name: "Characters", exact: true }).click();
     await expect(n.getByRole("navigation", { name: "Characters", exact: true })).toHaveCount(0);
   }
@@ -3467,7 +3467,7 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
     await troupeTab(l, "Roster");
   } else {
     await expect(sections.getByRole("link", { name: /^Characters/ }).getByLabel("1 waiting")).toBeVisible();
-    await expect(sections.getByRole("link", { name: /^Downtimes/ }).getByLabel("1 waiting")).toBeVisible();
+    await expect(sections.getByRole("link", { name: /^Between games/ }).getByLabel("1 waiting")).toBeVisible();
     await sections.getByRole("link", { name: /^Characters/ }).click();
     const characterTabs = l.getByRole("navigation", { name: "Characters", exact: true });
     await expect(characterTabs.getByRole("link", { name: /^Roster/ }).getByLabel("1 waiting")).toBeVisible();
@@ -3482,5 +3482,5 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/quests$`));
   await expect(l.getByText("Find the lost libretto")).toBeVisible();
   if (isPhone(l)) await expectTabCount(l, "Quests", "1 waiting");
-  else await expect(sections.getByRole("link", { name: /^Downtimes/ }).getByLabel("1 waiting")).toBeVisible();
+  else await expect(sections.getByRole("link", { name: /^Between games/ }).getByLabel("1 waiting")).toBeVisible();
 });
