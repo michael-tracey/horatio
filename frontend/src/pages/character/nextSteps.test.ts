@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { datesFor } from "../../dates";
-import { shown, sinceText, stepText, toneOf, type Step } from "./nextSteps";
+import { answerText, asksAnswer, shown, sinceText, stepText, toneOf, type Step } from "./nextSteps";
 
 const dates = datesFor({ time_zone: "America/New_York", date_format: "day_month", clock: "12" });
 const now = new Date("2026-11-02T12:00:00Z");
 
-const step = (s: Partial<Step>): Step => ({ kind: "finish_creation", who: "player", label: "Finish character creation", link: "/characters/a/create", since: null, at: null, ...s });
+const step = (s: Partial<Step>): Step => ({ kind: "finish_creation", who: "player", label: "Finish character creation", link: "/characters/a/create", since: null, at: null, troupe_id: null, game_id: null, my_answer: null, ...s });
 
 describe("stepText", () => {
   it("gives the day and time a downtime is due, or says it is overdue", () => {
@@ -14,7 +14,9 @@ describe("stepText", () => {
   });
 
   it("says when the next game starts and free changes end", () => {
-    expect(stepText(step({ kind: "next_game", who: "coming", label: "Next game", at: "2026-11-15T00:00:00Z" }), dates, now)).toBe("Next game Sat 14 Nov, 7 pm EST");
+    expect(stepText(step({ kind: "next_game", who: "coming", label: "Court of Ashes's next game", at: "2026-11-15T00:00:00Z" }), dates, now)).toBe(
+      "Court of Ashes's next game Sat 14 Nov, 7 pm EST",
+    );
     expect(stepText(step({ kind: "free_changes", who: "coming", label: "Free changes", at: "2026-12-02T17:00:00Z" }), dates, now)).toBe("Free changes until Wed 2 Dec");
     // By games, the server's words say how many are left.
     expect(stepText(step({ kind: "free_changes", who: "coming", label: "Free changes for 2 more games" }), dates, now)).toBe("Free changes for 2 more games");
@@ -46,6 +48,23 @@ describe("shown", () => {
   it("keeps every other step, and is empty before the answer comes", () => {
     expect(shown([step({})], "2026-11-01T10:00:00Z", now.getTime())).toHaveLength(1);
     expect(shown(undefined, null)).toEqual([]);
+  });
+});
+
+describe("a next game's answer", () => {
+  const game = step({ kind: "next_game", who: "coming", label: "Court of Ashes's next game", link: "/troupes/t", at: "2026-11-15T00:00:00Z", troupe_id: "t", game_id: "g" });
+
+  it("asks whether you are coming until you answer, then says the answer", () => {
+    expect(asksAnswer(game)).toBe(true);
+    expect(answerText(game)).toBeNull();
+    const answered = { ...game, my_answer: "not_coming" as const };
+    expect(asksAnswer(answered)).toBe(false);
+    expect(answerText(answered)).toBe("answered Not coming");
+  });
+
+  it("is only a next game's", () => {
+    expect(asksAnswer(step({}))).toBe(false);
+    expect(answerText(step({ my_answer: "coming" }))).toBeNull();
   });
 });
 

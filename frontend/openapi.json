@@ -34323,6 +34323,18 @@
             ],
             "title": "At"
           },
+          "game_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Id"
+          },
           "kind": {
             "title": "Kind",
             "type": "string"
@@ -34335,6 +34347,22 @@
             "title": "Link",
             "type": "string"
           },
+          "my_answer": {
+            "anyOf": [
+              {
+                "enum": [
+                  "coming",
+                  "maybe",
+                  "not_coming"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Answer"
+          },
           "since": {
             "anyOf": [
               {
@@ -34346,6 +34374,18 @@
               }
             ],
             "title": "Since"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
           },
           "who": {
             "enum": [
@@ -34363,7 +34403,10 @@
           "label",
           "link",
           "since",
-          "at"
+          "at",
+          "troupe_id",
+          "game_id",
+          "my_answer"
         ],
         "title": "NextStepOut",
         "type": "object"

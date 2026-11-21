@@ -7,15 +7,15 @@ import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { CardHeading, SectionLabel } from "../../components/Headings";
 import { AtHandle } from "../../components/PersonPicker";
-import { useToast } from "../../components/Toast";
 import { Button, Card, ErrorText, Loading } from "../../components/ui";
 import { LinkButton } from "../../components/LinkButton";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { CheckInForm } from "../CheckInPage";
 import { checkedInText } from "./checkin";
-import { ANSWERS, answeredText, byAnswer, countsText, webcal, type Answer } from "./games";
+import { byAnswer, countsText, webcal } from "./games";
 import { MissedGames } from "./MissedGames";
+import { RsvpButtons } from "./RsvpButtons";
 
 /**
  * The troupe's games still to come, for its members: each says whether they are
@@ -75,23 +75,8 @@ export function GamesCard({ troupe, canAddGames, running }: { troupe: TroupeOut;
 /** One game: when, your answer, how many said each, and for staff, who. */
 function GameRow({ troupeId, game, running }: { troupeId: string; game: GameRsvpsOut; running: boolean }) {
   const dates = useDates();
-  const toast = useToast();
   const [checkingIn, setCheckingIn] = useState(false);
   const when = dates.gameStart(game.starts_at);
-  const path = { params: { path: { troupe_id: troupeId, game_id: game.id } } };
-  const answer = useAction(
-    async (chosen: Answer | null) => {
-      await unwrap(
-        chosen === null
-          ? api.DELETE("/api/troupes/{troupe_id}/games/{game_id}/rsvp", path)
-          : api.PUT("/api/troupes/{troupe_id}/games/{game_id}/rsvp", { ...path, body: { answer: chosen } }),
-      );
-      toast({ message: answeredText(chosen, when) });
-    },
-    [["troupe-games", troupeId]],
-  );
-  // The answer being sent shows at once.
-  const mine = answer.isPending ? answer.variables : game.my_answer;
 
   return (
     <li className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
@@ -101,27 +86,7 @@ function GameRow({ troupeId, game, running }: { troupeId: string; game: GameRsvp
         </time>
         <span className="text-sm text-mist">{countsText(game)}</span>
       </div>
-      <div role="group" aria-label={`Are you coming on ${when}?`} className="grid grid-cols-3 gap-2 sm:flex">
-        {ANSWERS.map((a) => {
-          const on = mine === a.answer;
-          return (
-            <button
-              key={a.answer}
-              type="button"
-              aria-pressed={on}
-              disabled={answer.isPending}
-              // Tapping your answer again takes it back.
-              onClick={() => answer.mutate(on ? null : a.answer)}
-              className={`min-h-10 rounded-md border px-3 text-sm transition-colors pointer-coarse:min-h-11 disabled:opacity-60 ${
-                on ? "border-gold bg-gold/15 text-gold" : "border-line text-parchment hover:border-mist"
-              }`}
-            >
-              {a.label}
-            </button>
-          );
-        })}
-      </div>
-      <ErrorText error={answer.error} />
+      <RsvpButtons troupeId={troupeId} gameId={game.id} when={when} answer={game.my_answer} />
       {(game.checkin_open || game.my_checked_in.length > 0) && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {game.checkin_open && (
