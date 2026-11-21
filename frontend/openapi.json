@@ -106275,8 +106275,18 @@
     },
     "/api/two-step/app": {
       "post": {
-        "description": "Start setting up an authenticator app: the secret to scan or type into it. It\nsigns no one in until a code from it is given (POST /two-step/app/confirm).",
+        "description": "Start setting up an authenticator app, giving their password first (#1148): the\nsecret to scan or type into it, so a wrong password never shows one. It signs no\none in until a code from it is given (POST /two-step/app/confirm).",
         "operationId": "start_app_api_two_step_app_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -106287,6 +106297,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Start App",
@@ -106297,7 +106317,7 @@
     },
     "/api/two-step/app/confirm": {
       "post": {
-        "description": "Turn on the authenticator app being set up with a code from it. With it come\nten recovery codes, if they have none left.",
+        "description": "Turn on the authenticator app being set up with a code from it. With it come\nten recovery codes, if they have none left. The password was given for its\nsecret, at POST /two-step/app.",
         "operationId": "confirm_app_api_two_step_app_confirm_post",
         "requestBody": {
           "content": {

@@ -25,7 +25,7 @@ from horatio.auth import attempts, two_step
 from horatio.config import get_settings
 from horatio.connectors import discord
 from horatio.models import AuditEvent, AuthAttempt, AuthIdentity, DiscordSignIn, User
-from tests.api_helpers import Person, sign_up
+from tests.api_helpers import PASSWORD, Person, sign_up
 
 DISCORD_ID = "515151"
 START = 1_800_000_000.0
@@ -366,7 +366,7 @@ def test_where_two_step_is_required_discord_is_the_first_step_only(
 ) -> None:
     monkeypatch.setattr(get_settings(), "two_step_for_custodians", True)
     mina = sign_up(client_for, "mina", custodian=True, session=session)
-    started = mina.client.post("/two-step/app")
+    started = mina.client.post("/two-step/app", json={"password": PASSWORD})
     secret = started.json()["secret"]
     confirmed = mina.client.post(
         "/two-step/app/confirm", json={"code": TOTP(secret).at(int(clock[0]))}
@@ -575,7 +575,7 @@ def test_merging_moves_the_discord_link_and_its_row_where_the_staying_one_has_no
     assert visitor.get("/auth/me").json()["handle"] == "agnes"
 
 
-def test_an_account_made_with_discord_is_asked_to_confirm_with_it_and_can_still_set_up_an_app(
+def test_an_account_made_with_discord_is_asked_to_confirm_with_it(
     fake_discord: FakeDiscord, client_for: Callable[[], TestClient]
 ) -> None:
     visitor = client_for()
@@ -584,10 +584,15 @@ def test_an_account_made_with_discord_is_asked_to_confirm_with_it_and_can_still_
     assert made.status_code == 201, made.text
 
     assert visitor.get("/two-step").json()["has_password"] is False
-    for path in ("/two-step/passkeys/options", "/two-step/recovery-codes", "/two-step/app/remove"):
+    asking = (
+        "/two-step/passkeys/options",
+        "/two-step/recovery-codes",
+        "/two-step/app/remove",
+        "/two-step/app",
+    )
+    for path in asking:
         refused = visitor.post(path, json={"password": "anything at all"})
         assert refused.status_code == 409, path
-        # Not a password, which it hasn't: Discord, which it has (#1140).
+        # Not a password, which it hasn't: Discord, which it has (#1140), setting up
+        # an authenticator app too (#1148).
         assert refused.json()["detail"] == two_step_api.CONFIRM_FIRST
-    # Setting up an authenticator app asks for no password.
-    assert visitor.post("/two-step/app").status_code == 200

@@ -22,8 +22,8 @@ from horatio.api import two_step as two_step_api
 from horatio.auth import attempts, two_step
 from horatio.config import get_settings
 from horatio.connectors import discord
+from horatio.models import AuthenticatorApp, User
 from horatio.models import Session as SignInSession
-from horatio.models import User
 from tests.api_helpers import Person, sign_up
 from tests.test_api_discord_sign_in import (
     DISCORD_ID,
@@ -74,11 +74,15 @@ def owl(client_for: Callable[[], TestClient]) -> TestClient:
 
 
 def with_app(client: TestClient, clock: list[float]) -> None:
-    """Set up an authenticator app, which asks for no password, so there is something
-    to turn off and recovery codes to make again."""
-    secret = client.post("/two-step/app").json()["secret"]
-    confirmed = client.post("/two-step/app/confirm", json={"code": TOTP(secret).at(int(clock[0]))})
+    """Set up an authenticator app, confirming with Discord first (#1148), so there is
+    something to turn off and recovery codes to make again. It uses that up."""
+    assert confirm(client).headers["location"] == back("confirmed")
+    started = client.post("/two-step/app", json={"password": ""})
+    assert started.status_code == 200, started.text
+    code = TOTP(started.json()["secret"]).at(int(clock[0]))
+    confirmed = client.post("/two-step/app/confirm", json={"code": code})
     assert confirmed.status_code == 200, confirmed.text
+    clock[0] += 30
 
 
 def start(client: TestClient, next: str | None = PAGE) -> str:
@@ -133,7 +137,8 @@ def test_confirming_with_discord_stands_in_for_the_password_once(
     assert until is not None
     left = datetime.fromisoformat(until) - datetime.now(UTC)
     assert timedelta(minutes=4) < left <= discord_confirm.CONFIRMED_FOR
-    [event] = events(session, "account.discord_confirmed")
+    # The first was for setting up the app.
+    _, event = events(session, "account.discord_confirmed")
     assert said(event, "Owl") == "Owl confirmed it's them with Discord, as they have no password."
 
     # Refused for another reason first, it isn't used up.
@@ -150,6 +155,33 @@ def test_confirming_with_discord_stands_in_for_the_password_once(
     assert again.json()["detail"] == two_step_api.CONFIRM_FIRST
     assert confirm(visitor).headers["location"] == back("confirmed")
     assert visitor.post("/two-step/app/remove", json={"password": ""}).status_code == 204
+
+
+def test_setting_up_an_app_is_confirmed_with_discord_and_used_up_once_it_is_on(
+    fake_discord: FakeDiscord,
+    client_for: Callable[[], TestClient],
+    session: Session,
+    clock: list[float],
+) -> None:
+    visitor = owl(client_for)
+    refused = visitor.post("/two-step/app", json={"password": ""})
+    assert (refused.status_code, refused.json()["detail"]) == (409, two_step_api.CONFIRM_FIRST)
+    assert session.scalars(select(AuthenticatorApp)).all() == []
+    confirm(visitor)
+
+    # Asked twice, as when the first QR code is left and they start again: the
+    # confirmation is used once the app is on.
+    secrets = []
+    for _ in range(2):
+        started = visitor.post("/two-step/app", json={"password": ""})
+        assert started.status_code == 200, started.text
+        secrets.append(started.json()["secret"])
+    assert visitor.get("/two-step").json()["confirmed_until"] is not None
+    code = TOTP(secrets[-1]).at(int(clock[0]))
+    on = visitor.post("/two-step/app/confirm", json={"code": code})
+    assert on.status_code == 200, on.text
+    assert len(on.json()["recovery_codes"]) == 10
+    assert visitor.get("/two-step").json()["confirmed_until"] is None
 
 
 def test_a_passkey_s_options_dont_use_the_confirmation_up(
@@ -279,9 +311,12 @@ def test_without_discord_linked_they_are_told_to_set_a_password(
 
     assert visitor.get("/two-step").json()["can_confirm_with_discord"] is False
     assert visitor.post("/auth/discord/confirm", json={}).status_code == 409
-    refused = new_codes(visitor)
-    assert refused.status_code == 409
-    assert refused.json()["detail"] == two_step_api.NO_PASSWORD
+    for path in ("/two-step/recovery-codes", "/two-step/app"):
+        refused = visitor.post(path, json={"password": ""})
+        assert refused.status_code == 409, path
+        assert refused.json()["detail"] == two_step_api.NO_PASSWORD
+    # No secret was given out for an app.
+    assert session.scalars(select(AuthenticatorApp)).all() == []
 
 
 def test_confirming_works_while_two_step_must_be_set_up_first(

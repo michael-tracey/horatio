@@ -14002,8 +14002,9 @@ export interface paths {
         put?: never;
         /**
          * Start App
-         * @description Start setting up an authenticator app: the secret to scan or type into it. It
-         *     signs no one in until a code from it is given (POST /two-step/app/confirm).
+         * @description Start setting up an authenticator app, giving their password first (#1148): the
+         *     secret to scan or type into it, so a wrong password never shows one. It signs no
+         *     one in until a code from it is given (POST /two-step/app/confirm).
          */
         post: operations["start_app_api_two_step_app_post"];
         delete?: never;
@@ -14024,7 +14025,8 @@ export interface paths {
         /**
          * Confirm App
          * @description Turn on the authenticator app being set up with a code from it. With it come
-         *     ten recovery codes, if they have none left.
+         *     ten recovery codes, if they have none left. The password was given for its
+         *     secret, at POST /two-step/app.
          */
         post: operations["confirm_app_api_two_step_app_confirm_post"];
         delete?: never;
@@ -66608,7 +66610,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -66617,6 +66623,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppSetup"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -119,7 +119,7 @@ def code(secret: str, clock: Clock) -> str:
 
 def set_up_app(person: Person, clock: Clock) -> tuple[str, list[str]]:
     """Set up an authenticator app for `person`: its secret, and their recovery codes."""
-    started = person.client.post("/two-step/app")
+    started = person.client.post("/two-step/app", json={"password": PASSWORD})
     assert started.status_code == 200, started.text
     secret = started.json()["secret"]
     confirmed = person.client.post("/two-step/app/confirm", json={"code": code(secret, clock)})
@@ -171,7 +171,7 @@ def test_setting_up_an_authenticator_app_gives_recovery_codes_and_keeps_the_secr
         "confirmed_until": None,
     }
 
-    started = agnes.client.post("/two-step/app").json()
+    started = agnes.client.post("/two-step/app", json={"password": PASSWORD}).json()
     assert started["uri"].startswith("otpauth://totp/Horatio:%40agnes?secret=")
     assert "issuer=Horatio" in started["uri"]
     # Not on until a code from it is given; a wrong one is refused.
@@ -190,7 +190,7 @@ def test_setting_up_an_authenticator_app_gives_recovery_codes_and_keeps_the_secr
     assert agnes.client.get("/two-step").json()["app"] is True
     assert agnes.client.get("/two-step").json()["recovery_codes_left"] == 10
     # Starting again is refused while one is on.
-    assert agnes.client.post("/two-step/app").status_code == 409
+    assert agnes.client.post("/two-step/app", json={"password": PASSWORD}).status_code == 409
 
     # The secret is sealed with the server's key, for this account only, and the
     # recovery codes are kept only as hashes.
@@ -204,6 +204,33 @@ def test_setting_up_an_authenticator_app_gives_recovery_codes_and_keeps_the_secr
     assert audit.level("account.two_step_added") == "notice"
 
 
+def test_setting_up_an_app_asks_for_the_password_first_and_counts_towards_its_limit(
+    client_for: Callable[[], TestClient], session: Session, limits: None
+) -> None:
+    agnes = sign_up(client_for, "agnes")
+    wrong = {"password": "not my password"}
+
+    # A wrong password shows no secret, and leaves nothing being set up.
+    refused = agnes.client.post("/two-step/app", json=wrong)
+    assert (refused.status_code, refused.json()) == (403, {"detail": "That's not your password."})
+    assert session.scalars(select(AuthenticatorApp)).all() == []
+    # Every try counts, right or wrong, with the other password tries at the account:
+    # 10 in a quarter of an hour.
+    for _ in range(8):
+        agnes.client.post("/two-step/app", json=wrong)
+    assert agnes.client.post("/two-step/app", json={"password": PASSWORD}).status_code == 200
+
+    held = agnes.client.post("/two-step/app", json={"password": PASSWORD})
+    assert (held.status_code, held.json()["detail"]) == (
+        429,
+        "Too many tries at your password. Try again later.",
+    )
+    change = {"current": PASSWORD, "password": "a new password 123"}
+    assert agnes.client.post("/auth/password", json=change).status_code == 429
+    [event] = events(session, "account.password_change_throttled")
+    assert event.data["kind"] == "two_step"
+
+
 def test_without_the_servers_key_only_passkeys_can_be_set_up(
     client_for: Callable[[], TestClient],
     session: Session,
@@ -212,7 +239,7 @@ def test_without_the_servers_key_only_passkeys_can_be_set_up(
 ) -> None:
     monkeypatch.setattr(get_settings(), "totp_key", None)
     mina = sign_up(client_for, "mina", custodian=True, session=session)
-    assert mina.client.post("/two-step/app").status_code == 409
+    assert mina.client.post("/two-step/app", json={"password": PASSWORD}).status_code == 409
     state = mina.client.get("/two-step").json()
     assert (state["apps_available"], state["passkeys_available"], state["needed"]) == (
         False,
