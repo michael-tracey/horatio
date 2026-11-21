@@ -31,8 +31,12 @@ export function timeAgo(at: string, now = Date.now()): string {
   return RELATIVE.format(Math.round(value), "year");
 }
 
-/** The bell in the menu bar: work waiting on you, then messages. Each opens where to deal with it. */
-export function NotificationBell() {
+/**
+ * The bell in the menu bar: work waiting on you, then messages. Each opens where to deal with it.
+ * Without `settings`, no link to the notification settings: before setting up two-step sign-in,
+ * the bell is all that answers (#1111).
+ */
+export function NotificationBell({ settings = true }: { settings?: boolean }) {
   const bell = useNotifications(true);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -107,11 +111,13 @@ export function NotificationBell() {
               }
             />
           )}
-          <div className="px-4 py-2.5 text-right">
-            <Link to="/account/notifications" onClick={() => setOpen(false)} className="text-xs text-mist underline hover:text-parchment">
-              Notification settings
-            </Link>
-          </div>
+          {settings && (
+            <div className="px-4 py-2.5 text-right">
+              <Link to="/account/notifications" onClick={() => setOpen(false)} className="text-xs text-mist underline hover:text-parchment">
+                Notification settings
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>
