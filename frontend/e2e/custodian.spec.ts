@@ -1212,6 +1212,27 @@ test("the custodian previews fitting a troupe's NPC creation picks, then fits th
   await expect(tool.getByRole("button", { name: "Fit 0 NPCs" })).toBeDisabled();
 });
 
+test("the custodian chooses after how many days Invite players leaves a troupe's Getting your troupe ready (#1129)", async ({ browser }) => {
+  const custodian = await person(browser, "invitedays-cus");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  await c.reload();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Site", exact: true }).click();
+  const card = c.locator("section").filter({ has: c.getByRole("heading", { name: "Getting your troupe ready", exact: true }) });
+  const days = card.getByLabel("Days before Invite players leaves");
+  // The other project's run of this test may change it at the same time: only the answer to this run's save is checked.
+  const chosen = test.info().project.name === "phone" ? "21" : "45";
+  await expect(days).toHaveValue(/^\d+$/);
+  await days.fill(chosen);
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(c.getByText(`Saved. Invite players leaves the list once a troupe is ${chosen} days old.`)).toBeVisible();
+
+  // Back to 30, as the other tests expect.
+  const reset = await c.request.put("/api/site/getting-ready", { headers: { "X-Horatio": "1" }, data: { invite_players_days: 30 } });
+  expect(reset.status(), await reset.text()).toBe(200);
+});
+
 test("Clan logos and Site fit a phone: nothing sideways, the loading animations two to a row (#911), and Site under 2,500 px (#944)", async ({ browser }) => {
   const custodian = await person(browser, "fitphone-cust");
   makeCustodian(custodian.email);

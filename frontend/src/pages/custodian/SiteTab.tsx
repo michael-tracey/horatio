@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
-import { Badge, Button, Card, ErrorText, Loaded, Loading } from "../../components/ui";
+import { Badge, Button, Card, ErrorText, Field, Input, Loaded, Loading } from "../../components/ui";
 import { useToast } from "../../components/Toast";
 import { useDates } from "../../dates";
+import { useAction } from "../../hooks";
 import { LoaderMark, loaders } from "../../loaders/art";
 import { MOTIFS, motifFor, rememberMotif, type Motif, type MotifsBySplat } from "../../loaders/motifs";
 import { SplashScreen } from "../../loaders/splash";
@@ -12,13 +13,14 @@ import { EmailDesignCard } from "./EmailDesign";
 import { DiscordCard, MailCard } from "./SiteServices";
 
 /** The site as a whole (#790): what everyone sees that only the custodian chooses,
- * mail, its design and Discord (#833, #830, #834), and what is running. Was the Settings
- * and System tabs. */
+ * how long Invite players stays on a new troupe's list (#1129), mail, its design and
+ * Discord (#833, #830, #834), and what is running. Was the Settings and System tabs. */
 export function SiteTab() {
   const appearance = useAppearance();
   return (
     <div className="flex flex-col gap-6">
       <Loaded query={appearance}>{(found) => <LoadingAnimationCard bySplat={found.loading_animation} />}</Loaded>
+      <GettingReadyCard />
       <MailCard />
       <EmailDesignCard />
       <DiscordCard />
@@ -96,6 +98,44 @@ function LoadingAnimationCard({ bySplat }: { bySplat: MotifsBySplat }) {
       </div>
       <ErrorText error={save.error} />
       {full && <FullScreenPreview motif={full} onClose={() => setFull(null)} />}
+    </Card>
+  );
+}
+
+const GETTING_READY = ["site", "getting-ready"];
+
+/** After how many days Invite players leaves every troupe's Getting your troupe ready (#1129). */
+function GettingReadyCard() {
+  const site = useQuery({ queryKey: GETTING_READY, queryFn: () => unwrap(api.GET("/api/site/getting-ready")) });
+  return <Loaded query={site}>{(found) => <InviteDaysForm days={found.invite_players_days} />}</Loaded>;
+}
+
+function InviteDaysForm({ days }: { days: number }) {
+  const toast = useToast();
+  const [chosen, setChosen] = useState(String(days));
+  useEffect(() => setChosen(String(days)), [days]);
+  const save = useAction(() => unwrap(api.PUT("/api/site/getting-ready", { body: { invite_players_days: Number(chosen) } })), [GETTING_READY]);
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    save.mutate(undefined, { onSuccess: (saved) => toast({ message: `Saved. Invite players leaves the list once a troupe is ${saved.invite_players_days} days old.` }) });
+  };
+  return (
+    <Card title="Getting your troupe ready">
+      <form onSubmit={submit} className="flex flex-col gap-3">
+        <p className="text-sm text-mist">
+          A new troupe's storytellers see its steps on the Overview. <strong className="font-medium text-parchment">Invite players</strong> leaves the list once the troupe
+          is this many days old from the day it was made, done or not, and the count leaves it out. 30 until you change it.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <Field label="Days before Invite players leaves">
+            <Input type="number" inputMode="numeric" min={1} max={365} required className="w-28" value={chosen} onChange={(e) => setChosen(e.target.value)} />
+          </Field>
+          <Button type="submit" variant="secondary" disabled={save.isPending || chosen === String(days)}>
+            Save
+          </Button>
+        </div>
+        <ErrorText error={save.error} />
+      </form>
     </Card>
   );
 }

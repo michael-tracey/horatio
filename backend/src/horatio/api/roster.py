@@ -894,6 +894,8 @@ MESSAGES: dict[str, str] = {
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "appearance.loading_animation": "{actor} chose the {animation} loading animation.",
+    "site.invite_players_days": "{actor} set Invite players to leave Getting your troupe ready"
+    " once a troupe is {days} days old (was {before}).",
     "mail.sender_set": "{actor} set who Horatio's emails come from: {sends_from}, replies to"
     " {reply_to}.",
     "mail.test_sent": "{actor} sent a test email to {to}.",

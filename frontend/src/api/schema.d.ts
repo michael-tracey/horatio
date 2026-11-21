@@ -7948,6 +7948,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/site/getting-ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Getting Ready Site
+         * @description How long Invite players stays on every troupe's list, for the custodian.
+         */
+        get: operations["read_getting_ready_site_api_site_getting_ready_get"];
+        /**
+         * Change Getting Ready Site
+         * @description The custodian chooses after how many days Invite players leaves every troupe's list.
+         */
+        put: operations["change_getting_ready_site_api_site_getting_ready_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/site/mail": {
         parameters: {
             query?: never;
@@ -23532,6 +23556,16 @@ export interface components {
             hidden: boolean;
             /** Steps */
             steps: components["schemas"]["ReadyStepOut"][];
+        };
+        /** GettingReadySiteIn */
+        GettingReadySiteIn: {
+            /** Invite Players Days */
+            invite_players_days: number;
+        };
+        /** GettingReadySiteOut */
+        GettingReadySiteOut: {
+            /** Invite Players Days */
+            invite_players_days: number;
         };
         /** GiftIn */
         GiftIn: {
@@ -54031,6 +54065,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MailTestOut"];
+                };
+            };
+        };
+    };
+    read_getting_ready_site_api_site_getting_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingReadySiteOut"];
+                };
+            };
+        };
+    };
+    change_getting_ready_site_api_site_getting_ready_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GettingReadySiteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingReadySiteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

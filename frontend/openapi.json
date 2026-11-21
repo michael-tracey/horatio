@@ -23889,6 +23889,32 @@
         "title": "GettingReadyOut",
         "type": "object"
       },
+      "GettingReadySiteIn": {
+        "properties": {
+          "invite_players_days": {
+            "title": "Invite Players Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invite_players_days"
+        ],
+        "title": "GettingReadySiteIn",
+        "type": "object"
+      },
+      "GettingReadySiteOut": {
+        "properties": {
+          "invite_players_days": {
+            "title": "Invite Players Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invite_players_days"
+        ],
+        "title": "GettingReadySiteOut",
+        "type": "object"
+      },
       "GiftIn": {
         "properties": {
           "amount": {
@@ -85956,6 +85982,70 @@
         },
         "summary": "Test Design",
         "tags": [
+          "site"
+        ]
+      }
+    },
+    "/api/site/getting-ready": {
+      "get": {
+        "description": "How long Invite players stays on every troupe's list, for the custodian.",
+        "operationId": "read_getting_ready_site_api_site_getting_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadySiteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Getting Ready Site",
+        "tags": [
+          "troupes",
+          "site"
+        ]
+      },
+      "put": {
+        "description": "The custodian chooses after how many days Invite players leaves every troupe's list.",
+        "operationId": "change_getting_ready_site_api_site_getting_ready_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GettingReadySiteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadySiteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Getting Ready Site",
+        "tags": [
+          "troupes",
           "site"
         ]
       }
