@@ -61,7 +61,7 @@ Anyone signed in can see your profile, on your player page. On the **Profile** t
 - **Display name**: your name as everyone sees it.
 - **Pronouns**: optional, shown beside your name to other players. Type anything, or pick a common one such as she/her or they/them from the list. Pronouns are never printed on a badge.
 - **Bio**: a little about you, up to 2000 characters.
-- **Discord username**: so staff and your troupe's Discord can find you.
+- **Discord username**: so staff and your troupe's Discord can find you. Or [link your Discord account](#your-discord-account) on the Sign-in and email tab instead.
 - **Social media**: up to six links, each with a label such as Bluesky.
 
 Choose **Save** when you're done. If you try to leave with changes not saved, Horatio asks first.
