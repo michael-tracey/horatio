@@ -48,7 +48,7 @@ export function Layout() {
               may say why: their troupe asking it of its staff (#1111). */}
           {me.data?.two_step_needed && (
             <div className="flex items-center gap-1 sm:gap-4">
-              <NotificationBell settings={false} />
+              <NotificationBell beforeSetup />
               <button className="text-sm text-mist hover:text-parchment" onClick={signOut.signOut}>
                 Sign out
               </button>

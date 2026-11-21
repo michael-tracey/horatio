@@ -229,9 +229,16 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await expect(notice).toContainText(owls);
   await expect(notice).toContainText("Set it up in Account › Sign-in and email");
   await expect(bell.getByRole("link", { name: "Notification settings" })).toHaveCount(0);
-  await bell.getByRole("button", { name: "Mark all read" }).click();
+  // Tapping it reads it in place, marked read, rather than following its link back here (#1146).
+  await expect(notice).toHaveAttribute("aria-expanded", "false");
+  await notice.click();
+  await expect(notice).toHaveAttribute("aria-expanded", "true");
   await expect(bell.getByRole("button", { name: "Mark all read" })).toHaveCount(0);
-  await st.keyboard.press("Escape");
+  await expect(st).toHaveURL(/\/two-step\?next=/);
+  // Its button closes the bell, back to the setup form.
+  await bell.getByRole("button", { name: "Set up two-step sign-in" }).click();
+  await expect(bell).toBeHidden();
+  await expect(st).toHaveURL(/\/two-step\?next=/);
 
   const stCdp = await st.context().newCDPSession(st);
   await stCdp.send("WebAuthn.enable");
@@ -243,6 +250,9 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await st.getByRole("button", { name: "Add a passkey" }).click();
   await st.getByRole("button", { name: "I've kept them" }).click();
   await expect(st).not.toHaveURL(/\/two-step/);
+  // Set up, the bell is as usual again, with its settings.
+  await st.getByRole("button", { name: /^Notifications/ }).click();
+  await expect(st.getByRole("dialog", { name: "Notifications" }).getByRole("link", { name: "Notification settings" })).toBeVisible();
 });
 
 test("a troupe's or character's tab that isn't there, or isn't open to them, says so with the way back (#907)", async ({ browser }) => {
