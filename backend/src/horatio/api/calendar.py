@@ -120,7 +120,9 @@ def feed(token: str, db: DbSession) -> Response:
         troupes = list(db.scalars(select(Troupe).where(Troupe.id.in_(ids)).order_by(Troupe.name)))
         name = "Your troupes"
         about = "Games and downtime dates of every troupe you're in, from Horatio."
-    text = calendar_feed.calendar(name, about, calendar_feed.troupe_events(db, troupes, now), now)
+    text = calendar_feed.calendar(
+        name, about, calendar_feed.troupe_events(db, troupes, user.id, now), now
+    )
     return Response(
         text,
         media_type="text/calendar",

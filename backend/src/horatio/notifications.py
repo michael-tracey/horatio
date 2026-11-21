@@ -16,7 +16,7 @@ horatio.notification_choices, which says where it comes: a message comes to the
 bell unless the person turns it off there, a task always. Either may also come by
 email or by push to those who choose it (horatio.notification_emails,
 horatio.web_push): `notify` sees to that for messages; a task emails and pushes when
-its work arrives (`approval_waiting`, `troupe_request_waiting`).
+its work arrives (`approval_waiting`, `troupe_request_waiting`, `teaching_asked`).
 """
 
 import uuid
@@ -38,6 +38,7 @@ from horatio.models import (
     Post,
     Quest,
     QuestRequest,
+    Teaching,
     TraitDefinition,
     Troupe,
     TroupeRequest,
@@ -291,27 +292,33 @@ def quest_request_tasks(db: Session, user: User) -> list[Item]:
     ]
 
 
+def teaching_item(db: Session, asked: Teaching, teacher: Character) -> Item:
+    """Teaching asked of a character, as the bell shows it: who would learn what from
+    them, and the Willpower it costs. It opens the teacher's Play View, where their
+    player confirms or refuses it."""
+    from horatio import teaching  # imports this module
+
+    return Item(
+        id=f"teaching:{asked.id}",
+        kind="teaching",
+        task=True,
+        troupe_id=asked.troupe_id,
+        troupe_name=db.get_one(Troupe, asked.troupe_id).name,
+        summary=f"{teacher.name}: {teaching.what_taught(db, asked)}? "
+        f"It costs {asked.willpower} Willpower.",
+        link=f"/play/characters/{teacher.id}?tab=tracker",
+        at=asked.created_at,
+        read=False,
+        picture=picture_url(teacher.id, teacher.picture_id),
+    )
+
+
 def teaching_tasks(db: Session, user: User) -> list[Item]:
     """Teaching asked of the person's characters, at the cost of their Willpower
     (horatio.teaching): theirs to confirm or refuse."""
     from horatio import teaching  # imports this module
 
-    return [
-        Item(
-            id=f"teaching:{t.id}",
-            kind="teaching",
-            task=True,
-            troupe_id=t.troupe_id,
-            troupe_name=db.get_one(Troupe, t.troupe_id).name,
-            summary=f"{teacher.name}: {teaching.what_taught(db, t)}? "
-            f"It costs {t.willpower} Willpower.",
-            link=f"/play/characters/{teacher.id}?tab=tracker",
-            at=t.created_at,
-            read=False,
-            picture=picture_url(teacher.id, teacher.picture_id),
-        )
-        for t, teacher in teaching.waiting_for(db, user)
-    ]
+    return [teaching_item(db, t, teacher) for t, teacher in teaching.waiting_for(db, user)]
 
 
 TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [
@@ -333,6 +340,21 @@ def approval_waiting(db: Session, approval: Approval) -> None:
     people = [p for p in approvers(db, troupe) if p != approval.requested_by]
     notification_emails.queue(db, people, item.kind, item.summary, item.link, troupe_id=troupe.id)
     web_push.queue(db, people, item.kind, item.summary, item.link, troupe_id=troupe.id)
+
+
+def teaching_asked(db: Session, asked: Teaching, asker: User) -> None:
+    """Teaching has just been asked of a player's character, at the cost of its
+    Willpower (#1097): push it to that player if they want that. Not when they asked it
+    of their own character. The bell's task needs nothing; it appears by itself."""
+    if asked.status != "asked" or asked.teacher_id is None:
+        return
+    teacher = db.get_one(Character, asked.teacher_id)
+    if teacher.kind != "pc" or teacher.player_id is None or teacher.player_id == asker.id:
+        return
+    item = teaching_item(db, asked, teacher)
+    web_push.queue(
+        db, [teacher.player_id], item.kind, item.summary, item.link, troupe_id=asked.troupe_id
+    )
 
 
 def troupe_request_waiting(db: Session, request: TroupeRequest, requester: User) -> None:

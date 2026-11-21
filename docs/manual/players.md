@@ -195,7 +195,7 @@ Once a home troupe has accepted the character, some purchases also cost downtime
 Once a home troupe has accepted the character, some changes go to its storytellers to approve. The cart marks them **Needs approval**, and after **Spend XP** the sheet marks them **Awaiting approval**.
 
 - **Discipline dots.** Each dot bought waits for approval. It is on the sheet while it waits, and the XP is held; if the storytellers decline it, the dots come off and the XP comes back. When you add a discipline after acceptance, the Add panel asks for a **Teacher**: out-of-clan powers need a teacher who has them in-clan.
-- **Teachers for other traits.** *If your troupe uses this:* its storytellers can ask for a teacher for other traits too. The cart line then asks **Choose a teacher…**: one of the troupe's characters who holds the trait at the rating needed, or **An NPC: name them**. If the troupe's rule asks Willpower of the teacher, the teacher's player is asked to confirm, and the storytellers can't approve until they have.
+- **Teachers for other traits.** *If your troupe uses this:* its storytellers can ask for a teacher for other traits too. The cart line then asks **Choose a teacher…**: one of the troupe's characters who holds the trait at the rating needed, or **An NPC: name them**. If the troupe's rule asks Willpower of the teacher, the teacher's player is asked to confirm, in their bell (and on their phone if they tick **Phone** for **Teaching to confirm** on Account › Notifications), and the storytellers can't approve until they have.
 - **Merits and flaws.** Adding or removing a merit or flaw is asked of the storytellers. Unlike a discipline dot, it isn't on the sheet until they approve. A merit's cost, or a flaw's buy-off (twice its points), is held while you wait and refunded if they decline. Removing a merit gives no XP back. Taking on a flaw gives its XP once approved. Merits and flaws that stand for the character's clan or bloodline can't be removed. The storytellers may answer with a quest instead of a yes or no: finishing the quest approves it.
 - **Changes held for review.** A change that breaks one of the troupe's checks set to review goes through, but waits for the storytellers.
 
@@ -232,6 +232,15 @@ XP comes from:
 - **Joining a troupe**: a character below the troupe's XP floor can be topped up to it when accepted.
 
 A character with no home troupe has **Add XP yourself** on this tab, for a character played somewhere else first. That XP is marked self-entered, and the troupe it joins sees it apart and accepts or removes it.
+
+### Planning what to buy
+
+The **Plan** card on the Experience tab lists what you mean to buy next, in order, each priced as the cart would price it now. A line you can't afford yet says roughly how many games away it is, such as *About 3 games away, counting downtime XP*. That goes by what a game usually brings from the home troupe:
+
+- **The game's XP**: the troupe's session XP, or its chart's figure for the character's band of earned XP.
+- **Downtime XP**: the XP for completing every downtime cycle the troupe has run, shared over every game it has held, however long the chronicle has gone on. A troupe with no games in Horatio yet counts its Downtime XP setting, one cycle a game. Where the troupe caps XP at a monthly limit, the downtime XP counts toward it.
+
+The card says where its figure comes from, such as *6 XP from 3 downtime cycles over the troupe's 4 games so far*.
 
 ## Your home troupe
 
@@ -597,7 +606,7 @@ At game, influence spent from **Uses this game** on the Play View asks for the d
 
 The troupe's page (its **Overview**) shows its upcoming **Games** to its members. For each, say whether you're **Coming**, **Maybe** or **Not coming**; tap your answer again to take it back. Everyone sees how many said each; the storytellers see who.
 
-**Subscribe to the calendar** gives you a link that puts the troupe's games and downtime dates in your own calendar app, and keeps itself up to date. [Getting started](getting-started.md) has more about it.
+**Subscribe to the calendar** gives you a link that puts the troupe's games and downtime dates in your own calendar app, each game with your answer, and keeps itself up to date. [Getting started](getting-started.md) has more about it.
 
 > **If your troupe uses this:** under **Missed a game?**, you can mark a character absentee for a game it missed, until the game's XP is awarded. An absentee game never counts as attended, and gets the troupe's absentee XP.
 

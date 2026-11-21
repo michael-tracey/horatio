@@ -14,17 +14,19 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import play, teaching
+from horatio import play, teaching, web_push
 from horatio.models import (
     AuditEvent,
     Character,
     GameAttendance,
     OwedAction,
+    PushNotice,
     ScheduledGame,
     Teaching,
     User,
 )
 from tests.api_helpers import Person, Troupe, new_character, sign_up
+from tests.test_web_push import Browser, FakePushService, endpoint, pushes, turn_on  # noqa: F401
 
 pytestmark = pytest.mark.usefixtures("without_bank")
 
@@ -467,6 +469,78 @@ def test_the_teachers_willpower_is_confirmed_spent_and_returns_after_two_games(
     attend(session, troupe, rook, days_ago=10)
     assert play.limits(session, rook).starting_willpower() == full
     assert teaching.lent_text(session, rook) is None
+
+
+def test_teaching_asked_is_pushed_to_the_teachers_player_who_ticks_it(
+    troupe: Troupe,
+    other: Person,
+    elder: str,
+    gunman: str,
+    session: Session,
+    pushes: FakePushService,  # noqa: F811
+) -> None:
+    """#1097: off until the teacher's player ticks it, and only to a device where they
+    turned push on. It says who would learn what, and opens the teacher's Play View."""
+    added(troupe, ELDERS_MODERN_SKILLS)
+    phone = Browser(endpoint("teacher"))
+    assert turn_on(other, phone).status_code == 200
+
+    def ask() -> list[PushNotice]:
+        """Konrad asks Rook to teach him Firearms 1, then takes it back."""
+        taught = take(troupe.player, elder, "skills", "Firearms", 1, teacher_id=gunman)
+        assert taught.status_code == 200, taught.text
+        found = list(session.scalars(select(PushNotice)))
+        [waiting] = queue(troupe)
+        withdrawn = troupe.player.client.delete(f"/characters/{elder}/disciplines/{waiting['id']}")
+        assert withdrawn.status_code == 204, withdrawn.text
+        return found
+
+    # Off to begin with: in the bell only.
+    assert ask() == []
+    chose = other.client.put(
+        "/notification-settings", json={"topic": "teaching", "way": "push", "on": True}
+    )
+    assert chose.status_code == 200, chose.text
+
+    [notice] = ask()
+    assert notice.topic == "teaching"
+    assert web_push.send_due(session) == 1
+    [request] = pushes.received
+    assert str(request.url) == phone.endpoint
+    assert phone.read(request.content) == {
+        "title": "Lords of the Night",
+        "body": "Rook: Teaching Firearms 1 to Konrad? It costs 1 Willpower.",
+        "link": f"/play/characters/{gunman}?tab=tracker",
+    }
+
+    # With push turned off on their only device, nothing goes.
+    [device] = other.client.get("/notification-settings").json()["devices"]
+    assert other.client.delete(f"/notification-settings/devices/{device['id']}").status_code < 300
+    assert ask() == []
+
+
+def test_teaching_asked_of_your_own_character_isnt_pushed(
+    troupe: Troupe,
+    elder: str,
+    session: Session,
+    pushes: FakePushService,  # noqa: F811
+) -> None:
+    added(troupe, ELDERS_MODERN_SKILLS)
+    mentor = new_character(troupe, troupe.player, "Mentor")
+    bought(troupe.player, mentor, "skills", "Firearms", 2)
+    member_character_of(troupe, troupe.player, mentor)
+    assert turn_on(troupe.player, Browser(endpoint("own-teacher"))).status_code == 200
+    chose = troupe.player.client.put(
+        "/notification-settings", json={"topic": "teaching", "way": "push", "on": True}
+    )
+    assert chose.status_code == 200, chose.text
+
+    taught = take(troupe.player, elder, "skills", "Firearms", 1, teacher_id=mentor)
+    assert taught.status_code == 200, taught.text
+    # Still theirs to confirm, in the bell; just not pushed.
+    bell = troupe.player.client.get("/notifications").json()["items"]
+    assert any(i["kind"] == "teaching" for i in bell)
+    assert list(session.scalars(select(PushNotice))) == []
 
 
 def attend(session: Session, troupe: Troupe, character: Character, days_ago: int) -> None:

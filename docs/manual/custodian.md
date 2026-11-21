@@ -586,14 +586,15 @@ Saving goes in the audit log, as a notice.
 
 ### Throttled now
 
-Horatio limits how often anyone can try to sign in or sign up from one place (one IP address):
+Horatio limits how often anyone can try to sign in or sign up from one place (one IP address), and a few things at one account:
 
 - **Failed sign-ins**: 20 in a quarter of an hour and 100 a day from one address, and 5 in a quarter of an hour at one email or handle from it.
 - **All sign-ins**, right password or not: 60 in a quarter of an hour and 300 a day from one address, so that no one can keep the server busy checking passwords. A troupe signing in together on a venue's Wi-Fi stays well under it.
 - **Sign-ups**: 20 an hour and 50 a day from one address.
 - **Wrong second-step codes** ([two-step sign-in](getting-started.md#two-step-sign-in)): 20 in a quarter of an hour and 100 a day from one address, and 10 in a quarter of an hour and 30 a day at one account from anywhere. Only someone with the account's password gets that far, so the limit at the account can't be used to keep anyone else out. It shows as **Anywhere at @handle**.
+- **Password changes** while signed in, right password or not: 10 in a quarter of an hour and 30 a day at one account, from anywhere. Only someone signed in as the account can try, so the limit can't be used to keep anyone else out. Someone who has forgotten their password is better served by a reset link. It shows as the account's **@handle** alone.
 
-The **Throttled now** card, below the **Audit log** card, lists each address over a limit now (with the email or handle, for the limit at one login), which limit, and when it clears. Choose **Unblock** to let it try again at once, for instance when a whole troupe is held back at a game. Unblocking goes in the audit log, as a notice.
+The **Throttled now** card, below the **Audit log** card, lists each address or account over a limit now (with the email or handle, for the limit at one login), which limit, and when it clears. It refreshes by itself every half minute while you have it open, and when you come back to the tab. Choose **Unblock** to let it try again at once, for instance when a whole troupe is held back at a game. Unblocking goes in the audit log, as a notice.
 
 An address shows in full only while **Record IP addresses with sign-in events** is ticked; otherwise only its start, such as 198.51.x.x. **Unblock** works either way.
 

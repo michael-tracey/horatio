@@ -193,7 +193,8 @@ def test_the_locked_ones_say_so(client_for: Callable[[], TestClient]) -> None:
     topics = shown(person)
     assert routes(topics["security"]) == {"bell": (True, True)}
     assert routes(topics["account_emails"]) == {"email": (True, True)}
-    assert routes(topics["teaching"]) == {"bell": (True, True)}
+    # Teaching asked of your character: always in the bell; pushed if you tick it (#1097).
+    assert routes(topics["teaching"]) == {"bell": (True, True), "push": (False, False)}
     assert topics["teaching"]["task"] is True
     for way in ("bell", "email", "push"):
         refused = person.client.put(
