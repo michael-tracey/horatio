@@ -713,7 +713,7 @@ def earned_lines(lines: Sequence[BackupXpLine]) -> list[tuple[BackupXpLine, int]
 
 # --- importing ---------------------------------------------------------------------------
 
-Status = Literal["new", "differs", "kept", "cannot", "info"]
+Status = Literal["new", "differs", "kept", "left_alone", "cannot", "info"]
 Part = Literal["character", "sheet", "xp", "retainers", "equipment", "titles", "status"]
 PARTS: dict[Part, str] = {
     "character": "Character",
