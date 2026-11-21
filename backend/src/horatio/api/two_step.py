@@ -80,6 +80,11 @@ class NewPasskey(BaseModel):
     name: str = Field(default="Passkey", max_length=60)
 
 
+class Replacement(BaseModel):
+    # The browser's PublicKeyCredential from navigator.credentials.create, as JSON.
+    credential: dict[str, Any]
+
+
 class StaffTwoStepIn(BaseModel):
     required: bool
 
@@ -102,20 +107,21 @@ class ResetIn(BaseModel):
     reason: str = Field(min_length=1, max_length=2000)
 
 
+def passkey_out(p: Passkey) -> PasskeyOut:
+    return PasskeyOut(
+        id=p.id,
+        name=p.name,
+        created_at=p.created_at,
+        last_used_at=p.last_used_at,
+        discoverable=p.discoverable,
+    )
+
+
 def state(db: DbSession, user: User) -> TwoStepOut:
     return TwoStepOut(
         app=two_step.has_app(db, user),
         apps_available=two_step.apps_available(),
-        passkeys=[
-            PasskeyOut(
-                id=p.id,
-                name=p.name,
-                created_at=p.created_at,
-                last_used_at=p.last_used_at,
-                discoverable=p.discoverable,
-            )
-            for p in passkeys.mine(db, user)
-        ],
+        passkeys=[passkey_out(p) for p in passkeys.mine(db, user)],
         passkeys_available=passkeys.available(),
         recovery_codes_left=two_step.recovery_codes_left(db, user),
         required_by=two_step.required_by(db, user),
@@ -237,6 +243,57 @@ def remove_passkey(passkey_id: uuid.UUID, body: Password, db: DbSession, user: C
         db, user, "account.two_step_removed", kind="passkey", member=user.display_name, name=name
     )
     db.commit()
+
+
+def replaceable(db: DbSession, user: User, passkey_id: uuid.UUID) -> Passkey:
+    """One of their passkeys that may not sign in alone, to replace with one that does."""
+    passkey = db.scalar(select(Passkey).where(Passkey.id == passkey_id).with_for_update())
+    if passkey is None or passkey.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such passkey.")
+    if passkey.discoverable:
+        raise HTTPException(status.HTTP_409_CONFLICT, f"{passkey.name} signs you in alone already.")
+    return passkey
+
+
+@router.post("/passkeys/{passkey_id}/replace/options")
+def replace_options(
+    passkey_id: uuid.UUID, request: Request, db: DbSession, user: CurrentUser
+) -> dict[str, Any]:
+    """What the browser needs to make a passkey in place of one that may not sign in
+    alone (#1110): as for adding one, but the device must make it so it can."""
+    if not passkeys.available():
+        raise HTTPException(status.HTTP_409_CONFLICT, "Passkeys need this site on https.")
+    replaceable(db, user, passkey_id)
+    options = passkeys.adding_options(db, this_session(request, db, user), user, alone=True)
+    db.commit()
+    return options
+
+
+@router.post("/passkeys/{passkey_id}/replace")
+def replace_passkey(
+    passkey_id: uuid.UUID, body: Replacement, request: Request, db: DbSession, user: CurrentUser
+) -> PasskeyOut:
+    """Replace one of their passkeys that may not sign in alone with the one the browser
+    made, which does (#1110), under the same name. The new one is kept and the old one
+    removed together, only once the new one checks out, so a cancelled or failed try
+    leaves the old one as it was, and someone who must have two-step sign-in is never
+    left without a second step. No password is asked, as for adding one: it leaves
+    them as many second steps as before."""
+    old = replaceable(db, user, passkey_id)
+    session = this_session(request, db, user)
+    new = passkeys.add(db, session, user, body.credential, old.name, alone=True)
+    db.delete(old)
+    db.flush()
+    record(
+        db,
+        user,
+        "account.two_step_replaced",
+        kind="passkey",
+        member=user.display_name,
+        name=new.name,
+    )
+    db.commit()
+    return passkey_out(new)
 
 
 def keep_one(db: DbSession, user: User) -> None:

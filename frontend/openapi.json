@@ -45303,6 +45303,20 @@
         "title": "RemovedOut",
         "type": "object"
       },
+      "Replacement": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "Replacement",
+        "type": "object"
+      },
       "ReportCharacterOut": {
         "properties": {
           "character_id": {
@@ -105518,6 +105532,106 @@
           }
         },
         "summary": "Remove Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/passkeys/{passkey_id}/replace": {
+      "post": {
+        "description": "Replace one of their passkeys that may not sign in alone with the one the browser\nmade, which does (#1110), under the same name. The new one is kept and the old one\nremoved together, only once the new one checks out, so a cancelled or failed try\nleaves the old one as it was, and someone who must have two-step sign-in is never\nleft without a second step. No password is asked, as for adding one: it leaves\nthem as many second steps as before.",
+        "operationId": "replace_passkey_api_two_step_passkeys__passkey_id__replace_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Replacement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/passkeys/{passkey_id}/replace/options": {
+      "post": {
+        "description": "What the browser needs to make a passkey in place of one that may not sign in\nalone (#1110): as for adding one, but the device must make it so it can.",
+        "operationId": "replace_options_api_two_step_passkeys__passkey_id__replace_options_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Replace Options Api Two Step Passkeys  Passkey Id  Replace Options Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Options",
         "tags": [
           "auth"
         ]

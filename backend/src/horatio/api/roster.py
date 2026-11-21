@@ -760,6 +760,8 @@ MESSAGES: dict[str, str] = {
     "account.two_step_added.passkey": "{actor} added a passkey, {name}, for two-step sign-in.",
     "account.two_step_removed.app": "{actor} turned off their authenticator app.",
     "account.two_step_removed.passkey": "{actor} removed their passkey {name}.",
+    "account.two_step_replaced.passkey": "{actor} replaced their passkey {name} with a new one"
+    " that signs in alone, with no password.",
     "account.recovery_codes_made": "{actor} made new recovery codes.",
     "account.recovery_code_used": "{actor} signed in with a recovery code{from_ip}: {left} left.",
     "troupe.staff_two_step": "{actor} set two-step sign-in for the troupe's staff: {setting}.",
