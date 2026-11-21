@@ -89,7 +89,7 @@ To change someone's role, choose another in the list beside their name. **Remove
 
 Staff see players' emails and lines and veils, so the lead storyteller can ask every one of them to sign in with [two steps](getting-started.md#two-step-sign-in): on the **Staff** tab, turn on **Staff must sign in with two steps** in the **Two-step sign-in** card. Set up your own first, in Account › Sign-in and email: it asks it of you too.
 
-The rest of the staff are told in the bell as you turn it on. Anyone on the staff without it is sent to set it up when they next open Horatio, and can do nothing else until they have; they see the bell's notice once they have. The card lists who hasn't yet. Someone on the staff of two troupes needs it if either troupe asks, since one sign-in opens both. Taking someone off the staff stops asking it of them. Turning it on or off is kept in the troupe's log.
+The rest of the staff are told in the bell as you turn it on. Anyone on the staff without it is sent to set it up when they next open Horatio, and can do nothing else until they have but read their bell, where your notice says why. The card lists who hasn't yet. Someone on the staff of two troupes needs it if either troupe asks, since one sign-in opens both. Taking someone off the staff stops asking it of them. Turning it on or off is kept in the troupe's log.
 
 ### Renaming or archiving the troupe
 
@@ -524,7 +524,7 @@ The **Log** tab in the Troupe group shows what has happened in the troupe, newes
 
 Everything under **Customise** can stay as the book has it. Storytellers and the lead change it; assistant storytellers can read it all.
 
-**Find a setting**, at the top of every Customise tab, finds a setting by its name or by a word of what it does. Type part of it, such as `ceiling` or `stickers`, and choose a setting from the list, or press Enter for the first. It opens where the setting is: its tab or its part, or the **Settings** of the tab it belongs to, with its card scrolled to and lit gold for a moment. It finds the Customise tabs, the parts of Troupe settings and House rules, each feature's switch, each tab's Settings and every settings card. The search in the top bar finds them too, under **Settings**, while you're on the troupe's pages. Only its storytellers, assistant storytellers and the custodian find a troupe's settings, and only the troupe they're on.
+**Find a setting**, at the top of every Customise tab, finds a setting by its name or by a word of what it does. Type part of it, such as `ceiling` or `stickers`, and choose a setting from the list, or press Enter for the first. It opens where the setting is: its tab or its part, or the **Settings** of the tab it belongs to, with its card scrolled to and lit gold for a moment. It finds the Customise tabs, the parts of Troupe settings and House rules, each feature's switch, each tab's Settings and every settings card. The search in the top bar finds them too, under **Settings**, while you're on the troupe's pages, but only for its storytellers and the custodian, and only the troupe they're on. Assistant storytellers find a setting here, on Customise, but not from the top bar.
 
 **Customise › Setup** starts with **Getting your troupe ready**, the steps a new troupe takes, in order, each linked to where you do it. Each ticks itself from what the troupe holds now; nothing is ticked by hand:
 
@@ -961,7 +961,7 @@ Where a channel's name matches a character's, Horatio suggests it: **Suggested: 
 
 The list above the characters names any with no channel yet. They still get their results in Horatio, and by email if it's on, but nothing on Discord until one is chosen. Delivering a cycle warns of them too (see [Delivering results](#delivering-results)).
 
-A player can turn off what Horatio posts to their character's channel, on their Account › Notifications. The character's row then says **Player turned it off**. Nothing goes to that channel while it's off: you deliver as usual, the cycle's **Delivery** tab says **Turned off by the player** in that character's Discord column, and the player still gets their results in Horatio. The troupe's own channels for news and announcements still post, and test mode still sends to the test channel.
+A player can turn off what Horatio posts to their character's channel, on their Account › Notifications. The character's row then says **Player turned it off**. Nothing goes to that channel while it's off: you deliver as usual, the cycle's **Delivery** tab says **Turned off by the player** in that character's Discord column, and the player still gets their results in Horatio. Results or quest news already waiting to go there when the player turns it off are cancelled, not sent: the Delivery tab shows them as **Cancelled**, and the troupe's log says so. Turned back on, the next delivery sends the results it never had. The troupe's own channels for news and announcements still post, and test mode still sends to the test channel.
 
 #### Trying it in test mode
 

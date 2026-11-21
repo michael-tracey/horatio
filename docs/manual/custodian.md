@@ -46,7 +46,7 @@ The repository's own deployment has a script for this, `deploy/custodian.sh you@
 
 ### Two-step sign-in for the custodian
 
-The custodian must sign in with two steps: after the password, a passkey or a code from an authenticator app on their phone. A passkey alone, with no password, counts as both steps. The first time you open Horatio as the custodian, it sends you to set this up, and nothing else opens until you have. Keep the recovery codes it gives you somewhere safe. See [Two-step sign-in](getting-started.md#two-step-sign-in) for how it works.
+The custodian must sign in with two steps: after the password, a passkey or a code from an authenticator app on their phone. A passkey alone, with no password, counts as both steps. The first time you open Horatio as the custodian, it sends you to set this up, and nothing but the bell opens until you have. Keep the recovery codes it gives you somewhere safe. See [Two-step sign-in](getting-started.md#two-step-sign-in) for how it works.
 
 Authenticator apps need the server's key (`HORATIO_TOTP_KEY`, see deploy/README.md); without it, only passkeys can be set up. Passkeys need the site on https. With neither, the custodian isn't held to it.
 

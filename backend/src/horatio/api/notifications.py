@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from horatio import notifications
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.auth.two_step import allowed_first
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -42,7 +43,10 @@ class ReadIds(BaseModel):
     ids: list[uuid.UUID] | None = None
 
 
+# Someone who must set up two-step sign-in first may still read their bell, and mark it
+# read (#1111): it's where they're told their troupe asks it of them. Nothing else here.
 @router.get("")
+@allowed_first
 def list_notifications(db: DbSession, user: CurrentUser) -> NotificationsOut:
     items = notifications.for_user(db, user)
     return NotificationsOut(
@@ -52,6 +56,7 @@ def list_notifications(db: DbSession, user: CurrentUser) -> NotificationsOut:
 
 
 @router.post("/read", status_code=status.HTTP_204_NO_CONTENT)
+@allowed_first
 def mark_read(body: ReadIds, db: DbSession, user: CurrentUser) -> None:
     notifications.mark_read(db, user, body.ids)
     db.commit()
