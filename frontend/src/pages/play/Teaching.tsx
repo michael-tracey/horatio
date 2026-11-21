@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
+import { PlayerInLine } from "../../components/PlayerInLine";
 import { Button, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { willpowerText } from "../troupe/teacherRules";
@@ -27,7 +28,10 @@ export function TeachingAsks({ characterId }: { characterId: string }) {
       {asked.data.asked.map((a) => (
         <div key={a.id} className="flex flex-col gap-2">
           <p>
-            <span className="text-gold">{a.what}?</span> It costs {willpowerText(a.willpower, a.games)}: rest does not bring it back until then.
+            <span className="text-gold">
+              <PlayerInLine text={a.what} playerId={a.student_player_id} playerName={a.student_player} />?
+            </span>{" "}
+            It costs {willpowerText(a.willpower, a.games)}: rest does not bring it back until then.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button disabled={answer.isPending} onClick={() => answer.mutate({ id: a.id, teach: true })}>

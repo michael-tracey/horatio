@@ -66,6 +66,10 @@ class Item:
     # published announcement, the announcement's own picture (#832), whose files are
     # "/600.webp" and "/1200.webp" rather than a character's sizes.
     picture: str | None = None
+    # The player the summary names in parentheses, whose name the app links to their
+    # profile (#1131): for teaching, the student's player.
+    player_id: uuid.UUID | None = None
+    player_name: str | None = None
 
 
 def troupes_where(db: Session, user: User, action: TroupeAction) -> list[Troupe]:
@@ -294,22 +298,24 @@ def quest_request_tasks(db: Session, user: User) -> list[Item]:
 
 def teaching_item(db: Session, asked: Teaching, teacher: Character) -> Item:
     """Teaching asked of a character, as the bell shows it: who would learn what from
-    them, and the Willpower it costs. It opens the teacher's Play View, where their
-    player confirms or refuses it."""
+    them, with the student's player (#1131), and the Willpower it costs. It opens the
+    teacher's Play View, where their player confirms or refuses it."""
     from horatio import teaching  # imports this module
 
+    what, player = teaching.what_asked(db, asked)
     return Item(
         id=f"teaching:{asked.id}",
         kind="teaching",
         task=True,
         troupe_id=asked.troupe_id,
         troupe_name=db.get_one(Troupe, asked.troupe_id).name,
-        summary=f"{teacher.name}: {teaching.what_taught(db, asked)}? "
-        f"It costs {asked.willpower} Willpower.",
+        summary=f"{teacher.name}: {what}? It costs {asked.willpower} Willpower.",
         link=f"/play/characters/{teacher.id}?tab=tracker",
         at=asked.created_at,
         read=False,
         picture=picture_url(teacher.id, teacher.picture_id),
+        player_id=player.id if player else None,
+        player_name=player.display_name if player else None,
     )
 
 

@@ -6,6 +6,7 @@ import { useDates } from "../dates";
 import { useAction, useNotifications } from "../hooks";
 import { Avatar } from "./Avatar";
 import { EmptyState } from "./EmptyState";
+import { PlayerInLine } from "./PlayerInLine";
 import { PostThumb } from "./PostThumb";
 import { CountBubble } from "./ui";
 
@@ -92,12 +93,13 @@ export function NotificationBell() {
               <EmptyState title="Nothing waiting.">Tasks waiting on you, and messages for you, show here as they come.</EmptyState>
             </div>
           )}
-          {tasks.length > 0 && <Group title="Waiting on you" items={tasks} onOpen={go} />}
+          {tasks.length > 0 && <Group title="Waiting on you" items={tasks} onOpen={go} onFollow={() => setOpen(false)} />}
           {messages.length > 0 && (
             <Group
               title="Messages"
               items={messages}
               onOpen={go}
+              onFollow={() => setOpen(false)}
               action={
                 unread.length > 0 && (
                   <button className="text-xs text-mist hover:text-parchment" onClick={() => read.mutate(undefined)}>
@@ -118,7 +120,20 @@ export function NotificationBell() {
   );
 }
 
-function Group({ title, items, onOpen, action }: { title: string; items: NotificationOut[]; onOpen: (i: NotificationOut) => void; action?: React.ReactNode }) {
+function Group({
+  title,
+  items,
+  onOpen,
+  onFollow,
+  action,
+}: {
+  title: string;
+  items: NotificationOut[];
+  onOpen: (i: NotificationOut) => void;
+  /** A link in a line, such as a player's name, was followed (#1131). */
+  onFollow: () => void;
+  action?: React.ReactNode;
+}) {
   const dates = useDates();
   return (
     <section className="border-b border-ash last:border-b-0">
@@ -127,9 +142,13 @@ function Group({ title, items, onOpen, action }: { title: string; items: Notific
         {action}
       </h2>
       <ul>
-        {items.map((item) => (
-          <li key={item.id}>
-            <button onClick={() => onOpen(item)} className="flex w-full gap-3 px-4 py-2.5 text-left hover:bg-ash/40">
+        {items.map((item) => {
+          // A line naming a player links their name to their profile (#1131). A link can't sit
+          // in a button, so its row's button lies over the row, named by the line, and the link over that.
+          const named = Boolean(item.player_id && item.player_name);
+          const line = `notice-${item.id}`;
+          const inside = (
+            <>
               <span aria-hidden="true" className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.task ? "bg-blood-bright" : item.read ? "" : "bg-gold"}`} />
               {item.picture &&
                 (item.kind === "announcement.published" ? (
@@ -138,7 +157,13 @@ function Group({ title, items, onOpen, action }: { title: string; items: Notific
                   <Avatar name="" picture={item.picture} size="sm" />
                 ))}
               <span className="min-w-0">
-                <span className={`block text-sm ${item.read ? "text-mist" : "text-parchment"}`}>{item.summary}</span>
+                <span id={named ? line : undefined} className={`block text-sm ${item.read ? "text-mist" : "text-parchment"}`}>
+                  {named ? (
+                    <PlayerInLine text={item.summary} playerId={item.player_id} playerName={item.player_name} onFollow={onFollow} className="relative z-20" />
+                  ) : (
+                    item.summary
+                  )}
+                </span>
                 <span className="block text-xs text-mist">
                   {item.troupe_name && `${item.troupe_name} · `}
                   <time dateTime={item.at} title={dates.dateTime(item.at)}>
@@ -146,9 +171,23 @@ function Group({ title, items, onOpen, action }: { title: string; items: Notific
                   </time>
                 </span>
               </span>
-            </button>
-          </li>
-        ))}
+            </>
+          );
+          return (
+            <li key={item.id}>
+              {named ? (
+                <div className="relative flex w-full gap-3 px-4 py-2.5 text-left hover:bg-ash/40">
+                  <button onClick={() => onOpen(item)} aria-labelledby={line} className="absolute inset-0 z-10" />
+                  {inside}
+                </div>
+              ) : (
+                <button onClick={() => onOpen(item)} className="flex w-full gap-3 px-4 py-2.5 text-left hover:bg-ash/40">
+                  {inside}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

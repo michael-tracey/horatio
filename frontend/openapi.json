@@ -34606,6 +34606,29 @@
             ],
             "title": "Picture"
           },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
           "read": {
             "title": "Read",
             "type": "boolean"
@@ -34652,7 +34675,9 @@
           "link",
           "at",
           "read",
-          "picture"
+          "picture",
+          "player_id",
+          "player_name"
         ],
         "title": "NotificationOut",
         "type": "object"
@@ -55579,6 +55604,29 @@
             "title": "Student",
             "type": "string"
           },
+          "student_player": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Student Player"
+          },
+          "student_player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Student Player Id"
+          },
           "what": {
             "title": "What",
             "type": "string"
@@ -55592,6 +55640,8 @@
           "id",
           "what",
           "student",
+          "student_player_id",
+          "student_player",
           "willpower",
           "games"
         ],
