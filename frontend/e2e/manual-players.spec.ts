@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { closeContextsAfterEach, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, chooseIn } from "./support";
+import { closeContextsAfterEach, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, chooseIn, makeChanges } from "./support";
 
 /**
  * The screenshots in the Players part of the manual (docs/manual/players.md, #483).
@@ -111,6 +111,7 @@ test("screenshots for the Players part of the manual", async ({ browser }) => {
   await disciplines.getByRole("button", { name: "Celerity", exact: true }).click();
 
   // The cart: a skill raised, and a discipline dot that waits on the home troupe.
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Dodge" }).click();
   await p.getByRole("button", { name: "Raise Celerity" }).click();
   const cart = card(p, "Cart");

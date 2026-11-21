@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, aboutChoice, addList, backstoryOptional, builtVampire, characterTab, closeContextsAfterEach, makeCustodian, openNewTroupe, person, run, shots, settingsPart } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, aboutChoice, addList, backstoryOptional, builtVampire, characterTab, closeContextsAfterEach, makeChanges, makeCustodian, openNewTroupe, person, run, shots, settingsPart } from "./support";
 
 /** A character's page and sheet, and what a player asks staff for from it. */
 
@@ -317,6 +317,7 @@ test("the sheet shows XP first on a phone, lists a discipline's powers, counts h
   await expect(p.getByText("A character holds at most 7 points of merits.")).toBeVisible();
 
   // The Add panel prices a trait as soon as it is chosen, and again when its rating changes.
+  await makeChanges(p);
   await part("Skills").getByRole("button", { name: "Add" }).click();
   await p.getByRole("combobox", { name: "Search Skills", exact: true }).fill("Computer");
   await p.getByRole("option", { name: /^Computer/ }).click();
@@ -578,6 +579,7 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   // An elder power needs all five dots of its discipline: greyed in the Add panel, with a way to ask staff.
   await p.goto(`/characters/${id}`);
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await makeChanges(p);
   await part("Disciplines").getByRole("button", { name: "Add" }).click();
   await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Elder Disciplines/ }).click();
   await p.getByRole("combobox", { name: "Search Elder Disciplines", exact: true }).fill("Celerity: Zephyr");
@@ -810,7 +812,8 @@ test("a skill's specialisations sit in its own list item, in the sheet's two col
   const academics = skills.locator("li[data-trait='Academics']");
   for (const width of [1280, 390]) {
     await p.setViewportSize({ width, height: 900 });
-    // Name one specialisation for Academics.
+    // Name one specialisation for Academics. On a phone its × waits behind Make changes (#1055).
+    if (width !== 1280) await makeChanges(p);
     if (width === 1280) {
       await academics.getByRole("button", { name: "Add to Academics Specialisations" }).click();
       await academics.getByLabel("Name a Academics Specialisations").fill("Medieval");
@@ -868,6 +871,7 @@ test("a language held with no Linguistics shows on the sheet, with one plain pro
   await expect(problems.getByText(/Natural Linguist/)).toHaveCount(0);
   await p.screenshot(shots("language-without-linguistics"));
 
+  await makeChanges(p);
   await skills.getByRole("button", { name: "Remove Spanish" }).click();
   await expect(skills.getByText("Languages without Linguistics")).toHaveCount(0);
   await expect(p.getByRole("heading", { name: "Against the rules" })).toHaveCount(0);
@@ -881,6 +885,7 @@ test("on a phone the − and + are big enough to tap, apart, and a greyed − sa
     disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
   });
   await p.goto(`/characters/${id}`);
+  await makeChanges(p);
   const lower = p.getByRole("button", { name: "Lower Brawl" });
   const raise = p.getByRole("button", { name: "Raise Brawl" });
   await expect(raise).toBeVisible();
@@ -910,6 +915,70 @@ test("on a phone the − and + are big enough to tap, apart, and a greyed − sa
   await expect(p.getByRole("list", { name: "Changes in the cart" })).toHaveCount(0);
 });
 
+test("on a phone the sheet opens for reading: Make changes brings out the − and +, the cart keeps them out, and Spend XP or Clear puts them away (#1055)", async ({ browser }) => {
+  const { page: p } = await person(browser, "sheet-reader");
+  const id = await builtVampire(p, "Odalys", "Toreador", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}`);
+  const skills = p.locator("section").filter({ has: p.getByRole("heading", { name: "Skills", exact: true }) });
+  const raise = p.getByRole("button", { name: "Raise Dodge" });
+  const add = skills.getByRole("button", { name: "Add", exact: true });
+  const make = p.getByRole("button", { name: "Make changes" });
+  const done = p.getByRole("button", { name: "Done", exact: true });
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  await expect(skills.getByText("Dodge", { exact: true })).toBeVisible();
+
+  // A wide screen keeps its small − and + beside each row, with nothing to switch.
+  if (test.info().project.name !== "phone") {
+    await expect(raise).toBeVisible();
+    await expect(add).toBeVisible();
+    await expect(make).toBeHidden();
+    await raise.click();
+    await p.getByRole("button", { name: "Spend XP" }).click();
+    await expect(p.getByText(/^Spent \d+ XP\.$/)).toBeVisible();
+    await expect(raise).toBeVisible();
+    return;
+  }
+
+  // On a phone the ratings are read without them, until Make changes; Done puts them away.
+  await expect(raise).toBeHidden();
+  await expect(add).toBeHidden();
+  await p.screenshot(shots("sheet-reading"));
+  await make.click();
+  await expect(raise).toBeVisible();
+  await expect(add).toBeVisible();
+  await p.screenshot(shots("sheet-making-changes"));
+  await done.click();
+  await expect(raise).toBeHidden();
+
+  // A change in the cart keeps them out, with nothing to switch off, even after a reload.
+  await make.click();
+  await raise.click();
+  await expect(cart.getByRole("listitem")).toHaveCount(1);
+  await expect(done).toHaveCount(0);
+  await expect(make).toHaveCount(0);
+  // Leaving with a full cart asks first.
+  p.once("dialog", (dialog) => void dialog.accept());
+  await p.reload();
+  await expect(cart.getByRole("listitem")).toHaveCount(1);
+  await expect(raise).toBeVisible();
+  // Clear empties the cart, and the sheet is for reading again.
+  await p.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(raise).toBeHidden();
+  await expect(make).toBeVisible();
+
+  // So does Spend XP.
+  await make.click();
+  await raise.click();
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText(/^Spent \d+ XP\.$/)).toBeVisible();
+  await expect(raise).toBeHidden();
+  await expect(make).toBeVisible();
+});
+
 test("an attribute stops rising at the limit Generation gives", async ({ browser }) => {
   const { page: p } = await person(browser, "limit-player");
   // A Neonate may take one attribute to 11 (core p. 102).
@@ -924,6 +993,7 @@ test("an attribute stops rising at the limit Generation gives", async ({ browser
   const cart = p.getByRole("list", { name: "Changes in the cart" });
 
   // One dot to 11 is fine for a Neonate; the next is refused on its line, and nothing can be spent.
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Physical" }).click();
   await expect(cart.getByRole("listitem").filter({ hasText: "Physical 10 → 11" })).not.toContainText("Generation rating");
   await expect(p.getByRole("button", { name: "Spend XP" })).toBeEnabled();

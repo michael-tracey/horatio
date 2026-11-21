@@ -226,6 +226,21 @@ export async function troupeTab(page: Page, name: string) {
 export const isNarrow = (page: Page) => (page.viewportSize()?.width ?? 1280) < 1024;
 
 /**
+ * Brings out the Sheet tab's −, +, Add and × for its player. Below `lg` the sheet opens
+ * for reading, with them behind Make changes (#1055); a wide screen shows them already,
+ * and so does a phone while the cart holds changes (its bar at the foot says so).
+ */
+export async function makeChanges(page: Page) {
+  if (!isNarrow(page)) return;
+  const main = page.locator("main");
+  const make = main.getByRole("button", { name: "Make changes", exact: true });
+  const out = main.getByRole("button", { name: "Done", exact: true }).or(main.getByRole("button", { name: / · Review$/ }));
+  await expect(make.or(out).first()).toBeVisible();
+  if (await make.isVisible()) await make.click();
+  await expect(out.first()).toBeVisible();
+}
+
+/**
  * Opens a part of a page with a part picker (#906), such as House rules › Costs:
  * in its list down the side on a wide screen; below `lg`, through its button and
  * sheet. `nav` names the picker: "House rules", "Specialisations".

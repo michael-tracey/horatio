@@ -82,11 +82,14 @@ export function CartPanel({
   balance,
   creating,
   houseLabels,
+  onEmptied,
 }: {
   character: CharacterOut;
   cart: Cart;
   balance: number;
   creating: boolean;
+  /** After Spend XP or Clear has emptied the cart: the sheet goes back to reading (#1055). */
+  onEmptied?: () => void;
   /** The troupe's own merits and flaws, by "category/name", to mark with a ★. */
   houseLabels?: Map<string, string>;
 }) {
@@ -102,6 +105,7 @@ export function CartPanel({
     const result = await post(character.id, lines, false);
     if (result.applied) {
       cart.clear();
+      onEmptied?.();
       const net = totals(result).net;
       const waits = result.lines.some((l) => l.needs_approval);
       setMessage(
@@ -247,6 +251,7 @@ export function CartPanel({
                 onClick={() => {
                   setMessage(null);
                   cart.clear();
+                  onEmptied?.();
                 }}
               >
                 Clear
