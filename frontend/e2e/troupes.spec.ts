@@ -1348,6 +1348,43 @@ test("staff call the clan Banu Haqim or Assamite, and the sheet and the rules fo
   await expect(entry("Assamite: Vizier")).toBeVisible();
 });
 
+test("staff choose the core book's Tremere weakness, and the troupe's rules follow; with no troupe the rules give both (#1127)", async ({ browser }) => {
+  const custodian = await person(browser, "weakness-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "weakness-lead");
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Chantry of Vienna ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const l = lead.page;
+  const search = l.getByRole("searchbox", { name: "Search the rules" });
+  const tremere = l.getByTestId("rules-entry").filter({ has: l.getByRole("heading", { name: "Tremere", exact: true }) });
+
+  // As the book has it, with no troupe, the weakness varies by troupe: both, each with its page.
+  await l.goto("/rules");
+  await search.fill("tremere");
+  await expect(tremere).toContainText("Weakness: varies by troupe.");
+  await expect(tremere.getByRole("listitem")).toHaveText([/^Volume 2: Their blood bonds other vampires only to the first stage.* Vol\. 2, p\. 22$/, /^Core book: Easily bound.* p\. 64$/]);
+
+  // A troupe plays Volume 2's until its staff choose.
+  await l.goto(`/rules?troupe=${troupeId}`);
+  await search.fill("tremere");
+  await expect(tremere).toContainText("Weakness: Their blood bonds other vampires only to the first stage; ghouls are bound as usual. Vol. 2, p. 22");
+
+  // The lead chooses the core book's, in Troupe settings.
+  await settingsPart(l, troupeId, "blood");
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Clan weaknesses" }) });
+  await expect(card.getByRole("radio", { name: /^Volume 2's/ })).toBeChecked();
+  await card.getByRole("radio", { name: /^Core book's/ }).click();
+  await expect(l.getByText("The Tremere here play by the core book's weakness now.")).toBeVisible();
+  await expect(card.getByRole("radio", { name: /^Core book's/ })).toBeChecked();
+
+  // The troupe's rules follow at once.
+  await l.goto(`/rules?troupe=${troupeId}`);
+  await search.fill("tremere");
+  await expect(tremere).toContainText("Weakness: Easily bound: their first drink of another vampire's blood counts as two, so a second binds them fully. p. 64");
+  await expect(tremere).not.toContainText("varies by troupe");
+});
+
 test("a lead makes Soul Shard a general flaw on the Book traits page, and a player finds it among the general flaws (#436)", async ({ browser }) => {
   const custodian = await person(browser, "recat-custodian");
   makeCustodian(custodian.email);

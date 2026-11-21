@@ -10182,6 +10182,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/clan-weaknesses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Clan Weaknesses
+         * @description Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),
+         *     with both weaknesses and the one the troupe plays (horatio.clan_weaknesses).
+         */
+        get: operations["read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get"];
+        /**
+         * Set Clan Weaknesses
+         * @description Play the core book's weakness for these clans, and the later book's for every
+         *     other. What the troupe's characters and rules show changes at once.
+         */
+        put: operations["set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/closing": {
         parameters: {
             query?: never;
@@ -19773,6 +19799,42 @@ export interface components {
             character_ids: string[];
             /** Clan */
             clan: string | null;
+        };
+        /** ClanWeaknessRow */
+        ClanWeaknessRow: {
+            /**
+             * Chosen
+             * @enum {string}
+             */
+            chosen: "vol2" | "core";
+            /** Clan */
+            clan: string;
+            /** Versions */
+            versions: components["schemas"]["ClanWeaknessVersion"][];
+        };
+        /** ClanWeaknessVersion */
+        ClanWeaknessVersion: {
+            /**
+             * Book
+             * @enum {string}
+             */
+            book: "vol2" | "core";
+            /** Label */
+            label: string;
+            /** Page */
+            page: string | null;
+            /** Weakness */
+            weakness: string;
+        };
+        /** ClanWeaknessesIn */
+        ClanWeaknessesIn: {
+            /** Core */
+            core: string[];
+        };
+        /** ClanWeaknessesOut */
+        ClanWeaknessesOut: {
+            /** Clans */
+            clans: components["schemas"]["ClanWeaknessRow"][];
         };
         /** ClearIn */
         ClearIn: {
@@ -29720,6 +29782,12 @@ export interface components {
             rating: number | null;
             /** Specialties */
             specialties: string[];
+            /** Weakness */
+            weakness?: string | null;
+            /** Weakness Page */
+            weakness_page?: string | null;
+            /** Weaknesses */
+            weaknesses?: components["schemas"]["WeaknessOut"][] | null;
             /**
              * Wording
              * @default
@@ -36796,6 +36864,8 @@ export interface components {
             weakness?: string | null;
             /** Weakness Page */
             weakness_page?: string | null;
+            /** Weaknesses */
+            weaknesses?: components["schemas"]["WeaknessOut"][] | null;
             /** Written Rules */
             written_rules?: components["schemas"]["WrittenRuleRef"][];
         };
@@ -37985,6 +38055,24 @@ export interface components {
             label: string;
             /** Link */
             link: string;
+        };
+        /**
+         * WeaknessOut
+         * @description One of the weaknesses a clan may have, as each troupe chooses: its line, its
+         *     page, and the book it is from ("vol2" or "core") with that book's name.
+         */
+        WeaknessOut: {
+            /**
+             * Book
+             * @enum {string}
+             */
+            book: "vol2" | "core";
+            /** Label */
+            label: string;
+            /** Page */
+            page?: string | null;
+            /** Weakness */
+            weakness: string;
         };
         /** WebBondOut */
         WebBondOut: {
@@ -58186,6 +58274,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClanRarityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanWeaknessesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClanWeaknessesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanWeaknessesOut"];
                 };
             };
             /** @description Validation Error */
