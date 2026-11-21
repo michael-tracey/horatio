@@ -163,17 +163,42 @@ def link_url(state: str) -> str:
     return f"{AUTHORIZE}?{urlencode(query)}"
 
 
+# A `state` that begins with this belongs to someone signing in, or up, with Discord
+# (#1128), from the sign-in or sign-up page.
+SIGN_IN_STATE = "signin."
+
+
+def sign_in_url(state: str) -> str:
+    """Discord's page for signing in to Horatio with Discord (#1128): `identify` to say
+    who they are, and `email` for the address Discord has verified, which a new
+    account is made with. Someone who has agreed before goes straight back."""
+    query = {
+        "client_id": get_settings().discord_client_id,
+        "scope": "identify email",
+        "response_type": "code",
+        "redirect_uri": redirect_uri(),
+        "state": f"{SIGN_IN_STATE}{state}",
+        "prompt": "none",
+    }
+    return f"{AUTHORIZE}?{urlencode(query)}"
+
+
 @dataclass(frozen=True)
 class Account:
-    """A Discord account, as Discord itself says: its id and username."""
+    """A Discord account, as Discord itself says: its id and username; with the
+    `email` scope, its email and whether Discord has verified it; and the name it
+    shows, if it has one."""
 
     id: str
     username: str
+    email: str | None = None
+    verified: bool = False
+    name: str | None = None
 
 
 def account_from_code(code: str) -> Account:
-    """The Discord account a player just linked, from the code Discord sent back.
-    Raises SendError when Discord will not say."""
+    """The Discord account a player just linked, or signed in with, from the code
+    Discord sent back. Raises SendError when Discord will not say."""
     settings = get_settings()
     with httpx.Client(transport=transport, timeout=15) as http:
         try:
@@ -195,7 +220,15 @@ def account_from_code(code: str) -> Account:
     if me.is_error or "id" not in me.json():
         raise SendError("Discord did not say which account is yours.", retry=False)
     body = me.json()
-    return Account(id=str(body["id"]), username=str(body.get("username") or "").lower())
+    email = body.get("email")
+    name = body.get("global_name")
+    return Account(
+        id=str(body["id"]),
+        username=str(body.get("username") or "").lower(),
+        email=email if isinstance(email, str) and email else None,
+        verified=body.get("verified") is True,
+        name=name if isinstance(name, str) and name.strip() else None,
+    )
 
 
 def bot_invite_url() -> str:

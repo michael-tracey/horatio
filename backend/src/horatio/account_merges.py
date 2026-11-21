@@ -38,12 +38,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import formataddr
 
-from sqlalchemy import ColumnElement, delete, func, select, update
+from sqlalchemy import ColumnElement, and_, delete, func, select, update
 from sqlalchemy.orm import Session
 
 from horatio import (
     audit,
     character_moves,
+    discord_links,
     email_changes,
     email_design,
     mail_sender,
@@ -100,6 +101,21 @@ PROFILE = (
 # The Who's Who's naming them by their handle (#264), which moves on its own.
 WHOS_WHO = "choice to be named by handle in the Who's Who"
 PROVIDERS = {"discord": "Discord", "google": "Google"}
+
+
+def has_discord(db: Session, user: User) -> bool:
+    """Whether the account has a Discord account to sign in with: linked, or named by
+    an identity row."""
+    if user.discord_user_id:
+        return True
+    return (
+        db.scalars(
+            select(AuthIdentity.id).where(
+                AuthIdentity.user_id == user.id, AuthIdentity.provider == "discord"
+            )
+        ).first()
+        is not None
+    )
 
 
 def merged_name(name: str, handle: str) -> str:
@@ -306,12 +322,14 @@ def preview(db: Session, keep: User, other: User, viewer: User) -> Preview:
         PROVIDERS[provider]
         for provider in db.scalars(
             select(AuthIdentity.provider)
-            .where(AuthIdentity.user_id == other.id)
+            .where(AuthIdentity.user_id == other.id, AuthIdentity.provider != "discord")
             .order_by(AuthIdentity.provider)
         )
     ]
-    if other.discord_user_id and not keep.discord_user_id and "Discord" not in sign_in:
-        sign_in.append("Discord")
+    # Discord goes with the merged account's Discord link, and only where the staying
+    # one has none (horatio.discord_links.keep_identity).
+    if has_discord(db, other) and not has_discord(db, keep):
+        sign_in.insert(0, "Discord")
     if other.password_hash and not keep.password_hash:
         sign_in.append("password")
 
@@ -453,11 +471,17 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
             )
     db.execute(update(Troupe).where(Troupe.contact_id == other.id).values(contact_id=keep.id))
 
-    db.execute(update(AuthIdentity).where(AuthIdentity.user_id == other.id).values(user_id=keep.id))
-    if other.discord_user_id and not keep.discord_user_id:
+    moving = AuthIdentity.user_id == other.id
+    if has_discord(db, keep):
+        # The staying account's Discord link stays; the merged one's stays with it.
+        moving = and_(moving, AuthIdentity.provider != "discord")
+    elif other.discord_user_id:
         discord, other.discord_user_id = other.discord_user_id, None
         db.flush()
         keep.discord_user_id = discord
+    db.execute(update(AuthIdentity).where(moving).values(user_id=keep.id))
+    if keep.discord_user_id:
+        discord_links.keep_identity(db, keep)
     if other.password_hash and not keep.password_hash:
         keep.password_hash = other.password_hash
     other.password_hash = None

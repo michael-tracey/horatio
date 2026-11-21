@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
 import { useState } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import { SectionLabel } from "../../components/Headings";
@@ -28,6 +29,21 @@ export function aloneNote(discoverable: boolean | null): string | null {
   if (discoverable === true) return null;
   if (discoverable === false) return "Signs you in only after your password: the device that keeps it can't sign you in with it alone.";
   return "May not sign you in alone, without your password: it was added before passkeys could. To be sure, replace it on the device that keeps it.";
+}
+
+/** Said where something asks for the password and the person has none: an account made
+ * with Discord (#1128) has none until they set one from a reset link. `what` says what
+ * asks for it, "Adding a passkey". */
+export function NoPassword({ what, appInstead = false }: { what: string; appInstead?: boolean }) {
+  return (
+    <p className="text-mist">
+      {what} asks for your password, and you have none yet: you sign in with Discord. Set one from{" "}
+      <Link to="/forgot-password" className="text-gold underline">
+        Forgot your password?
+      </Link>
+      , then come back.{appInstead && " An authenticator app, below, asks for no password."}
+    </p>
+  );
 }
 
 /** What asks for the password again: turning off the app, new codes, removing or
@@ -111,8 +127,19 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
     [TWO_STEP, ["me"]],
   );
 
-  const passwordForm = (asked: Asking) => {
+  const passwordForm = (asked: Asking, s: TwoStep) => {
     const action = asked.what === "replace" ? replacePasskey : withPassword;
+    if (!s.has_password)
+      return (
+        <div className="flex flex-col gap-2">
+          <NoPassword
+            what={asked.what === "codes" ? "Making new recovery codes" : asked.what === "app" ? "Turning off the app" : asked.what === "replace" ? `Replacing ${asked.name}` : `Removing ${asked.name}`}
+          />
+          <Button type="button" variant="secondary" className="self-start" onClick={() => setAsking(null)}>
+            Cancel
+          </Button>
+        </div>
+      );
     return (
       <form
         className="flex flex-col gap-3"
@@ -194,11 +221,13 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
           ))}
         </ul>
       )}
-      {(asking?.what === "passkey" || asking?.what === "replace") && passwordForm(asking)}
+      {(asking?.what === "passkey" || asking?.what === "replace") && passwordForm(asking, s)}
       {asking?.what === "passkey" || asking?.what === "replace" ? null : !s.passkeys_available ? (
         <p className="text-mist">Passkeys need this site on https.</p>
       ) : !browserSupportsWebAuthn() ? (
         <p className="text-mist">This browser can't make passkeys. An authenticator app works anywhere.</p>
+      ) : !s.has_password ? (
+        <NoPassword what="Adding a passkey" appInstead={s.apps_available && !s.app} />
       ) : (
         <form
           className="flex flex-wrap items-end gap-2"
@@ -257,7 +286,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
             <Badge tone="gold">On</Badge> Authenticator app set up.
           </p>
           {asking?.what === "app" ? (
-            passwordForm(asking)
+            passwordForm(asking, s)
           ) : (
             <Button type="button" variant="secondary" className="self-start" onClick={() => setAsking({ what: "app" })}>
               Turn off
@@ -305,7 +334,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
                     <SectionLabel>Recovery codes</SectionLabel>
                     <p>{s.recovery_codes_left} of 10 recovery codes left.</p>
                     {asking?.what === "codes" ? (
-                      passwordForm(asking)
+                      passwordForm(asking, s)
                     ) : (
                       <Button type="button" variant="secondary" className="self-start" onClick={() => setAsking({ what: "codes" })}>
                         New recovery codes

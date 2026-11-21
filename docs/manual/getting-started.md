@@ -12,6 +12,11 @@ This part is for everyone: players, troupe staff and the custodian. It covers ma
    - **Password**: at least 10 characters.
 3. Choose **Create account**.
 
+If the server has Discord set up, the page also offers **Sign up with Discord**. Discord asks you to confirm, then tells Horatio who you are and the email it has verified for you. If no account here has your Discord account, give **Your name** and **Handle** as above and choose **Create account**: your account uses that email, has no password, and is [linked to your Discord account](#your-discord-account), which signs you in from then on. Horatio never links an account by its email:
+
+- If Discord hasn't verified an email for you, no account is made. Verify it on Discord, then try again.
+- If an account here already uses that email, nothing is made or linked. Sign in to it with your password, then link Discord on its Sign-in and email tab.
+
 You're signed in straight away, and land on **Characters**. While you have no characters, a welcome card there shows the three steps to your first game: find your troupe, build a character for it, and ask the troupe to accept it.
 
 ![The sign-up form, with boxes for your name, handle, email and password](images/getting-started/sign-up.png)
@@ -22,11 +27,13 @@ Choose **Sign in** at the top of any page. On the sign-in page, give your **Emai
 
 If you have added a [passkey](#setting-up-two-step-sign-in), you can sign in with it alone, with no password: choose **Sign in with a passkey**, or pick it where your browser offers it from the **Email or handle** box, and confirm with your face, finger or PIN. That counts as both steps, so Horatio asks for nothing more, even if you must have two-step sign-in. Your password still works, and stays: no one is made to sign in without one, and [Forgot your password?](#forgotten-your-password) works as before.
 
+With your [Discord account linked](#your-discord-account), **Sign in with Discord** signs you in too: Discord confirms it's you, and you go on where you were going. It counts as the first step only, as a password does: with [two-step sign-in](#two-step-sign-in) on, Horatio still asks for your passkey or a code from your app afterwards. A Discord account no one here has goes on to [making an account](#creating-an-account) with it.
+
 Each page names itself in the browser's tab, its bookmarks and its history, the tab you have open first: "Approvals · ‹troupe› · Horatio", "Sheet · ‹character› · Horatio". With several Horatio tabs open, you can tell them apart.
 
 Horatio keeps you signed in on that browser for about a month. To sign out, choose **Sign out** at the right of the menu. Signing out also clears whatever Horatio kept on that device for you; if taps from the Play View haven't been sent yet, it asks first.
 
-After several wrong passwords, Horatio stops trying them for a while, and the page says "Too many failed sign-ins from here." Wait a quarter of an hour and try again, or reset your password (below). Only the network you were on is held back, never your account everywhere. Signing in very many times from one network, even with the right password, is held back the same way: "Too many sign-ins from here."
+After several wrong passwords, Horatio stops trying them for a while, and the page says "Too many failed sign-ins from here." Wait a quarter of an hour and try again, or reset your password (below). Only the network you were on is held back, never your account everywhere. Signing in very many times from one network, even with the right password, is held back the same way: "Too many sign-ins from here." Signing in with Discord counts too, and after several tries from one network that Discord didn't sign in, Discord sign-in is held back there for a while; your password still works.
 
 ![The sign-in page](images/getting-started/sign-in.png)
 
@@ -120,11 +127,13 @@ The **Two-step sign-in** card offers two kinds of second step. You can have both
 
 With your first second step, Horatio shows ten recovery codes, once. Keep them somewhere safe, away from your phone (**Download** or **Copy** help), and choose **I've kept them**. The card says how many are left; **New recovery codes** makes ten more in place of the old. **Remove** takes away a passkey, and **Turn off** the app. Each of these, like adding or replacing a passkey, asks for your password, so no one can change them at a sign-in you left open. Too many tries at your password in a while, right or wrong, here or on the **Password** card, and Horatio asks you to wait: "Too many tries at your password." If you must have two-step sign-in, you can't remove your last second step.
 
+An account made with Discord has no password until you set one, so the card can't add, replace or remove a passkey, turn off the app or make new recovery codes: it says so where it would ask for your password, with a link to **Forgot your password?** to set one. Setting up an authenticator app asks for no password, so you can do that straight away, even where you must have two-step sign-in before anything else.
+
 ### Your Discord account
 
-If the server has Discord set up, the **Discord account** card offers **Link my Discord**. Discord asks you to confirm, then tells Horatio your Discord username and nothing else. Your profile then shows that username, marked as confirmed by Discord, where a typed one is marked "typed, not checked". Staff can rely on it when they give you your character's Discord channel. Linking doesn't change how you sign in.
+If the server has Discord set up, the **Discord account** card offers **Link my Discord**. Discord asks you to confirm, then tells Horatio your Discord username and nothing else. Your profile then shows that username, marked as confirmed by Discord, where a typed one is marked "typed, not checked". Staff can rely on it when they give you your character's Discord channel. Once it's linked, **Sign in with Discord** on the sign-in page signs you in too.
 
-While it's linked, your Discord username comes from Discord and can't be typed over. **Unlink Discord** forgets the link and keeps the username, unless Discord is your only way to sign in. A Discord account can be linked to only one Horatio account.
+While it's linked, your Discord username comes from Discord and can't be typed over. **Unlink Discord** forgets the link and keeps the username, unless Discord is your only way to sign in, as it is for an account made with Discord. To have a password too, ask for one from **Forgot your password?** on the sign-in page. A Discord account can be linked to only one Horatio account.
 
 ### When the custodian viewed as you
 

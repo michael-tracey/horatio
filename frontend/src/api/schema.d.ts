@@ -417,6 +417,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discord Sign In Help
+         * @description Whether someone can sign in, or up, with Discord here.
+         */
+        get: operations["discord_sign_in_help_api_auth_discord_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/discord/sign-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sign Up For
+         * @description What Discord said of someone signing up with it, to start the form with.
+         */
+        get: operations["sign_up_for_api_auth_discord_sign_up_get"];
+        put?: never;
+        /**
+         * Sign Up
+         * @description Make the account Discord sign-in waited on, with the email Discord verified, the
+         *     name and handle chosen, no password, and the Discord account linked; and sign in.
+         */
+        post: operations["sign_up_api_auth_discord_sign_up_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/discord/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start
+         * @description Discord's page for signing in with Discord. The state waits here, and in a
+         *     cookie for the callback, for 10 minutes.
+         */
+        post: operations["start_api_auth_discord_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/email-change/{token}": {
         parameters: {
             query?: never;
@@ -21259,6 +21325,42 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** DiscordSignInHelp */
+        DiscordSignInHelp: {
+            /** Available */
+            available: boolean;
+        };
+        /** DiscordSignUp */
+        DiscordSignUp: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle?: string | null;
+        };
+        /**
+         * DiscordSignUpFor
+         * @description What Discord said of someone with no account yet, to start the form with.
+         */
+        DiscordSignUpFor: {
+            /** Discord Username */
+            discord_username: string;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /** Handle */
+            handle: string;
+        };
+        /** DiscordStart */
+        DiscordStart: {
+            /** Next */
+            next?: string | null;
+        };
+        /** DiscordStarted */
+        DiscordStarted: {
+            /** Url */
+            url: string;
+        };
         /** DiscoveryBlockOut */
         DiscoveryBlockOut: {
             block: components["schemas"]["BlockOut"] | null;
@@ -37645,6 +37747,11 @@ export interface components {
             app: boolean;
             /** Apps Available */
             apps_available: boolean;
+            /**
+             * Has Password
+             * @default true
+             */
+            has_password: boolean;
             /** Needed */
             needed: boolean;
             /** Passkeys */
@@ -39927,6 +40034,112 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_sign_in_help_api_auth_discord_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordSignInHelp"];
+                };
+            };
+        };
+    };
+    sign_up_for_api_auth_discord_sign_up_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordSignUpFor"];
+                };
+            };
+        };
+    };
+    sign_up_api_auth_discord_sign_up_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordSignUp"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_api_auth_discord_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordStarted"];
                 };
             };
             /** @description Validation Error */

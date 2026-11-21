@@ -10,8 +10,9 @@ import { manualLink } from "../manualLink";
 import { useNext, withNext } from "../next";
 import { passkeyAborted, passkeyProblem } from "../passkeys";
 import { useTitle } from "../title";
+import { DiscordSignIn } from "./DiscordSignIn";
 
-function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+export function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   useTitle(title);
   return (
     <div className="mx-auto mt-2 max-w-sm sm:mt-8">
@@ -141,6 +142,7 @@ export function SignInPage() {
             <ErrorText error={passkeyProblem(passkey.error ?? refused)} />
           </>
         )}
+        <DiscordSignIn verb="in" />
         <p className="text-center text-sm text-mist">
           New here?{" "}
           <Link to={withNext("/sign-up", next)} className="text-gold underline">
@@ -193,6 +195,7 @@ export function SignUpPage() {
         <Button type="submit" disabled={signUp.isPending}>
           Create account
         </Button>
+        <DiscordSignIn verb="up" />
         <p className="text-center text-sm text-mist">
           Already have one?{" "}
           <Link to={withNext("/sign-in", next)} className="text-gold underline">

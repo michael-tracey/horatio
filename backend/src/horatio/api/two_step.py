@@ -52,6 +52,9 @@ class TwoStepOut(BaseModel):
     required_by: list[str]
     # They must set one up before anything else.
     needed: bool
+    # They have a password, which the changes above ask for again. An account made
+    # with Discord (#1128) has none until they set one with a reset link.
+    has_password: bool = True
 
 
 class AppSetup(BaseModel):
@@ -126,6 +129,7 @@ def state(db: DbSession, user: User) -> TwoStepOut:
         recovery_codes_left=two_step.recovery_codes_left(db, user),
         required_by=two_step.required_by(db, user),
         needed=two_step.needed(db, user),
+        has_password=user.password_hash is not None,
     )
 
 
@@ -134,11 +138,20 @@ def state(db: DbSession, user: User) -> TwoStepOut:
 PASSWORD_WAIT = "Too many tries at your password. Try again later."
 
 
+NO_PASSWORD = (
+    "This asks for your password, and you have none yet: you sign in with Discord. Set one"
+    " with Forgot your password? on the sign-in page, then try again."
+)
+
+
 def check_password(request: Request, db: DbSession, user: User, password: str) -> None:
     """Adding, replacing or removing a passkey, turning off the app, or making new
     recovery codes asks for the password again, so a sign-in left open somewhere can't
     (#1110). Each try, right or wrong, counts towards the limit on password tries at
-    the account, as changing the password does, checked before the password is."""
+    the account, as changing the password does, checked before the password is. An
+    account with no password (one made with Discord, #1128) is told how to set one."""
+    if user.password_hash is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, NO_PASSWORD)
     if (held := attempts.password_change_held_back(db, user.id)) is not None:
         record(
             db,
