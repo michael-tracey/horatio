@@ -16963,6 +16963,11 @@ export interface components {
             source: string;
             /** Thrall */
             thrall: string;
+            /**
+             * Weakness
+             * @default
+             */
+            weakness: string;
         };
         /** BondEntryOut */
         BondEntryOut: {
@@ -16994,6 +16999,11 @@ export interface components {
              * @enum {string}
              */
             source: "game" | "downtime" | "staff";
+            /**
+             * Weakness
+             * @default
+             */
+            weakness: string;
         };
         /**
          * BondLine
@@ -17052,6 +17062,11 @@ export interface components {
              * @default false
              */
             thrall_told: boolean;
+            /**
+             * Weakness
+             * @default
+             */
+            weakness: string;
         };
         /**
          * BondReportOut
@@ -34559,6 +34574,11 @@ export interface components {
             level: number;
             /** Name */
             name: string;
+            /**
+             * Weakness
+             * @default
+             */
+            weakness: string;
         };
         /** SheetOut */
         SheetOut: {
@@ -37156,6 +37176,11 @@ export interface components {
              */
             setting: "off" | "staff" | "players_report" | "players_manage";
             /**
+             * Tremere
+             * @default
+             */
+            tremere: string;
+            /**
              * Vaulderies Waiting
              * @default 0
              */
@@ -39160,7 +39185,7 @@ export interface components {
         };
         /**
          * ChangeOut
-         * @description What time does next to a bond (#665): it drops to two drinks, or ends, on a day.
+         * @description What time does next to a bond (#665): it drops a stage, or ends, on a day.
          */
         horatio__api__bonds__ChangeOut: {
             /** Due */
@@ -39175,6 +39200,13 @@ export interface components {
              * Format: date
              */
             on: string;
+            /** To */
+            to?: number | null;
+            /**
+             * Tremere
+             * @default false
+             */
+            tremere: boolean;
         };
         /**
          * MatchOut

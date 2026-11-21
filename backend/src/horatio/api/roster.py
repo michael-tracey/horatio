@@ -1123,7 +1123,7 @@ MESSAGES: dict[str, str] = {
     "boon.gallant_declined": "{actor} gave {debtor} no Gallant for repaying their {kind} boon"
     " to {creditor}{because}.",
     "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
-    " {level}{again}.",
+    " {level}{again}{weakness}.",
     "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"
     " {reason}",
     "bond.wiped": "{character}'s lesser bond to {regnant} was wiped away by the full bond to"
@@ -1151,6 +1151,10 @@ MESSAGES: dict[str, str] = {
     # player is told it weakened, with the troupe's next downtime results.
     "bond.dropped": "{thrall}'s full bond to {regnant} dropped to two drinks on {night}, after"
     " three months without drinking.",
+    # A bond deeper than one drink to a Tremere regnant, under Volume 2's weakness (#1145).
+    "bond.tremere_dropped": "{thrall}'s bond to {regnant} dropped to {level} on {night}: in"
+    " this troupe a Tremere's blood binds another vampire only to the first drink, and a"
+    " deeper bond drops a stage a month (Vol. 2, p. 22).",
     "bond.dropped_told": "{character}'s bond to {regnant} has weakened.",
     "bond.meeting": "{actor} recorded {character} and {regnant} meeting on {night}, {source}.",
     "bond.meeting_reported": "{actor} reported {character} and {regnant} meeting on {night},"
@@ -1229,6 +1233,8 @@ def message(
     values["because"] = f" ({data['reason']})" if data.get("reason") else ""
     # A request for a new home troupe that started the character visiting it.
     values["and_visiting"] = ", and it started visiting" if data.get("joined") else ""
+    # What a Tremere weakness did to a drink (#1145); none before it was kept.
+    values.setdefault("weakness", "")
     # Entries from before the troupe's name was kept with them.
     values.setdefault("troupe", "this troupe")
     # Entries from before the character it was done as was kept with them (#987).

@@ -682,7 +682,7 @@ NPCs are never limited by either.
 
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
-- **Clan weaknesses**: which weakness a clan plays here where Volume 2 replaced the core book's. So far that's only the Tremere: **Volume 2's** (the default), where their blood bonds other vampires only to the first stage (Vol. 2, p. 22), or **Core book's**, where they're bound more easily themselves (p. 64). Telyav play as their clan does. The creation wizard, the character's ⓘ beside the clan, the Play View and the rules pages inside the troupe show the one you choose, and players read it on the **House rules** tab. Where there's no troupe, such as the rules page on its own, Horatio says the weakness varies by troupe and gives both. Horatio doesn't apply either one: bonds count drinks the same way for every clan, so staff apply the weakness as they record drinks. Each change goes in the troupe log.
+- **Clan weaknesses**: which weakness a clan plays here where Volume 2 replaced the core book's. So far that's only the Tremere: **Volume 2's** (the default), where their blood bonds other vampires only to the first stage (Vol. 2, p. 22), or **Core book's**, where they're bound more easily themselves (p. 64). Telyav play as their clan does. The creation wizard, the character's ⓘ beside the clan, the Play View and the rules pages inside the troupe show the one you choose, and players read it on the **House rules** tab. Where there's no troupe, such as the rules page on its own, Horatio says the weakness varies by troupe and gives both. Blood bonds follow the choice (see [The Tremere weakness](#the-tremere-weakness) under Blood bonds): from the change on, each drink recorded counts by the weakness you chose. Each change goes in the troupe log.
 
 #### Feeding
 
@@ -1127,6 +1127,19 @@ There's no clock running at night: Horatio makes the changes due when the troupe
 No bond drops or ends for time before the troupe's bonds started fading with time, or before it last switched bonds back on from **Off**: nothing could be logged while they were off.
 
 A full bond makes the thrall immune to other bonds until it drops (Errata, p. 295). Recording a drink from anyone else, or entering a bond to them, is refused with why; give a **Reason to record it anyway** if the story calls for it, and it goes in the log.
+
+#### The Tremere weakness
+
+Bonds follow the Tremere weakness the troupe plays (**Clan weaknesses**, in Troupe settings › Blood, diablerie and feeding), and the top of **Court › Bonds** says which:
+
+- **Volume 2's** (the default, Vol. 2, p. 22): a Tremere's blood binds another vampire only to the first drink. A second or third drink is logged, but the bond stays at one drink. Ghouls are bound as usual, so a Tremere's ghoul still holds a full bond. A bond already deeper than one drink, such as one you entered or one from before the troupe played Volume 2's, drops a stage a month until it's at one drink, as the book's storyteller note has it. Drinking doesn't hold that up.
+- **The core book's** (MET: VTM p. 64): a Tremere's first drink of another vampire's blood counts as two, so a second drink binds them fully.
+
+Telyav play as their clan does. Horatio applies the weakness only where it knows who's who: the Tremere has to be a character in Horatio, and so, for Volume 2's, does the vampire they bind, since a name only could be a ghoul. Bonds Horatio adds by rule, and bonds you enter, stand at the level given, as before.
+
+When the weakness changes what a drink does, the thrall's player gets a notification saying so and why ("Agnes drank Bram's blood on 3 Oct 2026, but the bond stays at one drink: in this troupe a Tremere's blood binds another vampire only to the first drink"). The log line for the drink says so too. On **Court › Bonds**, such a bond carries a line saying what the weakness does to it, and the drink it changed says so in the **Drinks log**. A drink reported for you to approve carries the same line in Approvals.
+
+Each drink keeps the weakness it was recorded under. Changing the troupe's choice doesn't recount the bonds already standing; only Volume 2's monthly drop applies to them.
 
 #### The Vinculum
 

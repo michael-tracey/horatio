@@ -52,12 +52,16 @@ from horatio.models import (
     BondEntry,
     BondReport,
     Character,
+    CharacterTrait,
     GameAttendance,
     ScheduledGame,
+    TraitCategory,
+    TraitDefinition,
     Troupe,
     User,
 )
 from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.rules.feeding import clan_family
 from horatio.sheets import conflict, membership, memberships, unprocessable
 
 # The troupe's setting, and what each is called.
@@ -230,13 +234,18 @@ def parties(db: Session, bond: BloodBond) -> tuple[Party, Party]:
 SETS_LEVEL = ("entered", "dropped", "vaulderie")
 
 
-def level_of(entries: Sequence[BondEntry]) -> int:
+def walk(entries: Sequence[BondEntry]) -> tuple[int, set[uuid.UUID]]:
     """The bond's level, 1 to 3, from its log, night by night: a drink on a night not
     already counted adds one, up to a full bond; drinks on one night count once (p.
     295). A bond entered by staff stands at its level from its night, whatever was
-    drunk before, and so does one dropped with time; a meeting changes nothing."""
+    drunk before, and so does one dropped with time; a meeting changes nothing. A
+    drink recorded under a Tremere weakness (#1145) counts as that weakness has it:
+    one "capped" takes the bond to one drink but no further, and one "doubled" counts
+    as two if it is the bond's first. With the level, the drinks the weakness changed:
+    those that counted otherwise than one drink would."""
     level = 0
     nights: set[date] = set()
+    changed: set[uuid.UUID] = set()
     # A night's drinks before a bond entered or dropped on it: that says where it stood
     # after.
     for entry in sorted(entries, key=lambda e: (e.night, e.kind in SETS_LEVEL)):
@@ -246,8 +255,22 @@ def level_of(entries: Sequence[BondEntry]) -> int:
             nights.add(entry.night)
         elif entry.kind == "drink" and entry.night not in nights:
             nights.add(entry.night)
-            level = min(FULL, level + 1)
-    return level
+            usual = min(FULL, level + 1)
+            if entry.weakness == CAPPED:
+                after = max(level, 1)
+            elif entry.weakness == DOUBLED and level == 0:
+                after = 2
+            else:
+                after = usual
+            if after != usual:
+                changed.add(entry.id)
+            level = after
+    return level, changed
+
+
+def level_of(entries: Sequence[BondEntry]) -> int:
+    """The bond's level, 1 to 3, from its log (`walk`)."""
+    return walk(entries)[0]
 
 
 def felt_level_of(entries: Sequence[BondEntry]) -> int:
@@ -272,6 +295,146 @@ def entries_of(db: Session, bond: BloodBond) -> list[BondEntry]:
 
 def level(db: Session, bond: BloodBond) -> int:
     return level_of(entries_of(db, bond))
+
+
+# --- the Tremere weakness (#1145) -------------------------------------------------------
+#
+# Each troupe chooses which Tremere weakness it plays (horatio.clan_weaknesses), and a
+# bond follows the choice of the troupe that keeps it, wherever its sides are at home:
+#
+# - Volume 2's, the default (Vol. 2, p. 22): a Tremere's blood binds another vampire
+#   only to one drink, however often they drink; ghouls are bound as usual. A drink
+#   that would take such a bond further leaves it at one drink. A bond already deeper,
+#   one entered by staff or recorded before, drops a stage a month to one drink, as the
+#   book's storyteller note has it, and drinks don't hold it up.
+# - The core book's (MET: VTM p. 64): a Tremere thrall's first drink of another
+#   vampire's blood counts as two, so a second binds them fully.
+#
+# Telyav, a Tremere bloodline with no weakness of its own, follow the clan. Horatio
+# applies a weakness only where it knows who is Tremere and who a vampire: both sides
+# characters, but the core book's regnant, who may be a name only (only a vampire's
+# blood binds). A drink keeps the weakness it was recorded under, so changing the
+# troupe's choice later changes no bond already standing, but for the monthly drop.
+# Bonds Horatio enters by rule (horatio.auto_bonds) stand at their level as staff's do.
+
+TREMERE = "Tremere"
+CAPPED = "capped"
+DOUBLED = "doubled"
+WEAKNESS_PAGES = {CAPPED: "Vol. 2, p. 22", DOUBLED: "MET: VTM p. 64"}
+# What each weakness does to a bond, as the troupe's Bonds screen says it.
+WEAKNESS_RULES = {
+    CAPPED: "a Tremere's blood binds another vampire only to the first drink, however"
+    " often they drink; ghouls are bound as usual",
+    DOUBLED: "a Tremere's first drink of another vampire's blood counts as two, so a"
+    " second binds them fully",
+}
+# How long a bond deeper than one drink to a Tremere regnant takes to drop a stage.
+CAPPED_MONTHS = 1
+
+
+def tremere_rule(troupe: Troupe) -> str:
+    """The Tremere weakness the troupe plays for bonds, in a sentence."""
+    if TREMERE in troupe.core_weaknesses:
+        return (
+            f"This troupe plays the core book's Tremere weakness: {WEAKNESS_RULES[DOUBLED]}"
+            f" ({WEAKNESS_PAGES[DOUBLED]})."
+        )
+    return (
+        f"This troupe plays Volume 2's Tremere weakness: {WEAKNESS_RULES[CAPPED]}"
+        f" ({WEAKNESS_PAGES[CAPPED]})."
+    )
+
+
+def clans_of(db: Session, *characters: Character | None) -> dict[uuid.UUID, str]:
+    """Each character's clan or bloodline, from its sheet."""
+    ids = [c.id for c in characters if c is not None]
+    if not ids:
+        return {}
+    rows = db.execute(
+        select(CharacterTrait.character_id, TraitDefinition.name)
+        .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
+        .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+        .where(CharacterTrait.character_id.in_(ids), TraitCategory.key == "clan")
+    )
+    return {who: name for who, name in rows}
+
+
+def is_tremere(clans: dict[uuid.UUID, str], character: Character | None) -> bool:
+    """A Tremere vampire, or a Telyav: a ghoul has its domitor's clan, but isn't one."""
+    if character is None or not is_vampire(character):
+        return False
+    return clan_family(clans.get(character.id, "")) == TREMERE
+
+
+def weakness_for(db: Session, troupe: Troupe, thrall: Party, regnant: Party) -> str:
+    """The Tremere weakness a drink of the regnant's blood by the thrall is under in the
+    troupe: CAPPED, DOUBLED, or empty for neither."""
+    clans = clans_of(db, thrall.character, regnant.character)
+    if TREMERE in troupe.core_weaknesses:
+        return DOUBLED if is_tremere(clans, thrall.character) else ""
+    vampire_thrall = thrall.character is not None and is_vampire(thrall.character)
+    return CAPPED if vampire_thrall and is_tremere(clans, regnant.character) else ""
+
+
+def weakness_line(weakness: str, thrall: Party, regnant: Party) -> str:
+    """What the weakness does to this bond, in a sentence, for whoever sees it."""
+    if weakness == CAPPED:
+        return (
+            f"{regnant.shown} is Tremere: in this troupe their blood binds {thrall.shown}"
+            f" only to the first drink ({WEAKNESS_PAGES[CAPPED]})."
+        )
+    if weakness == DOUBLED:
+        return (
+            f"{thrall.shown} is Tremere: in this troupe their first drink of a vampire's"
+            f" blood counts as two ({WEAKNESS_PAGES[DOUBLED]})."
+        )
+    return ""
+
+
+def changed_line(weakness: str) -> str:
+    """A drink the weakness changed, as the bond's log says it."""
+    if weakness == CAPPED:
+        return (
+            "Held at the first drink: a Tremere's blood binds another vampire no further"
+            f" here ({WEAKNESS_PAGES[CAPPED]})."
+        )
+    if weakness == DOUBLED:
+        return (
+            "Counted as two: a Tremere's first drink of another vampire's blood counts as"
+            f" two here ({WEAKNESS_PAGES[DOUBLED]})."
+        )
+    return ""
+
+
+def tell_weakness(
+    db: Session, troupe: Troupe, bond: BloodBond, weakness: str, night: date, at: int
+) -> None:
+    """Tell the thrall's player what the weakness did to the drink, and why."""
+    thrall, regnant = parties(db, bond)
+    character = thrall.character
+    if character is None or character.kind != "pc" or character.player_id is None:
+        return
+    if weakness == CAPPED:
+        summary = (
+            f"{thrall.shown} drank {regnant.shown}'s blood on {when(night)}, but the bond"
+            f" stays at {LEVELS[at]}: in this troupe a Tremere's blood binds another"
+            f" vampire only to the first drink ({WEAKNESS_PAGES[CAPPED]})."
+        )
+    else:
+        summary = (
+            f"{thrall.shown}'s first drink of {regnant.shown}'s blood counted as two: in"
+            " this troupe a Tremere's first drink of another vampire's blood does"
+            f" ({WEAKNESS_PAGES[DOUBLED]}). The bond is at {LEVELS[at]}."
+        )
+    notifications.notify(
+        db,
+        [character.player_id],
+        "sheet.bond",
+        summary,
+        f"/characters/{character.id}",
+        troupe_id=troupe.id,
+        character_id=character.id,
+    )
 
 
 # --- changes --------------------------------------------------------------------------
@@ -370,19 +533,23 @@ def add_drink(
     if source not in SOURCES:
         raise unprocessable(f"Where it was told is one of {', '.join(SOURCES)}.")
     check_night(night)
+    troupe = db.get_one(Troupe, bond.troupe_id)
+    thrall, regnant = parties(db, bond)
+    weakness = weakness_for(db, troupe, thrall, regnant)
     before = level(db, bond)
-    db.add(
-        BondEntry(
-            bond_id=bond.id,
-            kind="drink",
-            night=night,
-            source=source,
-            note=note.strip(),
-            recorded_by=user.id,
-        )
+    entry = BondEntry(
+        bond_id=bond.id,
+        kind="drink",
+        night=night,
+        source=source,
+        note=note.strip(),
+        recorded_by=user.id,
+        weakness=weakness,
     )
+    db.add(entry)
     db.flush()
-    after = level(db, bond)
+    after, changed = walk(entries_of(db, bond))
+    held = entry.id in changed
     log(
         db,
         user,
@@ -391,8 +558,13 @@ def add_drink(
         night=when(night),
         source=SOURCES[source],
         level=LEVELS[after],
-        again="" if after > before or after == FULL else " (a drink that night already counted)",
+        again=""
+        if after > before or after == FULL or held
+        else " (a drink that night already counted)",
+        weakness=f" ({WEAKNESS_LOG[weakness]})" if held else "",
     )
+    if held:
+        tell_weakness(db, troupe, bond, weakness, night, after)
     if before < FULL <= after:
         wipe_lesser(db, user, bond)
     return bond
@@ -505,6 +677,14 @@ def set_known(db: Session, user: User, bond: BloodBond, known: bool) -> None:
 # and distance are #665. A thrall's Final Death ends its bonds; a regnant's player who
 # knew of one goes on seeing it until staff clear it, for the regnant has no sense of
 # the death.
+
+# What a weakness did to a drink, as the troupe's log and the thrall's say it.
+WEAKNESS_LOG = {
+    CAPPED: "in this troupe a Tremere's blood binds another vampire only to the first"
+    f" drink, {WEAKNESS_PAGES[CAPPED]}",
+    DOUBLED: "in this troupe a Tremere's first drink of another vampire's blood counts as"
+    f" two, {WEAKNESS_PAGES[DOUBLED]}",
+}
 
 # How long a dead regnant's bond takes to fade (p. 296: "over the next month").
 FADE_DAYS = 30
@@ -883,14 +1063,20 @@ def last_met(db: Session, bond: BloodBond, entries: Sequence[BondEntry]) -> date
 
 @dataclass(frozen=True)
 class Change:
-    """What happens next to a bond with time: it drops to two drinks, or ends, on a day."""
+    """What happens next to a bond with time: it drops a stage, or ends, on a day. A
+    drop is to two drinks, after three months without drinking; or for a bond deeper
+    than one drink to a Tremere regnant, under Volume 2's weakness, a stage a month
+    (`weakness` CAPPED, #1145)."""
 
     kind: str  # drop | end
     on: date
+    # For a drop, the level it drops to.
+    to: int = FULL - 1
+    weakness: str = ""
 
     @property
     def shown(self) -> str:
-        return "drops to two drinks" if self.kind == "drop" else "ends"
+        return f"drops to {LEVELS[self.to]}" if self.kind == "drop" else "ends"
 
 
 def clock_from(troupe: Troupe, bond: BloodBond) -> date:
@@ -907,6 +1093,16 @@ def next_change(
     entries = entries_of(db, bond) if entries is None else entries
     at = level_of(entries)
     start = clock_from(troupe, bond)
+    if at > 1 and weakness_for(db, troupe, *parties(db, bond)) == CAPPED:
+        # Too deep for a Tremere's blood here: a stage a month from when it last stood
+        # where it is, which no drink under the weakness changes.
+        stood = [
+            e.night
+            for e in entries
+            if e.kind in SETS_LEVEL or (e.kind == "drink" and e.weakness != CAPPED)
+        ]
+        since = max([start, *stood])
+        return Change("drop", add_months(since, CAPPED_MONTHS), at - 1, CAPPED)
     if at >= FULL:
         reinforced = [
             e.night
@@ -937,13 +1133,17 @@ def apply_change(db: Session, user: User | None, bond: BloodBond, change: Change
     ends it as faded. Into the troupe's log only."""
     thrall, regnant = parties(db, bond)
     if change.kind == "drop":
+        capped = change.weakness == CAPPED
         entry = BondEntry(
             bond_id=bond.id,
             kind="dropped",
             night=change.on,
             source="staff",
-            level=FULL - 1,
-            note=f"Three months without drinking {regnant.shown}'s blood (p. 296).",
+            level=change.to,
+            note=f"A Tremere's blood binds another vampire only to the first drink here: a"
+            f" stage a month ({WEAKNESS_PAGES[CAPPED]})."
+            if capped
+            else f"Three months without drinking {regnant.shown}'s blood (p. 296).",
             recorded_by=user.id if user else None,
         )
         # A thrall with no player has no one to tell.
@@ -951,7 +1151,17 @@ def apply_change(db: Session, user: User | None, bond: BloodBond, change: Change
             entry.thrall_told_at = datetime.now(UTC)
         db.add(entry)
         db.flush()
-        staff_log(db, user, "bond.dropped", bond, night=when(change.on))
+        if capped:
+            staff_log(
+                db,
+                user,
+                "bond.tremere_dropped",
+                bond,
+                night=when(change.on),
+                level=LEVELS[change.to],
+            )
+        else:
+            staff_log(db, user, "bond.dropped", bond, night=when(change.on))
         return
     bond.fade_reason = APART
     faded(db, bond, user)

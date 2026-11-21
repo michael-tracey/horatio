@@ -5775,6 +5775,11 @@
           "thrall": {
             "title": "Thrall",
             "type": "string"
+          },
+          "weakness": {
+            "default": "",
+            "title": "Weakness",
+            "type": "string"
           }
         },
         "required": [
@@ -5842,6 +5847,11 @@
               "staff"
             ],
             "title": "Source",
+            "type": "string"
+          },
+          "weakness": {
+            "default": "",
+            "title": "Weakness",
             "type": "string"
           }
         },
@@ -5998,6 +6008,11 @@
             "default": false,
             "title": "Thrall Told",
             "type": "boolean"
+          },
+          "weakness": {
+            "default": "",
+            "title": "Weakness",
+            "type": "string"
           }
         },
         "required": [
@@ -51063,6 +51078,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "weakness": {
+            "default": "",
+            "title": "Weakness",
+            "type": "string"
           }
         },
         "required": [
@@ -57707,6 +57727,11 @@
             "title": "Setting",
             "type": "string"
           },
+          "tremere": {
+            "default": "",
+            "title": "Tremere",
+            "type": "string"
+          },
           "vaulderies_waiting": {
             "default": 0,
             "title": "Vaulderies Waiting",
@@ -63009,7 +63034,7 @@
         "type": "object"
       },
       "horatio__api__bonds__ChangeOut": {
-        "description": "What time does next to a bond (#665): it drops to two drinks, or ends, on a day.",
+        "description": "What time does next to a bond (#665): it drops a stage, or ends, on a day.",
         "properties": {
           "due": {
             "title": "Due",
@@ -63027,6 +63052,22 @@
             "format": "date",
             "title": "On",
             "type": "string"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          },
+          "tremere": {
+            "default": false,
+            "title": "Tremere",
+            "type": "boolean"
           }
         },
         "required": [

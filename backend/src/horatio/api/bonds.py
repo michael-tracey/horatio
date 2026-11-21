@@ -110,13 +110,21 @@ class BondEntryOut(BaseModel):
     # None for a drop Horatio made by itself.
     recorded_by: str | None
     at: datetime
+    # For a drink the troupe's Tremere weakness changed (#1145), what it did and why:
+    # "Counted as two: ...", "Held at the first drink: ...". Empty otherwise.
+    weakness: str = ""
 
 
 class ChangeOut(BaseModel):
-    """What time does next to a bond (#665): it drops to two drinks, or ends, on a day."""
+    """What time does next to a bond (#665): it drops a stage, or ends, on a day."""
 
     kind: Literal["drop", "end"]
     on: date
+    # For a drop, the level it drops to: two drinks after three months without
+    # drinking; or a stage a month, for a bond deeper than one drink to a Tremere
+    # regnant under Volume 2's weakness (`tremere`, #1145).
+    to: int | None = None
+    tremere: bool = False
     # It is due: made now, or in "players_report", waiting for staff to confirm.
     due: bool
 
@@ -147,6 +155,10 @@ class BondOut(BaseModel):
     last_met: date | None = None
     # What time does to it next, for a bond time can fade.
     next_change: ChangeOut | None = None
+    # What the troupe's Tremere weakness does to this bond, in a sentence, if anything
+    # (#1145): "Bram is Tremere: in this troupe their blood binds Agnes only to the
+    # first drink (Vol. 2, p. 22)."
+    weakness: str = ""
     entries: list[BondEntryOut]
 
 
@@ -191,6 +203,8 @@ class TroupeBondsOut(BaseModel):
     vinculum: bool = False
     # Vaulderies players reported that wait for staff.
     vaulderies_waiting: int = 0
+    # The Tremere weakness the troupe plays for bonds, in a sentence (#1145).
+    tremere: str = ""
 
 
 class ReportTroupeOut(BaseModel):
@@ -262,6 +276,8 @@ class SheetBondOut(BaseModel):
     # The reader can log a meeting on it, as the character's player in a troupe whose
     # players report or record bonds (#665).
     can_meet: bool = False
+    # What the troupe's Tremere weakness does to this bond, if anything (#1145).
+    weakness: str = ""
 
 
 class CharacterBondsOut(BaseModel):
@@ -311,12 +327,13 @@ def bond_out(db: DbSession, bond: BloodBond) -> BondOut:
     drinks = [e.night for e in entries if e.kind == "drink"]
     troupe = db.get_one(Troupe, bond.troupe_id)
     change = bonds.next_change(db, troupe, bond, entries)
+    level, changed = bonds.walk(entries)
     met = bonds.last_met(db, bond, entries) if bond.status in bonds.OPEN else None
     return BondOut(
         id=bond.id,
         thrall=party_out(thrall.character, thrall.name),
         regnant=party_out(regnant.character, regnant.name),
-        level=bonds.level_of(entries),
+        level=level,
         status=bond.status,
         known_to_regnant=bond.known_to_regnant,
         ended_at=bond.ended_at,
@@ -331,9 +348,16 @@ def bond_out(db: DbSession, bond: BloodBond) -> BondOut:
             kind=change.kind,  # type: ignore[arg-type]  # drop or end
             on=change.on,
             due=change.on <= bonds.today(),
+            to=change.to if change.kind == "drop" else None,
+            tremere=change.weakness == bonds.CAPPED,
         )
         if change is not None
         else None,
+        weakness=bonds.weakness_line(
+            bonds.weakness_for(db, troupe, thrall, regnant), thrall, regnant
+        )
+        if bond.status in bonds.OPEN
+        else "",
         entries=[
             BondEntryOut(
                 id=e.id,
@@ -344,6 +368,7 @@ def bond_out(db: DbSession, bond: BloodBond) -> BondOut:
                 note=e.note,
                 recorded_by=users.get(e.recorded_by) if e.recorded_by else None,
                 at=e.created_at,
+                weakness=bonds.changed_line(e.weakness) if e.id in changed else "",
             )
             for e in entries
         ],
@@ -446,6 +471,7 @@ def troupe_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Trou
         reports=[report_out(db, user, r) for r in bonds.pending_reports(db, troupe)],
         vinculum=vinculum.on(troupe),
         vaulderies_waiting=len(vinculum.pending(db, troupe)) if vinculum.on(troupe) else 0,
+        tremere=bonds.tremere_rule(troupe),
     )
 
 
@@ -768,6 +794,11 @@ def character_bonds(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -
     for s in seen:
         bond, troupe, thrall, regnant = s.bond, s.troupe, s.thrall, s.regnant
         level = s.level
+        weakness = (
+            bonds.weakness_line(bonds.weakness_for(db, troupe, thrall, regnant), thrall, regnant)
+            if bond.status in bonds.OPEN
+            else ""
+        )
         meet = (
             bond.status == "active"
             and bonds.for_players(troupe)
@@ -776,10 +807,16 @@ def character_bonds(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -
         )
         if bond.thrall_id == character.id:
             bound_to.append(
-                SheetBondOut(id=bond.id, name=regnant.shown, level=level, can_meet=meet)
+                SheetBondOut(
+                    id=bond.id, name=regnant.shown, level=level, can_meet=meet, weakness=weakness
+                )
             )
         else:
-            bound_by.append(SheetBondOut(id=bond.id, name=thrall.shown, level=level, can_meet=meet))
+            bound_by.append(
+                SheetBondOut(
+                    id=bond.id, name=thrall.shown, level=level, can_meet=meet, weakness=weakness
+                )
+            )
         if manage is None and bonds.can_manage(db, user, troupe):
             manage = troupe.id
     home_id = character.home_troupe_id or character.owner_troupe_id

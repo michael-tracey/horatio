@@ -230,6 +230,40 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   await expect(
     l.getByRole("listitem", { name: "Odile Marchand bound to Lady Grisette" }),
   ).toContainText("First drink");
+
+  // The troupe plays Volume 2's Tremere weakness, the default (#1145): a Tremere's
+  // blood binds another vampire only to the first drink, and the thrall's player is told.
+  await expect(l.getByText(/This troupe plays Volume 2's Tremere weakness/)).toBeVisible();
+  const hespera = await builtVampire(regnant.page, "Hespera Vauclair", "Tremere", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Thaumaturgy: Path of Blood", 1], ["Dominate", 1]],
+  });
+  const asked = await send(regnant.page, "POST", `/api/characters/${hespera}/home-troupe`, { troupe_id: troupe.id });
+  await send(l, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, {
+    thrall: { character_id: lucien },
+    regnant: { character_id: hespera },
+    night: "2026-10-03",
+    source: "game",
+  });
+  await l.reload();
+  const tremere = l.getByRole("listitem", { name: "Lucien Vasse bound to Hespera Vauclair" });
+  await expect(tremere).toContainText("Hespera Vauclair is Tremere: in this troupe their blood binds Lucien Vasse only to the first drink (Vol. 2, p. 22).");
+  await tremere.getByRole("button", { name: "Add a drink" }).click();
+  const second = tremere.getByRole("form", { name: "Add a drink: Lucien Vasse from Hespera Vauclair" });
+  await second.getByLabel("Night").fill("2026-10-10");
+  await second.getByRole("button", { name: "Add the drink" }).click();
+  await expect(second).toBeHidden();
+  await expect(tremere).toContainText("First drink");
+  await tremere.getByRole("button", { name: /^Drinks log/ }).click();
+  await expect(tremere.getByRole("list", { name: "Drinks log of Lucien Vasse bound to Hespera Vauclair" })).toContainText(
+    "Held at the first drink: a Tremere's blood binds another vampire no further here (Vol. 2, p. 22).",
+  );
+  const told = await (await r.request.get("/api/notifications")).json();
+  expect(told.items.map((n: { summary: string }) => n.summary)).toContain(
+    "Lucien Vasse drank Hespera Vauclair's blood on 10 Oct 2026, but the bond stays at one drink: in this troupe a Tremere's blood binds another vampire only to the first drink (Vol. 2, p. 22).",
+  );
 });
 
 test("staff see the troupe's bonds as a web: a full bond is a heavy link, and a chain is named (#708)", async ({ browser }) => {

@@ -113,6 +113,9 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
           thrall&apos;s player learns of a change with the next downtime
           results.
         </p>
+        {bonds.data.tremere && (
+          <p className="mb-3 text-sm text-mist">{bonds.data.tremere}</p>
+        )}
         {adding === "drink" && (
           <NewDrinkForm
             troupeId={troupeId}
@@ -299,10 +302,13 @@ function BondRow({
           </div>
         )}
       </div>
+      {bond.weakness && <p className="text-xs text-gold">{bond.weakness}</p>}
       {change && !change.due && (
         <p className="text-xs text-mist">
           {change.kind === "drop"
-            ? `Drops to two drinks on ${dates.day(change.on)} unless ${bond.thrall.name} drinks again.`
+            ? change.tremere
+              ? `Drops to ${change.to === 2 ? "two drinks" : "one drink"} on ${dates.day(change.on)}: a stage a month, however often ${bond.thrall.name} drinks.`
+              : `Drops to two drinks on ${dates.day(change.on)} unless ${bond.thrall.name} drinks again.`
             : `Ends on ${dates.day(change.on)} unless the two meet.`}
         </p>
       )}
@@ -311,9 +317,11 @@ function BondRow({
           <span>
             Due since {dates.day(change.on)}:{" "}
             {change.kind === "drop"
-              ? "it drops to two drinks"
-              : "it ends, the two kept apart"}{" "}
-            (p. 296). Players report and staff approve here, so it waits for
+              ? change.tremere
+                ? `it drops to ${change.to === 2 ? "two drinks" : "one drink"}, a stage a month (Vol. 2, p. 22)`
+                : "it drops to two drinks (p. 296)"
+              : "it ends, the two kept apart (p. 296)"}
+            . Players report and staff approve here, so it waits for
             you.
           </span>
           <Button
@@ -979,7 +987,7 @@ function EntryRow({
     e.kind === "entered"
       ? `entered at ${levelName(e.level ?? 1).toLowerCase()}`
       : e.kind === "dropped"
-        ? "dropped to two drinks, three months without drinking"
+        ? `dropped to ${e.level === 1 ? "one drink" : "two drinks"}`
         : e.kind === "vaulderie"
           ? `lowered to ${levelName(e.level ?? 1).toLowerCase()} by a Vaulderie`
           : e.kind === "meeting"
@@ -989,6 +997,7 @@ function EntryRow({
     <li aria-label={`${dates.day(e.night)}: ${what}`}>
       {dates.day(e.night)}: {what}
       {e.note && <span className="text-mist"> · {e.note}</span>}
+      {e.weakness && <span className="text-gold"> · {e.weakness}</span>}
       {e.recorded_by && (
         <span className="text-mist"> · by {e.recorded_by}</span>
       )}

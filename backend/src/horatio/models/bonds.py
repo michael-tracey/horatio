@@ -79,6 +79,8 @@ class BondEntry(Record):
             name="entered_level",
         ),
         CheckConstraint("level between 1 and 3", name="level"),
+        CheckConstraint("weakness in ('', 'capped', 'doubled')", name="weakness"),
+        CheckConstraint("kind = 'drink' or weakness = ''", name="weakness_drink"),
     )
 
     bond_id: Mapped[uuid.UUID] = mapped_column(
@@ -99,6 +101,12 @@ class BondEntry(Record):
     # A drop: when the thrall's player was told of it, with the troupe's next downtime
     # results. Until then their character's sheet shows the bond as it was.
     thrall_told_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # For a drink, the Tremere weakness the troupe played on it when it was recorded
+    # (#1145, horatio.bonds): "capped", Volume 2's, a Tremere regnant's blood binding a
+    # vampire thrall no further than one drink; "doubled", the core book's, a Tremere
+    # thrall's first drink counting as two; or empty, neither. Kept on the drink, so
+    # changing the troupe's choice later doesn't rewrite the bonds already standing.
+    weakness: Mapped[str] = mapped_column(default="", server_default="")
 
 
 class BondReport(Record):
