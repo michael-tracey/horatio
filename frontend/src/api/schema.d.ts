@@ -13956,6 +13956,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/two-step/passkeys/{passkey_id}/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Passkey
+         * @description Replace one of their passkeys that may not sign in alone with the one the browser
+         *     made, which does (#1110), under the same name. The new one is kept and the old one
+         *     removed together, only once the new one checks out, so a cancelled or failed try
+         *     leaves the old one as it was, and someone who must have two-step sign-in is never
+         *     left without a second step. No password is asked, as for adding one: it leaves
+         *     them as many second steps as before.
+         */
+        post: operations["replace_passkey_api_two_step_passkeys__passkey_id__replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/{passkey_id}/replace/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Options
+         * @description What the browser needs to make a passkey in place of one that may not sign in
+         *     alone (#1110): as for adding one, but the device must make it so it can.
+         */
+        post: operations["replace_options_api_two_step_passkeys__passkey_id__replace_options_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/two-step/recovery-codes": {
         parameters: {
             query?: never;
@@ -32141,6 +32187,13 @@ export interface components {
         RemovedOut: {
             /** Note */
             note: string | null;
+        };
+        /** Replacement */
+        Replacement: {
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            };
         };
         /** ReportCharacterOut */
         ReportCharacterOut: {
@@ -66042,6 +66095,74 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_passkey_api_two_step_passkeys__passkey_id__replace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Replacement"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_options_api_two_step_passkeys__passkey_id__replace_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
             };
             /** @description Validation Error */
             422: {

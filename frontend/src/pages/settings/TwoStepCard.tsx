@@ -9,6 +9,7 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loaded, Notice } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, useMe } from "../../hooks";
+import { replaceProblem } from "../../passkeys";
 
 type AppSetup = components["schemas"]["AppSetup"];
 type TwoStep = components["schemas"]["TwoStepOut"];
@@ -21,11 +22,12 @@ export function spaced(secret: string): string {
 }
 
 /** What a passkey that may not sign in alone, with no password, says of itself (#1098):
- * null for one that can. Those added before passkeys could sign in alone never said. */
+ * null for one that can. Those added before passkeys could sign in alone never said.
+ * Each that may not can be replaced with one that does (#1110). */
 export function aloneNote(discoverable: boolean | null): string | null {
   if (discoverable === true) return null;
   if (discoverable === false) return "Signs you in only after your password: the device that keeps it can't sign you in with it alone.";
-  return "May not sign you in alone, without your password: it was added before passkeys could. To be sure, add a new passkey on the same device, then remove this one.";
+  return "May not sign you in alone, without your password: it was added before passkeys could. To be sure, replace it on the device that keeps it.";
 }
 
 /** What asks for the password again: turning off the app, new codes, removing a passkey. */
@@ -37,7 +39,9 @@ type Asking = { what: "app" } | { what: "codes" } | { what: "passkey"; id: strin
  * when both are lost. A passkey is made by the browser; an app is set up with a QR
  * code (and the key, to type in), then a code from it. The recovery codes come once,
  * with the first second step. Removing one, or making new recovery codes, asks for the
- * password again. Someone who must have it can't remove their last.
+ * password again. Someone who must have it can't remove their last. A passkey that may
+ * not sign in alone is replaced in one go (#1110): the new one is made and kept before
+ * the old one goes, so a cancelled or failed try leaves the old one as it was.
  */
 export function TwoStepCard({ onDone }: { onDone?: () => void }) {
   const toast = useToast();
@@ -64,6 +68,20 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
     setName("");
     turnedOn(made.recovery_codes, "Passkey added.");
   }, [TWO_STEP, ["me"]]);
+  const replacePasskey = useAction(
+    async (old: { id: string; name: string }) => {
+      const path = { passkey_id: old.id };
+      try {
+        const optionsJSON = await unwrap(api.POST("/api/two-step/passkeys/{passkey_id}/replace/options", { params: { path } }));
+        const credential = await startRegistration({ optionsJSON: optionsJSON as never });
+        await unwrap(api.POST("/api/two-step/passkeys/{passkey_id}/replace", { params: { path }, body: { credential: credential as never } }));
+      } catch (error) {
+        throw replaceProblem(error, old.name);
+      }
+      toast({ message: `${old.name} replaced. It signs you in alone now, with no password.` });
+    },
+    [TWO_STEP],
+  );
   const start = useAction(async () => {
     setSetup(await unwrap(api.POST("/api/two-step/app")));
     setCode("");
@@ -113,6 +131,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
     </form>
   );
 
+  const canMake = (s: TwoStep) => s.passkeys_available && browserSupportsWebAuthn();
   const passkeys = (s: TwoStep) => (
     <section aria-label="Passkeys" className="flex flex-col gap-2">
       <SectionLabel>Passkeys</SectionLabel>
@@ -120,14 +139,31 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
         <ul className="divide-y divide-ash/50">
           {s.passkeys.map((p) => (
             <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span>
+              <div className="min-w-0">
                 <span className="text-parchment">{p.name}</span>{" "}
                 <span className="text-mist">
                   · added {dates.date(p.created_at)}
                   {p.last_used_at && `, last used ${dates.date(p.last_used_at)}`}
                 </span>
                 {aloneNote(p.discoverable) && <span className="mt-1 block text-mist">{aloneNote(p.discoverable)}</span>}
-              </span>
+                {aloneNote(p.discoverable) && canMake(s) && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="mt-2 min-h-8 px-2"
+                    aria-label={`Replace this passkey, ${p.name}`}
+                    disabled={replacePasskey.isPending}
+                    onClick={() => replacePasskey.mutate({ id: p.id, name: p.name })}
+                  >
+                    Replace this passkey
+                  </Button>
+                )}
+                {replacePasskey.variables?.id === p.id && (
+                  <div className="mt-2">
+                    <ErrorText error={replacePasskey.error} />
+                  </div>
+                )}
+              </div>
               <Button type="button" variant="ghost" className="min-h-8 px-2" aria-label={`Remove ${p.name}`} onClick={() => setAsking({ what: "passkey", id: p.id, name: p.name })}>
                 Remove
               </Button>
