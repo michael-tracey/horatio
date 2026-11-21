@@ -3,7 +3,7 @@ of any troupe write articles, and the custodian publishes them. The tags are a l
 the custodian keeps, seeded here with some obvious ones.
 
 Revision ID: 0274
-Revises: 0272
+Revises: 0273
 Create Date: 2026-11-21 20:00:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0274"
-down_revision: str | None = "0272"
+down_revision: str | None = "0273"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
