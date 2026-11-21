@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from horatio.models import TroupeMembership
@@ -119,6 +120,34 @@ def test_each_step_ticks_itself_from_what_the_troupe_holds(
     assert {s for s, done in steps.items() if not done} == {"house_rules"}
     lead.put(f"/troupes/{troupe.id}/checks/merits/Calm Heart/1", json={"strength": "off"})
     assert ready(lead, troupe)["house_rules"] is True
+
+
+@pytest.mark.parametrize("end", [None, "decline", "withdraw"])
+def test_a_character_asking_to_join_ticks_invite_players(
+    troupe: Troupe, session: Session, end: str | None
+) -> None:
+    character_id = new_character(troupe, troupe.player)
+    asked = troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    assert asked.status_code == 201, asked.text
+    if end == "decline":
+        ended = troupe.lead.client.post(f"/approvals/{asked.json()['id']}/decline", json={})
+        assert ended.status_code == 200, ended.text
+    elif end == "withdraw":
+        ended = troupe.player.client.delete(f"/characters/{character_id}/home-troupe")
+        assert ended.status_code == 204, ended.text
+
+    # Asking starts the character visiting, and it stays a visitor once the request
+    # is declined or withdrawn, so the step is done all the same.
+    assert ready(troupe.lead.client, troupe)["players"] is True
+
+    # Without the visit, the request counts on its own only while it waits (#1114).
+    session.execute(
+        delete(TroupeMembership).where(TroupeMembership.character_id == uuid.UUID(character_id))
+    )
+    session.flush()
+    assert ready(troupe.lead.client, troupe)["players"] is (end is None)
 
 
 def test_storytellers_hide_it_and_bring_it_back(troupe: Troupe) -> None:
