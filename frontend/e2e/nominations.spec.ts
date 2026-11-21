@@ -65,7 +65,7 @@ test("players write Player Nominations in their downtime, staff review, star and
   await expect(l.getByRole("link", { name: "Responses" })).toBeVisible();
   await expect(l.getByRole("link", { name: "Nominations" })).toHaveCount(0);
 
-  // The lead switches them on in the Features list, under Customise › Troupe settings.
+  // The lead switches them on in the Features list, under Setting up › Settings.
   await switchFeature(l, troupe.id, "Player Nominations", true);
 
   // The writer adds two to their downtime: one about Bel, one about no one.

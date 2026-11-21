@@ -1,11 +1,11 @@
-"""How far a troupe is set up (issue #377), for the Setup tab of its Customise
-group: the few things a new lead does first, each done or not, and how many house
-rules it has in each part of Rules. In one request, from what the troupe already
+"""How far a troupe is set up (issue #377): the few things a new lead does first,
+each done or not, and how many house rules it has in each part of House rules, which
+heads that tab for its running staff (#1048). In one request, from what the troupe already
 holds; its other settings are on the troupe itself.
 
 And Getting your troupe ready (#1049), the steps a new troupe takes in order, for
 its Overview: each done or not from what the troupe holds now, never ticked by
-hand. Its storytellers hide the card, and bring it back from Setup."""
+hand. Its storytellers hide the card, and bring it back from Settings › Getting ready."""
 
 import uuid
 from dataclasses import dataclass

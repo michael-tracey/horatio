@@ -37,11 +37,11 @@ export function FeedingTab({ cycle }: { cycle: CycleOut }) {
         title="This troupe doesn't track feeding."
         action={
           <Link to={`/troupes/${cycle.troupe_id}/settings`} className="text-sm text-mist underline hover:text-parchment">
-            Troupe settings
+            Settings
           </Link>
         }
       >
-        Its storytellers can switch it on in Troupe settings. What was recorded before is kept.
+        Its storytellers can switch it on in Settings. What was recorded before is kept.
       </EmptyState>
     );
   if (feeding.isPending) return <Loading />;

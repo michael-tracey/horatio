@@ -6,15 +6,16 @@ import type { abilities } from "./roles";
 import { troupeTabGroups } from "./troupeTabs";
 
 /**
- * Every setting of a troupe by name (#1047), for the Find a setting box on Customise and the
- * top bar's search: the Customise tabs, the parts of Troupe settings and House rules, each
+ * Every setting of a troupe by name (#1047), for the Find a setting box on Setting up and the
+ * top bar's search: the Setting up tabs, the parts of Settings and House rules, each
  * feature's switch, each tab's Settings dialog and every settings card. The cards take their
  * titles and lines from `SETTINGS` here, and the tabs, parts and features are read from the
  * lists their screens are drawn from, so what is found is what the screen says.
  */
 
-/** The parts of Troupe settings after the Features list, in order (#908). */
+/** The parts of Settings after the Features list, in order (#908): getting ready first, as a new troupe does (#1048). */
 export const TROUPE_SETTINGS_PARTS: { part: TroupeSettingsPart; label: string }[] = [
+  { part: "getting-ready", label: "Getting ready" },
   { part: "setting", label: "The setting" },
   { part: "joining", label: "Who may join" },
   { part: "xp", label: "XP" },
@@ -42,18 +43,18 @@ export const RULE_SECTIONS = [
  */
 export const SETTINGS_DIALOGS = {
   whos_who: { tab: "Who's Who", to: "whos-who" },
-  play_view: { tab: "At game", to: "play" },
+  play_view: { tab: "At game", to: "at-game" },
   boons: { tab: "Boons", to: "boons" },
   blood_bonds: { tab: "Bonds", to: "bonds" },
   locations: { tab: "Locations", to: "locations" },
   quests: { tab: "Quests", to: "quests" },
-  characters: { tab: "Roster", to: "characters" },
+  characters: { tab: "Roster", to: "roster" },
   approvals: { tab: "Approvals", to: "approvals" },
 } as const;
 
 export type SettingsDialog = keyof typeof SETTINGS_DIALOGS;
 
-/** Where a card is: the Features list, a part of Troupe settings, or a tab's Settings dialog. */
+/** Where a card is: the Features list, a part of Settings, or a tab's Settings dialog. */
 type CardPlace = "features" | TroupeSettingsPart | SettingsDialog;
 
 /** A settings card: its title and the line under it, where it is, and the id it lands on. */
@@ -238,7 +239,7 @@ export const SETTINGS = {
   questRequests: card(
     "questRequests",
     "Quest requests",
-    "Quests (MET: VTM Vol. II Issue 1, pp. 99-110): players ask for them, staff build them with requirements and scenarios, and Horatio keeps track as the party meets them. A request staff answer as not needed, or one withdrawn, does not count. Quests are switched on and off in the Features list, on Troupe settings.",
+    "Quests (MET: VTM Vol. II Issue 1, pp. 99-110): players ask for them, staff build them with requirements and scenarios, and Horatio keeps track as the party meets them. A request staff answer as not needed, or one withdrawn, does not count. Quests are switched on and off in the Features list, on Settings.",
     "quests",
   ),
 
@@ -273,14 +274,16 @@ export const SETTINGS = {
 /** The id of a feature's row on the Features list, where it is switched on and off. */
 export const switchAnchor = (key: FeatureKey) => `switch-${key.replace(/_/g, "-")}`;
 
-/** What a Customise tab holds that its name doesn't say, for finding it by those words. */
+/** What a Setting up tab, or a part of Settings, holds that its name doesn't say, for finding it by those words. */
 const TAB_WORDS: Record<string, string> = {
-  Setup: "Setting up the troupe, its features at a glance, and what it plays differently from the book.",
+  "Getting ready": "Setting up a new troupe, step by step, and whether the steps show on the Overview.",
   Specialisations: "The troupe's own lists of specialisations: the areas its Influences cover, the notable people Contacts can be.",
-  "News agencies": "The troupe's news agencies, each with its masthead.",
   Connectors: "How downtime results reach players: Discord, its channels, and email.",
-  "Export and import": "Share the troupe's house rules, costs, wording and the rest of Customise with another troupe, as a file or from a troupe you run.",
+  "Export and import": "Share the troupe's house rules, costs, wording and the rest of its settings with another troupe, as a file or from a troupe you run.",
 };
+
+/** The news agencies, a part of News (#1048). */
+const AGENCIES = { title: "News agencies", hint: "The troupe's news agencies, each with its masthead." };
 
 /** A setting found: its name, where it is, a line on it, and the address that opens it. */
 export type SettingEntry = { title: string; where: string; hint: string; to: string };
@@ -288,7 +291,7 @@ export type SettingEntry = { title: string; where: string; hint: string; to: str
 /**
  * Every setting of the troupe for someone who may open them: its running staff (storytellers
  * and the lead change them, assistant storytellers read them) and the custodian. Nobody else
- * sees any, as they see no Customise tab. Each opens where it is: a tab, a part, a dialog,
+ * sees any, as they see no Setting up tab. Each opens where it is: a tab, a part, a dialog,
  * or a card or a feature's row, scrolled to.
  */
 export function settingsIndex(troupe: TroupeOut, can: ReturnType<typeof abilities>): SettingEntry[] {
@@ -296,18 +299,18 @@ export function settingsIndex(troupe: TroupeOut, can: ReturnType<typeof abilitie
   const base = `/troupes/${troupe.id}`;
   const groups = troupeTabGroups(troupe, can);
   const tabs = groups.flatMap((g) => g.tabs.map((t) => t.to));
-  const customise = groups.find((g) => g.label === "Customise")?.tabs ?? [];
+  const settingUp = groups.find((g) => g.label === "Setting up")?.tabs ?? [];
   const dialogShown = (d: SettingsDialog) => tabs.includes(`${base}/${SETTINGS_DIALOGS[d].to}`);
   const dialogTitle = (d: SettingsDialog) => `${SETTINGS_DIALOGS[d].tab} settings`;
   const partLabel = (part: TroupeSettingsPart) => TROUPE_SETTINGS_PARTS.find((p) => p.part === part)!.label;
 
   const place = (p: CardPlace): { where: string; to: string } | null => {
-    if (p === "features") return { where: "Troupe settings › Features", to: `${base}/settings` };
+    if (p === "features") return { where: "Settings › Features", to: `${base}/settings` };
     if (p in SETTINGS_DIALOGS) {
       const d = p as SettingsDialog;
       return dialogShown(d) ? { where: dialogTitle(d), to: `${base}/${SETTINGS_DIALOGS[d].to}` } : null;
     }
-    return { where: `Troupe settings › ${partLabel(p as TroupeSettingsPart)}`, to: `${base}/settings/${p}` };
+    return { where: `Settings › ${partLabel(p as TroupeSettingsPart)}`, to: `${base}/settings/${p}` };
   };
 
   const cards = Object.values(SETTINGS as Record<string, CardSetting>).flatMap((s) => {
@@ -316,10 +319,11 @@ export function settingsIndex(troupe: TroupeOut, can: ReturnType<typeof abilitie
     return [{ title: s.title, where: at.where, hint: s.about, to: `${at.to}#${s.anchor}` }];
   });
   return [
-    ...customise.map((t) => ({ title: t.label, where: "Customise", hint: TAB_WORDS[t.label] ?? "", to: t.to })),
-    ...TROUPE_SETTINGS_PARTS.map((p) => ({ title: p.label, where: "Troupe settings", hint: "", to: `${base}/settings/${p.part}` })),
+    ...settingUp.map((t) => ({ title: t.label, where: "Setting up", hint: TAB_WORDS[t.label] ?? "", to: t.to })),
+    ...TROUPE_SETTINGS_PARTS.map((p) => ({ title: p.label, where: "Settings", hint: TAB_WORDS[p.label] ?? "", to: `${base}/settings/${p.part}` })),
+    ...(tabs.includes(`${base}/news`) ? [{ ...AGENCIES, where: "News", to: `${base}/news/agencies` }] : []),
     ...RULE_SECTIONS.map((s) => ({ title: s.label, where: "House rules", hint: "", to: `${base}/house-rules/${s.path}` })),
-    ...features(troupe).map((f) => ({ title: f.name, where: "Troupe settings › Features", hint: f.adds, to: `${base}/settings#${switchAnchor(f.key)}` })),
+    ...features(troupe).map((f) => ({ title: f.name, where: "Settings › Features", hint: f.adds, to: `${base}/settings#${switchAnchor(f.key)}` })),
     ...(Object.keys(SETTINGS_DIALOGS) as SettingsDialog[])
       .filter(dialogShown)
       .map((d) => ({ title: dialogTitle(d), where: `${SETTINGS_DIALOGS[d].tab} tab`, hint: "", to: `${base}/${SETTINGS_DIALOGS[d].to}#${SETTINGS_HASH}` })),

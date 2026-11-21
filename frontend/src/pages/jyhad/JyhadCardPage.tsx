@@ -56,7 +56,7 @@ export function JyhadCardPage() {
     },
   });
   const [making, setMaking] = useState(false);
-  const back = troupeId ? `/troupes/${troupeId}/characters` : `/characters/${characterId}`;
+  const back = troupeId ? `/troupes/${troupeId}/roster` : `/characters/${characterId}`;
 
   useTitle(card.data ? `Print · ${card.data.name}` : "Print");
   if (card.isPending) return <p className="p-8">Loading…</p>;

@@ -154,7 +154,7 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   await requirement(2).getByLabel("Met by").selectOption({ label: "Bram" });
   await requirement(2).getByRole("button", { name: "Mark met" }).click();
   await expect(requirement(2).getByText("Met by Bram (logged as E1).", { exact: false })).toBeVisible();
-  await l.goto(`/troupes/${troupeId}/influence`);
+  await l.goto(`/troupes/${troupeId}/influence-log`);
   await expect(l.getByRole("listitem", { name: "Entry E1" }).getByText("For the quest The Lost Journal")).toBeVisible();
 
   // Scenario 1's result, then scenario 2's: the quest is completed.

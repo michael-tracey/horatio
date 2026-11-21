@@ -67,7 +67,7 @@ test("a player taps their clan seven times and finds a Jyhad card, and staff ope
   const l = lead.page;
   const accepted = await l.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
   expect(accepted.status(), await accepted.text()).toBe(200);
-  await l.goto(`/troupes/${troupeId}/characters`);
+  await l.goto(`/troupes/${troupeId}/roster`);
   await l.getByRole("button", { name: "Actions for Celestine" }).click();
   const opened = l.context().waitForEvent("page");
   await l.getByRole("menuitem", { name: "Show Jyhad card" }).click();
@@ -77,7 +77,7 @@ test("a player taps their clan seven times and finds a Jyhad card, and staff ope
   await expect(staffCard.getByText("Beauty is a knife.", { exact: true })).toBeAttached();
   // The text is the player's to write, not staff's.
   await expect(shown.getByLabel("Card text")).toHaveCount(0);
-  await expect(shown.getByRole("link", { name: "← Characters" })).toHaveAttribute("href", `/troupes/${troupeId}/characters`);
+  await expect(shown.getByRole("link", { name: "← Characters" })).toHaveAttribute("href", `/troupes/${troupeId}/roster`);
 });
 
 test("a Jyhad card on its clan's crypt card template, which the custodian uploads in Tools (#850)", async ({ browser }) => {

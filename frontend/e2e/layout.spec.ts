@@ -210,7 +210,7 @@ test("no screen is wider than a phone", async ({ browser }) => {
   }
 
   // The walk reached the troupe's tabs at the back of its picker, not only the first few.
-  expect(seen).toContain(`staff ${screen(`${base}/share`)}`);
+  expect(seen).toContain(`staff ${screen(`${base}/export-and-import`)}`);
   expect(seen).toContain(`player ${screen(`/characters/${pc}/results`)}`);
   // The boons screen's own tabs (#982): To review, Boonbreakers and Audits each at an address of its own.
   for (const part of ["review", "boonbreakers", "audits"]) expect(seen).toContain(`staff ${screen(`${base}/boons/${part}`)}`);

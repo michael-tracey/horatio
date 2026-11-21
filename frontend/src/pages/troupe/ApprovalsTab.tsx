@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { HouseMark } from "../../components/HouseMark";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, Navigate, Route, Routes, useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { QueuedApproval, XpReviewOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { useClanName } from "../../components/ClanNames";
 import { SectionLabel } from "../../components/Headings";
-import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTabs, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { adjusted, DiablerieAdjustFields, DiablerieEffects, type DiablerieAdjust } from "../character/Diablerie";
@@ -17,6 +17,7 @@ import { useBackstoryStanding } from "../character/BackstoryTab";
 import { ApprovalBackstory } from "./ApprovalBackstory";
 import { askedLine, teachingText } from "./approvals";
 import { generationText } from "../../generation";
+import { BeingBuiltTab } from "./BeingBuiltTab";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
 const STATE_NAMES: Record<State, string> = { pending: "Pending", approved: "Approved", declined: "Declined", withdrawn: "Withdrawn" };
@@ -31,6 +32,33 @@ const KINDS: Record<Kind, string> = {
   merit_flaw: "Merits and flaws",
   bond_drink: "Blood bonds",
 };
+
+/**
+ * Approvals in two parts (#1048): what waits to be decided, and in a troupe still open,
+ * the characters being built to its rules whose players haven't asked to join yet (#774),
+ * counted on their part. One queue, before and after the player asks.
+ */
+export function ApprovalsPages({ troupeId, live, building }: { troupeId: string; live: boolean; building: number | undefined }) {
+  const base = `/troupes/${troupeId}/approvals`;
+  return (
+    <>
+      {live && (
+        <PageTabs
+          label="Approvals"
+          tabs={[
+            { to: base, label: "To decide", end: true },
+            { to: `${base}/being-built`, label: "Being built", count: building ?? 0, countLabel: "being built" },
+          ]}
+        />
+      )}
+      <Routes>
+        <Route index element={<ApprovalsTab troupeId={troupeId} />} />
+        {live && <Route path="being-built" element={<BeingBuiltTab troupeId={troupeId} />} />}
+        <Route path="*" element={<Navigate to={base} replace />} />
+      </Routes>
+    </>
+  );
+}
 
 export function ApprovalsTab({ troupeId }: { troupeId: string }) {
   const [state, setState] = useState<State>("pending");

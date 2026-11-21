@@ -80,7 +80,7 @@ export function BuildPrintPage() {
   if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
   return (
     <AsPips.Provider value={pips}>
-      <PrintShell back={{ label: "Being built", to: `/troupes/${troupeId}/being-built` }}>
+      <PrintShell back={{ label: "Being built", to: `/troupes/${troupeId}/approvals/being-built` }}>
         <Sheet sheet={sheet.data} />
       </PrintShell>
     </AsPips.Provider>
@@ -106,7 +106,7 @@ export function TroupePrintPage() {
   if (sheets.error) return <p className="p-8 text-black">{sheets.error.message}</p>;
   return (
     <AsPips.Provider value={pips}>
-      <PrintShell back={{ label: "Characters", to: `/troupes/${troupeId}/characters` }} count={sheets.data.length}>
+      <PrintShell back={{ label: "Characters", to: `/troupes/${troupeId}/roster` }} count={sheets.data.length}>
         {sheets.data.map((sheet, i) => (
           <div key={i} className={i > 0 ? "mt-6 break-before-page print:mt-0" : ""}>
             <Sheet sheet={sheet} />

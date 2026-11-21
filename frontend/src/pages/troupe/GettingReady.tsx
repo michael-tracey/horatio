@@ -135,7 +135,7 @@ function Tick({ done }: { done: boolean }) {
  * Getting your troupe ready (#1049), on the Overview for its lead storyteller and
  * storytellers, until they hide it: how many steps are done and the next one, the
  * whole list folded away to keep the page short on a phone. Each step ticks itself
- * from what the troupe holds; Customise › Setup brings the card back.
+ * from what the troupe holds; Settings › Getting ready brings the card back.
  */
 export function GettingReadyCard({ troupeId }: { troupeId: string }) {
   const ready = useGettingReady(troupeId);
@@ -156,7 +156,7 @@ export function GettingReadyCard({ troupeId }: { troupeId: string }) {
             variant="ghost"
             className="min-h-8 px-2"
             disabled={hide.isPending}
-            onClick={() => hide.mutate(true, { onSuccess: () => toast({ message: "Hidden. Bring it back from Customise › Setup." }) })}
+            onClick={() => hide.mutate(true, { onSuccess: () => toast({ message: "Hidden. Bring it back from Settings › Getting ready." }) })}
           >
             Hide
           </Button>
@@ -190,7 +190,7 @@ export function GettingReadyCard({ troupeId }: { troupeId: string }) {
 }
 
 /**
- * The same steps on Customise › Setup, every one shown, where its storytellers bring
+ * The same steps on Settings › Getting ready, every one shown, where its storytellers bring
  * the card back to the Overview, or hide it.
  */
 export function GettingReadySetup({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {

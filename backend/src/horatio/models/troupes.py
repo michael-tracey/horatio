@@ -296,7 +296,7 @@ class Troupe(Imported, Record):
     # Who new players should contact: one of its staff.
     contact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     # Its storytellers hid Getting your troupe ready from its Overview (horatio.api.setup,
-    # issue #1049); they bring it back from Customise › Setup.
+    # issue #1049); they bring it back from Settings › Getting ready.
     getting_ready_hidden: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Its written house rules (horatio.written_rules) show on its profile too.
     written_rules_public: Mapped[bool] = mapped_column(default=False, server_default="false")

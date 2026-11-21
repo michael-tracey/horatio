@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, topBar, troupeTab } from "./support";
+import { closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, topBar, troupeTab, troupeLog } from "./support";
 
 /** Storytellers building NPCs, of every kind and form. */
 
@@ -27,7 +27,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await troupeTab(p, "Roster");
   // NPCs share the Characters list (#556): it opens on player characters, and shows NPCs at a choice.
   await p.locator("main").getByRole("radio", { name: "NPCs" }).click();
-  await expect(p).toHaveURL(/\/characters\?show=npcs$/);
+  await expect(p).toHaveURL(/\/roster\?show=npcs$/);
   await p.getByRole("button", { name: "New NPC" }).click();
   await expect(p.getByRole("heading", { name: "New NPC" })).toBeVisible();
   await p.getByLabel("Name").fill("Prince Vasquez");
@@ -102,7 +102,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   // Under the list, what the pill's star means: a hover title never shows on a phone (#919).
   await expect(p.getByText("★ marks a character's active title, the one that gives status.")).toBeVisible();
   await p.screenshot(shots("roster-titles"));
-  await troupeTab(p, "Log");
+  await troupeLog(p);
   await expect(p.getByText("npc-lead gave Prince Vasquez the title Prince.")).toBeVisible();
 
   // The NPCs: badges for those ticked or for every NPC, and each one's Play View. The NPCs
@@ -111,7 +111,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   const another = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers: { "X-Horatio": "1" }, data: { name: "Sheriff Ilse", wizard: false } });
   expect(another.status(), await another.text()).toBe(201);
   await p.goto(`/troupes/${troupeId}/npcs`);
-  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/characters\\?show=npcs$`));
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/roster\\?show=npcs$`));
   await expect(p.locator("main").getByRole("radio", { name: "NPCs" })).toHaveAttribute("aria-checked", "true");
   await p.getByLabel("Select Prince Vasquez").check();
   await p.getByRole("button", { name: /^Print…/ }).click();
@@ -435,7 +435,7 @@ test("a storyteller makes an NPC of a retired character, and its player keeps th
   expect(retired.status(), await retired.text()).toBe(200);
 
   const p = lead.page;
-  await p.goto(`/troupes/${troupeId}/characters`);
+  await p.goto(`/troupes/${troupeId}/roster`);
   // Retired characters are hidden until the list's default filter is taken off.
   await p.getByRole("button", { name: "Remove “Is active”" }).click();
   await p.getByRole("button", { name: "Actions for Sylvie Marchand" }).click();
@@ -504,7 +504,7 @@ test("a storyteller exports the troupe's characters and NPCs as a .zip, with ema
   const { troupeId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Ledgers", "Archivist Bel");
 
   const p = lead.page;
-  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   await p.getByRole("button", { name: "More for the troupe's characters" }).click();
   await p.getByRole("menuitem", { name: "Export characters and NPCs…" }).click();
   const dialog = p.getByRole("dialog", { name: "Export characters and NPCs" });
@@ -533,7 +533,7 @@ test("a storyteller imports the troupe's export, choosing what to do with an NPC
   expect(given.status(), await given.text()).toBe(201);
   const zip = await p.request.get(`/api/troupes/${troupeId}/character-backups?which=npcs&sections=equipment`);
   expect(zip.status()).toBe(200);
-  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   await p.getByRole("button", { name: "More for the troupe's characters" }).click();
   await p.getByRole("menuitem", { name: "Import characters and NPCs…" }).click();
   await p.getByLabel("Files to import").setInputFiles({ name: "court.zip", mimeType: "application/zip", buffer: await zip.body() });
@@ -555,7 +555,7 @@ test("a storyteller imports the troupe's export, choosing what to do with an NPC
   await expect(p.getByText("1 new NPC.", { exact: true })).toBeVisible();
 
   await expect(p.getByRole("link", { name: "Keeper Anselm" })).toBeVisible();
-  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   await expect(p.getByRole("row", { name: /Keeper Anselm/ })).toHaveCount(2);
 });
 
@@ -612,7 +612,7 @@ test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the li
   const troupeId = (await made.json()).id;
 
   const p = lead.page;
-  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   await expect(p.getByText("No NPCs yet.")).toBeVisible();
   await p.getByRole("button", { name: "New NPC" }).click();
   await expect(p.getByRole("heading", { name: "New NPC" })).toBeVisible();
@@ -637,7 +637,7 @@ test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the li
   await expect(p.getByRole("heading", { name: "Bites-the-Hand", level: 1 })).toBeVisible();
   await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/npcs/`));
   await expect(p.getByLabel("Rating")).toHaveValue("3");
-  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   const wolf = p.getByRole("row", { name: "Bites-the-Hand" });
   // On a phone the kind, form and rating fold in under the name.
   const shows = (row: typeof wolf, text: string | RegExp) => row.getByText(text, { exact: true }).filter({ visible: true });
@@ -660,7 +660,7 @@ test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the li
   await p.getByRole("button", { name: "Quick build" }).click();
   await expect(p.getByRole("heading", { name: "Sarah Juniper" })).toBeVisible();
 
-  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   const mage = p.getByRole("row", { name: "Sarah Juniper" });
   await expect(shows(mage, "Mage")).toBeVisible();
   await expect(shows(mage, "Sheeted")).toBeVisible();
@@ -693,7 +693,7 @@ test("storytellers build a Stock NPC from the NPCs tab and see the book's stat b
   const troupeId = (await made.json()).id;
 
   const p = lead.page;
-  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   await p.getByRole("button", { name: "New NPC" }).click();
   await p.getByLabel("Name").fill("Gnashes-the-Moon");
   await p.getByLabel("Kind", { exact: true }).selectOption("werewolf");

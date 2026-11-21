@@ -213,7 +213,7 @@ export function ScenePage() {
             )}
             <p className="text-xs text-mist">
               The scene is kept for the troupe: the other staff running it see who is in it, and can open it themselves. To put everyone back for the next game, use{" "}
-              <Link to={`/troupes/${troupeId}/play`} className="underline hover:text-parchment">
+              <Link to={`/troupes/${troupeId}/at-game`} className="underline hover:text-parchment">
                 At game
               </Link>
               , or reset one character on their card.

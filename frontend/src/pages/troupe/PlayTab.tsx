@@ -40,7 +40,7 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
       <Card
         title="At game"
         actions={
-          <Link to={`/troupes/${troupeId}/lines-veils`} className="text-sm text-parchment underline decoration-line underline-offset-4 hover:decoration-parchment">
+          <Link to={`/troupes/${troupeId}/lines-and-veils`} className="text-sm text-parchment underline decoration-line underline-offset-4 hover:decoration-parchment">
             Lines and veils
           </Link>
         }

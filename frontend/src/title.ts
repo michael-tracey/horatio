@@ -39,7 +39,8 @@ export function textOf(node: ReactNode): string {
 }
 
 /** A tab of a row: where it goes, and `also` an address under which it is open too,
- * such as a narrator's My work, open inside a cycle's own My work (#789). */
+ * such as a narrator's My work, open inside a cycle's own My work (#789), or the
+ * Overview, open on the troupe's log (#1048). */
 type Openable = { to: string; end?: boolean; also?: string };
 
 /** Whether a tab is open at `pathname`: as NavLink marks it, or under its `also`. */
@@ -49,8 +50,9 @@ export function tabOpens(t: Openable, pathname: string): boolean {
     const at = to.replace(/\/$/, "");
     return here === at || here.startsWith(`${at}/`);
   };
-  if (t.end) return here === t.to.replace(/\/$/, "");
-  return under(t.to) || (t.also !== undefined && under(t.also));
+  const also = t.also !== undefined && under(t.also);
+  if (t.end) return here === t.to.replace(/\/$/, "") || also;
+  return under(t.to) || also;
 }
 
 /** The tab a row would mark open at `pathname`: as NavLink does, and the deepest if more than one. */

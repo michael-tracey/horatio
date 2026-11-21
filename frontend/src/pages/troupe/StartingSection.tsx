@@ -52,7 +52,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
       <ClanRarity troupeId={troupeId} canEdit={canEdit} />
       <DefaultBloodlines troupeId={troupeId} canEdit={canEdit} />
       <p className="text-sm text-mist">
-        Starting XP and the XP floor and ceiling are in Troupe settings, under{" "}
+        Starting XP and the XP floor and ceiling are in Settings, under{" "}
         <Link to={`/troupes/${troupeId}/${troupeSettings("xp")}`} className="underline hover:text-parchment">
           XP
         </Link>

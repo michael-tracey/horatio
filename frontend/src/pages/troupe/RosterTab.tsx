@@ -181,7 +181,7 @@ export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; ca
           </Button>
           <ActionMenu label="More for the troupe's characters">
             <MenuItem onSelect={() => setExporting(true)}>Export characters and NPCs…</MenuItem>
-            <MenuItem onSelect={() => navigate(`/troupes/${troupeId}/characters/import`)}>Import characters and NPCs…</MenuItem>
+            <MenuItem onSelect={() => navigate(`/troupes/${troupeId}/roster/import`)}>Import characters and NPCs…</MenuItem>
           </ActionMenu>
           <Dialog title="Export characters and NPCs" open={exporting} onClose={() => setExporting(false)}>
             {exporting && <TroupeExport troupeId={troupeId} selected={ticked.filter((e) => e.home || e.kind === "npc").map((e) => e.character_id)} canEmail={canEmail} />}

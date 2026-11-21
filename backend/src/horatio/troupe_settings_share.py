@@ -409,9 +409,9 @@ SectionKey = Literal[
     "news_agencies",
 ]
 
-TROUPE_SETTINGS = "Troupe settings"
-# Each section's name, and the group it is in: those of the Troupe settings page,
-# then the tabs of Customise › Rules, then the troupe's other catalogues.
+TROUPE_SETTINGS = "Settings"
+# Each section's name, and the group it is in: those of the Settings page, then the
+# parts of House rules, then the troupe's other catalogues.
 SECTIONS: dict[SectionKey, tuple[str, str | None]] = {
     "who_may_join": ("Who may join", TROUPE_SETTINGS),
     "xp": ("XP", TROUPE_SETTINGS),

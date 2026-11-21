@@ -8,6 +8,7 @@ import { manualLink } from "../../manualLink";
 import { Button, Card, Empty, ErrorText, Field, Loading, Select } from "../../components/ui";
 import { EmptyState } from "../../components/EmptyState";
 import { LinkButton } from "../../components/LinkButton";
+import { AgenciesTab } from "./AgenciesTab";
 import { Desk } from "./Desk";
 import { KINDS, type Kind } from "./posts";
 import { PostForm, type Action, type Fields } from "./PostForm";
@@ -17,7 +18,8 @@ import { StoryCard, StoryView } from "./Story";
 /**
  * A troupe's posts of one kind, at /troupes/<id>/news (#510) or /announcements
  * (#511): the list everyone in the troupe reads, each post's own page, and for its
- * staff the desk and the editor.
+ * staff the desk and the editor; for the news, its agencies too, which its
+ * storytellers and assistant storytellers keep (#1048).
  * `writes`: a storyteller or assistant storyteller; `proposes`: a narrator, who only
  * proposes news.
  */
@@ -28,6 +30,7 @@ export function PostsSection({ troupeId, kind, writes, proposes }: { troupeId: s
       <Route index element={<PostList troupeId={troupeId} kind={kind} writes={writes} proposes={proposes} />} />
       {staff && <Route path="desk" element={<Desk troupeId={troupeId} kind={kind} writes={writes} />} />}
       {staff && <Route path="write" element={<WritePost troupeId={troupeId} kind={kind} writes={writes} />} />}
+      {kind === "news" && writes && <Route path="agencies" element={<AgenciesTab troupeId={troupeId} archived={false} />} />}
       {staff && <Route path=":postId/edit" element={<WritePost troupeId={troupeId} kind={kind} writes={writes} />} />}
       <Route path=":postId" element={<PostPage troupeId={troupeId} kind={kind} writes={writes} />} />
     </Routes>
@@ -103,6 +106,11 @@ function PostList({ troupeId, kind, writes, proposes }: { troupeId: string; kind
             <Button variant="ghost" disabled={markAll.isPending} onClick={() => markAll.mutate(undefined)}>
               Mark all as read
             </Button>
+          )}
+          {kind === "news" && writes && (
+            <LinkButton variant="ghost" to="agencies">
+              Agencies
+            </LinkButton>
           )}
           {(writes || proposes) && (
             <LinkButton variant="secondary" to="desk">

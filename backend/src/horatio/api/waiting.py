@@ -117,7 +117,7 @@ def backstories_to_read(asked: Asked) -> list[WaitingLine]:
             count=len(found),
             link=f"/characters/{found[0]}/backstory?troupe={troupe.id}"
             if len(found) == 1
-            else f"/troupes/{troupe.id}/characters",
+            else f"/troupes/{troupe.id}/roster",
         )
     ]
 
@@ -243,7 +243,7 @@ def influence_details(asked: Asked) -> list[WaitingLine]:
             kind="influence_details",
             label="Influence entries that need details",
             count=count or 0,
-            link=f"/troupes/{troupe.id}/influence?needs=details",
+            link=f"/troupes/{troupe.id}/influence-log?needs=details",
         )
     ]
 
@@ -262,7 +262,7 @@ def effects_ending(asked: Asked) -> list[WaitingLine]:
             kind="effects_ending",
             label="Influence effects ending this week",
             count=len(ending),
-            link=f"/troupes/{troupe.id}/influence/effects",
+            link=f"/troupes/{troupe.id}/influence-log/effects",
         )
     ]
 

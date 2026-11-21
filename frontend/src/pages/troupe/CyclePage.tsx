@@ -22,7 +22,7 @@ import { ParticipantsTab } from "./ParticipantsTab";
 import { ResponsesTab } from "./ResponsesTab";
 import { MyWork, useWorkCycles } from "./WorkTab";
 
-/** A downtime cycle, inside its troupe's Downtimes › Cycles (#776). Narrators, who
+/** A downtime cycle, inside its troupe's Between games › Downtimes (#776). Narrators, who
  * don't run cycles, see only their own work in it (#789). */
 export function CyclePage({ troupeId, clanName, running = true }: { troupeId: string; clanName?: ClanName | null; running?: boolean }) {
   return running ? <RunCycle troupeId={troupeId} clanName={clanName} /> : <NarratorCycle troupeId={troupeId} />;
@@ -34,7 +34,7 @@ function RunCycle({ troupeId, clanName }: { troupeId: string; clanName?: ClanNam
   const cycle = useCycle(cycleId);
   const heading = useId();
   // The cycle's name in the tab's title, between its tab and the troupe's (#775):
-  // "Responses · Harvest Moon · Cycles · ‹troupe› · Horatio".
+  // "Responses · Harvest Moon · Downtimes · ‹troupe› · Horatio".
   const named = useRef<HTMLHeadingElement>(null);
   useTitle(cycle.data?.troupe_id === troupeId ? cycle.data.name : null, named);
   if (cycle.isPending) return <Loading />;
@@ -62,7 +62,7 @@ function RunCycle({ troupeId, clanName }: { troupeId: string; clanName?: ClanNam
             // A troupe that doesn't track feeding has no Feeding tab.
             ...(c.feeding ? [{ to: `${base}/feeding`, label: "Feeding" }] : []),
             { to: `${base}/responses`, label: "Responses" },
-            // What is the viewer's own to write in this cycle, as Downtimes › My work opens it (#789).
+            // What is the viewer's own to write in this cycle, as Between games › My work opens it (#789).
             { to: `${base}/work`, label: "My work" },
             { to: `${base}/aimed`, label: "Aimed at" },
             { to: `${base}/projects`, label: "Projects" },

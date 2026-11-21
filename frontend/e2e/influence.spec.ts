@@ -112,7 +112,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await expect(e1.getByRole("link", { name: "Logged by staff, for December" })).toBeVisible();
 
   // On the log page, an NPC's whole month with Add another, dated by the cycle, then a name only.
-  await l.goto(`/troupes/${troupeId}/influence`);
+  await l.goto(`/troupes/${troupeId}/influence-log`);
   await l.getByRole("button", { name: "Log influence" }).click();
   form = l.getByRole("form", { name: "Log influence" });
   await form.getByLabel("Who").fill("vasq");
@@ -272,7 +272,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   await expect(elite.getByText("Backgrounds · 1 of 3 left")).toBeVisible();
 
   // The troupe's influence log has the two spends, one needing details, and not the one undone.
-  await l.goto(`/troupes/${troupeId}/influence`);
+  await l.goto(`/troupes/${troupeId}/influence-log`);
   const e1 = l.getByRole("listitem", { name: "Entry E1" });
   await expect(e1.getByText("To hear what is said about the mayor")).toBeVisible();
   await expect(e1.getByText("At a game")).toBeVisible();
@@ -442,7 +442,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await expect(responses.nth(2)).toHaveValue("Blocked (now 1).");
 
   // The log shows where the block came from.
-  await l.goto(`/troupes/${troupeId}/influence`);
+  await l.goto(`/troupes/${troupeId}/influence-log`);
   const e3 = l.getByRole("listitem", { name: "Entry E3" });
   await expect(e3.getByText("1 block")).toBeVisible();
   await expect(e3.getByText(/Blocked by Agnes in Winter, accepted by gossip-lead/)).toBeVisible();
@@ -500,7 +500,7 @@ test("a storyteller resolves an attack, its target's Defend taken off, and the t
   expect(defended.status(), await defended.text()).toBe(201);
 
   // The lead logs Isolde's attack on Vasquez's Elite, 4 actions: 2 levels.
-  await p.goto(`/troupes/${troupeId}/influence`);
+  await p.goto(`/troupes/${troupeId}/influence-log`);
   await p.getByRole("button", { name: "Log influence" }).click();
   const form = p.getByRole("form", { name: "Log influence" });
   await form.getByLabel("Who", { exact: true }).fill("Isolde");
@@ -533,7 +533,7 @@ test("a storyteller resolves an attack, its target's Defend taken off, and the t
   await expect(elite.getByText("2 of 2 left", { exact: false })).toBeVisible();
 
   // Taken back, the counter is whole again.
-  await p.goto(`/troupes/${troupeId}/influence/effects`);
+  await p.goto(`/troupes/${troupeId}/influence-log/effects`);
   // Asked first in the app's own dialog: Cancel keeps it.
   const takeBack = p.getByRole("list", { name: "Effects and blocks" }).getByRole("button", { name: "Take back" });
   const asked = p.getByRole("dialog", { name: /^Take back / });
@@ -574,7 +574,7 @@ test("staff chart the influence log: a heatmap cell opens its entries, and an At
   const attack = await log({ type: "underworld", name: "A rival fence", action_key: "attack", times: 2, target: { entry: (await docks.json()).short_id } });
   expect(attack.status(), await attack.text()).toBe(201);
 
-  await p.goto(`/troupes/${troupeId}/influence`);
+  await p.goto(`/troupes/${troupeId}/influence-log`);
   await p.getByRole("link", { name: "Charts" }).click();
   await expect(p.getByRole("heading", { name: "Actions by specialisation and month" })).toBeVisible();
 

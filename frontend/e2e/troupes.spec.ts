@@ -55,7 +55,7 @@ test("a troupe changes what new characters start with and their downtime actions
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
 
-test("Customise opens on Setup, the steps of getting ready, the features and the house rules that differ, and Checks come in folded groups that a search looks through (#377)", async ({ browser }) => {
+test("Settings › Getting ready lists the steps, House rules opens on what plays differently from the book, and Checks come in folded groups that a search looks through (#377, #1048)", async ({ browser }) => {
   const custodian = await person(browser, "tally-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "tally-lead");
@@ -65,24 +65,27 @@ test("Customise opens on Setup, the steps of getting ready, the features and the
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // Customise opens on Setup: nothing is set up yet, and every rule plays as the book has it.
+  // Settings opens on its Features; Getting ready has the steps: nothing is set up yet.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}`);
-  await troupeTab(l, "Setup");
-  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/customise$`));
+  await troupeTab(l, "Settings");
+  await expectPartOpen(l, "Features", "Settings");
+  await pagePart(l, "Getting ready", "Settings");
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings/getting-ready$`));
   const steps = l.getByRole("list", { name: "Getting your troupe ready" });
   await expect(steps.getByRole("listitem")).toHaveCount(8);
   await expect(l.getByText("0 of 8 done")).toBeVisible();
-  // Then the features, on or off, each pointing to its tab or to Troupe settings, and nothing to change here.
-  const featuresCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Features", exact: true }) });
-  await expect(featuresCard.getByRole("list", { name: "Features at a glance" }).getByRole("listitem").first()).toBeVisible();
-  await expect(featuresCard.getByRole("link", { name: "Switch them in Troupe settings" })).toHaveAttribute("href", `/troupes/${troupeId}/settings`);
   await expect(l.locator("main").getByRole("switch")).toHaveCount(0);
-  // And the house rules: none yet, so everything plays as the book has it.
-  const houseRules = l.locator("section").filter({ has: l.getByRole("heading", { name: "House rules", exact: true }) });
+  await l.screenshot(shots("getting-ready-settings"));
+  // House rules open, for running staff, on where the troupe plays differently: nowhere yet.
+  await troupeTab(l, "House rules");
+  const houseRules = l.locator("section").filter({ has: l.getByRole("heading", { name: "Played differently from the book", exact: true }) });
   await expect(houseRules.getByText("Everything plays as the book has it.")).toBeVisible();
   await expect(houseRules.getByRole("list", { name: "Played differently" })).toHaveCount(0);
-  await l.screenshot(shots("customise-overview"));
+
+  // The old address of Setup lands on Getting ready.
+  await l.goto(`/troupes/${troupeId}/customise`);
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings/getting-ready$`));
 
   // Checks open on the troupe's house rules, of which there are none yet.
   await steps.getByRole("link", { name: /^House rules\W+to do/ }).click();
@@ -107,16 +110,17 @@ test("Customise opens on Setup, the steps of getting ready, the features and the
   await expect(l.getByRole("button", { name: "House rules (1)" })).toBeVisible();
   await l.screenshot(shots("customise-checks"));
 
-  // Setup counts it.
-  await troupeTab(l, "Setup");
+  // Getting ready counts it.
+  await settingsPart(l, troupeId, "getting-ready");
   await expect(steps.getByRole("link", { name: /^House rules\W+done/ })).toBeVisible();
   // The house rules now list Checks, linked into them.
+  await troupeTab(l, "House rules");
   const differently = houseRules.getByRole("list", { name: "Played differently" });
   await expect(differently.getByRole("listitem")).toHaveCount(1);
   await expect(differently.getByRole("link", { name: /^Checks\s*1 of \d+ played differently$/ })).toHaveAttribute("href", `/troupes/${troupeId}/house-rules/checks`);
 });
 
-test("a new troupe's Overview shows its storytellers getting it ready, each step ticking itself as it is done, and the card hides and comes back from Setup (#1049)", async ({ browser }) => {
+test("a new troupe's Overview shows its storytellers getting it ready, each step ticking itself as it is done, and the card hides and comes back from Settings › Getting ready (#1049, #1048)", async ({ browser }) => {
   const custodian = await person(browser, "ready-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "ready-lead");
@@ -163,11 +167,12 @@ test("a new troupe's Overview shows its storytellers getting it ready, each step
   await expect(steps.getByRole("link", { name: /^Who may join\W+done/ })).toBeVisible();
   await expect(steps.getByRole("link", { name: /^Staff\W+to do/ })).toBeVisible();
 
-  // Hidden, it is gone from the Overview, and Setup brings it back.
+  // Hidden, it is gone from the Overview, and Settings › Getting ready brings it back.
   await card.getByRole("button", { name: "Hide", exact: true }).click();
-  await expect(l.getByText("Hidden. Bring it back from Customise › Setup.")).toBeVisible();
+  await expect(l.getByText("Hidden. Bring it back from Settings › Getting ready.")).toBeVisible();
   await expect(card).toHaveCount(0);
-  await troupeTab(l, "Setup");
+  await troupeTab(l, "Settings");
+  await pagePart(l, "Getting ready", "Settings");
   await expect(l.getByText("Hidden from the Overview.")).toBeVisible();
   await expect(l.getByRole("list", { name: "Getting your troupe ready" }).getByRole("link", { name: /^First game\W+done/ })).toBeVisible();
   await l.getByRole("button", { name: "Show on the Overview" }).click();
@@ -274,7 +279,7 @@ test("a troupe's or character's tab that isn't there, or isn't open to them, say
   await expect(p).toHaveURL(new RegExp(`/characters/${characterId}/create$`));
 });
 
-test("Troupe settings open on a Features list: each optional feature on or off, and switching one on brings its tab, its settings behind its Settings button (#783, #784, #909)", async ({ browser }) => {
+test("Settings open on a Features list: each optional feature on or off, and switching one on brings its tab, its settings behind its Settings button (#783, #784, #909)", async ({ browser }) => {
   const custodian = await person(browser, "switch-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "switch-lead");
@@ -293,7 +298,7 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   await expect(court.getByRole("link", { name: "Boons", exact: true })).toHaveCount(0);
   await shutSections(l);
 
-  // Troupe settings list every feature, on or off, before the groups of settings.
+  // Settings list every feature, on or off, before the groups of settings.
   await l.goto(`/troupes/${troupeId}/settings`);
   const list = l.getByRole("list", { name: "Features" });
   const boons = list.getByRole("listitem", { name: "Boons" });
@@ -334,7 +339,7 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   // Each group of settings is a part of its own (#908): an old anchor from the one long page lands on its card, wherever it is now.
   await l.goto(`/troupes/${troupeId}/settings#feature-feeding`);
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings/blood#feature-feeding$`));
-  await expectPartOpen(l, "Blood, diablerie and feeding", "Troupe settings");
+  await expectPartOpen(l, "Blood, diablerie and feeding", "Settings");
   await expect(l.locator("#feature-feeding").getByRole("heading", { name: "Feeding", exact: true })).toBeInViewport();
   await l.goto(`/troupes/${troupeId}/settings#feature-boons`);
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/boons#settings$`));
@@ -342,16 +347,16 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   // A part that isn't one goes back to the Features list.
   await l.goto(`/troupes/${troupeId}/settings/nonsense`);
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings$`));
-  await expectPartOpen(l, "Features", "Troupe settings");
+  await expectPartOpen(l, "Features", "Settings");
 
-  // Quests: switched on, a Quests tab under Downtimes; switched off again, it goes.
+  // Quests: switched on, a Quests tab under Between games; switched off again, it goes.
   await l.goto(`/troupes/${troupeId}/settings`);
   const quests = list.getByRole("listitem", { name: "Quests" });
   await quests.getByRole("switch", { name: "Quests" }).click();
   await expect(quests.getByText("On, 1 request a character each cycle")).toBeVisible();
   await quests.getByRole("link", { name: "Open Quests" }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/quests`));
-  let downtimes = await groupTabs(l, "Downtimes");
+  let downtimes = await groupTabs(l, "Between games");
   await expect(downtimes.getByRole("link", { name: "Quests", exact: true })).toBeVisible();
   await shutSections(l);
   await l.goto(`/troupes/${troupeId}/settings`);
@@ -359,8 +364,8 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   await expect(quests.getByRole("switch", { name: "Quests" })).toHaveAttribute("aria-checked", "false");
   await expect(quests.getByRole("link", { name: "Open Quests" })).toHaveCount(0);
   await l.goto(`/troupes/${troupeId}/downtimes`);
-  downtimes = await groupTabs(l, "Downtimes");
-  await expect(downtimes.getByRole("link", { name: "Cycles", exact: true })).toBeVisible();
+  downtimes = await groupTabs(l, "Between games");
+  await expect(downtimes.getByRole("link", { name: "Downtimes", exact: true })).toBeVisible();
   await expect(downtimes.getByRole("link", { name: "Quests", exact: true })).toHaveCount(0);
 });
 
@@ -600,15 +605,15 @@ test("House rules and Specialisations pick their parts from one list: down the s
   await l.screenshot(shots("house-rules-parts-phone"));
 
   // Specialisations: the same picker, its kinds under Skills and Backgrounds.
-  await l.goto(`${base}/specializations`);
-  await expect(l).toHaveURL(new RegExp(`${base}/specializations/lore$`));
+  await l.goto(`${base}/specialisations`);
+  await expect(l).toHaveURL(new RegExp(`${base}/specialisations/lore$`));
   const kinds = l.locator("main").getByRole("navigation", { name: "Specialisations", exact: true });
   await expect(kinds.getByRole("button")).toHaveAccessibleName(/^Skills\W+Lore$/);
   await kinds.getByRole("button").click();
   const kindSheet = l.getByRole("dialog", { name: "Specialisations" });
   await expect(kindSheet.getByRole("heading", { level: 3 })).toHaveText(["Skills", "Backgrounds"]);
   await kindSheet.getByRole("list", { name: "Backgrounds" }).getByRole("link", { name: "Haven", exact: true }).click();
-  await expect(l).toHaveURL(new RegExp(`${base}/specializations/haven$`));
+  await expect(l).toHaveURL(new RegExp(`${base}/specialisations/haven$`));
   await expect(kinds.getByRole("button")).toHaveAccessibleName(/^Backgrounds\W+Haven$/);
 
   // On a desktop: the parts in one column down the left, the open part beside them.
@@ -632,7 +637,7 @@ test("House rules and Specialisations pick their parts from one list: down the s
   await expect(list.getByRole("link", { name: "Costs", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(desk.getByRole("button", { name: "Add a price" })).toBeVisible();
   await desk.screenshot(shots("house-rules-parts-desktop"));
-  await desk.goto(`${base}/specializations/lore`);
+  await desk.goto(`${base}/specialisations/lore`);
   const kindList = desk.locator("main").getByRole("navigation", { name: "Specialisations", exact: true });
   await expect(kindList.getByRole("heading", { level: 3 })).toHaveText(["Skills", "Backgrounds"]);
   await expect(kindList.getByRole("link", { name: "Lore", exact: true })).toHaveAttribute("aria-current", "page");
@@ -671,7 +676,7 @@ test("on a touch screen the page tabs, info buttons, ⋯ menus and feature links
   for (const part of await parts.all()) await tappable(part);
   await l.keyboard.press("Escape");
 
-  await l.goto(`${base}/characters`);
+  await l.goto(`${base}/roster`);
   await tappable(l.getByRole("button", { name: "More for the troupe's characters" }));
 
   // The info button grows, but its line keeps the 20 px it had.
@@ -708,9 +713,9 @@ test("at 700 px a troupe's tab row that scrolls shows a chevron at the edge with
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}`);
   const main = l.locator("main");
-  // The group row fits at 700 px, Customise and all, so it has no chevron.
+  // The group row fits at 700 px, Setting up and all, so it has no chevron.
   const groups = main.getByRole("navigation", { name: "Troupe sections" });
-  await expect(groups.getByRole("link", { name: "Customise", exact: true })).toBeInViewport({ ratio: 1 });
+  await expect(groups.getByRole("link", { name: "Setting up", exact: true })).toBeInViewport({ ratio: 1 });
   await expect(groups.getByTestId(/^row-chevron/)).toHaveCount(0);
 
   // The Troupe group's tabs run on past the right edge: a chevron there, and none at the left.
@@ -744,6 +749,86 @@ test("at 700 px a troupe's tab row that scrolls shows a chevron at the edge with
   await l.setViewportSize({ width: 1280, height: 900 });
   await expect(last).toBeInViewport({ ratio: 1 });
   await expect(pills.getByTestId(/^row-chevron/)).toHaveCount(0);
+});
+
+test("a troupe's tabs: a player's one group is the only row, the phone's list starts with the tabs opened last on any device, and every old address lands on its new one (#1048)", async ({ browser }) => {
+  const custodian = await person(browser, "recent-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "recent-lead");
+  const player = await person(browser, "recent-player");
+  await custodian.page.reload();
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Recent Rooms ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const base = `/troupes/${troupeId}`;
+  await backstoryOptional(custodian.page, troupeId);
+  const id = await builtVampire(player.page, "Ottavia Recent", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await player.page.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const approved = await lead.page.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+  expect(approved.status(), await approved.text()).toBeLessThan(300);
+
+  // A player sees one group: no group row, its tabs the only one (on a phone, no group named).
+  const p = player.page;
+  await p.goto(base);
+  const sections = p.locator("main").getByRole("navigation", { name: "Troupe sections" });
+  if (isPhone(p)) await expect(sections.getByRole("button")).toHaveAccessibleName(/^Overview\b/);
+  else {
+    await expect(sections.getByRole("link", { name: "Troupe", exact: true })).toHaveCount(0);
+    await expect(sections.getByRole("link", { name: "Overview", exact: true })).toHaveAttribute("aria-current", "page");
+  }
+  await troupeTab(p, "House rules");
+  await expectTabOpen(p, "Troupe", "House rules");
+
+  // The lead opens a few tabs; the list is saved on their account a moment after the last.
+  const l = lead.page;
+  for (const tab of ["approvals", "roster", "downtimes"]) {
+    await l.goto(`${base}/${tab}`);
+    await expect(l.locator("main").getByRole("navigation", { name: "Troupe sections" })).toBeVisible();
+  }
+  const saved = l.waitForResponse((r) => r.url().endsWith(`/api${base}/recent-tabs`) && r.request().method() === "PUT");
+  await troupeTab(l, "Settings");
+  expect((await saved).status()).toBe(200);
+  // A wide screen has no Recent row.
+  if (!isPhone(l)) await expect(l.getByText("Recent", { exact: true })).toHaveCount(0);
+
+  // On their phone, the list starts with the last three, newest first, without the one open.
+  const phone = await (await browser.newContext({ storageState: await l.context().storageState(), viewport: { width: 375, height: 800 }, isMobile: true, hasTouch: true })).newPage();
+  await phone.goto(base);
+  const sheet = await openSections(phone);
+  await expect(sheet.getByRole("list", { name: "Recent", exact: true }).getByRole("link")).toHaveText(["Settings", "Downtimes", "Roster"]);
+  await phone.screenshot(shots("troupe-tabs-recent"));
+  await shutSections(phone);
+  await phone.close();
+
+  // Every old address lands on its new one, with what followed it and its query.
+  const moved: [string, string][] = [
+    ["characters?show=npcs", "roster\\?show=npcs"],
+    ["lines-veils", "lines-and-veils"],
+    ["shared", "shared-backgrounds"],
+    ["play", "at-game"],
+    ["xp", "award-xp"],
+    ["court", "court-over-time"],
+    ["obligations", "web-of-obligation"],
+    ["work", "my-work"],
+    ["tables", "fill-tables"],
+    ["influence/effects", "influence-log/effects"],
+    ["specializations/lore", "specialisations/lore"],
+    ["share", "export-and-import"],
+    ["news-agencies", "news/agencies"],
+    ["log", "log"],
+  ];
+  for (const [old, now] of moved) {
+    await l.goto(`${base}/${old}`);
+    await expect(l).toHaveURL(new RegExp(`${base}/${now}$`));
+  }
+  // The log has no tab of its own: the Overview is open on it.
+  await expectTabOpen(l, "Troupe", "Overview");
 });
 
 test("a lead prices skills at 1× for Generation background 2, and a Generation ●● character pays that in the cart (#522)", async ({ browser }) => {
@@ -810,7 +895,7 @@ test("a lead chooses the accelerated chart of languages, and the House rules tab
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // Customise › House rules › Languages: the book's one per dot until the lead picks a chart.
+  // Setting up › House rules › Languages: the book's one per dot until the lead picks a chart.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/house-rules/languages`);
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Languages from Linguistics" }) });
@@ -844,7 +929,7 @@ test("a troupe's written rules: the lead adds and orders them, and a player read
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // The lead writes three rules under Customise › House rules › Written rules, one about a merit.
+  // The lead writes three rules under Setting up › House rules › Written rules, one about a merit.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/house-rules/checks`);
   await pagePart(l, "Written rules");
@@ -1133,7 +1218,11 @@ test("staff keep a story bible beside the setting: their notes with the chronicl
   const a = assistant.page;
   await a.goto(`/troupes/${troupeId}/setting`);
   await a.getByRole("link", { name: "story bible", exact: true }).click();
-  await expect(a).toHaveURL(new RegExp(`/troupes/${troupeId}/story-bible$`));
+  await expect(a).toHaveURL(new RegExp(`/troupes/${troupeId}/setting/story-bible$`));
+  // A part of The setting for running staff (#1048), where its old address lands too.
+  await expect(a.locator("main").getByRole("navigation", { name: "The setting", exact: true }).getByRole("link", { name: "Story bible" })).toHaveAttribute("aria-current", "page");
+  await a.goto(`/troupes/${troupeId}/story-bible`);
+  await expect(a).toHaveURL(new RegExp(`/troupes/${troupeId}/setting/story-bible$`));
   const notes = a.locator("section").filter({ has: a.getByRole("heading", { name: "Staff notes", exact: true }) });
   const addNote = async (title: string, body: string) => {
     await notes.getByRole("button", { name: "Add a note" }).click();
@@ -1329,7 +1418,7 @@ test("staff call the clan Banu Haqim or Assamite, and the sheet and the rules fo
   await search.fill("assamite vizier");
   await expect(entry("Banu Haqim: Vizier")).toBeVisible();
 
-  // The lead calls it Assamite instead, in Customise's Troupe settings.
+  // The lead calls it Assamite instead, in Settings.
   await settingsPart(l, troupeId, "names");
   const names = l.locator("section").filter({ has: l.getByRole("heading", { name: "Banu Haqim or Assamite" }) });
   await expect(names.getByRole("radio", { name: /^Banu Haqim/ })).toBeChecked();
@@ -1475,7 +1564,7 @@ test("a lead exports one troupe's settings and imports them into another, leavin
   expect(xp.status(), await xp.text()).toBe(200);
 
   // The lead exports Ashen Court's settings: every section that differs, ticked.
-  await l.goto(`/troupes/${ashenId}/share`);
+  await l.goto(`/troupes/${ashenId}/export-and-import`);
   const exporting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Export", exact: true }) });
   await expect(exporting.getByRole("checkbox", { name: /^Book traits/ })).toBeChecked();
   await expect(exporting.getByRole("checkbox", { name: /^XP/ })).toBeChecked();
@@ -1484,7 +1573,7 @@ test("a lead exports one troupe's settings and imports them into another, leavin
   const file = await download.path();
 
   // …and imports the file into Briar Court, leaving out the XP.
-  await l.goto(`/troupes/${briarId}/share`);
+  await l.goto(`/troupes/${briarId}/export-and-import`);
   await l.getByLabel("Settings file").setInputFiles(file);
   await expect(l.getByText(`From ${ashen}`)).toBeVisible();
   const choosing = l.getByRole("group", { name: "What to import" });
@@ -1533,12 +1622,12 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
   await backstoryOptional(custodian.page, troupeName);
 
-  // The chronicle began before Horatio: the lead sets the floor and ceiling by hand, in Customise.
+  // The chronicle began before Horatio: the lead sets the floor and ceiling by hand, in Settings.
   const l = lead.page;
   await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
-  await troupeTab(l, "Troupe settings");
-  await pagePart(l, "XP", "Troupe settings");
+  await troupeTab(l, "Settings");
+  await pagePart(l, "XP", "Settings");
   const range = l.getByRole("region", { name: "XP floor and ceiling" });
   await range.getByLabel("Floor", { exact: true }).fill("100");
   await range.getByLabel("Ceiling", { exact: true }).fill("120");
@@ -1728,7 +1817,7 @@ test("the troupe's characters show a loader while the list and its filter load, 
   };
   const releaseList = hold(`**/api/troupes/${troupeId}/characters`, "GET");
   const releaseSearch = hold(`**/api/troupes/${troupeId}/characters/search`, "POST");
-  await p.goto(`/troupes/${troupeId}/characters?show=everyone`);
+  await p.goto(`/troupes/${troupeId}/roster?show=everyone`);
   const main = p.locator("main");
   const none = main.getByText(/^No (characters|NPCs|player characters)/);
 
@@ -1779,7 +1868,7 @@ test("on a phone the troupe's characters and a character's experience fold into 
   const sideways = async () => (await l.evaluate(() => document.documentElement.scrollWidth)) - l.viewportSize()!.width;
 
   for (const show of ["everyone", "npcs"]) {
-    await l.goto(`/troupes/${troupe.id}/characters?show=${show}`);
+    await l.goto(`/troupes/${troupe.id}/roster?show=${show}`);
     const list = l.getByRole("table", { name: show === "npcs" ? "NPCs" : "Characters" });
     await expect(list.locator("tbody tr")).toHaveCount(20);
     await expect(list.getByRole("link", { name: names[0] })).toBeVisible();
@@ -1840,7 +1929,7 @@ test("staff award XP, give equipment and print from a character's ⋯ on the Cha
 
   // The lead's ⋯ on Odalys: what staff do most, then the printouts.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/characters`);
+  await l.goto(`/troupes/${troupe.id}/roster`);
   const actions = async (page: Page, name: string) => {
     await page.getByRole("button", { name: `Actions for ${name}` }).click();
     return page.getByRole("menu", { name: `Actions for ${name}` });
@@ -1908,7 +1997,7 @@ test("staff award XP, give equipment and print from a character's ⋯ on the Cha
   await expect(l.getByRole("dialog", { name: "Give Casimir to a player" }).getByLabel("Player")).toBeVisible();
   await l.getByRole("dialog").getByRole("button", { name: "Close" }).click();
   const a = assistant.page;
-  await a.goto(`/troupes/${troupe.id}/characters?show=npcs`);
+  await a.goto(`/troupes/${troupe.id}/roster?show=npcs`);
   menu = await actions(a, "Casimir");
   await expect(menu.getByRole("menuitem")).toHaveText(["Play", "Give equipment…", "Status…", "Titles…", "List on the Who’s Who", "Print sheet", "Badge…"]);
 
@@ -1927,8 +2016,8 @@ test("staff award XP, give equipment and print from a character's ⋯ on the Cha
     await sections.getByRole("link", { name: "Characters", exact: true }).click();
     await expect(n.getByRole("navigation", { name: "Characters", exact: true })).toHaveCount(0);
   }
-  await expect(n).toHaveURL(new RegExp(`/troupes/${troupe.id}/lines-veils$`));
-  await n.goto(`/troupes/${troupe.id}/characters`);
+  await expect(n).toHaveURL(new RegExp(`/troupes/${troupe.id}/lines-and-veils$`));
+  await n.goto(`/troupes/${troupe.id}/roster`);
   await expect(n.getByRole("heading", { name: troupeName })).toBeVisible();
   await expect(n.getByRole("button", { name: "Actions for Odalys" })).toHaveCount(0);
 });
@@ -2298,14 +2387,16 @@ test("staff see the characters being built to their rules, read a sheet, and one
   expect(begun.status(), await begun.text()).toBe(201);
 
   const l = lead.page;
-  // Nothing waits on staff yet, so the Characters group counts nothing; its Being built tab counts them.
+  // Nothing waits on staff yet, so the Characters group counts nothing; Approvals' Being built part counts them (#1048).
   await l.goto(`/troupes/${troupeId}`);
   await expect(l.getByRole("link", { name: /^Characters/ }).getByLabel(/waiting/)).toHaveCount(0);
   // On a phone, the section picker counts nothing waiting either.
   if (isPhone(l)) await expect(l.getByRole("navigation", { name: "Troupe sections" }).getByLabel(/waiting/)).toHaveCount(0);
   await l.goto(`/troupes/${troupeId}/approvals`);
-  await expectTabCount(l, "Being built", "2 being built");
-  await troupeTab(l, "Being built");
+  const building = l.locator("main").getByRole("navigation", { name: "Approvals", exact: true }).getByRole("link", { name: /^Being built/ });
+  await expect(building.getByLabel("2 being built")).toBeVisible();
+  await building.click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/approvals/being-built$`));
   const ysolde = l.locator("section").filter({ has: l.getByRole("link", { name: "Ysolde", exact: true }) });
   await expect(ysolde.getByText("In creation")).toBeVisible();
   await expect(ysolde.getByText(/Still to place: .*Attributes/)).toBeVisible();
@@ -2324,11 +2415,14 @@ test("staff see the characters being built to their rules, read a sheet, and one
   await p.getByRole("combobox", { name: "Troupe", exact: true }).selectOption(troupeId);
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
   await expect(p.getByText(`Waiting for ${troupeName}'s storytellers to accept this character.`)).toBeVisible();
-  await l.goto(`/troupes/${troupeId}/being-built`);
+  await l.goto(`/troupes/${troupeId}/approvals/being-built`);
   await expect(l.getByRole("link", { name: "Ysolde", exact: true })).toBeVisible();
   await expect(l.getByRole("link", { name: "Marisol", exact: true })).toHaveCount(0);
-  await expectTabCount(l, "Being built", "1 being built");
-  await troupeTab(l, "Approvals");
+  await expect(building.getByLabel("1 being built")).toBeVisible();
+  // Its old address lands on the part.
+  await l.goto(`/troupes/${troupeId}/being-built`);
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/approvals/being-built$`));
+  await l.locator("main").getByRole("navigation", { name: "Approvals", exact: true }).getByRole("link", { name: "To decide" }).click();
   await expect(l.getByText("Asking to make this home")).toBeVisible();
 });
 
@@ -2876,7 +2970,7 @@ test("players check in at the door and land in their Play View, and staff award 
   // A breadcrumb leads back to the troupe and its At game tab (#777).
   const crumbs = l.getByRole("navigation", { name: "Breadcrumb" });
   await expect(crumbs.getByRole("link")).toHaveText([troupeName, "At game"]);
-  await expect(crumbs.getByRole("link", { name: "At game" })).toHaveAttribute("href", `/troupes/${troupeId}/play`);
+  await expect(crumbs.getByRole("link", { name: "At game" })).toHaveAttribute("href", `/troupes/${troupeId}/at-game`);
   await expect(l.getByText("Nobody has checked in yet.")).toBeVisible();
   await l.getByRole("button", { name: "Open check-in" }).click();
   await expect(l.getByText("Check-in is open.")).toBeVisible();
@@ -2989,7 +3083,7 @@ test("with Retainer upkeep on, checking in starts the night with the upkeep as i
   // Rules tab's old address for Retainers opens them there (#782, #785, #909).
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/rules/retainers`);
-  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/characters#settings-retainers$`));
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/roster#settings-retainers$`));
   const retainers = (await tabSettings(l, "Roster")).getByRole("region", { name: "Retainers", exact: true });
   await expect(retainers.getByLabel("Retainers cost upkeep")).not.toBeChecked();
   await retainers.getByLabel("Retainers cost upkeep").check();
@@ -3227,12 +3321,12 @@ test("a troupe's Overview switches it public at once, shows its XP range, and Wa
   await expect(l.getByText("Player characters from any sect may join.")).toBeVisible();
   await expect(l.getByRole("checkbox")).toHaveCount(0);
   await expect(l.getByLabel("Floor", { exact: true })).toHaveCount(0);
-  // The lead sets them by hand in Customise's Troupe settings, each in its part (#908): who may join, and XP.
-  await l.getByRole("link", { name: "Edit in Customise" }).first().click();
+  // The lead sets them by hand in Settings, each in its part (#908): who may join, and XP.
+  await l.getByRole("link", { name: "Edit in Settings" }).first().click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings/joining$`));
   await expect(l.getByRole("group", { name: "Who may join", exact: true })).toBeVisible();
   await l.goBack();
-  await l.getByRole("link", { name: "Edit in Customise" }).last().click();
+  await l.getByRole("link", { name: "Edit in Settings" }).last().click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings/xp$`));
   await expect(l.getByRole("group", { name: "XP", exact: true })).toBeVisible();
   const range = l.getByRole("region", { name: "XP floor and ceiling" });
@@ -3285,18 +3379,18 @@ test("a troupe's Overview switches it public at once, shows its XP range, and Wa
   const characterTabs = await groupTabs(l, "Characters");
   await expect(characterTabs.getByRole("link").first()).toHaveText(/^Approvals/);
   await expect(characterTabs.getByRole("link", { name: /Approvals/ }).getByLabel("1 waiting")).toBeVisible();
+  // The characters' records are among them too (#1048), and the troupe's locations are with its downtimes.
+  await expect(characterTabs.getByRole("link")).toHaveText([/^Approvals/, "Roster", "Players", "Lines and veils", "Equipment", "Shared backgrounds"]);
   if (isPhone(l)) {
-    // The troupe's catalogues are a group of their own.
-    const world = l.getByRole("dialog", { name: "Troupe sections" }).getByRole("list", { name: "World", exact: true });
-    await expect(world.getByRole("link")).toHaveText(["Locations", "Equipment", "Shared backgrounds"]);
+    const between = l.getByRole("dialog", { name: "Troupe sections" }).getByRole("list", { name: "Between games", exact: true });
+    await expect(between.getByRole("link", { name: "Locations", exact: true })).toBeVisible();
     await shutSections(l);
   } else {
     const sections = l.getByRole("navigation", { name: "Troupe sections" });
     await sections.getByRole("link", { name: /^Characters/ }).click();
-    await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/characters$`));
-    // The troupe's catalogues are a group of their own.
-    await sections.getByRole("link", { name: "World", exact: true }).click();
-    await expect(l.getByRole("navigation", { name: "World", exact: true }).getByRole("link")).toHaveText(["Locations", "Equipment", "Shared backgrounds"]);
+    await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/roster$`));
+    await sections.getByRole("link", { name: "Between games", exact: true }).click();
+    await expect(l.getByRole("navigation", { name: "Between games", exact: true }).getByRole("link", { name: "Locations", exact: true })).toBeVisible();
   }
   // On Hollis's sheet the lead is told whose it is and as whom they look, with the way back.
   await l.goto(`/characters/${id}`);

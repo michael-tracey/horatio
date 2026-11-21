@@ -393,46 +393,59 @@ export function Tabs({ tabs }: { tabs: Tab[] }) {
  * Tabs in groups, for a page with too many to fit one row: the groups in a row,
  * and under it the open group's own tabs. A group opens its first tab, or the
  * one its `to` names; a group of one is a plain tab. Counts add up on their
- * group, so what waits is seen from anywhere. On a phone the two rows give way
- * to one `SectionPicker` (#904).
+ * group, so what waits is seen from anywhere. Someone who sees only one group
+ * has its tabs as the only row (#1048). On a phone the rows give way to one
+ * `SectionPicker` (#904), with the `recent` tabs at the top of its sheet.
  */
-export function GroupedTabs({ label, groups }: { label: string; groups: { label: string; tabs: Tab[]; to?: string }[] }) {
+export function GroupedTabs({ label, groups, recent }: { label: string; groups: { label: string; tabs: Tab[]; to?: string }[]; recent?: Tab[] }) {
   const { pathname } = useLocation();
   const shown = groups.filter((g) => g.tabs.length > 0);
   const open = shown.find((g) => g.tabs.some((t) => tabOpens(t, pathname)));
+  const only = shown.length === 1 ? shown[0] : undefined;
   const row = useTabRow<HTMLDivElement>();
   useTitle(open && openTab(open.tabs, pathname)?.label, row.ref);
+  const look = (active: boolean) =>
+    cx("shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap", active ? "border-gold text-parchment" : "border-transparent text-mist hover:text-parchment");
   return (
     // Closer to the heading and the content on a phone, where height is short (#904).
     <div className="mb-6 max-sm:-mt-2 max-sm:mb-4">
-      <SectionPicker label={label} groups={shown} className="sm:hidden" />
+      <SectionPicker label={label} groups={shown} recent={recent} className="sm:hidden" />
       <nav aria-label={label} className={cx(ROW, "max-sm:hidden")}>
         <div {...row.scroller} className={cx(SCROLLER, "gap-x-1 border-b border-ash")}>
-          {shown.map((g) => {
-            const active = g === open;
-            const counts = g.tabs.filter((t) => t.count !== undefined && t.countInGroup !== false);
-            const total = counts.reduce((sum, t) => sum + (t.count ?? 0), 0);
-            return (
-              <Link
-                key={g.label}
-                to={g.to && g.tabs.some((t) => t.to === g.to) ? g.to : g.tabs[0]!.to}
-                aria-current={active ? "true" : undefined}
-                className={cx(
-                  "shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap",
-                  active ? "border-gold text-parchment" : "border-transparent text-mist hover:text-parchment",
-                )}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  {g.label}
-                  {counts.length > 0 && <CountBubble count={total} label="waiting" />}
-                </span>
-              </Link>
-            );
-          })}
+          {only
+            ? only.tabs.map((t) => {
+                const active = t === openTab(only.tabs, pathname);
+                return (
+                  <Link key={t.to} to={t.to} aria-label={t.ariaLabel} aria-current={active ? "page" : undefined} className={look(active)}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {t.label}
+                      {t.count !== undefined && <CountBubble count={t.count} label={t.countLabel ?? "waiting"} />}
+                    </span>
+                  </Link>
+                );
+              })
+            : shown.map((g) => {
+                const active = g === open;
+                const counts = g.tabs.filter((t) => t.count !== undefined && t.countInGroup !== false);
+                const total = counts.reduce((sum, t) => sum + (t.count ?? 0), 0);
+                return (
+                  <Link
+                    key={g.label}
+                    to={g.to && g.tabs.some((t) => t.to === g.to) ? g.to : g.tabs[0]!.to}
+                    aria-current={active ? "true" : undefined}
+                    className={look(active)}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      {g.label}
+                      {counts.length > 0 && <CountBubble count={total} label="waiting" />}
+                    </span>
+                  </Link>
+                );
+              })}
         </div>
         {row.chevrons}
       </nav>
-      {open && open.tabs.length > 1 && <SubTabs label={open.label} tabs={open.tabs} className="mt-3 mb-0 max-sm:hidden" />}
+      {!only && open && open.tabs.length > 1 && <SubTabs label={open.label} tabs={open.tabs} className="mt-3 mb-0 max-sm:hidden" />}
     </div>
   );
 }

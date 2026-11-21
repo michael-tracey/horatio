@@ -96,7 +96,7 @@ async function setFeature(troupe: TroupeOut, key: FeatureKey, on: boolean): Prom
 }
 
 /**
- * Every optional feature of the troupe, the first part of Troupe settings (#783, #908): on or
+ * Every optional feature of the troupe, the first part of Settings (#783, #908): on or
  * off, what it adds, a switch for its storytellers, and links to its tab and its settings.
  * Each feature is switched on and off here only; the rest of its settings are behind the Settings
  * button of its own tab (#784, #909), so a feature switched off, with no tab, can still be found.

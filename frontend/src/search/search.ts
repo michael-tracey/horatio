@@ -49,7 +49,7 @@ export const manualSource: LocalSource = {
 };
 
 /**
- * The settings of the troupe the person is on, as Customise's Find a setting finds them (#1047):
+ * The settings of the troupe the person is on, as Setting up's Find a setting finds them (#1047):
  * only for those who may open them there, its running staff and the custodian, and only that
  * troupe's. Each opens the setting: its tab or part, its tab's Settings, or its card.
  */

@@ -17,6 +17,7 @@ import { NewCharacterIncentive } from "./NewCharacterIncentive";
 import { SettingStyle } from "./SettingStyle";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { FeaturesList } from "./FeaturesList";
+import { GettingReadySetup } from "./GettingReady";
 import { features, settingsAnchor, troupeSettings, type FeatureKey } from "./features";
 import { SETTINGS, TROUPE_SETTINGS_PARTS } from "./settingsIndex";
 import { StatusBanClans } from "./StatusBanClans";
@@ -26,9 +27,9 @@ import { useCatalogue } from "../../catalogue";
 
 /**
  * The settings for the whole troupe, set once a season or so, a part for each purpose (#908):
- * the Features list first, every optional feature on or off (#783), then the setting players
- * read (#770), who may join, XP, status and titles, Blood, diablerie and feeding, and what a
- * clan is called, each at `settings/<part>`. A feature with a tab of its own keeps the rest of its
+ * the Features list first, every optional feature on or off (#783), then the steps of getting
+ * a new troupe ready (#1049, #1048), the setting players read (#770), who may join, XP, status
+ * and titles, Blood, diablerie and feeding, and what a clan is called, each at `settings/<part>`. A feature with a tab of its own keeps the rest of its
  * settings behind that tab's Settings button (#784, #909). Its storytellers change them; the
  * troupe's other running staff read them (assistant storytellers write the setting too). The
  * troupe's rules for traits are on the House rules tab beside it (#782).
@@ -39,11 +40,24 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
   useLandOnCard();
   return (
     <PartPicker
-      label="Troupe settings"
+      label="Settings"
       parts={[{ to: settings, label: "Features", end: true }, ...TROUPE_SETTINGS_PARTS.map((p) => ({ to: `${base}/${troupeSettings(p.part)}`, label: p.label }))]}
     >
       <Routes>
         <Route index element={<FeaturesPart troupe={troupe} canEdit={canEdit} />} />
+        <Route
+          path="getting-ready"
+          element={
+            <div role="group" aria-label="Getting ready">
+              <SectionLabel as="h2" className="mb-3">
+                Getting ready
+              </SectionLabel>
+              <div className="max-w-3xl">
+                <GettingReadySetup troupeId={troupe.id} canEdit={canEdit} />
+              </div>
+            </div>
+          }
+        />
         <Route
           path="setting"
           element={
@@ -70,7 +84,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
                 troupeId={troupe.id}
                 canEdit={canEdit}
                 link={
-                  <Link to={`${base}/xp`} className="text-sm text-mist underline hover:text-parchment">
+                  <Link to={`${base}/award-xp`} className="text-sm text-mist underline hover:text-parchment">
                     Award XP
                   </Link>
                 }
@@ -123,9 +137,9 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
 }
 
 /**
- * The Features list, the part Troupe settings opens on, under a word on the whole page. An
+ * The Features list, the part Settings opens on, under a word on the whole page. An
  * old address of a feature's card, `settings#feature-feeding` from when every part was on one
- * page, goes to wherever that card is now: its part of Troupe settings, or its tab's Settings (#908).
+ * page, goes to wherever that card is now: its part of Settings, or its tab's Settings (#908).
  */
 function FeaturesPart({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const { hash } = useLocation();
@@ -180,7 +194,7 @@ function Anchored({ feature, children }: { feature: FeatureKey; children: ReactN
 }
 
 /**
- * One part of Troupe settings: a few settings for one purpose, under its name. A div, not a
+ * One part of Settings: a few settings for one purpose, under its name. A div, not a
  * section, so a card's own section is the one around its heading.
  */
 function Part({ title, children }: { title: string; children: ReactNode }) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SetupOut } from "../../api/types";
-import { differentAreas } from "./SetupTab";
+import { differentAreas } from "./PlayedDifferently";
 
 const book: SetupOut = {
   described: true,

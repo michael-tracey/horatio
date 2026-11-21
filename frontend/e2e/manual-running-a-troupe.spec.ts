@@ -194,13 +194,13 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await expect(l.getByText("Oren Pike")).toBeVisible();
   await shot(l, "staff", undefined, 900);
 
-  // Customise › Setup.
-  await l.goto(`${base}/customise`);
+  // Settings › Getting ready.
+  await l.goto(`${base}/settings/getting-ready`);
   await expect(l.getByRole("list", { name: "Getting your troupe ready" })).toBeVisible();
-  await shot(l, "customise-overview", undefined, 1750);
+  await shot(l, "getting-ready", undefined, 1750);
 
   // Characters › Roster, with the print choices open.
-  await l.goto(`${base}/characters`);
+  await l.goto(`${base}/roster`);
   await expect(l.getByRole("link", { name: "Celestine Marrow" })).toBeVisible();
   await l.getByLabel("Select Celestine Marrow").check();
   await l.getByLabel("Select Ezra Vale").check();
@@ -208,7 +208,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await shot(l, "characters", undefined, 900);
 
   // The same list showing NPCs, with the New NPC form open.
-  await l.goto(`${base}/characters?show=npcs`);
+  await l.goto(`${base}/roster?show=npcs`);
   await expect(l.getByRole("row", { name: "Aurelia Vance" })).toBeVisible();
   await l.getByRole("button", { name: "New NPC" }).click();
   await expect(l.getByRole("heading", { name: "New NPC" })).toBeVisible();
@@ -265,23 +265,23 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await plainHost(l);
   await shot(l, "game-night", undefined, 1000);
 
-  // Games › Award XP, ready to award.
-  await l.goto(`${base}/xp`);
+  // Game night › Award XP, ready to award.
+  await l.goto(`${base}/award-xp`);
   await l.getByLabel("Note everyone gets").fill("Game, the Harvest Ball");
   await l.getByRole("button", { name: "Less XP for Wren Halloway" }).click();
   await shot(l, "award-xp", undefined, 900);
 
-  // Troupe settings › Features (#783), as a new troupe has them.
+  // Settings › Features (#783), as a new troupe has them.
   await l.goto(`${base}/settings`);
   await shot(l, "troupe-features", card(l, "Features"), 1600);
 
-  // Troupe settings › XP › Game XP chart, being changed to a taper.
+  // Settings › XP › Game XP chart, being changed to a taper.
   await settingsPart(l, troupeId, "xp");
   const chart = card(l, "Game XP chart");
   await chart.getByRole("group", { name: "Start from a preset" }).getByRole("button").nth(1).click();
   await shot(l, "game-xp-chart", chart, 1300);
 
-  // Customise › Connectors with Discord connected. This server has no Discord, so the
+  // Setting up › Connectors with Discord connected. This server has no Discord, so the
   // page is shown a connected one: Celestine has her channel, and Ezra's and Wren's
   // names suggest theirs.
   const discordSettings = { guild_id: "111", guild_name: "Court of Ashes", channels: { [celestine]: "201" }, test_channel: "205" };
