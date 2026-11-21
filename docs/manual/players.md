@@ -135,6 +135,8 @@ Until it's decided you can **Withdraw** it. The other character's player isn't t
 
 A bond fades if it isn't kept up (p. 296): a full bond drops to two drinks after three months without drinking, a two-drink bond ends after six months without your characters meeting, and a one-drink bond after a year. Games you both checked in at count as meeting. Where your troupe lets players report drinks, **Log a meeting with …** on the card records one the storytellers wouldn't know of, such as in a downtime; it counts at once, or waits for the storytellers where they approve drinks. You hear that a bond weakened or faded with the troupe's downtime results.
 
+The Tremere weakness the troupe plays changes how bonds count. Under **Volume 2's** (the default), a Tremere's blood binds another vampire only to the first drink, though ghouls are bound as usual. Under **the core book's**, a Tremere's first drink of another vampire's blood counts as two. When it changes what a drink does, you get a notification saying so and why, and the bond on the card says what the weakness does to it.
+
 In a Sabbat troupe the same card shows your character's **Vinculum** ratings, toward each they shared a Vaulderie with (MET: VTM pp. 433–435), and in the Play View's **Sheet** tab, from 2 up, what each costs in Willpower. Where the troupe lets players report drinks, **Report a Vaulderie** names who else took part, whether your character was a false Sabbat who drank but gave no blood, and the night; it waits for the storytellers. Taking part lowers your character's blood bonds a step, once a night (Errata, p. 434).
 
 ![A character's Sheet tab: its parts on the left, and Print, Experience and the cart on the right](images/players/sheet.png)

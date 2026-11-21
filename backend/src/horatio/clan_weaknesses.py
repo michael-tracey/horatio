@@ -11,9 +11,10 @@ so its clan's choice (MET: VtM p. 42).
 With no troupe there is no one weakness to show for such a clan: what is shown
 says it varies by troupe and gives each, with its page.
 
-No rule Horatio runs uses a clan weakness yet. Blood bonds count drinks alike for
-every clan (horatio.bonds), so neither Tremere weakness changes a bond; staff
-apply it as they record drinks.
+Blood bonds follow the Tremere choice (horatio.bonds, #1145): Volume 2's holds a
+Tremere regnant's vampire thrall at one drink, and the core book's counts a Tremere
+thrall's first drink as two. Each drink keeps the weakness it was recorded under.
+No other rule Horatio runs uses a clan weakness.
 """
 
 from collections.abc import Mapping, Sequence
@@ -108,8 +109,8 @@ def setting_text(clans: Sequence[str]) -> str:
 
 def set_core(db: Session, user: User, troupe: Troupe, clans: Sequence[str]) -> None:
     """Play the core book's weakness for these clans here, and the later book's for
-    every other. Logged when it changes. What is shown changes at once; no rule uses
-    a weakness yet, so no sheet changes."""
+    every other. Logged when it changes. What is shown changes at once, and so do the
+    drinks of blood bonds recorded from now (horatio.bonds); no sheet changes."""
     rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
     offered = choosable(rule_set)
     unknown = sorted(set(clans) - set(offered))

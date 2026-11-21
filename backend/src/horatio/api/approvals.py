@@ -203,6 +203,9 @@ class BondAskOut(BaseModel):
     source: str
     # Why approving it would be refused now, such as a full bond to someone else.
     refused: str | None
+    # What the troupe's Tremere weakness does to a bond between the two, if anything
+    # (#1145), so staff aren't surprised by what approving it does.
+    weakness: str = ""
 
 
 class QueuedApproval(ApprovalOut):
@@ -427,6 +430,11 @@ def bond_out(db: DbSession, approval: Approval) -> BondAskOut | None:
         refused=bonds.immune_to(db, troupe, thrall, regnant)
         if report.status == "pending" and report.kind == "drink"
         else None,
+        weakness=bonds.weakness_line(
+            bonds.weakness_for(db, troupe, thrall, regnant), thrall, regnant
+        )
+        if report.status == "pending" and report.kind == "drink"
+        else "",
     )
 
 

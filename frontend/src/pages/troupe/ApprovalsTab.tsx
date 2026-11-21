@@ -275,6 +275,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
             {approval.bond.source === "downtime" ? "in a downtime" : "at a game"}.
           </p>
           {pending && approval.bond.refused && <p className="text-blood-bright">{approval.bond.refused}</p>}
+          {pending && approval.bond.weakness && <p className="text-gold">{approval.bond.weakness}</p>}
           {pending && (
             <p className="text-xs text-mist">
               {approval.bond.kind === "meeting"

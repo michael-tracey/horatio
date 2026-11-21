@@ -68,6 +68,7 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
                 <span className="text-parchment">Bound to {bond.name}</span>
                 <span className="block">{text.line}</span>
                 <span className="block text-xs text-mist">{text.effect}</span>
+                {bond.weakness && <span className="block text-xs text-mist">{bond.weakness}</span>}
                 {meetingButton(bond.id, bond.name, bond.can_meet ?? false)}
               </li>
             );
@@ -81,6 +82,7 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
             {b.bound_by.map((bond) => (
               <li key={bond.id}>
                 {bond.name}: <span className="text-mist">{levelName(bond.level).toLowerCase()}</span>
+                {bond.weakness && <span className="block text-xs text-mist">{bond.weakness}</span>}
                 {meetingButton(bond.id, bond.name, bond.can_meet ?? false)}
               </li>
             ))}

@@ -9,6 +9,7 @@ const bond = (id: string, thrall: string, regnant: string, status = "active", le
   level,
   status,
   known_to_regnant: false,
+  weakness: "",
   ended_at: null,
   ended_reason: "",
   fades_on: null,

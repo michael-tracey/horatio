@@ -162,7 +162,7 @@ export const SETTINGS = {
   clanWeaknesses: card(
     "clanWeaknesses",
     "Clan weaknesses",
-    "Which weakness a clan plays here where Volume 2 replaced the core book's: so far only the Tremere's. Characters, creation and the rules show the one chosen. Horatio applies neither for you: staff do, as they record blood bonds.",
+    "Which weakness a clan plays here where Volume 2 replaced the core book's: so far only the Tremere's. Characters, creation and the rules show the one chosen, and blood bonds count by it: Volume 2's holds another vampire at the first drink of a Tremere's blood; the core book's counts a Tremere's first drink as two.",
     "blood",
   ),
   feeding: card(
