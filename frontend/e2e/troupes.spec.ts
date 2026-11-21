@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList, chooseIn } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList, chooseIn, makeChanges } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -181,7 +181,8 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   makeCustodian(custodianEmail);
   const { page: lead, handle: leadHandle } = await person(browser, "twostep-lead");
   const { page: st, handle: stHandle } = await person(browser, "twostep-st");
-  const made = await c.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Owls ${run}`, lead_handle: leadHandle } });
+  const owls = `Owls ${run}`;
+  const made = await c.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: owls, lead_handle: leadHandle } });
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
   const staffed = await lead.request.put(`/api/troupes/${troupeId}/staff`, { headers: { "X-Horatio": "1" }, data: { handle: stHandle, role: "storyteller" } });
@@ -213,6 +214,21 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await expect(st.getByText(`You need two-step sign-in as staff of Owls ${run}.`)).toBeVisible();
   await expect(st.getByRole("navigation", { name: "Main" })).toHaveCount(0);
   await st.screenshot(shots("two-step-setup-required"));
+
+  // Once set up, the bell says why it was asked (#1096).
+  const stCdp = await st.context().newCDPSession(st);
+  await stCdp.send("WebAuthn.enable");
+  await stCdp.send("WebAuthn.addVirtualAuthenticator", {
+    options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true },
+  });
+  await st.getByRole("button", { name: "Add a passkey" }).click();
+  await st.getByRole("button", { name: "I've kept them" }).click();
+  await st.goto("/");
+  await st.getByRole("button", { name: /^Notifications/ }).click();
+  const notice = st.getByRole("dialog", { name: "Notifications" }).getByRole("button", { name: /asked the troupe's staff to sign in with two steps/ });
+  await expect(notice).toHaveCount(1);
+  await expect(notice).toContainText(owls);
+  await expect(notice).toContainText("Set it up in Account › Sign-in and email");
 });
 
 test("a troupe's or character's tab that isn't there, or isn't open to them, says so with the way back (#907)", async ({ browser }) => {
@@ -479,6 +495,7 @@ test("a teacher rule asks for a teacher, and a Lore specialisation is bought fro
   const p = pupil.page;
   await p.goto(`/characters/${wren}`);
   const lore = p.locator("section").filter({ has: p.getByRole("heading", { name: "Skills", exact: true }) }).locator("li[data-trait='Lore']");
+  await makeChanges(p);
   await lore.getByRole("button", { name: "Add to Lore Specialisations" }).click();
   await lore.getByRole("button", { name: "Sabbat", exact: true }).click();
   await expect(lore.getByText("Needs a teacher who holds it at 1 or more.")).toBeVisible();
@@ -766,6 +783,7 @@ test("a lead prices skills at 1× for Generation background 2, and a Generation 
   const accepted = await l.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
   expect(accepted.status(), await accepted.text()).toBeLessThan(300);
   await p.goto(`/characters/${id}`);
+  await makeChanges(p);
   await tapMid(p, "Raise Brawl");
   const cart = p.getByRole("list", { name: "Changes in the cart" });
   await expect(cart.getByRole("listitem").filter({ hasText: "Brawl 4 → 5" })).toContainText("Brawl 4 → 5 · 5 XP");
@@ -1258,6 +1276,7 @@ test("a lead bans a merit on the Book traits page: it is greyed out with the rea
   // In the merit picker, Lucky is greyed out with the troupe's reason.
   await p.goto(`/characters/${id}`);
   const part = p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
+  await makeChanges(p);
   await part.getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Show").selectOption("all");
   await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Lucky");
@@ -1364,6 +1383,7 @@ test("a lead makes Soul Shard a general flaw on the Book traits page, and a play
   // Among the general flaws, Soul Shard, marked as changed here.
   await p.goto(`/characters/${id}`);
   const part = p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
+  await makeChanges(p);
   await part.getByRole("button", { name: "Add" }).click();
   await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Flaws/ }).click();
   await p.getByLabel("Show").selectOption("kind:General");
@@ -2750,7 +2770,8 @@ test("members say whether they are coming to a game, staff see who, and a calend
   await expect(game.getByText("1 maybe")).toBeVisible();
   await expect(choices.getByRole("button", { name: "Coming", exact: true })).toHaveAttribute("aria-pressed", "false");
 
-  // Her calendar link: the feed has the game, and resetting it stops the old one.
+  // Her calendar link: the feed has the game with her answer (#1058), and
+  // resetting it stops the old one.
   await p.getByRole("button", { name: "Subscribe to the calendar" }).click();
   const dialog = p.getByRole("dialog", { name: "Subscribe to the calendar" });
   const only = dialog.getByRole("region", { name: `${troupeName} only` });
@@ -2767,7 +2788,8 @@ test("members say whether they are coming to a game, staff see who, and a calend
   expect(feed.headers()["content-type"]).toContain("text/calendar");
   const ics = await feed.text();
   expect(ics).toContain("BEGIN:VCALENDAR");
-  expect(ics).toContain(`SUMMARY:Game: ${troupeName}`);
+  expect(ics).toContain(`SUMMARY:Maybe · Game: ${troupeName}`);
+  expect(ics).toContain("DESCRIPTION:You said maybe.");
   expect(ics).toContain("DTSTART:20300309T190000Z");
   expect(ics).not.toContain(player.email);
   await only.getByRole("button", { name: "Reset the link…" }).click();

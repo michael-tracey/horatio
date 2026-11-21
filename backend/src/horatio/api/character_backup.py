@@ -306,6 +306,7 @@ class CharacterImportIn(BaseModel):
 class BackupItemOut(BaseModel):
     label: str
     # new | differs (held otherwise here: `before` in the file, `after` here) |
+    # kept (held here already, or held here and not in the file, and left as it is) |
     # cannot (left out: `reason` says why) | info (shown, never imported).
     status: backup.Status
     reason: str | None

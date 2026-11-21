@@ -79,7 +79,7 @@ class XpPlanAwardOut(BaseModel):
     source: str
     # Downtime XP a game's worth of time usually brings as well, to one decimal place.
     downtime: float
-    # How that is told: "12 XP from 6 downtime cycles over 6 games in the last year";
+    # How that is told: "12 XP from 6 downtime cycles over the troupe's 6 games so far";
     # null if there is none.
     downtime_source: str | None
 

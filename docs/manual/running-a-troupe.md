@@ -89,7 +89,7 @@ To change someone's role, choose another in the list beside their name. **Remove
 
 Staff see players' emails and lines and veils, so the lead storyteller can ask every one of them to sign in with [two steps](getting-started.md#two-step-sign-in): on the **Staff** tab, turn on **Staff must sign in with two steps** in the **Two-step sign-in** card. Set up your own first, in Account › Sign-in and email: it asks it of you too.
 
-Anyone on the staff without it is sent to set it up when they next open Horatio, and can do nothing else until they have. The card lists who hasn't yet. Someone on the staff of two troupes needs it if either troupe asks, since one sign-in opens both. Taking someone off the staff stops asking it of them. Turning it on or off is kept in the troupe's log.
+The rest of the staff are told in the bell as you turn it on. Anyone on the staff without it is sent to set it up when they next open Horatio, and can do nothing else until they have; they see the bell's notice once they have. The card lists who hasn't yet. Someone on the staff of two troupes needs it if either troupe asks, since one sign-in opens both. Taking someone off the staff stops asking it of them. Turning it on or off is kept in the troupe's log.
 
 ### Renaming or archiving the troupe
 
@@ -196,7 +196,9 @@ The same **⋯** has **Import characters and NPCs…**, for a troupe's export fr
 - **A retired character** comes in retired.
 - **What can't come in** says why: a file that isn't a Horatio character, one from a newer Horatio, or a trait this troupe's rules don't have. The rest still come in.
 
-Equipment, titles and status in the files are shown, not imported: give them here as usual. The exception is a new Stock NPC's equipment, which comes in with it, given from the troupe's equipment, with the member of a [group](#a-group-of-stock-npcs) who carries each item. **Import** brings everything in at once, and lists each character with a link to it.
+An NPC's equipment comes in with it, sheeted or Stock, if the file has it: each item given from the troupe's equipment and checked by its rules, with the member of a [group](#a-group-of-stock-npcs) who carries it. An item the rules refuse is left out, saying why. An NPC that **replaces** one here is never given an item twice: what the NPC here holds already, of the same name and kind, is **Kept** as it is, and only what it lacks is given. A group's three knives in the file and two here are two kept and one given. An item the NPC holds that isn't in the file is left alone. The review says which is which, and who carries each now.
+
+A player character's equipment, and titles and status, are shown, not imported: give them here as usual. **Import** brings everything in at once, and lists each character with a link to it.
 
 ### Each character's actions
 
@@ -1284,7 +1286,7 @@ Storytellers and the lead add games on the [troupe's profile](#the-troupe-profil
 
 On the Overview, each game to come asks **Coming**, **Maybe** or **Not coming**; tapping your answer again takes it back. Players see how many said each; all staff can also **See who answered**, with the characters each plays here.
 
-**Subscribe to the calendar** gives a link for the troupe's games and downtime dates, for this troupe or all your troupes, with how to add it in Google Calendar, Apple Calendar and Outlook. Keep it to yourself: anyone with it can see those dates.
+**Subscribe to the calendar** gives a link for the troupe's games and downtime dates, for this troupe or all your troupes, with how to add it in Google Calendar, Apple Calendar and Outlook. Each game in it shows your own answer. Keep it to yourself: anyone with it can see those dates and your answers.
 
 ### Check-in at the door
 

@@ -28,9 +28,11 @@ than it may unpack to, refuses the lot.
   file has them, the NPC itself kept), or add a copy.
 - Its XP history isn't written: an NPC has none to keep, and giving one to its player
   writes its own (the "Imported" award, and what staff carry over).
-- A new Stock NPC's equipment comes in with it (issue #1075), given from this troupe,
-  each item with the member of a group who carries it. Anyone else's equipment, a
-  replaced NPC's too, and titles and status are shown, never imported, as on a
+- An NPC's equipment comes in with it (issues #1075, #1100), given from this troupe,
+  each item with the member of a group who carries it. One that replaces an NPC here
+  keeps what that NPC holds already, of the same name and kind, and is given only
+  what it lacks; what it holds and the file hasn't is left alone. A player
+  character's equipment, and titles and status, are shown, never imported, as on a
   player's import.
 
 Each character is tried on its own, so one that can't come in says why and the rest
@@ -61,6 +63,7 @@ from horatio import character_backup as backup
 from horatio.models import (
     Character,
     CharacterTrait,
+    EquipmentItem,
     RuleSet,
     StockNpc,
     Troupe,
@@ -301,47 +304,128 @@ def set_stock(
     row.count = found.count
 
 
-def give_stock_items(
+def fields_of(item: backup.BackupEquipment) -> equipment.ItemFields:
+    return equipment.ItemFields(
+        name=item.name,
+        kind=item.kind,
+        grade=item.grade,
+        qualities=item_qualities(item.qualities),
+        crafted=item.crafted,
+        effects=equipment.effects_of(item.effects),
+        description=item.description,
+        archaic=item.archaic,
+    )
+
+
+def matched_items(
+    held: Sequence[EquipmentItem],
+    wanted: Sequence[backup.BackupEquipment],
+    members: Mapping[str, int],
+) -> dict[int, EquipmentItem]:
+    """Which item held here each of the file's items is, by its place in the file: one
+    of its name and kind, the one the same member carries first. Each is matched once,
+    so a group's three knives in the file and two here are two kept and one to give."""
+    free: dict[tuple[str, str], list[EquipmentItem]] = defaultdict(list)
+    for item in held:
+        free[(same_name(item.name), item.kind)].append(item)
+    found: dict[int, EquipmentItem] = {}
+    for same_member in (True, False):
+        for n, item in enumerate(wanted):
+            choices = free.get((same_name(item.name), item.kind), [])
+            if n in found or not choices:
+                continue
+            match = next(
+                (h for h in choices if not same_member or members.get(str(h.id)) == item.member),
+                None,
+            )
+            if match is not None:
+                choices.remove(match)
+                found[n] = match
+    return found
+
+
+def carried_text(member: int | None) -> str:
+    """Who in a group carries an item: a member, or None for the whole group."""
+    who = npcs.member_name(member) if member is not None else "the whole group"
+    return f"{who} carries it"
+
+
+def bring_items(
     db: Session,
     staff: User,
     troupe: Troupe,
     found: backup.Imported,
     document: backup.CharacterDocument,
+    *,
+    replacing: bool,
 ) -> None:
-    """A new Stock NPC's items (issue #1075), each given from this troupe as the file
-    has it, and in a group, with the member who carries it. One that can't be given
-    is left out, saying why."""
+    """An NPC's items (issues #1075, #1100), each given from this troupe as the file
+    has it, and in a group of Stock NPCs, with the member who carries it. One that
+    can't be given is left out, saying why.
+
+    For an NPC that replaces one here, nothing is given twice: an item it holds
+    already, of the same name and kind, is kept as it is, and one it holds that the
+    file hasn't is left alone. A file exported without its equipment leaves every
+    item here alone, unlisted."""
     npc = found.character
     row = db.scalar(select(StockNpc).where(StockNpc.character_id == npc.id))
     count = row.count if row is not None else 1
+    before = dict(row.item_members) if row is not None else {}
+    if replacing and "equipment" not in document.sections:
+        if row is not None:
+            row.item_members = {k: n for k, n in before.items() if n <= count}
+            db.flush()
+        return
+    held = equipment.items_of(db, npc) if replacing else []
+    matched = matched_items(held, document.equipment, before)
     carried: dict[str, int] = {}
-    for item in document.equipment:
+
+    def member_of(number: int | None) -> int | None:
+        return number if count > 1 and number is not None and number <= count else None
+
+    for n, item in enumerate(document.equipment):
+        member = member_of(item.member)
+        kept = matched.get(n)
+        if kept is not None:
+            if member is not None:
+                carried[str(kept.id)] = member
+            was = member_of(before.get(str(kept.id)))
+            reason = "Held here already: kept as it is."
+            if member != was:
+                reason += f" Now {carried_text(member)}."
+            elif member is not None:
+                reason += f" {carried_text(member)}."
+            found.items.append(backup.Reviewed("equipment", item.name, "kept", reason=reason))
+            continue
         with backup.tried(db, found, "equipment", item.name):
-            fields = equipment.ItemFields(
-                name=item.name,
-                kind=item.kind,
-                grade=item.grade,
-                qualities=item_qualities(item.qualities),
-                crafted=item.crafted,
-                effects=equipment.effects_of(item.effects),
-                description=item.description,
-                archaic=item.archaic,
-            )
-            given = equipment.give(db, staff, troupe, npc, fields)
-            member = item.member if item.member is not None and item.member <= count else None
-            if count > 1 and member is not None:
+            given = equipment.give(db, staff, troupe, npc, fields_of(item))
+            if member is not None:
                 carried[str(given.id)] = member
             found.items.append(
                 backup.Reviewed(
                     "equipment",
                     item.name,
                     "new",
-                    reason=f"Given from the troupe's equipment: {npcs.member_name(member)}"
-                    " carries it."
-                    if count > 1 and member is not None
-                    else "Given from the troupe's equipment.",
+                    reason="Given from the troupe's equipment"
+                    + (f": {carried_text(member)}." if member is not None else "."),
                 )
             )
+    taken = {item.id for item in matched.values()}
+    for item in held:
+        if item.id in taken:
+            continue
+        member = member_of(before.get(str(item.id)))
+        if member is not None:
+            carried[str(item.id)] = member
+        found.items.append(
+            backup.Reviewed(
+                "equipment",
+                item.name,
+                "kept",
+                reason="Held here and not in the file: left alone."
+                + (f" {carried_text(member)}." if member is not None else ""),
+            )
+        )
     if row is not None:
         row.item_members = carried
         db.flush()
@@ -463,10 +547,11 @@ def fill_npc(
                 backstories.save(db, staff, npc, text, kept.version)
             found.items.append(backup.Reviewed("character", "Backstory", "new"))
     backup.import_retainers(db, staff, found, document)
-    # A Stock NPC has nothing but its stat block and what it carries (issue #1075).
-    items = form == "stock" and into is None
+    # An NPC's equipment comes in with it (issues #1075, #1100); a player
+    # character's is shown only.
+    items = who.kind == "npc"
     if items:
-        give_stock_items(db, staff, troupe, found, document)
+        bring_items(db, staff, troupe, found, document, replacing=into is not None)
     backup.attach_picture(found, document, root, files, write=write_pictures)
     backup.shown_only(found, document, staff=True, items=not items)
     db.flush()

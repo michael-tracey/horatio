@@ -158,26 +158,26 @@ def test_games_away_count_the_downtime_xp_the_troupes_cycles_give(
     character_id = homed(troupe, session)
     troupe_id = uuid.UUID(troupe.id)
     now = datetime.now(UTC)
-    # In the last year, four games and two cycles of 3 XP for completing each; an older
-    # cycle and a game still to come don't count.
-    for days_ago in (300, 200, 100, 10, -7):
+    # Four games over four years and three cycles giving 6 XP for completing them, all
+    # counted however old; a game still to come and a cycle not yet opened don't count.
+    for days_ago in (1500, 800, 300, 10, -7):
         starts = now - timedelta(days=days_ago)
         session.add(
             ScheduledGame(
                 troupe_id=troupe_id, starts_at=starts, ends_at=starts + timedelta(hours=4)
             )
         )
-    for days_ago, xp in ((250, 3), (60, 3), (400, 10)):
+    for days_ago, xp in ((1400, 3), (700, 2), (60, 1), (-30, 10)):
         opened = now - timedelta(days=days_ago)
         session.add(
             DowntimeCycle(
                 troupe_id=troupe_id,
                 name=f"Cycle {days_ago}",
-                status="closed",
-                opened_at=opened,
+                status="closed" if days_ago > 0 else "draft",
+                opened_at=opened if days_ago > 0 else None,
                 closes_at=opened + timedelta(days=14),
                 grace_ends_at=opened + timedelta(days=16),
-                closed_at=opened + timedelta(days=16),
+                closed_at=opened + timedelta(days=16) if days_ago > 0 else None,
                 completion_xp=xp,
             )
         )
@@ -197,7 +197,7 @@ def test_games_away_count_the_downtime_xp_the_troupes_cycles_give(
         "per_game": 8,
         "source": "the troupe's session XP",
         "downtime": 1.5,
-        "downtime_source": "6 XP from 2 downtime cycles over 4 games in the last year",
+        "downtime_source": "6 XP from 3 downtime cycles over the troupe's 4 games so far",
     }
     # Her 30 pays for two; the others are 15 and 30 short: 1.6 and 3.2 games.
     assert [x["games"] for x in plan["lines"]] == [0, 0, 2, 4]

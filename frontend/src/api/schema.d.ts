@@ -13989,7 +13989,8 @@ export interface paths {
          * Reset
          * @description For the custodian: take away every second step someone has, and their recovery
          *     codes, when they have lost them, so their password alone signs them in again until
-         *     they set up another. Recorded as a notice, and they are told.
+         *     they set up another. Recorded as a notice, and they are told in the bell and by
+         *     email; the email goes before the answer, as the custodian's other emails do.
          */
         post: operations["reset_api_two_step_reset__user_id__post"];
         delete?: never;
@@ -16037,7 +16038,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "new" | "differs" | "cannot" | "info";
+            status: "new" | "differs" | "kept" | "cannot" | "info";
         };
         /** BackupOut */
         BackupOut: {

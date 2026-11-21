@@ -44,9 +44,11 @@ With two-step sign-in on, your password alone doesn't sign you in. After it, Hor
 
 Lost your phone? Use another passkey or your app if you have one, or choose **Use a recovery code instead** and give one of the recovery codes you kept when you set it up. Each works once. Lost those too? Ask the custodian to reset your two-step sign-in: they'll want to be sure it's you.
 
+When a recovery code signs you in, or the custodian resets your two-step sign-in, Horatio tells you in the bell and by email, even if you've turned other emails off. The email says what happened and when. If it wasn't you, someone has your password: change it, make new recovery codes, and contact the custodian if you can't sign in.
+
 Five wrong codes in a row, or ten minutes, and you start again from your password. Many wrong codes at your account, from anywhere, hold back the second step for a while: "Too many wrong codes."
 
-The custodian must have two-step sign-in, and so must the staff of a troupe whose lead storyteller asks it. Horatio sends them to set it up before anything else.
+The custodian must have two-step sign-in, and so must the staff of a troupe whose lead storyteller asks it. Horatio sends them to set it up before anything else. Staff are told in the bell when their troupe starts asking.
 
 ## Your account
 
@@ -147,7 +149,7 @@ The **Notifications** tab of your account lists every kind of notification Horat
 - **Email**: by email as well. Every kind is off until you tick it, but troupe announcements, which are on because they're often practical. One the staff mark **Important** is emailed to everyone in the troupe even so.
 - **Phone**: as a notification on your phone, on each device where you turn them on (see [Notifications on your phone](#notifications-on-your-phone)). Downtime results, your boons (one you reported accepted or not), powers used on your character, blood bonds and troupe announcements are ticked to begin with; the rest are off until you tick them. Tick it for **Teaching to confirm** to hear on your phone, as it's asked, when another player asks your character to teach theirs: it says who would learn what, and the Willpower it costs, and a tap opens your character's Play View to confirm or refuse.
 
-Untick them all and that kind doesn't come at all. Some always come, and show **Bell, always** or **Email, always** with a lock instead of a tick: work waiting on you, such as an approval to decide or teaching to confirm, stays in the bell until it's done; word that the custodian viewed Horatio as you, merged your accounts or moved a character to or from you always comes to the bell; and emails to set a new password, confirm a new email, or say your account is suspended or let back in always come.
+Untick them all and that kind doesn't come at all. Some always come, and show **Bell, always** or **Email, always** with a lock instead of a tick: work waiting on you, such as an approval to decide or teaching to confirm, stays in the bell until it's done; word that the custodian viewed Horatio as you, merged your accounts, moved a character to or from you or reset your two-step sign-in, that a recovery code signed you in, or that a troupe you run now asks its staff for two-step sign-in, always comes to the bell; and emails to set a new password, confirm a new email, say your account is suspended or let back in, or say your two-step sign-in was reset or a recovery code used, always come, at once.
 
 **Boons players report** goes with a role: staff, the Harpy and Lesser Harpies who approve reported boons choose whether they're told at all, for each troupe. The tab lists your choice in each troupe where you have one, the same switch as in the troupe's Boons settings or on your ledger's **To review** tab, so changing it in either place changes both.
 
@@ -183,7 +185,9 @@ You can put a troupe's games and downtime dates in your own calendar app, and it
 
 The calendar has each game, when downtimes are **Due**, and until when late ones are accepted, each at its time. Calendar apps look for changes every few hours, so a new game can take a while to show.
 
-Keep the link to yourself: anyone with it can see those dates. If it gets out, choose **Reset the link…** and then **Reset the link**: the old one stops working, and you subscribe again with the new one. A link stops working by itself if you leave the troupe.
+Each game shows your own answer to it, at the start of its title and in its notes: **Coming · Game: *the troupe***, **Maybe · …** or **Not coming · …**. A game you haven't answered is plain **Game: *the troupe***, and its notes say you haven't said. A game you're not coming to stays in your calendar, marked, so you can still see it and change your mind. Changing or taking back your answer changes the calendar too, the next time your calendar app looks.
+
+Keep the link to yourself: anyone with it can see those dates and your answers. If it gets out, choose **Reset the link…** and then **Reset the link**: the old one stops working, and you subscribe again with the new one. A link stops working by itself if you leave the troupe.
 
 ![Subscribe to the calendar: a link for one troupe or all your troupes, and how to subscribe](images/getting-started/calendar.png)
 

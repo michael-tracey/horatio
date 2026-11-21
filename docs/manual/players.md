@@ -177,6 +177,8 @@ The cart lives on this device: if you leave the page with changes in it, your br
 
 ### Raising and lowering traits
 
+On a phone or a narrow window the sheet opens for reading, without these buttons. Press **Make changes**, under the XP to spend, to show them, and **Done** to hide them again. They show by themselves while the cart holds changes, and hide again after **Spend XP** or **Clear**. On a wide screen they're always there.
+
 - **+** and **−** beside a rating raise or lower it, into the cart.
 - **Add**, at the top right of a part, opens a list of what you can add to it, with a search and a filter (for example only what the character can take now). Choose a trait, its rating and any detail it needs, then **Add to cart**. The panel says what it costs. The chevron at the start of a row opens what the trait does under it without choosing it, even one greyed out: for a technique, an elder power or a ritual, its cost, action or casting time, test and effect with the book's page; for a discipline, the power its next dot gives. Several can be open at once.
 - **Swap**, beside a focus, trades it for another, for the XP the rules charge.
@@ -230,6 +232,15 @@ XP comes from:
 - **Joining a troupe**: a character below the troupe's XP floor can be topped up to it when accepted.
 
 A character with no home troupe has **Add XP yourself** on this tab, for a character played somewhere else first. That XP is marked self-entered, and the troupe it joins sees it apart and accepts or removes it.
+
+### Planning what to buy
+
+The **Plan** card on the Experience tab lists what you mean to buy next, in order, each priced as the cart would price it now. A line you can't afford yet says roughly how many games away it is, such as *About 3 games away, counting downtime XP*. That goes by what a game usually brings from the home troupe:
+
+- **The game's XP**: the troupe's session XP, or its chart's figure for the character's band of earned XP.
+- **Downtime XP**: the XP for completing every downtime cycle the troupe has run, shared over every game it has held, however long the chronicle has gone on. A troupe with no games in Horatio yet counts its Downtime XP setting, one cycle a game. Where the troupe caps XP at a monthly limit, the downtime XP counts toward it.
+
+The card says where its figure comes from, such as *6 XP from 3 downtime cycles over the troupe's 4 games so far*.
 
 ## Your home troupe
 
@@ -595,7 +606,7 @@ At game, influence spent from **Uses this game** on the Play View asks for the d
 
 The troupe's page (its **Overview**) shows its upcoming **Games** to its members. For each, say whether you're **Coming**, **Maybe** or **Not coming**; tap your answer again to take it back. Everyone sees how many said each; the storytellers see who.
 
-**Subscribe to the calendar** gives you a link that puts the troupe's games and downtime dates in your own calendar app, and keeps itself up to date. [Getting started](getting-started.md) has more about it.
+**Subscribe to the calendar** gives you a link that puts the troupe's games and downtime dates in your own calendar app, each game with your answer, and keeps itself up to date. [Getting started](getting-started.md) has more about it.
 
 > **If your troupe uses this:** under **Missed a game?**, you can mark a character absentee for a game it missed, until the game's XP is awarded. An absentee game never counts as attended, and gets the troupe's absentee XP.
 

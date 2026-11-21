@@ -7,10 +7,11 @@ written in UTC, and the calendar app shows it in the subscriber's own zone, as t
 app itself does.
 
 Nothing here names a person: no emails, no players, no characters. A game says
-when and where it is; a cycle, when downtimes are due and when late ones stop
-being taken.
+when and where it is, and whether the subscriber said they are coming (issue
+#1058); a cycle, when downtimes are due and when late ones stop being taken.
 """
 
+import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -19,7 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio.config import get_settings
-from horatio.models import DowntimeCycle, ScheduledGame, Troupe
+from horatio.models import DowntimeCycle, GameRsvp, ScheduledGame, Troupe
 
 # How far back a feed reaches: past games and cycles stay in subscribers'
 # calendars this long, rather than vanishing once they are over.
@@ -27,6 +28,16 @@ KEPT_FOR = timedelta(days=90)
 # How often a calendar app should look again. Apps decide for themselves in the
 # end (Google's every few hours, whatever this says).
 REFRESH = "PT1H"
+
+# The subscriber's own RSVP to a game, as its title starts and its description
+# says. A game they are not coming to stays in their calendar, marked: an event
+# sent as cancelled is one calendar apps delete.
+ANSWERED = {
+    "coming": ("Coming", "You said you're coming."),
+    "maybe": ("Maybe", "You said maybe."),
+    "not_coming": ("Not coming", "You said you're not coming."),
+}
+NOT_ANSWERED = "You haven't said whether you're coming."
 
 
 @dataclass(frozen=True)
@@ -125,33 +136,59 @@ def venue(troupe: Troupe) -> str:
     return ", ".join(seen)
 
 
-def troupe_events(db: Session, troupes: Sequence[Troupe], now: datetime) -> list[Event]:
-    """Each troupe's games and its cycles' due dates and grace ends, from
-    `KEPT_FOR` ago on. A cycle still a draft is left out: players cannot see it,
-    and its dates are the staff's plan until it opens."""
+def troupe_events(
+    db: Session, troupes: Sequence[Troupe], user_id: uuid.UUID, now: datetime
+) -> list[Event]:
+    """Each troupe's games, with the subscriber's own RSVP to each, and its
+    cycles' due dates and grace ends, from `KEPT_FOR` ago on. A cycle still a
+    draft is left out: players cannot see it, and its dates are the staff's plan
+    until it opens."""
     if not troupes:
         return []
     by_id = {t.id: t for t in troupes}
     since = now - KEPT_FOR
     base = site()
     events: list[Event] = []
-    for game in db.scalars(
-        select(ScheduledGame).where(
-            ScheduledGame.troupe_id.in_(by_id), ScheduledGame.ends_at > since
+    games = list(
+        db.scalars(
+            select(ScheduledGame).where(
+                ScheduledGame.troupe_id.in_(by_id), ScheduledGame.ends_at > since
+            )
         )
-    ):
+    )
+    rsvps = {
+        r.game_id: r
+        for r in db.scalars(
+            select(GameRsvp).where(
+                GameRsvp.user_id == user_id, GameRsvp.game_id.in_([g.id for g in games])
+            )
+        )
+    }
+    for game in games:
         troupe = by_id[game.troupe_id]
         page = f"{base}/troupes/{troupe.id}"
+        rsvp = rsvps.get(game.id)
+        summary = f"Game: {troupe.name}"
+        if rsvp is None:
+            description = f"{NOT_ANSWERED} Say on the troupe's page: {page}"
+            changed_at = game.updated_at
+        else:
+            label, said = ANSWERED[rsvp.answer]
+            summary = f"{label} · {summary}"
+            description = f"{said} Change your answer on the troupe's page: {page}"
+            # A new answer is a change to the event, as an edit to the game is, so
+            # a calendar app that looks at when an event last changed takes it.
+            changed_at = max(game.updated_at, rsvp.updated_at)
         events.append(
             Event(
                 uid=f"game-{game.id}@horatio",
-                summary=f"Game: {troupe.name}",
+                summary=summary,
                 starts_at=game.starts_at,
                 ends_at=game.ends_at,
-                description=f"Say whether you're coming: {page}",
+                description=description,
                 url=page,
                 location=venue(troupe),
-                changed_at=game.updated_at,
+                changed_at=changed_at,
             )
         )
     for cycle in db.scalars(

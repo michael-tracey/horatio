@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from horatio.api.roster import message
 from horatio.config import get_settings
-from horatio.models import AuditEvent, Passkey, Troupe
+from horatio.models import AuditEvent, Notification, Passkey, Troupe
 from tests.api_helpers import PASSWORD, Person, sign_up
 from tests.api_helpers import Troupe as TroupeFixture
 
@@ -314,6 +314,54 @@ def test_the_lead_storyteller_asks_two_step_sign_in_of_the_staff(
     # Turned off, no one is held to it.
     assert ask(troupe.lead, troupe.id, False).json()["required"] is False
     assert troupe.storyteller.client.get(f"/troupes/{troupe.id}").status_code == 200
+
+
+def told(session: Session) -> dict[str, str]:
+    """Who was told their troupe asks two-step sign-in of its staff, and what."""
+    found = session.scalars(
+        select(Notification).where(Notification.kind == "troupe.staff_two_step")
+    )
+    return {str(n.user_id): n.summary for n in found}
+
+
+def test_the_staff_are_told_in_the_bell_as_their_troupe_starts_asking(
+    troupe: TroupeFixture, session: Session
+) -> None:
+    add_passkey(troupe.lead)
+    add_passkey(troupe.assistant)
+
+    assert ask(troupe.lead, troupe.id).status_code == 200
+
+    asked = "lead asked the troupe's staff to sign in with two steps."
+    set_it_up = f"{asked} Set it up in Account › Sign-in and email: Horatio sends you there first."
+    # Not the lead who turned it on, nor a player.
+    assert told(session) == {
+        troupe.storyteller.id: set_it_up,
+        troupe.narrator.id: set_it_up,
+        troupe.assistant.id: f"{asked} You have it set up already, so nothing changes for you.",
+    }
+    [item] = [
+        i
+        for i in troupe.assistant.client.get("/notifications").json()["items"]
+        if i["kind"] == "troupe.staff_two_step"
+    ]
+    assert (item["troupe_name"], item["link"]) == ("Lords of the Night", "/account/sign-in")
+    # Once someone held sets one up, it's in their bell with the rest.
+    add_passkey(troupe.narrator)
+    assert any(
+        i["summary"] == set_it_up
+        for i in troupe.narrator.client.get("/notifications").json()["items"]
+    )
+
+    # Turned off, no one is told; a setting already on tells no one again.
+    assert ask(troupe.lead, troupe.id, False).status_code == 200
+    assert ask(troupe.custodian, troupe.id, False).status_code == 200
+    assert len(told(session)) == 3
+    session.get_one(Troupe, uuid.UUID(troupe.id)).archived_at = datetime.now(UTC)
+    session.flush()
+    # An archived troupe asks nothing, so turning it on tells no one.
+    ask(troupe.custodian, troupe.id)
+    assert len(told(session)) == 3
 
 
 def test_staff_of_two_troupes_need_it_if_either_asks(

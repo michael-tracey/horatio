@@ -117,13 +117,16 @@ GROUPS = (
                 "security",
                 "Your account's safety",
                 "The custodian viewing Horatio as you, merging your accounts, moving a"
-                " character to or from you, or resetting your two-step sign-in. Always in"
-                " the bell.",
+                " character to or from you, or resetting your two-step sign-in; a recovery"
+                " code used to sign in as you; and a troupe you run asking its staff to sign"
+                " in with two steps. Always in the bell.",
                 (
                     "account.viewed_as",
                     "account.merged",
                     "character.moved",
                     "account.two_step_reset",
+                    "account.recovery_code_used",
+                    "troupe.staff_two_step",
                 ),
                 {"bell": ALWAYS},
             ),
@@ -131,7 +134,8 @@ GROUPS = (
                 "account_emails",
                 "Sign-in and suspension emails",
                 "Links to set a new password or confirm a new email, word that your accounts"
-                " were merged, and your account being suspended or let back in. Always by"
+                " were merged, your account being suspended or let back in, your two-step"
+                " sign-in being reset, and a recovery code used to sign in as you. Always by"
                 " email.",
                 (),
                 {"email": ALWAYS},

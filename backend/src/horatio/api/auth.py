@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
@@ -400,7 +400,13 @@ def second_step_waiting(request: Request, db: DbSession) -> SecondStep:
 
 @router.post("/second-step")
 @allowed_first
-def second_step(body: SecondStepCode, request: Request, db: DbSession, response: Response) -> Me:
+def second_step(
+    body: SecondStepCode,
+    request: Request,
+    db: DbSession,
+    response: Response,
+    background: BackgroundTasks,
+) -> Me:
     """Give the second step of a sign-in waiting on one: a code from their
     authenticator app, or a recovery code. Wrong codes count against limits of their
     own (horatio.auth.attempts); five wrong end the sign-in, to start again."""
@@ -409,6 +415,7 @@ def second_step(body: SecondStepCode, request: Request, db: DbSession, response:
             request,
             db,
             response,
+            background,
             "app",
             lambda user, _: two_step.check_app(db, user, body.code),
             "That code isn't right.",
@@ -417,6 +424,7 @@ def second_step(body: SecondStepCode, request: Request, db: DbSession, response:
         request,
         db,
         response,
+        background,
         "recovery_code",
         lambda user, _: two_step.use_recovery_code(db, user, body.code),
         "That recovery code isn't right, or has been used.",
@@ -442,7 +450,11 @@ def passkey_options(request: Request, db: DbSession) -> dict[str, Any]:
 @router.post("/second-step/passkey")
 @allowed_first
 def second_step_passkey(
-    body: PasskeySigned, request: Request, db: DbSession, response: Response
+    body: PasskeySigned,
+    request: Request,
+    db: DbSession,
+    response: Response,
+    background: BackgroundTasks,
 ) -> Me:
     """Give the second step of a sign-in waiting on one with a passkey: the browser's
     answer to the challenge from /second-step/passkey/options. Counted against the
@@ -451,6 +463,7 @@ def second_step_passkey(
         request,
         db,
         response,
+        background,
         "passkey",
         lambda user, waiting: passkeys.check(db, waiting, user, body.credential),
         "That passkey didn't sign you in. Try again, or use another way.",
@@ -461,6 +474,7 @@ def give_second_step(
     request: Request,
     db: DbSession,
     response: Response,
+    background: BackgroundTasks,
     method: str,
     right: Callable[[User, SecondStepSignIn], bool],
     wrong_message: str,
@@ -499,7 +513,7 @@ def give_second_step(
         if ended:
             raise HTTPException(status.HTTP_410_GONE, "Too many wrong tries. Sign in again.")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, wrong_message)
-    return signed_in_by_second_step(db, user, waiting, method, request, response)
+    return signed_in_by_second_step(db, user, waiting, method, request, response, background)
 
 
 def signed_in_by_second_step(
@@ -509,8 +523,10 @@ def signed_in_by_second_step(
     method: str,
     request: Request,
     response: Response,
+    background: BackgroundTasks,
 ) -> Me:
-    """The second step was right: sign them in, here only."""
+    """The second step was right: sign them in, here only. A recovery code used is in
+    their bell, and emailed to them after the answer."""
     ip = attempts.source(request)
     from_ip = sign_in_ip(db, request)
     attempts.second_step_passed(db, user.id, ip)
@@ -518,15 +534,26 @@ def signed_in_by_second_step(
         attempts.signed_in_at(db, waiting.login_hash, ip)
     db.delete(waiting)
     if method == "recovery_code":
+        left = two_step.recovery_codes_left(db, user)
         record(
             db,
             user,
             "account.recovery_code_used",
             member=user.display_name,
             user_id=user.id,
-            left=two_step.recovery_codes_left(db, user),
+            left=left,
             **from_ip,
         )
+        notifications.notify(
+            db,
+            [user.id],
+            "account.recovery_code_used",
+            f"Someone signed in to your account with one of your recovery codes: {left} left."
+            " If it wasn't you, change your password and make new recovery codes.",
+            two_step.ACCOUNT_PAGE,
+        )
+        if email.configured():
+            background.add_task(email_recovery_code_used, user.id, datetime.now(UTC), left)
     record(
         db,
         user,
@@ -668,6 +695,14 @@ def send_requested_reset(user_id: uuid.UUID, url: str) -> None:
     mail server takes never shows whether an account uses the address."""
     with background_session() as db:
         email_reset(db, db.get_one(User, user_id), url, by=None)
+        db.commit()
+
+
+def email_recovery_code_used(user_id: uuid.UUID, at: datetime, left: int) -> None:
+    """Email someone that one of their recovery codes signed them in. Done after
+    answering, as reset links are, so signing in never waits on the mail server."""
+    with background_session() as db:
+        two_step.email_recovery_code_used(db, db.get_one(User, user_id), at, left)
         db.commit()
 
 

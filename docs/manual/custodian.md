@@ -50,7 +50,7 @@ The custodian must sign in with two steps: after the password, a passkey or a co
 
 Authenticator apps need the server's key (`HORATIO_TOTP_KEY`, see deploy/README.md); without it, only passkeys can be set up. Passkeys need the site on https. With neither, the custodian isn't held to it.
 
-If you lose your phone and your recovery codes, another custodian can reset your two-step sign-in (below). If you are the only one, run this where Horatio runs: `docker exec horatio-api python -m horatio.auth.two_step reset you@example.com` (from the `backend` folder on your own computer, `uv run python -m horatio.auth.two_step reset you@example.com`). It is kept in the audit log for good.
+If you lose your phone and your recovery codes, another custodian can reset your two-step sign-in (below). If you are the only one, run this where Horatio runs: `docker exec horatio-api python -m horatio.auth.two_step reset you@example.com` (from the `backend` folder on your own computer, `uv run python -m horatio.auth.two_step reset you@example.com`). It is kept in the audit log for good, and the person is told in the bell and by email.
 
 ### Removing a custodian
 
@@ -219,7 +219,7 @@ For someone who has lost their authenticator app and their recovery codes:
 2. Choose **⋯ › Reset two-step sign-in…** (it is there only for people who have it on).
 3. Say why, and choose **Reset two-step sign-in**.
 
-Their passkeys, authenticator app and recovery codes go, and their password alone signs them in until they set it up again. They're told in the bell, with your reason, and it is kept in the audit log for good. A password reset never does this: someone with two-step sign-in who resets their password is still asked for their second step.
+Their passkeys, authenticator app and recovery codes go, and their password alone signs them in until they set it up again. They're told in the bell and by email, with your reason, even if they've turned other emails off: the email says when it happened, and to contact the custodian if they didn't ask for it. It is kept in the audit log for good, and so is an email the mail server refused. A password reset never does this: someone with two-step sign-in who resets their password is still asked for their second step.
 
 ### Suspending someone and lifting it
 

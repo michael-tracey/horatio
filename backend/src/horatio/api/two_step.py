@@ -4,13 +4,14 @@ troupe's lead storyteller asking it of the troupe's staff (#1057). How signing i
 it works is in horatio.auth.two_step, horatio.auth.passkeys and horatio.api.auth."""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from horatio import closing
 from horatio.api.players import player
 from horatio.api.troupes import get_troupe
 from horatio.audit import record
@@ -286,7 +287,8 @@ def new_recovery_codes(body: Password, db: DbSession, user: CurrentUser) -> Reco
 def reset(user_id: uuid.UUID, body: ResetIn, db: DbSession, user: CurrentUser) -> None:
     """For the custodian: take away every second step someone has, and their recovery
     codes, when they have lost them, so their password alone signs them in again until
-    they set up another. Recorded as a notice, and they are told."""
+    they set up another. Recorded as a notice, and they are told in the bell and by
+    email; the email goes before the answer, as the custodian's other emails do."""
     require_custodian(user)
     person = player(db, user_id)
     if not two_step.has_second_step(db, person):
@@ -306,8 +308,9 @@ def reset(user_id: uuid.UUID, body: ResetIn, db: DbSession, user: CurrentUser) -
         "account.two_step_reset",
         f"{user.display_name}, the custodian, reset your two-step sign-in: {body.reason}. Your"
         " password alone signs you in until you set it up again.",
-        "/account/sign-in",
+        two_step.ACCOUNT_PAGE,
     )
+    two_step.email_reset(db, person, datetime.now(UTC), user, body.reason)
     db.commit()
 
 
@@ -367,5 +370,32 @@ def set_staff_two_step(
             troupe_id=troupe.id,
             setting="on" if body.required else "off",
         )
+        if body.required and troupe.archived_at is None:
+            tell_staff(db, user, troupe)
     db.commit()
     return staff_two_step(db, user, troupe)
+
+
+def tell_staff(db: DbSession, user: User, troupe: Troupe) -> None:
+    """Tell the troupe's staff in the bell, as it's turned on, that it asks a second
+    step of them now: those without one, that they must set it up before going on.
+    Not whoever turned it on."""
+    staff = [s for s in closing.staff_ids(db, troupe) if s != user.id]
+    having = two_step.with_second_step(db, staff)
+    asked = f"{user.display_name} asked the troupe's staff to sign in with two steps."
+    notify(
+        db,
+        [s for s in staff if s not in having],
+        "troupe.staff_two_step",
+        f"{asked} Set it up in Account › Sign-in and email: Horatio sends you there first.",
+        two_step.ACCOUNT_PAGE,
+        troupe_id=troupe.id,
+    )
+    notify(
+        db,
+        [s for s in staff if s in having],
+        "troupe.staff_two_step",
+        f"{asked} You have it set up already, so nothing changes for you.",
+        two_step.ACCOUNT_PAGE,
+        troupe_id=troupe.id,
+    )

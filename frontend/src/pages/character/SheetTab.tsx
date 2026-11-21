@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type {
@@ -213,6 +213,14 @@ export function SheetTab({
   const prices = useCartPrices(character.id, shopping ? cart.lines : []);
   // The cart is kept on this device, so going to another page in the app loses nothing.
   useLeaveWarning(shopping && cart.lines.length > 0);
+  // Below lg the sheet opens for reading: its −, +, Add and × wait behind Make changes
+  // (#1055). Changes in the cart bring them out, and they stay out until Spend XP or
+  // Clear empties it, or the player says Done.
+  const [changing, setChanging] = useState(false);
+  const holding = shopping && cart.lines.length > 0;
+  useEffect(() => {
+    if (holding) setChanging(true);
+  }, [holding]);
   const hasDomitor = useHasDomitor(character.splat);
   const retainerList = useRetainers(character.id);
 
@@ -383,6 +391,15 @@ export function SheetTab({
     (c) => c.key === "health_levels",
   )?.group;
   const showCart = shopping && (!locked || lines.length > 0);
+  // What hides the controls below lg while the player reads; a wide screen keeps them, small, beside each row.
+  const tuck = changing || lines.length > 0 ? "" : "max-lg:hidden";
+  // Done: back to reading, with any Add panel closed.
+  const stopChanging = () => {
+    setChanging(false);
+    setAdding(null);
+    setOpening(undefined);
+    setPicking(undefined);
+  };
   const left = prices.totals?.left;
   const available = lines.length > 0 && left != null ? left : Math.max(0, s.xp.balance);
 
@@ -390,7 +407,15 @@ export function SheetTab({
     <div className={`grid gap-4 lg:grid-cols-[1fr_18rem] ${showCart && lines.length ? "pb-16 lg:pb-0" : ""}`}>
       <div className="flex flex-col gap-3">
         {character.kind === "pc" && (
-          <XpLine available={available} afterCart={lines.length > 0 && left != null} mine={mine} sheet={s} />
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 lg:hidden">
+            <XpLine available={available} afterCart={lines.length > 0 && left != null} mine={mine} sheet={s} />
+            {/* With changes in the cart there is nothing to switch: Spend XP or Clear ends them. */}
+            {mine && !locked && lines.length === 0 && (
+              <Button variant="secondary" onClick={() => (changing ? stopChanging() : setChanging(true))}>
+                {changing ? "Done" : "Make changes"}
+              </Button>
+            )}
+          </div>
         )}
         {s.free_changes && <FreeChangesNotice free={s.free_changes} />}
         {mine &&
@@ -453,6 +478,7 @@ export function SheetTab({
                   <Button
                     variant="ghost"
                     aria-expanded={adding === group}
+                    className={adding === group ? undefined : tuck}
                     onClick={() => {
                       setAdding(adding === group ? null : group);
                       setOpening(undefined);
@@ -526,6 +552,7 @@ export function SheetTab({
                                 key={t.id}
                                 trait={t}
                                 locked={locked || derived.has(t.category) || !!askedOf(t)}
+                                tuck={tuck}
                                 asked={askedOf(t) ? (askedOf(t)!.to_rating > askedOf(t)!.from_rating ? "adding" : "removing") : undefined}
                                 points={pointsOf(t)}
                                 about={aboutOf(t)}
@@ -575,6 +602,7 @@ export function SheetTab({
                               !inCart(t) && t.id === lastRetainers && (
                                 <BuyAnotherRetainer
                                   key={`${t.id}/another`}
+                                  tuck={tuck}
                                   onBuy={
                                     canAdd
                                       ? () => {
@@ -600,6 +628,7 @@ export function SheetTab({
                                   key={`${t.id}/specs`}
                                   character={character}
                                   kind={kindOf(t)!}
+                                  tuck={tuck}
                                   editable={mine && !locked && s.status !== "retired"}
                                 />
                               ),
@@ -631,6 +660,7 @@ export function SheetTab({
                   key={`orphaned/${k.category}`}
                   character={character}
                   kind={k}
+                  tuck={tuck}
                   editable={mine && !locked && s.status !== "retired"}
                   orphaned
                 />
@@ -643,6 +673,7 @@ export function SheetTab({
                   held={[...s.traits, ...adds]}
                   lines={lines}
                   onOpen={(key) => {
+                    setChanging(true);
                     setAdding(group);
                     setOpening(key);
                     setPicking(undefined);
@@ -729,6 +760,7 @@ export function SheetTab({
             balance={s.xp.balance}
             creating={!character.creation_complete}
             houseLabels={houseLabels(catalogue.data)}
+            onEmptied={() => setChanging(false)}
           />
         )}
         {!mine && <HouseTraitsCard characterId={character.id} sheet={s} />}
@@ -832,6 +864,7 @@ function Opened({ trait }: { trait: SheetTraitOut }) {
 function TraitRow({
   trait,
   locked,
+  tuck = "",
   onChange,
   swap,
   onSwap,
@@ -845,6 +878,8 @@ function TraitRow({
 }: {
   trait: SheetTraitOut;
   locked: boolean;
+  /** Classes that hide its −, + and × while the sheet is read on a phone. */
+  tuck?: string;
   /** A merit or flaw change asked of the home troupe, not yet decided. */
   asked?: "adding" | "removing";
   /** The catalogue's entry for the trait: its description and page open under the row. */
@@ -917,9 +952,11 @@ function TraitRow({
             // One staff applied, only staff take away.
             !trait.house?.applied &&
             (adding || (trait.rating !== null && trait.rating > trait.min_rating)) && (
-              <StepButton label={`Remove ${which}`} onClick={() => onChange(0)}>
-                ×
-              </StepButton>
+              <span className={tuck}>
+                <StepButton label={`Remove ${which}`} onClick={() => onChange(0)}>
+                  ×
+                </StepButton>
+              </span>
             )}
         </span>
       </div>
@@ -962,7 +999,7 @@ function TraitRow({
             </Button>
           </span>
         ) : (
-          <Button variant="ghost" onClick={() => setSwapping(true)}>
+          <Button variant="ghost" className={tuck} onClick={() => setSwapping(true)}>
             Swap
           </Button>
         )}
@@ -998,25 +1035,27 @@ function TraitRow({
         <span className="flex shrink-0 items-center gap-2">
           <Rating value={trait.rating} pendingFrom={trait.pending_from} planned={planned} of={pipsOf(trait.category)} />
           {!locked && (
-            <StepButtons>
-              <StepButton
-                label={`Lower ${which}`}
-                reason={
-                  current > trait.min_rating || adding
-                    ? undefined
-                    : current <= trait.free_rating
-                      ? "These dots were free, not bought with XP; only storytellers can take them away."
-                      : "Accepted by the home troupe; only storytellers can take these dots away."
-                }
-                disabled={pending || current <= trait.min_rating}
-                onClick={() => onChange(current - 1)}
-              >
-                −
-              </StepButton>
-              <StepButton label={`Raise ${which}`} disabled={pending} onClick={() => onChange(current + 1)}>
-                +
-              </StepButton>
-            </StepButtons>
+            <span className={tuck}>
+              <StepButtons>
+                <StepButton
+                  label={`Lower ${which}`}
+                  reason={
+                    current > trait.min_rating || adding
+                      ? undefined
+                      : current <= trait.free_rating
+                        ? "These dots were free, not bought with XP; only storytellers can take them away."
+                        : "Accepted by the home troupe; only storytellers can take these dots away."
+                  }
+                  disabled={pending || current <= trait.min_rating}
+                  onClick={() => onChange(current - 1)}
+                >
+                  −
+                </StepButton>
+                <StepButton label={`Raise ${which}`} disabled={pending} onClick={() => onChange(current + 1)}>
+                  +
+                </StepButton>
+              </StepButtons>
+            </span>
           )}
         </span>
       )}
