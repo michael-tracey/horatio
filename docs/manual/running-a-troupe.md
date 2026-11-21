@@ -96,6 +96,7 @@ The rest of the staff are told in the bell as you turn it on. Anyone on the staf
 Only the lead storyteller (and the custodian) can do these, on the troupe's **Overview**:
 
 - **Name and description**: choose **Edit profile** on the **Profile** card, then **Edit** on **Name and description**; change them and choose **Save**. The description is the first thing on the profile, and its first lines show on the troupe list.
+- **Abbreviation**: the troupe's short name, under **Setting up › Settings › Names** (see [Names](#names)).
 - **Archive the troupe**, at the foot of the Overview: choose **Archive troupe…**. Horatio first lists what archiving settles: the characters it is home to are left with no home troupe, visits end, an open downtime cycle ends without being answered, and games under way end. Give a **Reason**: everyone affected sees it. The troupe's history is kept, and the custodian can reopen it (see [Custodian](custodian.md#archived-troupes)).
 
 ## Finding your way around a troupe
@@ -698,6 +699,8 @@ Switching feeding off only hides it. What was recorded is kept and comes back if
 
 ### Names
 
+**Abbreviation** is the troupe's short name, shown beside its name: what it goes by where the full name won't fit, such as the pill on a search result when someone searches from another troupe, and on its profile. The lead storyteller (and the custodian) sets it; the rest of the staff see it here. It is 1 to 10 letters, digits, hyphens (`-`), underscores (`_`) or full stops, with no spaces, and no two troupes on the site can have the same one, whatever the case: Horatio says which troupe has it if yours is taken. Leave it empty and the troupe goes by the first letters of its name, upper case but for small words such as *of*, *the* and *and* ("Court of Ashes" is **CoA**, "Land of the Sky" **LotS**); the hint under the box says what that is. If another troupe has set those letters, or would make the same ones from its own name, the troupe goes by its full name until you set one. Each change is kept in the troupe's log.
+
 **Banu Haqim or Assamite** chooses what the troupe calls that clan: **Banu Haqim** (the default for a new troupe) or **Assamite**. Only the name shown changes, on every screen in the troupe; the rules and sheets stay as they are.
 
 ## Setting up: house rules
@@ -991,7 +994,7 @@ Storytellers and the lead can import. Nothing can be imported into an archived t
    - **New**: this troupe doesn't have it yet.
    - **Changes yours**: this troupe has it, and it differs. **Yours** and **Becomes** show what changes.
    - **Same as yours**: nothing to do, so it's unticked.
-   - **Can't import**: unticked, with why, such as a trait this troupe's rule set doesn't have.
+   - **Can't import**: unticked, with why, such as a trait this troupe's rule set doesn't have, or an abbreviation another troupe already has (only the lead imports an abbreviation, as only the lead sets one).
 3. **Edit the words on the way in.** An item with text, such as a house merit's description or a book trait's house wording, has **Edit**. Change the text and choose **Done**. **Find and replace** changes text across all the ticked items at once, and says how many matches it finds in how many items. Text that names the troupe it came from ("Court of Ashes: …") is the usual case, and Horatio offers to replace that name with this troupe's.
 4. **Import.** The line above the button says what the import will do, such as "Adds 14, changes 6". **Download this troupe's settings first** keeps a copy of what you have, in case you want it back.
 

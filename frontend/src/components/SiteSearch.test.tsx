@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
@@ -27,8 +27,8 @@ function setup(at = `/troupes/${HERE}/boons`, client = new QueryClient()) {
           label: "Characters",
           more: false,
           hits: [
-            { id: "c1", title: "Ravenna", detail: "", to: "/characters/c1", troupe_id: HERE, troupe: "Lords of the Night" },
-            { id: "c2", title: "Raven Two", detail: "NPC", to: "/characters/c2", troupe_id: THERE, troupe: "Other Court" },
+            { id: "c1", title: "Ravenna", detail: "", to: "/characters/c1", troupe_id: HERE, troupe: "Lords of the Night", troupe_abbreviation: "LotN" },
+            { id: "c2", title: "Raven Two", detail: "NPC", to: "/characters/c2", troupe_id: THERE, troupe: "Other Court", troupe_abbreviation: "OC" },
           ],
         },
         {
@@ -78,9 +78,13 @@ describe("SiteSearch", () => {
     expect(await screen.findByRole("heading", { name: "Characters" })).toBeTruthy();
     expect(asked).toHaveBeenCalledWith("/api/search", { params: { query: { q: "raven", troupe_id: HERE } } });
     expect(screen.getByRole("heading", { name: "Boons" })).toBeTruthy();
-    // Another troupe's says which; the current troupe's needn't.
-    expect(screen.getByRole("link", { name: /Raven Two/ }).textContent).toContain("Other Court");
+    // Another troupe's says which, in a pill with what it goes by and its full name (#1153);
+    // the current troupe's needn't.
+    const other = screen.getByRole("link", { name: /Raven Two/ });
+    expect(within(other).getByTitle("Other Court").textContent).toBe("OCOther Court");
+    expect(other.textContent).not.toContain("from");
     expect(screen.getByRole("link", { name: /^Ravenna$/ }).textContent).not.toContain("Lords of the Night");
+    expect(within(screen.getByRole("link", { name: /^Ravenna$/ })).queryByTitle("Lords of the Night")).toBeNull();
     expect(screen.getByText(/More than these/)).toBeTruthy();
   });
 

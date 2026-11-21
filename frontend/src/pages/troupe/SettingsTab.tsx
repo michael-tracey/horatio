@@ -8,6 +8,7 @@ import { SectionLabel } from "../../components/Headings";
 import { PartPicker } from "../../components/PartPicker";
 import { SettingCard, showFound, useSaveOnChange } from "../../components/SettingCard";
 import { ErrorText, Loading } from "../../components/ui";
+import { AbbreviationSetting } from "./AbbreviationSetting";
 import { ClanNamesSetting } from "./ClanNamesSetting";
 import { ClanWeaknesses } from "./ClanWeaknesses";
 import { DiablerieFlaws } from "./DiablerieFlaws";
@@ -30,7 +31,7 @@ import { useCatalogue } from "../../catalogue";
  * The settings for the whole troupe, set once a season or so, a part for each purpose (#908):
  * the Features list first, every optional feature on or off (#783), then the steps of getting
  * a new troupe ready (#1049, #1048), the setting players read (#770), who may join, XP, status
- * and titles, Blood, diablerie and feeding, and what a clan is called, each at `settings/<part>`. A feature with a tab of its own keeps the rest of its
+ * and titles, Blood, diablerie and feeding, and names (the troupe's abbreviation, what a clan is called), each at `settings/<part>`. A feature with a tab of its own keeps the rest of its
  * settings behind that tab's Settings button (#784, #909). Its storytellers change them; the
  * troupe's other running staff read them (assistant storytellers write the setting too). The
  * troupe's rules for traits are on the House rules tab beside it (#782).
@@ -127,6 +128,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
           path="names"
           element={
             <Part title="Names">
+              <AbbreviationSetting troupe={troupe} />
               <ClanNamesSetting troupeId={troupe.id} canEdit={canEdit} />
             </Part>
           }

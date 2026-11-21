@@ -25555,6 +25555,17 @@
             ],
             "title": "Troupe"
           },
+          "troupe_abbreviation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Abbreviation"
+          },
           "troupe_id": {
             "anyOf": [
               {
@@ -57872,6 +57883,18 @@
       },
       "TroupeChanges": {
         "properties": {
+          "abbreviation": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abbreviation"
+          },
           "allowed_sects": {
             "anyOf": [
               {
@@ -58579,6 +58602,25 @@
       },
       "TroupeOut": {
         "properties": {
+          "abbreviation": {
+            "title": "Abbreviation",
+            "type": "string"
+          },
+          "abbreviation_default": {
+            "title": "Abbreviation Default",
+            "type": "string"
+          },
+          "abbreviation_set": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abbreviation Set"
+          },
           "allowed_sects": {
             "items": {
               "type": "string"
@@ -58965,6 +59007,9 @@
         "required": [
           "id",
           "name",
+          "abbreviation",
+          "abbreviation_set",
+          "abbreviation_default",
           "description",
           "lead_user_id",
           "archived",
@@ -59207,6 +59252,10 @@
       },
       "TroupeProfileOut": {
         "properties": {
+          "abbreviation": {
+            "title": "Abbreviation",
+            "type": "string"
+          },
           "banner": {
             "anyOf": [
               {
@@ -59343,6 +59392,7 @@
         "required": [
           "id",
           "name",
+          "abbreviation",
           "description",
           "public",
           "portrait",

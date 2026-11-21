@@ -18,6 +18,7 @@ from horatio import (
     sect_status,
     setting_notices,
     titles,
+    troupe_abbreviations,
     troupe_settings,
     xp_range,
 )
@@ -48,6 +49,12 @@ BADGE_STATUS_TEXT = {"all": "all status", "negative": "negative status only", "n
 class TroupeOut(BaseModel):
     id: uuid.UUID
     name: str
+    # What it goes by where its name won't fit (horatio.troupe_abbreviations): the
+    # abbreviation its lead set, else the one made from its name, else its name; the
+    # one its lead set, None for none; and what it goes by with none set.
+    abbreviation: str
+    abbreviation_set: str | None
+    abbreviation_default: str
     description: str
     lead_user_id: uuid.UUID
     archived: bool
@@ -190,6 +197,9 @@ class NewTroupe(BaseModel):
 
 class TroupeChanges(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
+    # Its abbreviation (horatio.troupe_abbreviations), "" to go by the one made from its
+    # name. Checked there, to say what it may be.
+    abbreviation: str | None = Field(default=None, max_length=100)
     description: str | None = None
     allowed_sects: list[str] | None = None
     allowed_splats: list[str] | None = None
@@ -319,9 +329,11 @@ def troupes_out(db: DbSession, user: User, troupes: Sequence[Troupe]) -> list[Tr
     roles = troupe_roles(db, user, troupes)
     whos_who = whos_who_troupes(db, user, troupes, roles)
     mine = home_characters(db, user, troupes)
+    abbreviations = troupe_abbreviations.effective(db)
     return [
         one_out(
             t,
+            abbreviations[t.id],
             figures[t.id],
             roles[t.id],
             t.id in whos_who,
@@ -359,6 +371,7 @@ def home_characters(
 
 def one_out(
     troupe: Troupe,
+    goes_by: troupe_abbreviations.GoesBy,
     figures: xp_range.Figures,
     role: Role | None,
     whos_who: bool,
@@ -370,6 +383,9 @@ def one_out(
     return TroupeOut(
         id=troupe.id,
         name=troupe.name,
+        abbreviation=goes_by.abbreviation,
+        abbreviation_set=troupe.abbreviation,
+        abbreviation_default=goes_by.default,
         description=troupe.description,
         lead_user_id=troupe.lead_user_id,
         archived=troupe.archived_at is not None,
@@ -538,6 +554,10 @@ def change_troupe(
         require_troupe_action(db, user, troupe, TroupeAction.RENAME)
         troupe.name = body.name
         audit.record(db, user, "troupe.renamed", troupe_id=troupe.id, name=body.name)
+    if body.abbreviation is not None:
+        # Whoever may rename the troupe (#1153).
+        require_troupe_action(db, user, troupe, TroupeAction.RENAME)
+        troupe_abbreviations.set_abbreviation(db, user, troupe, body.abbreviation)
     if body.description is not None:
         require_troupe_action(db, user, troupe, TroupeAction.EDIT_DESCRIPTION)
         troupe.description = body.description

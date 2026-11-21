@@ -295,6 +295,9 @@ def test_the_current_troupe_comes_first(court: Court) -> None:
 
     assert (hits[0]["title"], hits[0]["troupe"]) == ("Raven Two", "Other Court")
     assert {h["troupe"] for h in hits[1:]} == {"Lords of the Night"}
+    # Each with what its troupe goes by, for its pill (#1153).
+    assert hits[0]["troupe_abbreviation"] == "OC"
+    assert {h["troupe_abbreviation"] for h in hits[1:]} == {"LotN"}
 
 
 # --- never an email, and how much it asks --------------------------------------------------

@@ -35,6 +35,10 @@ _Avoid_: Game, chapter, chronicle, organisation
 What a troupe tells players and people thinking of joining: its portrait, links, schedule and upcoming games, venue, setting, whether it takes new players, and age and content notes. Its storytellers edit it. Anyone signed in can see it, and anyone at all if the troupe makes it public. It never shows emails, characters or anything only members see, and the venue's street address only to people signed in.
 _Avoid_: Troupe page, listing
 
+**Troupe Abbreviation**:
+The short name a troupe goes by where its full name won't fit, such as the pill on a search result from another troupe: the one its lead storyteller sets, unique on the site whatever the case, or else the initials of its name ("Court of Ashes" is CoA), or else, when those are another troupe's, its full name.
+_Avoid_: Short code, acronym, tag
+
 **Archived Troupe**:
 A troupe its lead storyteller or the custodian has deleted: closed to all use but the custodian's, and kept with its full history. Archiving lets its player characters go, those it was home to left with no home troupe, and ends its open downtime cycle and games under way; its NPCs stay with it. The custodian can reopen it, which brings no characters back. Troupes are never truly deleted.
 _Avoid_: Deleted troupe, closed troupe
