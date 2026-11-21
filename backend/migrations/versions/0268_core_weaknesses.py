@@ -2,8 +2,8 @@
 (#1127): the clans it plays by the core book's. Empty for every troupe, so each keeps
 Volume 2's Tremere weakness, as before.
 
-Revision ID: 0263
-Revises: 0259
+Revision ID: 0268
+Revises: 0265
 Create Date: 2026-11-21 12:00:00.000000
 """
 
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0263"
-down_revision: str | None = "0259"
+revision: str = "0268"
+down_revision: str | None = "0265"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
