@@ -961,7 +961,7 @@ Where a channel's name matches a character's, Horatio suggests it: **Suggested: 
 
 The list above the characters names any with no channel yet. They still get their results in Horatio, and by email if it's on, but nothing on Discord until one is chosen. Delivering a cycle warns of them too (see [Delivering results](#delivering-results)).
 
-A player can turn off what Horatio posts to their character's channel, on their Account › Notifications. The character's row then says **Player turned it off**. Nothing goes to that channel while it's off: you deliver as usual, the cycle's **Delivery** tab says **Turned off by the player** in that character's Discord column, and the player still gets their results in Horatio. The troupe's own channels for news and announcements still post, and test mode still sends to the test channel.
+A player can turn off what Horatio posts to their character's channel, on their Account › Notifications. The character's row then says **Player turned it off**. Nothing goes to that channel while it's off: you deliver as usual, the cycle's **Delivery** tab says **Turned off by the player** in that character's Discord column, and the player still gets their results in Horatio. Results or quest news already waiting to go there when the player turns it off are cancelled, not sent: the Delivery tab shows them as **Cancelled**, and the troupe's log says so. Turned back on, the next delivery sends the results it never had. The troupe's own channels for news and announcements still post, and test mode still sends to the test channel.
 
 #### Trying it in test mode
 
