@@ -176,7 +176,7 @@ test("a new troupe's Overview shows its storytellers getting it ready, each step
   await expect(card.getByText("2 of 8 done")).toBeVisible();
 });
 
-test("a lead storyteller asks the staff to sign in with two steps, and a storyteller without it is sent to set it up first (#1057)", async ({ browser }) => {
+test("a lead storyteller asks the staff to sign in with two steps, and a storyteller without it is sent to set it up first, reading why in the bell (#1057, #1111)", async ({ browser }) => {
   const { page: c, email: custodianEmail } = await person(browser, "twostep-cust");
   makeCustodian(custodianEmail);
   const { page: lead, handle: leadHandle } = await person(browser, "twostep-lead");
@@ -216,7 +216,18 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await expect(st.getByRole("navigation", { name: "Main" })).toHaveCount(0);
   await st.screenshot(shots("two-step-setup-required"));
 
-  // Once set up, the bell says why it was asked (#1096).
+  // Their bell answers before then, and says why it was asked (#1096, #1111).
+  await st.getByRole("button", { name: /^Notifications/ }).click();
+  const bell = st.getByRole("dialog", { name: "Notifications" });
+  const notice = bell.getByRole("button", { name: /asked the troupe's staff to sign in with two steps/ });
+  await expect(notice).toHaveCount(1);
+  await expect(notice).toContainText(owls);
+  await expect(notice).toContainText("Set it up in Account › Sign-in and email");
+  await expect(bell.getByRole("link", { name: "Notification settings" })).toHaveCount(0);
+  await bell.getByRole("button", { name: "Mark all read" }).click();
+  await expect(bell.getByRole("button", { name: "Mark all read" })).toHaveCount(0);
+  await st.keyboard.press("Escape");
+
   const stCdp = await st.context().newCDPSession(st);
   await stCdp.send("WebAuthn.enable");
   await stCdp.send("WebAuthn.addVirtualAuthenticator", {
@@ -226,12 +237,7 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await st.getByLabel("Your password").fill(PASSWORD);
   await st.getByRole("button", { name: "Add a passkey" }).click();
   await st.getByRole("button", { name: "I've kept them" }).click();
-  await st.goto("/");
-  await st.getByRole("button", { name: /^Notifications/ }).click();
-  const notice = st.getByRole("dialog", { name: "Notifications" }).getByRole("button", { name: /asked the troupe's staff to sign in with two steps/ });
-  await expect(notice).toHaveCount(1);
-  await expect(notice).toContainText(owls);
-  await expect(notice).toContainText("Set it up in Account › Sign-in and email");
+  await expect(st).not.toHaveURL(/\/two-step/);
 });
 
 test("a troupe's or character's tab that isn't there, or isn't open to them, says so with the way back (#907)", async ({ browser }) => {

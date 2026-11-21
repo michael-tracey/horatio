@@ -31,8 +31,12 @@ export function timeAgo(at: string, now = Date.now()): string {
   return RELATIVE.format(Math.round(value), "year");
 }
 
-/** The bell in the menu bar: work waiting on you, then messages. Each opens where to deal with it. */
-export function NotificationBell() {
+/**
+ * The bell in the menu bar: work waiting on you, then messages. Each opens where to deal with it.
+ * Without `settings`, no link to the notification settings: before setting up two-step sign-in,
+ * the bell is all that answers (#1111).
+ */
+export function NotificationBell({ settings = true }: { settings?: boolean }) {
   const bell = useNotifications(true);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -81,11 +85,12 @@ export function NotificationBell() {
           <CountBubble count={bell.data?.count ?? 0} label="waiting" />
         </span>
       </button>
+      {/* On a computer the bell sits in the top bar's nav, whose links don't wrap; its notices do (#1123). */}
       {open && (
         <div
           role="dialog"
           aria-label="Notifications"
-          className="fixed inset-x-4 top-16 z-20 max-h-[70vh] overflow-y-auto rounded-lg border border-ash bg-dusk shadow-xl sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-96"
+          className="fixed inset-x-4 top-16 z-20 max-h-[70vh] overflow-y-auto rounded-lg border border-ash bg-dusk whitespace-normal shadow-xl sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-96"
         >
           {items.length === 0 && (
             <div className="px-4 py-2">
@@ -107,11 +112,13 @@ export function NotificationBell() {
               }
             />
           )}
-          <div className="px-4 py-2.5 text-right">
-            <Link to="/account/notifications" onClick={() => setOpen(false)} className="text-xs text-mist underline hover:text-parchment">
-              Notification settings
-            </Link>
-          </div>
+          {settings && (
+            <div className="px-4 py-2.5 text-right">
+              <Link to="/account/notifications" onClick={() => setOpen(false)} className="text-xs text-mist underline hover:text-parchment">
+                Notification settings
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

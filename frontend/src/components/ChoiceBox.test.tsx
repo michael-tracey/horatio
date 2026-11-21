@@ -115,13 +115,17 @@ describe("ChoiceBox", () => {
     expect(input.getAttribute("aria-activedescendant")).toBe(screen.getByRole("option", { name: "Auspex" }).id);
   });
 
-  it("says what a clan highlighted brings: its in-clan disciplines and its weakness, with the weakness's page", () => {
-    const brujah: TraitOut = { category: "clan", name: "Brujah", in_clan: ["Celerity", "Potence", "Presence"], weakness: "Quick to rage.", weakness_page: "45" };
+  it("says what a clan highlighted brings: its write-up's page, its in-clan disciplines and its weakness, with the weakness's page", () => {
+    const brujah: TraitOut = { category: "clan", name: "Brujah", page_reference: "45", in_clan: ["Celerity", "Potence", "Presence"], weakness: "Quick to rage.", weakness_page: "45" };
     const input = box(vi.fn(), undefined, [{ value: "Brujah", label: "Brujah", trait: brujah }]);
     fireEvent.focus(input);
-    expect(screen.getByRole("option", { name: "Brujah" }).textContent).toContain("In-clan: Celerity, Potence, Presence");
+    const option = screen.getByRole("option", { name: "Brujah" });
+    expect(option.textContent).toContain("In-clan: Celerity, Potence, Presence");
+    expect(option.textContent).toContain("MET: VTM p. 45");
+    expect(screen.getByRole("button", { name: "About Brujah" })).toBeTruthy();
     fireEvent.keyDown(input, { key: "ArrowDown" });
     const about = screen.getByRole("region", { name: "About the highlighted choice" });
+    expect(about.textContent).toContain("MET: VTM p. 45");
     expect(about.textContent).toContain("In-clan disciplines: Celerity, Potence, Presence.");
     expect(about.textContent).toContain("Weakness: Quick to rage. (p. 45)");
   });
