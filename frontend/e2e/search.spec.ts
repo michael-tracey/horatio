@@ -73,6 +73,31 @@ test("the top bar finds a character and a boon, each opening its page (#1046)", 
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/boons\\?boon=${boon.id}`));
   const panel = onPhone() ? l.getByRole("dialog", { name: `${word} Marsh owes The Harbourmaster` }) : l.getByRole("complementary", { name: `${word} Marsh owes The Harbourmaster` });
   await expect(panel).toBeVisible();
+
+  // Its lead gives the troupe an abbreviation, beside its name in Settings › Names (#1153).
+  const abbreviation = `Q${run.slice(-9)}`;
+  await l.goto(`/troupes/${troupe.id}/settings/names`);
+  const setting = l.getByRole("region", { name: "Abbreviation" });
+  await expect(setting).toContainText(`Name: ${court}`);
+  await setting.getByRole("textbox", { name: "Abbreviation" }).fill(abbreviation);
+  await setting.getByRole("button", { name: "Save" }).click();
+  await expect(setting.getByText("Not saved yet")).toBeHidden();
+  await expect(setting.getByRole("textbox", { name: "Abbreviation" })).toHaveValue(abbreviation);
+  // The profile on its Overview shows it.
+  await l.goto(`/troupes/${troupe.id}`);
+  await expect(l.getByRole("region", { name: "Profile" })).toContainText(`Abbreviation: ${abbreviation}`);
+
+  // From a page of no troupe, each hit carries its troupe's pill: the abbreviation, the full name to point at.
+  await l.goto("/");
+  const hit = (await open()).getByRole("region", { name: "Characters" }).getByRole("link", { name: `${word} Marsh` });
+  const pill = hit.getByTitle(court);
+  await expect(pill).toContainText(abbreviation);
+  await expect(hit).not.toContainText(`from ${court}`);
+  // On the title's line, inside the hit, with nothing wider than the screen.
+  const [hitBox, pillBox] = [(await hit.boundingBox())!, (await pill.boundingBox())!];
+  expect(pillBox.x + pillBox.width).toBeLessThanOrEqual(hitBox.x + hitBox.width);
+  expect(pillBox.y - hitBox.y).toBeLessThan(20);
+  expect(await l.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
 });
 
 test("Find a setting on Setting up, and the top bar, open a setting where it is (#1047, #1133)", async ({ browser }) => {

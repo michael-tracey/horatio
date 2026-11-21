@@ -8,10 +8,11 @@ nothing from their player profile is in it unless they put it there: no email,
 pronouns, Discord or lines and veils, and never their player profile's bio.
 
 Anyone at all, signed in or not, can see an author's page (GET
-/blog/authors/<handle>) and picture, while the author writes for the blog: the
-custodian, or anyone on the staff of a troupe that isn't archived. Until then it
-is theirs alone to see, so an account made only to post links has no public page.
-The custodian can clear an author's bio, links or picture, and it is logged.
+/blog/authors/<handle>) and picture, while the author writes for the blog (horatio.blog.may_write:
+the custodian, or anyone on the staff of a troupe that isn't archived), or has an
+article published. Until then it is theirs alone to see, so an account made only
+to post links has no public page. The custodian can clear an author's bio, links
+or picture: it is logged, and the author is told in the bell.
 """
 
 import uuid
@@ -30,7 +31,9 @@ from horatio.api.players import Link, clean_link
 from horatio.api.troupe_profiles import read_upload
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
-from horatio.models import BlogAuthor, Troupe, TroupeStaff, User
+from horatio.blog import may_write
+from horatio.models import BlogAuthor, BlogPost, User
+from horatio.notifications import notify
 from horatio.permissions import require_custodian
 from horatio.sheets import conflict, unprocessable
 from horatio.titles import and_list
@@ -100,26 +103,17 @@ class ClearIn(BaseModel):
     reason: str = Field(default="", max_length=500)
 
 
-def writes_for_blog(db: Session, user: User) -> bool:
-    """Whether `user` writes for the blog (#1155): the custodian, or anyone on the
-    staff of a troupe that isn't archived, narrators included."""
-    if user.is_custodian:
-        return True
-    leads = select(Troupe.id).where(Troupe.lead_user_id == user.id, Troupe.archived_at.is_(None))
-    staffs = (
-        select(TroupeStaff.id)
-        .join(Troupe, Troupe.id == TroupeStaff.troupe_id)
-        .where(TroupeStaff.user_id == user.id, Troupe.archived_at.is_(None))
-    )
-    return bool(db.scalar(leads.limit(1)) or db.scalar(staffs.limit(1)))
-
-
 def shown(db: Session, author: BlogAuthor) -> bool:
     """Whether anyone at all may see the author's page and picture: while they write
-    for the blog, and never for an account merged into another. (With the blog's
-    reading pages, #1158, an author whose articles are published stays shown.)"""
+    for the blog, or while an article of theirs is published; never for an account
+    merged into another."""
     user = db.get_one(User, author.user_id)
-    return user.merged_into_id is None and writes_for_blog(db, user)
+    if user.merged_into_id is not None:
+        return False
+    published = select(BlogPost.id).where(
+        BlogPost.author_id == user.id, BlogPost.status == "published"
+    )
+    return may_write(db, user) or db.scalar(published.limit(1)) is not None
 
 
 def card(author: BlogAuthor) -> AuthorCard:
@@ -320,7 +314,8 @@ def remove_mine(db: DbSession, user: CurrentUser) -> MyAuthor:
 
 @router.get("/authors/{handle}")
 def read_author(handle: str, db: DbSession, user: MaybeUser) -> AuthorPage:
-    """An author's page, for anyone at all while they write for the blog."""
+    """An author's page, for anyone at all while they write for the blog or have an
+    article published."""
     author = viewable(db, user, handle)
     return AuthorPage(
         **card(author).model_dump(),
@@ -354,6 +349,7 @@ def clear_author(handle: str, body: ClearIn, db: DbSession, user: CurrentUser) -
         author.links = []
     old = without_picture(author) if "picture" in parts else None
     member = db.get_one(User, author.user_id)
+    reason = body.reason.strip()
     record(
         db,
         user,
@@ -362,7 +358,16 @@ def clear_author(handle: str, body: ClearIn, db: DbSession, user: CurrentUser) -
         user_id=member.id,
         handle=author.handle,
         cleared=and_list(parts),
-        reason=body.reason.strip(),
+        reason=reason,
+    )
+    # Told in the bell, with the reason if there is one.
+    notify(
+        db,
+        [member.id],
+        "blog.author_cleared",
+        f"The custodian cleared the {and_list(parts)} of your author profile on the blog"
+        + (f": {reason}" if reason else "."),
+        "/account/blog",
     )
     db.commit()
     remove_files(author, old)

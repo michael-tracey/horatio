@@ -179,6 +179,12 @@ export const SETTINGS = {
     (t) => t.feeding !== "off" && t.feeding_territories,
   ),
 
+  abbreviation: card(
+    "abbreviation",
+    "Abbreviation",
+    "The troupe's short name, beside its name: what it goes by where the full name won't fit, such as the pill on its search results when someone searches from another troupe. Up to 10 letters, digits, hyphens, underscores or full stops; no two troupes the same.",
+    "names",
+  ),
   clanNames: card(
     "clanNames",
     "Banu Haqim or Assamite",

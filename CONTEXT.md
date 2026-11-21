@@ -39,6 +39,10 @@ _Avoid_: Game, chapter, chronicle, organisation
 What a troupe tells players and people thinking of joining: its portrait, links, schedule and upcoming games, venue, setting, whether it takes new players, and age and content notes. Its storytellers edit it. Anyone signed in can see it, and anyone at all if the troupe makes it public. It never shows emails, characters or anything only members see, and the venue's street address only to people signed in.
 _Avoid_: Troupe page, listing
 
+**Troupe Abbreviation**:
+The short name a troupe goes by where its full name won't fit, such as the pill on a search result from another troupe: the one its lead storyteller sets, unique on the site whatever the case, or else the initials of its name ("Court of Ashes" is CoA), or else, when those are another troupe's, its full name.
+_Avoid_: Short code, acronym, tag
+
 **Archived Troupe**:
 A troupe its lead storyteller or the custodian has deleted: closed to all use but the custodian's, and kept with its full history. Archiving lets its player characters go, those it was home to left with no home troupe, and ends its open downtime cycle and games under way; its NPCs stay with it. The custodian can reopen it, which brings no characters back. Troupes are never truly deleted.
 _Avoid_: Deleted troupe, closed troupe
@@ -562,3 +566,17 @@ _Avoid_: Property quest, location mission
 **Party**:
 The quest's leader and the characters who joined it. Characters a quest is shared with or offered to see it and may join; only the party sees its results.
 _Avoid_: Group, team, coterie (that is a story group)
+
+### The blog
+
+**Blog**:
+Horatio's game developer blog: articles on playing and running a game, for everyone who uses Horatio, not one troupe. Staff of any troupe that isn't archived write them, narrators included, and the custodian publishes each one. Readers never comment.
+_Avoid_: News (that is a troupe's own), forum, posts (for the blog)
+
+**Article**:
+One piece written for the blog: a title, a summary, the text and a hero picture, with its author and, if they choose, one troupe they're on the staff of, which stays named if they leave it. It is a **draft** while written, **submitted** while it waits for the custodian, **published** once they put it up, and **unpublished** if they take it down, with a reason. One the custodian **returns** is a draft again, with their note. Changing a published article sends its changes to the custodian in turn, while the published version stays up. Its **slug**, its address on the blog, comes from its title and is fixed once it is first published.
+_Avoid_: Post, blog post, story (those are a troupe's news)
+
+**Blog Tag**:
+One of the subjects the custodian keeps for the blog, such as Storytelling or Safety and consent, that they tag articles with.
+_Avoid_: Category, label

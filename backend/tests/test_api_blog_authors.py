@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from horatio.config import get_settings
 from horatio.models import AuditEvent, BlogAuthor
 from tests.api_helpers import Person, Troupe, sign_up
+from tests.test_api_blog import bell, published
 from tests.test_api_pictures import photo
 
 AUTHOR: dict[str, Any] = {
@@ -156,11 +157,16 @@ def test_only_those_who_write_for_the_blog_have_a_public_page(
     save(troupe.custodian, handle="custodian_writes")
     assert visitor.get("/blog/authors/custodian_writes").status_code == 200
 
-    # Staff of an archived troupe only are no longer shown.
+    # Staff of an archived troupe only are no longer shown, unless an article of
+    # theirs is published.
+    save(troupe.storyteller)
+    published(troupe, troupe.storyteller)
     archived = troupe.lead.client.post(f"/troupes/{troupe.id}/archive", json={"reason": "Done"})
     assert archived.status_code == 200, archived.text
     assert visitor.get("/blog/authors/narrator_writes").status_code == 404
     assert troupe.narrator.client.get("/blog/author").json()["public"] is False
+    assert visitor.get("/blog/authors/sam_writes").status_code == 200
+    assert troupe.storyteller.client.get("/blog/author").json()["public"] is True
 
 
 def test_a_handle_is_one_authors_and_never_someone_elses(troupe: Troupe) -> None:
@@ -299,11 +305,20 @@ def test_the_custodian_clears_a_bio_or_picture_and_it_is_logged(
         " on the blog, @sam_writes (an advert)."
         for e in log["entries"]
     )
+    # The author is told in the bell, with the reason.
+    told = "The custodian cleared the bio and picture of your author profile on the blog: an advert"
+    assert told in bell(troupe.storyteller)
+    item = troupe.storyteller.client.get("/notifications").json()["items"][0]
+    assert item["link"] == "/account/blog"
     # Nothing left there to clear is refused, not logged again.
     again = troupe.custodian.client.post(clear, json={"bio": True, "picture": True})
     assert again.status_code == 422
     links = troupe.custodian.client.post(clear, json={"links": True})
     assert links.status_code == 200 and links.json()["links"] == []
+    # Without a reason, the notice ends at what was cleared.
+    assert "The custodian cleared the links of your author profile on the blog." in bell(
+        troupe.storyteller
+    )
 
 
 def test_a_merged_accounts_profile_goes_to_the_account_it_was_merged_into(

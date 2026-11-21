@@ -140,7 +140,7 @@ def review_settings(
     before and after), the same as it has, or not importable here (with why). Nothing
     is saved."""
     troupe = importing(db, user, troupe_id)
-    found = share.review(db, troupe, body.document)
+    found = share.review(db, troupe, body.document, user)
     sections = [
         ShareReviewSectionOut(
             key=key,

@@ -3,7 +3,7 @@ developer blog, apart from their player profile: a display name, a handle for it
 address, a short bio, links and a picture. Made when they first save it.
 
 Revision ID: 0275
-Revises: 0272
+Revises: 0274
 Create Date: 2026-11-21 20:00:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0275"
-down_revision: str | None = "0272"
+down_revision: str | None = "0274"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

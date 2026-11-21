@@ -382,6 +382,9 @@ MESSAGES: dict[str, str] = {
     "troupe.lead_appointed.replacing": "{actor} appointed {member} lead storyteller in place of"
     " {former}, who has left the staff.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
+    "troupe.abbreviation_set": "{actor} set the troupe's abbreviation to {abbreviation}.",
+    "troupe.abbreviation_cleared": "{actor} cleared the troupe's abbreviation: it goes by"
+    " {abbreviation} now.",
     "troupe.archived": "{actor} archived the troupe{because}.",
     "troupe.settled.home": "{character} left {troupe} as it was archived, and has no home troupe"
     " now{because}.",
@@ -506,6 +509,19 @@ MESSAGES: dict[str, str] = {
     "post.delivery_retried": "{actor} retried sending {what} “{title}” to Discord.",
     "post.delivery_marked_sent": "{actor} marked {what} “{title}” as sent to Discord by hand.",
     "post.channel_chosen": "{actor} changed the troupe's Discord {what} ({state}).",
+    "blog.created": "{actor} started writing {what} “{title}”.",
+    "blog.submitted": "{actor} sent {what} “{title}” to the custodian to publish.",
+    "blog.withdrawn": "{actor} withdrew {what} “{title}” from the custodian's queue.",
+    "blog.changes_discarded": "{actor} threw away their changes to the blog article “{title}”,"
+    " which stays as it was published.",
+    "blog.deleted": "{actor} deleted {what} “{title}”, never published.",
+    "blog.published": "{actor} published {what} “{title}”.",
+    "blog.returned": "{actor} returned {what} “{title}” to its author: {note}",
+    "blog.unpublished": "{actor} unpublished {what} “{title}”: {reason}",
+    "blog.featured": "{actor} featured {what} “{title}”.",
+    "blog.unfeatured": "{actor} stopped featuring {what} “{title}”.",
+    "blog.tagged": "{actor} tagged {what} “{title}”: {tags}.",
+    "blog.slug_changed": "{actor} changed the address of {what} “{title}” from {was} to {slug}.",
     "agency.created": "{actor} made the news agency {name}.",
     "agency.changed": "{actor} changed the news agency {name}.",
     "agency.retired": "{actor} retired the news agency {name}.",

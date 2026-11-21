@@ -30,6 +30,7 @@ const TwoStepSetupPage = lazy(() => import("./pages/TwoStepSetupPage").then((m) 
 const AccountPage = lazy(() => import("./pages/AccountPage").then((m) => ({ default: m.AccountPage })));
 const CheckInPage = lazy(() => import("./pages/CheckInPage").then((m) => ({ default: m.CheckInPage })));
 const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then((m) => ({ default: m.CharacterPage })));
+const WritePage = lazy(() => import("./pages/blog/WritePage").then((m) => ({ default: m.WritePage })));
 const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then((m) => ({ default: m.CustodianPage })));
 const OldCycleLink = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.OldCycleLink })));
 const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ default: m.PlayPage })));
@@ -167,6 +168,8 @@ export const routes = createRoutesFromElements(
         <Route path="/account/*" element={<AccountPage />} />
         <Route path="/two-step" element={<TwoStepSetupPage />} />
         <Route path="/custodian/*" element={<CustodianPage />} />
+        <Route path="/blog/write" element={<WritePage />} />
+        <Route path="/blog/write/:articleId" element={<WritePage />} />
         <Route path="/charts" element={<ChartKitPage />} />
         <Route path="/people" element={<Navigate to="/custodian/people" replace />} />
       </Route>

@@ -20,7 +20,7 @@ from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import pictures, setting_notices
+from horatio import pictures, setting_notices, troupe_abbreviations
 from horatio.api.pictures import CropIn, as_fractions, uploads
 from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.audit import record
@@ -120,6 +120,9 @@ class ProfilePerson(BaseModel):
 class TroupeProfileOut(BaseModel):
     id: uuid.UUID
     name: str
+    # What it goes by where its name won't fit (horatio.troupe_abbreviations): its
+    # name itself when it has no abbreviation to go by.
+    abbreviation: str
     description: str
     public: bool
     # Where its portrait is (add "/48.webp", "/128.webp", "/512.webp", or
@@ -194,6 +197,7 @@ def profile_out(db: Session, viewer: User | None, troupe: Troupe) -> TroupeProfi
     return TroupeProfileOut(
         id=troupe.id,
         name=troupe.name,
+        abbreviation=troupe_abbreviations.of(db, troupe),
         description=troupe.description,
         public=troupe.public,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),

@@ -16,6 +16,7 @@ from horatio.models.backstories import (
     BackstoryQuestionSet,
 )
 from horatio.models.base import Base
+from horatio.models.blog import BlogPost, BlogPostTag, BlogTag
 from horatio.models.blog_authors import BlogAuthor
 from horatio.models.bonds import BloodBond, BondEntry, BondReport
 from horatio.models.boon_audits import BoonAudit
@@ -146,6 +147,9 @@ from horatio.models.written_rules import WrittenRule
 from horatio.models.yorick_imports import YorickImport
 
 __all__ = [
+    "BlogPost",
+    "BlogPostTag",
+    "BlogTag",
     "WrittenRule",
     "ChronicleMotif",
     "Backstory",

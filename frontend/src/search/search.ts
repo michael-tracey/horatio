@@ -70,6 +70,7 @@ export const settingsSource: LocalSource = {
         detail: [s.where, s.hint].filter(Boolean).join(" · "),
         to: s.to,
         troupe: troupe.name,
+        troupe_abbreviation: troupe.abbreviation,
         troupe_id: troupe.id,
       }));
   },

@@ -896,6 +896,295 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blog/articles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * New Article
+         * @description A new draft, by a member of staff of a troupe that is running, or the custodian.
+         */
+        post: operations["new_article_api_blog_articles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Articles
+         * @description The caller's own articles, the latest changed first.
+         */
+        get: operations["my_articles_api_blog_articles_mine_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Article */
+        get: operations["read_article_api_blog_articles__article_id__get"];
+        /**
+         * Change Article
+         * @description Its author's change. A published article stays up as it is: the change is to
+         *     its revision, for the custodian to publish once submitted.
+         */
+        put: operations["change_article_api_blog_articles__article_id__put"];
+        post?: never;
+        /**
+         * Delete Article
+         * @description Its author throws away an article never published.
+         */
+        delete: operations["delete_article_api_blog_articles__article_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Feature Article */
+        put: operations["feature_article_api_blog_articles__article_id__featured_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Picture
+         * @description Its hero picture, as a post's is kept (1200 and 600 px wide). On a published
+         *     article it is part of the changes, so the old one stays up until they are.
+         */
+        post: operations["upload_picture_api_blog_articles__article_id__picture_post"];
+        /** Remove Picture */
+        delete: operations["remove_picture_api_blog_articles__article_id__picture_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/pictures/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Article Picture
+         * @description An article's hero picture, or its changes', for its author and the custodian
+         *     until the blog's pages are public (#1158). Its files never change (a new one has
+         *     a new id), so browsers may keep them, privately.
+         */
+        get: operations["article_picture_api_blog_articles__article_id__pictures__picture_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Article
+         * @description Publish an article waiting, or put up a published one's changes in place of
+         *     the old.
+         */
+        post: operations["publish_article_api_blog_articles__article_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Return Article
+         * @description Send an article waiting, or a published one's changes, back to its author with
+         *     a note.
+         */
+        post: operations["return_article_api_blog_articles__article_id__return_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/revision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Discard Revision
+         * @description Throw away a published article's changes; it stays as published.
+         */
+        delete: operations["discard_revision_api_blog_articles__article_id__revision_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/slug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Slug
+         * @description Its address on the blog, by its author or the custodian, until it is published.
+         */
+        put: operations["change_slug_api_blog_articles__article_id__slug_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Article
+         * @description Send it, or a published article's changes, to the custodian to publish.
+         */
+        post: operations["submit_article_api_blog_articles__article_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Tag Article
+         * @description Its tags: the custodian's at any time, its author's while it is being written.
+         */
+        put: operations["tag_article_api_blog_articles__article_id__tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unpublish Article
+         * @description Take a published article down, telling its author why.
+         */
+        post: operations["unpublish_article_api_blog_articles__article_id__unpublish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/articles/{article_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw Article
+         * @description Take it, or a published article's changes, back from the custodian's queue.
+         */
+        post: operations["withdraw_article_api_blog_articles__article_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blog/author": {
         parameters: {
             query?: never;
@@ -990,7 +1279,8 @@ export interface paths {
         };
         /**
          * Read Author
-         * @description An author's page, for anyone at all while they write for the blog.
+         * @description An author's page, for anyone at all while they write for the blog or have an
+         *     article published.
          */
         get: operations["read_author_api_blog_authors__handle__get"];
         put?: never;
@@ -1016,6 +1306,63 @@ export interface paths {
          *     breaks the site's rules. Logged; the rest of their profile stays.
          */
         post: operations["clear_author_api_blog_authors__handle__clear_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Queue
+         * @description Custodian › Blog: what waits, then what is published and unpublished.
+         */
+        get: operations["queue_api_blog_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tags
+         * @description The blog's tags, in the custodian's order.
+         */
+        get: operations["list_tags_api_blog_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/writer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Writer */
+        get: operations["writer_api_blog_writer_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -15701,7 +16048,7 @@ export interface components {
          * AuditGroup
          * @enum {string}
          */
-        AuditGroup: "approvals" | "xp" | "sheets" | "creation" | "status" | "titles" | "downtimes" | "influence" | "play" | "npcs" | "equipment" | "staff" | "house_rules" | "troupes" | "accounts" | "system";
+        AuditGroup: "approvals" | "xp" | "sheets" | "creation" | "status" | "titles" | "downtimes" | "influence" | "play" | "npcs" | "equipment" | "staff" | "house_rules" | "troupes" | "accounts" | "blog" | "system";
         /** AuditGroupOut */
         AuditGroupOut: {
             key: components["schemas"]["AuditGroup"];
@@ -16870,6 +17217,178 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** BlogArticleIn */
+        BlogArticleIn: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+            /** Title */
+            title: string;
+            /** Troupe Id */
+            troupe_id?: string | null;
+        };
+        /** BlogArticleOut */
+        BlogArticleOut: {
+            /**
+             * Author Id
+             * Format: uuid
+             */
+            author_id: string;
+            /** Author Name */
+            author_name: string;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Featured */
+            featured: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mine */
+            mine: boolean;
+            /** Note */
+            note: string;
+            /** Picture */
+            picture: string | null;
+            /** Published At */
+            published_at: string | null;
+            /** Revised At */
+            revised_at: string | null;
+            revision: components["schemas"]["BlogRevisionOut"] | null;
+            /** Slug */
+            slug: string;
+            /** Slug Fixed */
+            slug_fixed: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "submitted" | "published" | "unpublished";
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Summary */
+            summary: string;
+            /** Tags */
+            tags: components["schemas"]["BlogTagOut"][];
+            /** Title */
+            title: string;
+            troupe: components["schemas"]["BlogTroupeOut"] | null;
+            /** Unpublished At */
+            unpublished_at: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Waiting */
+            waiting: ("article" | "changes") | null;
+        };
+        /** BlogFeaturedIn */
+        BlogFeaturedIn: {
+            /** Featured */
+            featured: boolean;
+        };
+        /** BlogNoteIn */
+        BlogNoteIn: {
+            /** Note */
+            note: string;
+        };
+        /**
+         * BlogQueueOut
+         * @description For the custodian: articles and changes waiting, longest waiting first; then
+         *     those published and unpublished, the latest first.
+         */
+        BlogQueueOut: {
+            /** Published */
+            published: components["schemas"]["BlogArticleOut"][];
+            /** Unpublished */
+            unpublished: components["schemas"]["BlogArticleOut"][];
+            /** Waiting */
+            waiting: components["schemas"]["BlogArticleOut"][];
+        };
+        /** BlogReasonIn */
+        BlogReasonIn: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * BlogRevisionOut
+         * @description Changes to a published article, while the published version stays up.
+         */
+        BlogRevisionOut: {
+            /** Body */
+            body: string;
+            /** Picture */
+            picture: string | null;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+            troupe: components["schemas"]["BlogTroupeOut"] | null;
+        };
+        /** BlogSlugIn */
+        BlogSlugIn: {
+            /** Slug */
+            slug: string;
+        };
+        /** BlogTagOut */
+        BlogTagOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** BlogTagsIn */
+        BlogTagsIn: {
+            /** Tag Ids */
+            tag_ids: string[];
+        };
+        /**
+         * BlogTroupeOut
+         * @description The troupe an article names.
+         */
+        BlogTroupeOut: {
+            /** Archived */
+            archived: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * BlogWriterOut
+         * @description Whether the caller may write for the blog, and the troupes an article of theirs
+         *     may name: those that are running where they're on staff.
+         */
+        BlogWriterOut: {
+            /** Can Write */
+            can_write: boolean;
+            /** Troupes */
+            troupes: components["schemas"]["BlogTroupeOut"][];
+        };
         /** BloodBondsIn */
         BloodBondsIn: {
             /**
@@ -17051,6 +17570,14 @@ export interface components {
             /**
              * File
              * @description The page saved from Yorick: a zip of it with its _files folder, or the .html alone.
+             */
+            file: string;
+        };
+        /** Body_upload_picture_api_blog_articles__article_id__picture_post */
+        Body_upload_picture_api_blog_articles__article_id__picture_post: {
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
              */
             file: string;
         };
@@ -24584,6 +25111,8 @@ export interface components {
             to: string;
             /** Troupe */
             troupe: string | null;
+            /** Troupe Abbreviation */
+            troupe_abbreviation?: string | null;
             /** Troupe Id */
             troupe_id: string | null;
         };
@@ -37435,6 +37964,8 @@ export interface components {
         };
         /** TroupeChanges */
         TroupeChanges: {
+            /** Abbreviation */
+            abbreviation?: string | null;
             /** Allowed Sects */
             allowed_sects?: string[] | null;
             /** Allowed Splats */
@@ -37612,6 +38143,12 @@ export interface components {
         };
         /** TroupeOut */
         TroupeOut: {
+            /** Abbreviation */
+            abbreviation: string;
+            /** Abbreviation Default */
+            abbreviation_default: string;
+            /** Abbreviation Set */
+            abbreviation_set: string | null;
             /** Allowed Sects */
             allowed_sects: string[];
             /** Allowed Splats */
@@ -37926,6 +38463,8 @@ export interface components {
         };
         /** TroupeProfileOut */
         TroupeProfileOut: {
+            /** Abbreviation */
+            abbreviation: string;
             /** Banner */
             banner: string | null;
             /** Can Edit */
@@ -41215,6 +41754,550 @@ export interface operations {
             };
         };
     };
+    new_article_api_blog_articles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogArticleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_articles_api_blog_articles_mine_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"][];
+                };
+            };
+        };
+    };
+    read_article_api_blog_articles__article_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_article_api_blog_articles__article_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogArticleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_article_api_blog_articles__article_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feature_article_api_blog_articles__article_id__featured_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogFeaturedIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_picture_api_blog_articles__article_id__picture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_picture_api_blog_articles__article_id__picture_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_picture_api_blog_articles__article_id__picture_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    article_picture_api_blog_articles__article_id__pictures__picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_article_api_blog_articles__article_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    return_article_api_blog_articles__article_id__return_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_revision_api_blog_articles__article_id__revision_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_slug_api_blog_articles__article_id__slug_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogSlugIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_article_api_blog_articles__article_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tag_article_api_blog_articles__article_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogTagsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unpublish_article_api_blog_articles__article_id__unpublish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogReasonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_article_api_blog_articles__article_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_mine_api_blog_author_get: {
         parameters: {
             query?: never;
@@ -41447,6 +42530,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    queue_api_blog_queue_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogQueueOut"];
+                };
+            };
+        };
+    };
+    list_tags_api_blog_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogTagOut"][];
+                };
+            };
+        };
+    };
+    writer_api_blog_writer_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogWriterOut"];
                 };
             };
         };

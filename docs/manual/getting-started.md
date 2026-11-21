@@ -95,9 +95,9 @@ Horatio's blog is written by the staff of its troupes. The **Blog author** tab s
 
 **How it shows**, beside the form, is the card readers will see, and changes as you type. Choose **Save**. Once it's saved you can add a **Picture**: choose one, move the square to where you want it, and choose **Save**. **Move the crop** and **Remove** change it later.
 
-While you're on a troupe's staff, **See your author page** opens your page as everyone sees it. Until then, only you can see it.
+While you're on a troupe's staff, or have an article published, **See your author page** opens your page as everyone sees it. Until then, only you can see it.
 
-The custodian can clear an author's bio, links or picture, for example one that breaks the site's rules. The rest of your author profile stays, and you can fill it in again.
+The custodian can clear an author's bio, links or picture, for example one that breaks the site's rules. You're told in the bell, with their reason if they gave one. The rest of your author profile stays, and you can fill it in again.
 
 ## Preferences
 
@@ -225,7 +225,7 @@ Keep the link to yourself: anyone with it can see those dates and your answers. 
 
 The magnifying glass at the top of every page, or **/** or **Ctrl K** (**⌘K** on a Mac) on any page, opens a search of everything you may see: characters, players, boons, locations, quests, equipment, news, announcements and this manual, and a troupe's settings for its storytellers. Each kind is a group of its own, and each result opens its page; **Enter** opens the first.
 
-Within each group, the troupe you're on comes first: the troupe whose pages you're on, or on a character's pages, that character's home troupe. A result from another troupe names it. With no troupe in view, or on a character with no home troupe, no troupe comes first.
+Within each group, the troupe you're on comes first: the troupe whose pages you're on, or on a character's pages, that character's home troupe. A result from another troupe carries a small pill with that troupe's abbreviation, such as **CoA** for Court of Ashes; point at it, or listen with a screen reader, for the troupe's full name. Results from the troupe you're on have no pill. With no troupe in view, or on a character with no home troupe, no troupe comes first, and every result has its troupe's pill.
 
 ## Finding help
 

@@ -43,9 +43,14 @@ class Troupe(Imported, Record):
         CheckConstraint("boon_players_see in ('intake', 'owes', 'owed')", name="boon_players_see"),
         CheckConstraint("boon_harpy in ('none', 'submissions', 'full')", name="boon_harpy"),
         CheckConstraint("boon_talon_word in ('Lesser Harpies', 'Talons')", name="boon_talon_word"),
+        # No two troupes go by the same abbreviation, whatever the case (#1153).
+        Index("uq_troupes_abbreviation_lower", text("lower(abbreviation)"), unique=True),
     )
 
     name: Mapped[str]
+    # The short name it goes by, as its lead set it (horatio.troupe_abbreviations);
+    # None to go by the one made from its name.
+    abbreviation: Mapped[str | None]
     description: Mapped[str] = mapped_column(default="", server_default="")
     # Not null: every troupe has exactly one lead storyteller, enforced here
     # rather than by counting rows in troupe_staff.
