@@ -76,7 +76,8 @@ export function troupeTabGroups(t: TroupeTabsTroupe, can: ReturnType<typeof abil
       // and says so (#922).
       label: "Game night",
       tabs: [
-        ...(can.running ? [{ to: `${base}/at-game`, label: "At game" }] : []),
+        // Open on a game's own page too, which its breadcrumb puts under At game.
+        ...(can.running ? [{ to: `${base}/at-game`, label: "At game", also: `${base}/games` }] : []),
         ...(can.running ? [{ to: `/play/troupes/${t.id}/scenes`, label: "Scenes ↗", ariaLabel: "Scenes (opens the scenes page)" }] : []),
         ...(can.running ? [{ to: `${base}/award-xp`, label: "Award XP" }] : []),
       ],
