@@ -20,11 +20,11 @@ and each works once.
 **Who must have one.** The custodian (`two_step_for_custodians`), and the staff of a
 troupe whose lead storyteller asks it of them (`troupes.staff_two_step`): someone on
 the staff of two troupes needs one if either asks, as one sign-in reaches both. Until
-someone who must has one, every
-request of theirs is refused but those that set one up and those that read their bell
-(#1111), and the app sends them to do that first (`two_step_first`). The custodian resets the second steps of anyone who
-has lost theirs, as a notice; on the server, `python -m horatio.auth.two_step reset
-EMAIL` does it for the custodian.
+someone who must has one, every request of theirs is refused but those that set one
+up and those that read their bell (#1111), and the app sends them to do that first
+(`two_step_first`). The custodian resets the second steps of anyone who has lost
+theirs, as a notice; on the server, `python -m horatio.auth.two_step reset EMAIL`
+does it for the custodian.
 
 **Telling them.** A reset, and a recovery code used to sign in, are in the person's
 bell and come by email (#1096), whatever they chose for other email: each is about
