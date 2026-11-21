@@ -181,7 +181,9 @@ You can put a troupe's games and downtime dates in your own calendar app, and it
 
 The calendar has each game, when downtimes are **Due**, and until when late ones are accepted, each at its time. Calendar apps look for changes every few hours, so a new game can take a while to show.
 
-Keep the link to yourself: anyone with it can see those dates. If it gets out, choose **Reset the link…** and then **Reset the link**: the old one stops working, and you subscribe again with the new one. A link stops working by itself if you leave the troupe.
+Each game shows your own answer to it, at the start of its title and in its notes: **Coming · Game: *the troupe***, **Maybe · …** or **Not coming · …**. A game you haven't answered is plain **Game: *the troupe***, and its notes say you haven't said. A game you're not coming to stays in your calendar, marked, so you can still see it and change your mind. Changing or taking back your answer changes the calendar too, the next time your calendar app looks.
+
+Keep the link to yourself: anyone with it can see those dates and your answers. If it gets out, choose **Reset the link…** and then **Reset the link**: the old one stops working, and you subscribe again with the new one. A link stops working by itself if you leave the troupe.
 
 ![Subscribe to the calendar: a link for one troupe or all your troupes, and how to subscribe](images/getting-started/calendar.png)
 

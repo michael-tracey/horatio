@@ -713,7 +713,7 @@ def earned_lines(lines: Sequence[BackupXpLine]) -> list[tuple[BackupXpLine, int]
 
 # --- importing ---------------------------------------------------------------------------
 
-Status = Literal["new", "differs", "cannot", "info"]
+Status = Literal["new", "differs", "kept", "cannot", "info"]
 Part = Literal["character", "sheet", "xp", "retainers", "equipment", "titles", "status"]
 PARTS: dict[Part, str] = {
     "character": "Character",
@@ -1098,7 +1098,7 @@ def shown_only(
 ) -> None:
     """What a home troupe's storytellers give, shown and never imported. For `staff`
     importing their troupe's own, it says where to give it. Without `items`, its
-    equipment, imported already (a Stock NPC's, horatio.troupe_import), isn't listed."""
+    equipment, imported already (an NPC's, horatio.troupe_import), isn't listed."""
     given = (
         "Give it from the troupe's equipment."
         if staff

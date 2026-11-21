@@ -17,7 +17,6 @@ player shares it. A retired character's plan stays as it was, unpriced and uncha
 
 import math
 from dataclasses import dataclass, replace
-from datetime import timedelta
 from fractions import Fraction
 from typing import Any
 
@@ -45,9 +44,6 @@ HEADROOM = 1_000_000
 # Named as a line's teacher while it is priced, so a troupe's teacher rule
 # (horatio.teaching) prices it rather than refusing it; the cart asks for the real one.
 PRICING_TEACHER = "A teacher, chosen in the cart"
-# How far back the troupe's games and downtime cycles are counted, to tell how much
-# downtime XP a game's worth of time usually brings.
-DOWNTIME_LOOKBACK = timedelta(days=365)
 
 
 @dataclass(frozen=True)
@@ -283,19 +279,15 @@ def usual_award(db: Session, character: Character) -> Award | None:
 
 def downtime_share(db: Session, troupe: Troupe) -> tuple[Fraction, str | None]:
     """The downtime XP a game's worth of time usually brings, and how that was told:
-    the XP for completing the troupe's downtime cycles opened in the last year, over
-    the games it held in that time. With no games held in it, there is nothing to
-    tell by, so the troupe's downtime XP setting, counting a cycle for each game. It
-    counts the downtime as submitted, as an active character's usually is."""
-    since = checkin.now() - DOWNTIME_LOOKBACK
+    the XP for completing every downtime cycle the troupe has opened, over every game
+    it has held, however long ago (a chronicle can run for years). With no games held,
+    there is nothing to tell by, so the troupe's downtime XP setting, counting a cycle
+    for each game. It counts the downtime as submitted, as an active character's
+    usually is. Two counts on indexed columns, however many years of games there are."""
     games = db.scalar(
         select(func.count())
         .select_from(ScheduledGame)
-        .where(
-            ScheduledGame.troupe_id == troupe.id,
-            ScheduledGame.ends_at > since,
-            ScheduledGame.ends_at <= checkin.now(),
-        )
+        .where(ScheduledGame.troupe_id == troupe.id, ScheduledGame.ends_at <= checkin.now())
     )
     if not games:
         if troupe.downtime_xp <= 0:
@@ -306,9 +298,7 @@ def downtime_share(db: Session, troupe: Troupe) -> tuple[Fraction, str | None]:
         )
     cycles, xp = db.execute(
         select(func.count(), func.coalesce(func.sum(DowntimeCycle.completion_xp), 0)).where(
-            DowntimeCycle.troupe_id == troupe.id,
-            DowntimeCycle.opened_at.is_not(None),
-            DowntimeCycle.opened_at > since,
+            DowntimeCycle.troupe_id == troupe.id, DowntimeCycle.opened_at.is_not(None)
         )
     ).one()
     if not xp:
@@ -316,7 +306,7 @@ def downtime_share(db: Session, troupe: Troupe) -> tuple[Fraction, str | None]:
     return (
         Fraction(int(xp), games),
         f"{xp} XP from {plural(cycles, 'downtime cycle')}"
-        f" over {plural(games, 'game')} in the last year",
+        f" over the troupe's {plural(games, 'game')} so far",
     )
 
 

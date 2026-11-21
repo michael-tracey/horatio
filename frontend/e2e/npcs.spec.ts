@@ -525,10 +525,13 @@ test("a storyteller imports the troupe's export, choosing what to do with an NPC
   const custodian = await person(browser, "reimport-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "reimport-lead");
-  const { troupeId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Returns", "Keeper Anselm");
+  const { troupeId, npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Returns", "Keeper Anselm");
 
   const p = lead.page;
-  const zip = await p.request.get(`/api/troupes/${troupeId}/character-backups?which=npcs`);
+  const dagger = { name: "Silver Dagger", kind: "melee", grade: "standard", qualities: [{ name: "Concealable" }, { name: "Silver" }] };
+  const given = await p.request.post(`/api/troupes/${troupeId}/equipment`, { headers: { "X-Horatio": "1" }, data: { character_id: npcId, ...dagger } });
+  expect(given.status(), await given.text()).toBe(201);
+  const zip = await p.request.get(`/api/troupes/${troupeId}/character-backups?which=npcs&sections=equipment`);
   expect(zip.status()).toBe(200);
   await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
   await p.getByRole("button", { name: "More for the troupe's characters" }).click();
@@ -539,8 +542,15 @@ test("a storyteller imports the troupe's export, choosing what to do with an NPC
   const anselm = p.getByRole("listitem", { name: "Keeper Anselm" });
   await expect(anselm).toContainText("has this name: skip it, replace it or add a copy.");
   await expect(p.getByRole("button", { name: "Import 0 characters" })).toBeDisabled();
+  // Replacing it keeps the dagger it holds, rather than giving it a second (#1100).
+  await anselm.getByRole("radio", { name: "Replace it" }).check();
+  await anselm.getByText("What comes in").click();
+  await expect(anselm).toContainText("Held here already: kept as it is.");
+  await expect(anselm.getByText("Kept", { exact: true })).toBeVisible();
+  // A copy is given its own.
   await anselm.getByRole("radio", { name: "Add a copy" }).check();
   await expect(anselm).toContainText("Comes in as a new NPC of the troupe.");
+  await expect(anselm).toContainText("Given from the troupe's equipment.");
   await p.getByRole("button", { name: "Import 1 character" }).click();
   await expect(p.getByText("1 new NPC.", { exact: true })).toBeVisible();
 

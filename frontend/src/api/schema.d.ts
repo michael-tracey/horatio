@@ -15993,7 +15993,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "new" | "differs" | "cannot" | "info";
+            status: "new" | "differs" | "kept" | "cannot" | "info";
         };
         /** BackupOut */
         BackupOut: {
