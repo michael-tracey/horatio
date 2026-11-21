@@ -535,7 +535,7 @@ Everything under **Customise** can stay as the book has it. Storytellers and the
 5. **House rules**: any house rule at all.
 6. **Staff**: anyone besides the lead storyteller.
 7. **First game**: a game is on the calendar.
-8. **Invite players**: a player's character is or has been in the troupe, at home or visiting, or has asked to make it home. A request counts while it waits. Asking also starts the character visiting, and it stays a visitor if the request is declined or withdrawn, so the step stays done.
+8. **Invite players**: a player's character is or has been in the troupe, at home or visiting, or has asked to make it home. A request counts while it waits. Asking also starts the character visiting, and it stays a visitor if the request is declined or withdrawn, so the step stays done. Once the troupe is 30 days old, the step leaves the list, done or not, and the count leaves it out; the custodian can change the number of days.
 
 Features, Who may join and Starting points tick only once something differs from how a new troupe starts: a troupe that keeps the defaults can hide the list instead. The same steps are a card at the top of the Overview for the lead storyteller and storytellers (see [The Overview](#the-overview-and-whats-waiting-on-you)). **Hide from the Overview** here takes the card away for every storyteller, and **Show on the Overview** brings it back.
 

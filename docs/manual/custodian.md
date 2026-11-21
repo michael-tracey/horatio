@@ -289,7 +289,7 @@ Everything since that backup is lost, so make a fresh backup with **Back up now*
 
 ## Site
 
-**Custodian › Site** holds what's the same for everyone on the server: the loading animation, mail, how emails look, and Discord. It also shows what's running. It used to be two tabs, Settings and System; their old links still land here.
+**Custodian › Site** holds what's the same for everyone on the server: the loading animation, how long **Invite players** stays on a new troupe's list, mail, how emails look, and Discord. It also shows what's running. It used to be two tabs, Settings and System; their old links still land here.
 
 Each card shows its status, and its test where it has one, in sight. What you look at less often, such as the settings behind the status, who emails come from, changing the email design and its preview, is folded under a line at the foot of the card: choose it to open it.
 
@@ -307,6 +307,12 @@ While Horatio waits, it shows a loading animation: full screen under the logo as
 Each is shown moving, with the small one that sits beside a line of text, such as a search's count. **Full screen** shows it as the app opens: choose **Close**, or anywhere, to leave. Choosing one changes it for everyone at once, and goes in the audit log. On a device set to reduce motion, each stands still and fades gently instead.
 
 The very first screen shows before the app has asked the server anything, so it shows the animation last seen on that device. Someone who hasn't opened Horatio since you changed it sees the old one once.
+
+### Getting your troupe ready
+
+A new troupe's lead storyteller and storytellers see **Getting your troupe ready** on its Overview and in Customise › Setup: the steps a new troupe takes, each ticked from what the troupe holds (see [Customise: setup](running-a-troupe.md#customise-setup)). The last step, **Invite players**, leaves the list once the troupe is a number of days old, counted from the day it was made, whether it was ticked or not. By then a troupe has players or knows how to find them, and a visit left behind by a declined request no longer keeps the step ticked.
+
+The **Getting your troupe ready** card says the number of days now, and sets it under **Change the number of days**, from 1 to 365; it's 30 until you change it. It applies to every troupe at once, old and new. Once the step has left, the list's count leaves it out too: "5 of 7 done", not "5 of 8". Changing the number goes in the audit log.
 
 ### Mail
 

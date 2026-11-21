@@ -89,7 +89,7 @@ function useHide(troupeId: string) {
 
 const LIST_LABEL = "Getting your troupe ready";
 
-/** "3 of 8 done", gold once every step is. */
+/** "3 of 8 done", gold once every step is. Of the steps listed: Invite players, once it leaves (#1129), isn't counted. */
 function DoneBadge({ lines }: { lines: ReadyLine[] }) {
   const done = lines.filter((l) => l.done).length;
   return <Badge tone={done === lines.length ? "gold" : "mist"}>{`${done} of ${lines.length} done`}</Badge>;
