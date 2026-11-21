@@ -705,6 +705,7 @@ MESSAGES: dict[str, str] = {
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
     "house.default_bloodlines": "{actor} set the clans' default bloodlines here: {defaults}.",
+    "house.clan_weaknesses": "{actor} set the clan weaknesses played here: {setting}.",
     "house.status_ban_clans": "{actor} set the clans of the {sect} status ban “{ban}”: {clans}.",
     "house.written_rule_added": "{actor} added the written rule {title} ({section}).",
     "house.written_rule_changed": "{actor} changed the written rule {title}.",
@@ -737,6 +738,10 @@ MESSAGES: dict[str, str] = {
     " password{from_ip}: too many tries at the account.",
     "account.password_change_throttled_again": "{actor} was turned away again from changing"
     " their password{from_ip}: too many tries at the account.",
+    "account.password_change_throttled.two_step": "{actor} was turned away from giving their"
+    " password for two-step sign-in{from_ip}: too many tries at the account.",
+    "account.password_change_throttled_again.two_step": "{actor} was turned away again from"
+    " giving their password for two-step sign-in{from_ip}: too many tries at the account.",
     "account.signed_up": "{actor} signed up{from_ip}.",
     "account.signed_in": "{actor} signed in{from_ip}.",
     "account.signed_in.app": "{actor} signed in{from_ip}, with their authenticator app.",
@@ -762,6 +767,8 @@ MESSAGES: dict[str, str] = {
     "account.two_step_added.passkey": "{actor} added a passkey, {name}, for two-step sign-in.",
     "account.two_step_removed.app": "{actor} turned off their authenticator app.",
     "account.two_step_removed.passkey": "{actor} removed their passkey {name}.",
+    "account.two_step_replaced.passkey": "{actor} replaced their passkey {name} with a new one"
+    " that signs in alone, with no password.",
     "account.recovery_codes_made": "{actor} made new recovery codes.",
     "account.recovery_code_used": "{actor} signed in with a recovery code{from_ip}: {left} left.",
     "troupe.staff_two_step": "{actor} set two-step sign-in for the troupe's staff: {setting}.",
@@ -802,7 +809,7 @@ MESSAGES: dict[str, str] = {
     " limit of {rule}.",
     "account.throttle_lifted.second_step_account": "{actor} unblocked second steps at {login}:"
     " over the limit of {rule}.",
-    "account.throttle_lifted.password_change": "{actor} unblocked password changes at {login}:"
+    "account.throttle_lifted.password_change": "{actor} unblocked password tries at {login}:"
     " over the limit of {rule}.",
     "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups{from_ip}: over the limit of"
     " {rule}.",

@@ -158,6 +158,12 @@ export const SETTINGS = {
     "What recording a diablerie does to a character who holds Lesser Generation or Thin Blooded. The diablerie form shows staff what this will do before they confirm.",
     "blood",
   ),
+  clanWeaknesses: card(
+    "clanWeaknesses",
+    "Clan weaknesses",
+    "Which weakness a clan plays here where Volume 2 replaced the core book's: so far only the Tremere's. Characters, creation and the rules show the one chosen. Horatio applies neither for you: staff do, as they record blood bonds.",
+    "blood",
+  ),
   feeding: card(
     "feeding",
     "Feeding",

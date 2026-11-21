@@ -30,8 +30,9 @@ than it may unpack to, refuses the lot.
   writes its own (the "Imported" award, and what staff carry over).
 - An NPC's equipment comes in with it (issues #1075, #1100), given from this troupe,
   each item with the member of a group who carries it. One that replaces an NPC here
-  keeps what that NPC holds already, of the same name and kind, and is given only
-  what it lacks; what it holds and the file hasn't is left alone. A player
+  keeps what that NPC holds already, of the same name and kind, changed to the
+  file's grade, qualities and effects (issue #1130), and is given only what it
+  lacks; what it holds and the file hasn't is left alone. A player
   character's equipment, and titles and status, are shown, never imported, as on a
   player's import.
 
@@ -48,7 +49,7 @@ import uuid
 import zipfile
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path, PurePosixPath
@@ -344,6 +345,63 @@ def matched_items(
     return found
 
 
+# Why a kept item changed, as its history keeps it.
+IMPORT_REASON = "Imported from a file"
+
+
+def change_phrases(changes: Mapping[str, Any]) -> list[str]:
+    """What changed on a kept item, in a phrase each: "grade standard → special"."""
+    phrases: list[str] = []
+    if "grade" in changes:
+        phrases.append(f"grade {changes['grade']['from']} → {changes['grade']['to']}")
+    if "crafted" in changes:
+        phrases.append("now crafted" if changes["crafted"]["to"] else "no longer crafted")
+    if "qualities" in changes:
+        phrases.append("qualities updated")
+    if "effects" in changes:
+        phrases.append("special effects updated")
+    return phrases
+
+
+def take_files(
+    db: Session,
+    staff: User,
+    troupe: Troupe,
+    kept: EquipmentItem,
+    item: backup.BackupEquipment,
+) -> str:
+    """Change a kept item to the file's grade, qualities and effects, as staff change
+    one: checked by the rules its holder plays by here, and kept in its history. What
+    changed, or why it's kept as it is."""
+    file = fields_of(item)
+    wanted = replace(
+        equipment.fields_of(kept),
+        grade=file.grade,
+        qualities=file.qualities,
+        crafted=file.crafted,
+        effects=file.effects,
+    )
+    character = db.get_one(Character, kept.character_id)
+    rules = equipment.equipment_rules(db, character.splat, troupe.id)
+    try:
+        wanted = equipment.checked(rules, wanted)
+    except equipment.EquipmentRefused as error:
+        return f"kept as it is. The file's item can't be held here: {error}"
+    phrases = change_phrases(equipment.differences(equipment.fields_of(kept), wanted))
+    if not phrases:
+        return "kept as it is."
+    savepoint = db.begin_nested()
+    try:
+        equipment.change(db, staff, troupe, kept, wanted, IMPORT_REASON)
+    except HTTPException as error:
+        if error.status_code >= 500:
+            raise
+        savepoint.rollback()
+        return f"kept as it is. The file's item can't be held here: {backup.detail_of(error)}"
+    savepoint.commit()
+    return ", ".join(phrases) + "."
+
+
 def carried_text(member: int | None) -> str:
     """Who in a group carries an item: a member, or None for the whole group."""
     who = npcs.member_name(member) if member is not None else "the whole group"
@@ -364,9 +422,9 @@ def bring_items(
     can't be given is left out, saying why.
 
     For an NPC that replaces one here, nothing is given twice: an item it holds
-    already, of the same name and kind, is kept as it is, and one it holds that the
-    file hasn't is left alone. A file exported without its equipment leaves every
-    item here alone, unlisted."""
+    already, of the same name and kind, is kept, with the file's grade, qualities and
+    effects (issue #1130), and one it holds that the file hasn't is left alone. A
+    file exported without its equipment leaves every item here alone, unlisted."""
     npc = found.character
     row = db.scalar(select(StockNpc).where(StockNpc.character_id == npc.id))
     count = row.count if row is not None else 1
@@ -390,7 +448,7 @@ def bring_items(
             if member is not None:
                 carried[str(kept.id)] = member
             was = member_of(before.get(str(kept.id)))
-            reason = "Held here already: kept as it is."
+            reason = f"Held here already: {take_files(db, staff, troupe, kept, item)}"
             if member != was:
                 reason += f" Now {carried_text(member)}."
             elif member is not None:
@@ -421,8 +479,8 @@ def bring_items(
             backup.Reviewed(
                 "equipment",
                 item.name,
-                "kept",
-                reason="Held here and not in the file: left alone."
+                "left_alone",
+                reason="Held here and not in the file."
                 + (f" {carried_text(member)}." if member is not None else ""),
             )
         )

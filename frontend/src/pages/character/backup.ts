@@ -45,6 +45,7 @@ export const STATUS: Record<BackupItemOut["status"], { label: string; tone: "gol
   new: { label: "New", tone: "gold" },
   differs: { label: "Differs", tone: "gold" },
   kept: { label: "Kept", tone: "mist" },
+  left_alone: { label: "Left alone", tone: "mist" },
   cannot: { label: "Can't import", tone: "blood" },
   info: { label: "Shown only", tone: "mist" },
 };

@@ -10206,6 +10206,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/clan-weaknesses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Clan Weaknesses
+         * @description Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),
+         *     with both weaknesses and the one the troupe plays (horatio.clan_weaknesses).
+         */
+        get: operations["read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get"];
+        /**
+         * Set Clan Weaknesses
+         * @description Play the core book's weakness for these clans, and the later book's for every
+         *     other. What the troupe's characters and rules show changes at once.
+         */
+        put: operations["set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/closing": {
         parameters: {
             query?: never;
@@ -13952,7 +13978,8 @@ export interface paths {
         /**
          * Passkey Options
          * @description What the browser needs to make a passkey for Horatio: WebAuthn's
-         *     PublicKeyCredentialCreationOptions, as JSON. Its challenge works once.
+         *     PublicKeyCredentialCreationOptions, as JSON, giving their password first. Its
+         *     challenge works once, so the passkey it makes is kept only after the password.
          */
         post: operations["passkey_options_api_two_step_passkeys_options_post"];
         delete?: never;
@@ -13975,6 +14002,53 @@ export interface paths {
          * @description Remove one of their passkeys, giving their password.
          */
         post: operations["remove_passkey_api_two_step_passkeys__passkey_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/{passkey_id}/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Passkey
+         * @description Replace one of their passkeys that may not sign in alone with the one the browser
+         *     made, which does (#1110), under the same name. The new one is kept and the old one
+         *     removed together, only once the new one checks out, so a cancelled or failed try
+         *     leaves the old one as it was, and someone who must have two-step sign-in is never
+         *     left without a second step. The password was given for its challenge, at
+         *     POST .../replace/options.
+         */
+        post: operations["replace_passkey_api_two_step_passkeys__passkey_id__replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/{passkey_id}/replace/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Options
+         * @description What the browser needs to make a passkey in place of one that may not sign in
+         *     alone (#1110), giving their password first: as for adding one, but the device must
+         *     make it so it can.
+         */
+        post: operations["replace_options_api_two_step_passkeys__passkey_id__replace_options_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16063,7 +16137,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "new" | "differs" | "kept" | "cannot" | "info";
+            status: "new" | "differs" | "kept" | "left_alone" | "cannot" | "info";
         };
         /** BackupOut */
         BackupOut: {
@@ -19797,6 +19871,42 @@ export interface components {
             character_ids: string[];
             /** Clan */
             clan: string | null;
+        };
+        /** ClanWeaknessRow */
+        ClanWeaknessRow: {
+            /**
+             * Chosen
+             * @enum {string}
+             */
+            chosen: "vol2" | "core";
+            /** Clan */
+            clan: string;
+            /** Versions */
+            versions: components["schemas"]["ClanWeaknessVersion"][];
+        };
+        /** ClanWeaknessVersion */
+        ClanWeaknessVersion: {
+            /**
+             * Book
+             * @enum {string}
+             */
+            book: "vol2" | "core";
+            /** Label */
+            label: string;
+            /** Page */
+            page: string | null;
+            /** Weakness */
+            weakness: string;
+        };
+        /** ClanWeaknessesIn */
+        ClanWeaknessesIn: {
+            /** Core */
+            core: string[];
+        };
+        /** ClanWeaknessesOut */
+        ClanWeaknessesOut: {
+            /** Clans */
+            clans: components["schemas"]["ClanWeaknessRow"][];
         };
         /** ClearIn */
         ClearIn: {
@@ -27902,6 +28012,10 @@ export interface components {
             link: string;
             /** Picture */
             picture: string | null;
+            /** Player Id */
+            player_id: string | null;
+            /** Player Name */
+            player_name: string | null;
             /** Read */
             read: boolean;
             /** Summary */
@@ -29754,6 +29868,12 @@ export interface components {
             rating: number | null;
             /** Specialties */
             specialties: string[];
+            /** Weakness */
+            weakness?: string | null;
+            /** Weakness Page */
+            weakness_page?: string | null;
+            /** Weaknesses */
+            weaknesses?: components["schemas"]["WeaknessOut"][] | null;
             /**
              * Wording
              * @default
@@ -32182,6 +32302,13 @@ export interface components {
         RemovedOut: {
             /** Note */
             note: string | null;
+        };
+        /** Replacement */
+        Replacement: {
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            };
         };
         /** ReportCharacterOut */
         ReportCharacterOut: {
@@ -36205,6 +36332,10 @@ export interface components {
             id: string;
             /** Student */
             student: string;
+            /** Student Player */
+            student_player: string | null;
+            /** Student Player Id */
+            student_player_id: string | null;
             /** What */
             what: string;
             /** Willpower */
@@ -36830,6 +36961,8 @@ export interface components {
             weakness?: string | null;
             /** Weakness Page */
             weakness_page?: string | null;
+            /** Weaknesses */
+            weaknesses?: components["schemas"]["WeaknessOut"][] | null;
             /** Written Rules */
             written_rules?: components["schemas"]["WrittenRuleRef"][];
         };
@@ -38019,6 +38152,24 @@ export interface components {
             label: string;
             /** Link */
             link: string;
+        };
+        /**
+         * WeaknessOut
+         * @description One of the weaknesses a clan may have, as each troupe chooses: its line, its
+         *     page, and the book it is from ("vol2" or "core") with that book's name.
+         */
+        WeaknessOut: {
+            /**
+             * Book
+             * @enum {string}
+             */
+            book: "vol2" | "core";
+            /** Label */
+            label: string;
+            /** Page */
+            page?: string | null;
+            /** Weakness */
+            weakness: string;
         };
         /** WebBondOut */
         WebBondOut: {
@@ -58286,6 +58437,72 @@ export interface operations {
             };
         };
     };
+    read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanWeaknessesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClanWeaknessesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanWeaknessesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     preview_closing_api_troupes__troupe_id__closing_get: {
         parameters: {
             query?: never;
@@ -66100,7 +66317,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -66111,6 +66332,15 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -66136,6 +66366,78 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_passkey_api_two_step_passkeys__passkey_id__replace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Replacement"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_options_api_two_step_passkeys__passkey_id__replace_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
             };
             /** @description Validation Error */
             422: {

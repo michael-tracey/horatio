@@ -6,6 +6,7 @@ import type { PriceOut, RulesBrowserOut, TraitCheckOut } from "../../api/types";
 import { BackToTop } from "../../components/BackToTop";
 import { ClanNames, useClanName, useTroupeClanName } from "../../components/ClanNames";
 import { clanNamed } from "../../clanNames";
+import { ClanWeakness } from "../../components/ClanWeakness";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { Markdown } from "../../components/Markdown";
@@ -374,12 +375,7 @@ function EntryRow({ entry: e, troupe, troupeId }: { entry: Entry; troupe: string
       ))}
       {t?.attribute && <p className="text-xs text-mist">Usually tested with {t.attribute}.</p>}
       {t?.in_clan && t.in_clan.length > 0 && <p className="text-xs text-mist">In-clan: {t.in_clan.join(", ")}.</p>}
-      {t?.weakness && (
-        <p className="text-xs text-mist">
-          Weakness: {named(t.weakness)}
-          {t.weakness_page && ` ${pageText(t.weakness_page)}`}
-        </p>
-      )}
+      <ClanWeakness trait={t} className="text-xs text-mist" page="plain" />
       {e.rarity && (
         <p className="text-xs text-mist">
           Rarity: {named(e.rarity.text)}
