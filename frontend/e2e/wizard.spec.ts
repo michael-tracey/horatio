@@ -679,12 +679,15 @@ test("a new player picks the clan first and sees its disciplines and weakness, a
   const top = async (label: string) => (await p.getByLabel(label).boundingBox())!.y;
   expect(await top("Clan")).toBeLessThan(await top("Which troupe will you play in?"));
   // Its drop-down says what each clan brings before one is chosen (#1076): its in-clan
-  // disciplines under its name, and its weakness, with the page, in the detail.
+  // disciplines under its name, and its weakness, with the page, in the detail. Both
+  // give the page of the clan's write-up (#1113).
   const clan = p.getByRole("combobox", { name: "Clan", exact: true });
   await clan.fill("Brujah");
   const brujah = p.getByRole("option", { name: "Brujah", exact: true });
   await expect(brujah).toHaveAccessibleDescription(/In-clan: Celerity, Potence, Presence/);
+  await expect(brujah).toContainText("MET: VTM p. 45");
   await clan.press("ArrowDown");
+  await expect(aboutChoice(p)).toContainText("MET: VTM p. 45");
   await expect(aboutChoice(p)).toContainText("Weakness: Quick to rage: resisting frenzy is 2 harder. (p. 45)");
   await brujah.click();
   await expect(clan).toHaveValue("Brujah");
