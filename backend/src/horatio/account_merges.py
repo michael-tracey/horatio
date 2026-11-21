@@ -15,7 +15,8 @@ accounts. The custodian picks which one stays, and merges the other into it:
   its handle in troupes' Who's Who; and its characters' own Discord channels it
   turned off (#1077) stay off;
 - its bell messages, the scenes it made, the responses assigned to it and not yet
-  written, and its troupe requests still waiting;
+  written, its troupe requests still waiting, and the blog articles it wrote, with
+  any changes waiting on them (horatio.blog);
 - its handle, and the former handles it still holds, become the staying
   account's former handles, its own held for good, so links and searches still
   find the person.
@@ -57,6 +58,7 @@ from horatio.connectors import SendError, email
 from horatio.email_design import Body, compose
 from horatio.models import (
     AuthIdentity,
+    BlogPost,
     Character,
     EmailChange,
     EmailNotice,
@@ -381,6 +383,11 @@ def preview(db: Session, keep: User, other: User, viewer: User) -> Preview:
                 "troupe request waiting",
                 "troupe requests waiting",
             ),
+            (
+                _count(db, BlogPost, BlogPost.author_id == other.id),
+                "blog article",
+                "blog articles",
+            ),
         )
         if n
     ]
@@ -539,6 +546,7 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
         .where(TroupeRequest.requester_id == other.id, TroupeRequest.status == "pending")
         .values(requester_id=keep.id)
     )
+    db.execute(update(BlogPost).where(BlogPost.author_id == other.id).values(author_id=keep.id))
 
     db.execute(update(FormerHandle).where(FormerHandle.user_id == other.id).values(user_id=keep.id))
     db.add(FormerHandle(user_id=keep.id, handle=other.handle, held_until=FOR_GOOD))

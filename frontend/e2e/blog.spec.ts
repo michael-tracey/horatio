@@ -11,7 +11,7 @@ async function send(page: Page, method: "POST" | "PUT", url: string, data: objec
   return response.json();
 }
 
-test("a narrator sends an article to the custodian, who tags and publishes it from Custodian › Blog, and the narrator hears so (#1156)", async ({ browser }) => {
+test("a narrator sends an article to the custodian, who follows the bell to Custodian › Blog, tags and publishes it, and the narrator hears so (#1156, #1170)", async ({ browser }) => {
   const custodian = await person(browser, "blogdesk-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "blogdesk-lead");
@@ -35,15 +35,19 @@ test("a narrator sends an article to the custodian, who tags and publishes it fr
   await n.getByRole("button", { name: "Send to the custodian" }).click();
   await expect(n.getByText(/^Waiting for the custodian\./)).toBeVisible();
 
-  // It waits on Custodian › Blog, whose tab counts what waits (the other project's too).
+  // It is a task on the custodian's bell (#1170), which opens it on Custodian › Blog,
+  // whose tab counts what waits (the other project's too).
   const c = custodian.page;
-  await c.goto("/custodian/blog");
+  await c.goto("/characters");
+  await c.getByRole("button", { name: /^Notifications/ }).click();
+  const task = c.getByRole("dialog", { name: "Notifications" }).getByRole("button", { name: new RegExp(`blogdesk-narr asks you to publish the blog article “${title}”`) });
+  await task.click();
+  await expect(c).toHaveURL(/\/custodian\/blog#article-[0-9a-f-]{36}$/);
   await expect(c.getByRole("link", { name: /^Blog/ })).toHaveText(/^Blog\d+$/);
   const waiting = c.getByRole("heading", { name: "Waiting", level: 2 }).locator("xpath=ancestor::section[1]");
   const item = waiting.getByRole("listitem", { name: title });
   await expect(item.getByText("blogdesk-narr")).toBeVisible();
   await expect(item.getByText(`of ${troupeName}`, { exact: false })).toBeVisible();
-  await item.getByText("Read it").click();
   await expect(item.getByText("Ask the players what their characters want, then wait.")).toBeVisible();
   const tags = item.getByRole("list", { name: "Tags" });
   await tags.getByRole("button", { name: "Storytelling" }).click();
@@ -55,6 +59,9 @@ test("a narrator sends an article to the custodian, who tags and publishes it fr
   const published = c.getByRole("heading", { name: "Published", level: 2 }).locator("xpath=ancestor::section[1]");
   await expect(published.getByRole("listitem", { name: title })).toBeVisible();
   await expect(waiting.getByRole("listitem", { name: title })).toHaveCount(0);
+  await c.getByRole("button", { name: /^Notifications/ }).click();
+  await expect(task).toHaveCount(0);
+  await c.keyboard.press("Escape");
   await expect(published.getByRole("listitem", { name: title }).getByRole("list", { name: "Tags" }).getByRole("button", { name: "Storytelling" })).toHaveAttribute("aria-pressed", "true");
 
   // The narrator hears of it on the bell, which leads back to the article.

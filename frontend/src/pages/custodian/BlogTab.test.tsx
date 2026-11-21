@@ -69,13 +69,13 @@ const CHANGED = article({
 });
 const DOWN = article({ id: "a4", status: "unpublished", title: "Old news", published_at: "2026-09-01T12:00:00Z", unpublished_at: "2026-11-02T12:00:00Z", waiting: null, note: "Out of date." });
 
-function show(queue: Partial<BlogQueueOut> = {}) {
+function show(queue: Partial<BlogQueueOut> = {}, at = "/custodian/blog") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
   client.setQueryData(["blog-queue"], { waiting: [article({}), CHANGED], published: [PUBLISHED, CHANGED], unpublished: [DOWN], ...queue });
   client.setQueryData(["blog-tags"], TAGS);
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[at]}>
         <BlogTab />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -117,6 +117,18 @@ describe("Custodian › Blog (#1156)", () => {
     expect(screen.getByText("Nothing is waiting to be published.")).toBeTruthy();
     expect(screen.getByText("No article is published yet.")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Unpublished" })).toBeNull();
+  });
+
+  it("opens the article the custodian's bell task links to, under Waiting (#1170)", () => {
+    show({}, "/custodian/blog#article-a3");
+    const opened = (li: HTMLElement) => (li.querySelector("details") as HTMLDetailsElement).open;
+    const changes = item(section("Waiting"), "Safety at every table");
+    expect(changes.id).toBe("article-a3");
+    expect(opened(changes)).toBe(true);
+    // Not its entry under Published, nor any other article.
+    expect(opened(item(section("Published"), "Safety at the table"))).toBe(false);
+    expect(opened(item(section("Waiting"), "Running your first Elysium"))).toBe(false);
+    expect(document.querySelectorAll("#article-a3")).toHaveLength(1);
   });
 
   it("publishes what waits", async () => {

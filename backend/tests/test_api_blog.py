@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from horatio import blog
 from horatio.config import get_settings
-from horatio.models import AuditEvent
+from horatio.models import AuditEvent, EmailNotice
 from tests.api_helpers import Person, Troupe, sign_up
 
 
@@ -669,6 +669,95 @@ def test_its_author_hears_of_publishing_returning_and_unpublishing(troupe: Troup
     assert links == {f"/blog/write/{article['id']}"}
     # Nobody else hears of it.
     assert not [s for s in bell(troupe.lead) if "Elysium" in s]
+
+
+def tasks(person: Person) -> list[dict[str, Any]]:
+    """The custodian's blog tasks in the bell (#1170)."""
+    items = ok(person.client.get("/notifications"))["items"]
+    return [i for i in items if i["kind"] == "blog_article"]
+
+
+def test_the_custodian_has_a_task_while_an_article_waits(troupe: Troupe) -> None:
+    article = submitted(troupe.narrator, troupe.id)
+    path = f"/blog/articles/{article['id']}"
+
+    [task] = tasks(troupe.custodian)
+    assert task["summary"] == (
+        "narrator asks you to publish the blog article “Running your first Elysium”"
+    )
+    assert task["task"] is True
+    assert task["link"] == f"/custodian/blog#article-{article['id']}"
+    # Nobody else has it: not its author, nor the troupe's lead.
+    assert tasks(troupe.narrator) == tasks(troupe.lead) == []
+
+    # It goes when the author withdraws it, comes back when they send it again, and
+    # goes when the custodian returns it or publishes it.
+    ok(troupe.narrator.client.post(f"{path}/withdraw"))
+    assert tasks(troupe.custodian) == []
+    ok(troupe.narrator.client.post(f"{path}/submit"))
+    assert len(tasks(troupe.custodian)) == 1
+    ok(troupe.custodian.client.post(f"{path}/return", json={"note": "Add an example."}))
+    assert tasks(troupe.custodian) == []
+    ok(troupe.narrator.client.post(f"{path}/submit"))
+    ok(troupe.custodian.client.post(f"{path}/publish"))
+    assert tasks(troupe.custodian) == []
+
+
+def test_the_custodian_has_a_task_while_a_published_articles_changes_wait(
+    troupe: Troupe,
+) -> None:
+    article = published(troupe, troupe.narrator)
+    path = f"/blog/articles/{article['id']}"
+    ok(change(troupe.narrator, article, title="Your first Elysium"))
+    # Changes still being written wait for nobody.
+    assert tasks(troupe.custodian) == []
+
+    ok(troupe.narrator.client.post(f"{path}/submit"))
+    [task] = tasks(troupe.custodian)
+    assert task["summary"] == (
+        "narrator asks you to publish changes to the blog article “Your first Elysium”"
+    )
+    assert task["link"] == f"/custodian/blog#article-{article['id']}"
+
+    # It goes when the author withdraws them, or the custodian returns or publishes them.
+    ok(troupe.narrator.client.post(f"{path}/withdraw"))
+    assert tasks(troupe.custodian) == []
+    ok(troupe.narrator.client.post(f"{path}/submit"))
+    ok(troupe.custodian.client.post(f"{path}/return", json={"note": "Not yet."}))
+    assert tasks(troupe.custodian) == []
+    ok(troupe.narrator.client.post(f"{path}/submit"))
+    assert len(tasks(troupe.custodian)) == 1
+    ok(troupe.custodian.client.post(f"{path}/publish"))
+    assert tasks(troupe.custodian) == []
+
+    # Unpublishing takes the changes in, and the task with them.
+    ok(change(troupe.narrator, article, body="Once more."))
+    ok(troupe.narrator.client.post(f"{path}/submit"))
+    ok(troupe.custodian.client.post(f"{path}/unpublish", json={"reason": "Out of date."}))
+    assert tasks(troupe.custodian) == []
+
+
+def test_the_custodian_is_emailed_of_an_article_waiting_if_they_choose(
+    troupe: Troupe, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = get_settings()
+    monkeypatch.setattr(settings, "smtp_host", "mail.example.org")
+    monkeypatch.setattr(settings, "mail_from", "Horatio <horatio@example.org>")
+    article = submitted(troupe.narrator, troupe.id)
+    ok(troupe.narrator.client.post(f"/blog/articles/{article['id']}/withdraw"))
+    # Off until they choose it.
+    assert session.scalars(select(EmailNotice)).all() == []
+
+    ok(troupe.custodian.client.patch("/preferences", json={"email_blog_queue": True}))
+    ok(troupe.narrator.client.post(f"/blog/articles/{article['id']}/submit"))
+
+    [notice] = session.scalars(select(EmailNotice)).all()
+    assert str(notice.user_id) == troupe.custodian.id
+    assert notice.topic == "blog_queue"
+    assert notice.summary == (
+        "narrator asks you to publish the blog article “Running your first Elysium”"
+    )
+    assert notice.link == f"/custodian/blog#article-{article['id']}"
 
 
 def test_a_custodian_and_staff_member_sees_their_troupes(

@@ -483,6 +483,15 @@ GROUPS = (
         "custodian",
         (
             Topic(
+                "blog_queue",
+                "Blog articles waiting",
+                "Each article staff send for the blog, and each change to a published one."
+                " Always in the bell until you publish or return it.",
+                ("blog_article",),
+                {"bell": ALWAYS, "email": OFF, "push": OFF},
+                task=True,
+            ),
+            Topic(
                 "sign_ups",
                 "Sign-ups",
                 "Each new account.",
