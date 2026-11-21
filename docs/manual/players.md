@@ -19,6 +19,10 @@ For signing up, your account, your settings and notifications, see [Getting star
 - **New results**: downtime results have arrived that you haven't opened on this device.
 - **Retired**: see [Retiring a character](#retiring-a-character).
 
+Under each character, a **Next** line says what is next for it, each part a link to where it's done: first what is yours to do (such as **Downtime due**), then **Waiting on staff**, with since when, then **Coming up**. The same steps are on the **Next for this character** card at the top of the character's page. Both are hidden when nothing is next.
+
+**Coming up** has the next game of the character's home troupe, and of each troupe it is visiting, each named, such as *Court of Ashes's next game Sat 14 Nov, 7 pm*. Until you say whether you're coming, the card asks **Coming**, **Maybe** or **Not coming**, as the troupe's [Games card](#calendar-and-rsvps) does, and the line links there. Your answer is yours, not the character's, so it goes for all your characters in that troupe. Once you've answered, the step says so (*answered Coming*); change it on the troupe's Games card.
+
 Open a character to see its page. On a wide screen its tabs sit in one row. On a phone, one button at the top says which tab is open; tap it for them all, grouped as **Sheet** (Sheet, Status & Titles, Equipment, Experience), **Between games** (Downtime, Results, Quests, Influence) and **About** (Troupes, Backstory, Log). Some appear only once they apply: Experience, Downtime, Results and Influence once creation is finished, Quests only while a troupe it is in runs quests, and Shared backgrounds once it has dots in one.
 
 ![The Characters page, with three characters: one at home in Court of Ashes with a downtime due, one waiting for the troupe to accept it, and one in creation](images/players/characters.png)
@@ -604,7 +608,7 @@ At game, influence spent from **Uses this game** on the Play View asks for the d
 
 ## Calendar and RSVPs
 
-The troupe's page (its **Overview**) shows its upcoming **Games** to its members. For each, say whether you're **Coming**, **Maybe** or **Not coming**; tap your answer again to take it back. Everyone sees how many said each; the storytellers see who.
+The troupe's page (its **Overview**) shows its upcoming **Games** to its members. For each, say whether you're **Coming**, **Maybe** or **Not coming**; tap your answer again to take it back. Everyone sees how many said each; the storytellers see who. Until you've answered its next game, each of your characters there asks you too, on its **Next for this character** card (see [The Characters page](#the-characters-page)).
 
 **Subscribe to the calendar** gives you a link that puts the troupe's games and downtime dates in your own calendar app, each game with your answer, and keeps itself up to date. [Getting started](getting-started.md) has more about it.
 

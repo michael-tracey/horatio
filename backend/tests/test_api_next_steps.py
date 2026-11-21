@@ -13,7 +13,7 @@ from sqlalchemy import event, select
 from sqlalchemy.orm import Session
 
 from horatio import next_steps
-from horatio.models import Approval, Character, User
+from horatio.models import Approval, Character, ScheduledGame, User
 from horatio.models import Troupe as TroupeRecord
 from tests.api_helpers import Person, Troupe, finish, new_character
 from tests.test_api_backstories import draft, save
@@ -24,7 +24,9 @@ from tests.test_api_checkin import game
 from tests.test_api_downtimes import member_character, new_cycle, open_cycle, question_id
 from tests.test_api_downtimes import save as save_answers
 from tests.test_api_free_changes import accepted, set_free_changes
+from tests.test_api_leaving_home import leave
 from tests.test_api_quests import ask, quests_on
+from tests.test_api_renames import other_troupe, visit
 from tests.test_api_standing import buy
 
 pytestmark = pytest.mark.usefixtures("without_bank")
@@ -90,6 +92,9 @@ def test_a_new_character_is_finished_asks_its_troupe_and_waits_then_has_nothing_
         "link": f"/characters/{agnes}/create",
         "since": None,
         "at": None,
+        "troupe_id": None,
+        "game_id": None,
+        "my_answer": None,
     }
 
     finish(troupe, agnes)
@@ -342,11 +347,105 @@ def test_the_next_game_and_free_changes_are_coming_up(troupe: Troupe) -> None:
     first = next(g for g in games if g["id"] == soon)
     assert found[0]["at"] == first["starts_at"]
     assert found[0]["link"] == f"/troupes/{troupe.id}"
+    assert found[0]["label"] == "Lords of the Night's next game"
+    assert (found[0]["troupe_id"], found[0]["game_id"]) == (troupe.id, soon)
     ends = datetime.fromisoformat(found[1]["at"])
     assert timedelta(days=29) < ends - datetime.now(UTC) <= timedelta(days=30)
 
     ok(set_free_changes(troupe, "games", games=3))
     assert step(troupe.player, agnes, "free_changes")["label"] == "Free changes for 3 more games"
+
+
+def rsvp(person: Person, troupe_id: str, game_id: str, answer: str) -> None:
+    ok(person.client.put(f"/troupes/{troupe_id}/games/{game_id}/rsvp", json={"answer": answer}))
+
+
+def scheduled(session: Session, troupe_id: str, starts_in: timedelta) -> str:
+    """A game on a troupe's schedule, for a troupe the helpers have no staff for."""
+    start = datetime.now(UTC) + starts_in
+    found = ScheduledGame(
+        troupe_id=uuid.UUID(troupe_id), starts_at=start, ends_at=start + timedelta(hours=5)
+    )
+    session.add(found)
+    session.flush()
+    return str(found.id)
+
+
+def games_of(person: Person, character_id: str) -> list[tuple[str, str | None]]:
+    return [
+        (s["label"], s["my_answer"])
+        for s in steps(person, character_id)
+        if s["kind"] == "next_game"
+    ]
+
+
+def test_the_next_game_asks_whether_you_are_coming_once_for_all_your_characters(
+    troupe: Troupe,
+) -> None:
+    agnes = accepted(troupe, "Agnes")
+    bea = accepted(troupe, "Bea")
+    soon = game(troupe, timedelta(days=2))
+    for character_id in (agnes, bea):
+        assert games_of(troupe.player, character_id) == [("Lords of the Night's next game", None)]
+
+    # Someone else's answer is theirs.
+    rsvp(troupe.storyteller, troupe.id, soon, "not_coming")
+    assert games_of(troupe.player, agnes) == [("Lords of the Night's next game", None)]
+
+    # One answer is the person's, so it goes for each of their characters there.
+    rsvp(troupe.player, troupe.id, soon, "maybe")
+    for character_id in (agnes, bea):
+        assert games_of(troupe.player, character_id) == [
+            ("Lords of the Night's next game", "maybe")
+        ]
+    listed = ok(troupe.player.client.get("/characters/next"))
+    assert {
+        c["character_id"]: [s["my_answer"] for s in c["steps"] if s["kind"] == "next_game"]
+        for c in listed
+    } == {agnes: ["maybe"], bea: ["maybe"]}
+
+    # Taken back, it asks again.
+    ok(troupe.player.client.delete(f"/troupes/{troupe.id}/games/{soon}/rsvp"))
+    assert games_of(troupe.player, agnes) == [("Lords of the Night's next game", None)]
+
+
+def test_the_next_game_of_each_troupe_it_visits_comes_after_its_homes(
+    troupe: Troupe, session: Session
+) -> None:
+    agnes = accepted(troupe)
+    second = other_troupe(troupe, "Second City")
+    third = other_troupe(troupe, "Third Ward")
+    quiet = other_troupe(troupe, "Quiet Hollow")
+    for visited in (second, third, quiet):
+        visit(troupe.player, agnes, visited)
+    # Its home's game is listed first, then the visits' in the order they come.
+    game(troupe, timedelta(days=9))
+    second_game = scheduled(session, second, timedelta(days=5))
+    scheduled(session, second, timedelta(days=12))
+    scheduled(session, third, timedelta(days=3))
+    # Quiet Hollow has no game planned, so it has no step.
+
+    assert games_of(troupe.player, agnes) == [
+        ("Lords of the Night's next game", None),
+        ("Third Ward's next game", None),
+        ("Second City's next game", None),
+    ]
+    found = [s for s in steps(troupe.player, agnes) if s["label"] == "Second City's next game"]
+    assert (found[0]["link"], found[0]["game_id"]) == (f"/troupes/{second}", second_game)
+
+    # Each game has its own answer.
+    rsvp(troupe.player, second, second_game, "coming")
+    assert games_of(troupe.player, agnes) == [
+        ("Lords of the Night's next game", None),
+        ("Third Ward's next game", None),
+        ("Second City's next game", "coming"),
+    ]
+
+    # A troupe it stops visiting, or one archived, is left out.
+    leave(troupe.player, agnes, third)
+    session.get_one(TroupeRecord, uuid.UUID(second)).archived_at = datetime.now(UTC)
+    session.flush()
+    assert games_of(troupe.player, agnes) == [("Lords of the Night's next game", None)]
 
 
 # --- who sees it ---------------------------------------------------------------------------
@@ -400,13 +499,17 @@ def test_many_characters_take_no_more_queries_than_one(
 ) -> None:
     ok(set_free_changes(troupe, "games", games=3))
     quests_on(troupe)
-    game(troupe, timedelta(days=2))
+    soon = game(troupe, timedelta(days=2))
+    visited = other_troupe(troupe, "Second City")
+    scheduled(session, visited, timedelta(days=4))
     ids = []
     for name in ("Agnes", "Bea", "Cora"):
         character_id = accepted(troupe, name)
         ok(buy(troupe.player, character_id, "Celerity", 1, "disciplines"))
         ok(ask(troupe.player, character_id), 201)
+        visit(troupe.player, character_id, visited)
         ids.append(uuid.UUID(character_id))
+    rsvp(troupe.player, troupe.id, soon, "coming")
     open_cycle(troupe, new_cycle(troupe))
 
     def asked(these: list[uuid.UUID]) -> int:
@@ -422,6 +525,11 @@ def test_many_characters_take_no_more_queries_than_one(
             "free_changes",
         }
         assert all({s.kind for s in listed[c.id]} == expected for c in found)
+        # Its home's game, answered, and the visited troupe's, not.
+        assert all(
+            [s.my_answer for s in listed[c.id] if s.kind == "next_game"] == ["coming", None]
+            for c in found
+        )
         return len(statements)
 
     assert asked(ids) == asked(ids[:1])

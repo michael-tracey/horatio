@@ -122,7 +122,7 @@ On a phone, the groups and their tabs give way to one button at the top that say
 
 ![The troupe's Overview for a lead storyteller: Waiting on you, the games to come, and the start of the profile.](images/running-a-troupe/overview.png)
 
-The troupe's **Overview** is the troupe at a glance, and where it opens. For staff it starts with **Waiting on you**: one line for each kind of work, each a link straight to it. The lines you may see are:
+The troupe's **Overview** is the troupe at a glance, and where it opens. For a new troupe, its lead storyteller and storytellers see **Getting your troupe ready** first: how many of its steps are done and the next one, with **Every step** to unfold the list (see [Customise: setup](#customise-setup)). **Hide** takes it off the Overview for every storyteller; Customise › Setup brings it back. A troupe that had already opened a downtime cycle when the card came in starts with it hidden. For staff the Overview then starts with **Waiting on you**: one line for each kind of work, each a link straight to it. The lines you may see are:
 
 - **Approvals waiting** and **Backstories to read**;
 - the open cycle, with how many have submitted and when it is **Due**, its day and time, such as "Due Sat 14 Nov, 6:00 pm (in 7 days)";
@@ -520,18 +520,24 @@ The **Log** tab in the Troupe group shows what has happened in the troupe, newes
 
 ## Customise: setup
 
-![Customise › Setup: the Setting up checklist, the troupe's features and the house rules that differ from the book.](images/running-a-troupe/customise-overview.png)
+![Customise › Setup: Getting your troupe ready, the troupe's features and the house rules that differ from the book.](images/running-a-troupe/customise-overview.png)
 
 Everything under **Customise** can stay as the book has it. Storytellers and the lead change it; assistant storytellers can read it all.
 
 **Find a setting**, at the top of every Customise tab, finds a setting by its name or by a word of what it does. Type part of it, such as `ceiling` or `stickers`, and choose a setting from the list, or press Enter for the first. It opens where the setting is: its tab or its part, or the **Settings** of the tab it belongs to, with its card scrolled to and lit gold for a moment. It finds the Customise tabs, the parts of Troupe settings and House rules, each feature's switch, each tab's Settings and every settings card. The search in the top bar finds them too, under **Settings**, while you're on the troupe's pages. Only its storytellers, assistant storytellers and the custodian find a troupe's settings, and only the troupe they're on.
 
-**Customise › Setup** starts with **Setting up**, the four things a new troupe does first, each ticked when done and linked to where you do it:
+**Customise › Setup** starts with **Getting your troupe ready**, the steps a new troupe takes, in order, each linked to where you do it. Each ticks itself from what the troupe holds now; nothing is ticked by hand:
 
-1. **Name and profile**.
-2. **House rules**.
-3. **Staff**.
-4. **First cycle**.
+1. **Profile**: the troupe has a description, and a profile that says more than its name (a portrait, a contact, or any of its text).
+2. **Features**: any optional feature is set otherwise than a new troupe has it.
+3. **Who may join**: a sect is chosen, or splats besides Vampire.
+4. **Starting points and XP**: house starting points, any XP setting changed, or the XP floor or ceiling set by hand.
+5. **House rules**: any house rule at all.
+6. **Staff**: anyone besides the lead storyteller.
+7. **First game**: a game is on the calendar.
+8. **Invite players**: a player's character is or has been in the troupe, at home or visiting, or has asked to make it home. A request counts while it waits. Asking also starts the character visiting, and it stays a visitor if the request is declined or withdrawn, so the step stays done.
+
+Features, Who may join and Starting points tick only once something differs from how a new troupe starts: a troupe that keeps the defaults can hide the list instead. The same steps are a card at the top of the Overview for the lead storyteller and storytellers (see [The Overview](#the-overview-and-whats-waiting-on-you)). **Hide from the Overview** here takes the card away for every storyteller, and **Show on the Overview** brings it back.
 
 Below it, nothing is changed: Setup points to where things are.
 

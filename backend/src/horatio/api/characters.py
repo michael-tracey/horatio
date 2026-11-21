@@ -120,6 +120,12 @@ class NextStepOut(BaseModel):
     since: datetime | None
     # When it is due, starts or ends.
     at: datetime | None
+    # For a troupe's next game: the troupe and the game, to say whether you are coming
+    # (PUT /troupes/{troupe_id}/games/{game_id}/rsvp), and your answer, None for none
+    # yet. None for every other step.
+    troupe_id: uuid.UUID | None
+    game_id: uuid.UUID | None
+    my_answer: next_steps.Answer | None
 
 
 class CharacterNextOut(BaseModel):
@@ -134,7 +140,17 @@ def next_out(character_id: uuid.UUID, steps: list[next_steps.Step]) -> Character
     return CharacterNextOut(
         character_id=character_id,
         steps=[
-            NextStepOut(kind=s.kind, who=s.who, label=s.label, link=s.link, since=s.since, at=s.at)
+            NextStepOut(
+                kind=s.kind,
+                who=s.who,
+                label=s.label,
+                link=s.link,
+                since=s.since,
+                at=s.at,
+                troupe_id=s.troupe_id,
+                game_id=s.game_id,
+                my_answer=s.my_answer,
+            )
             for s in steps
         ],
     )

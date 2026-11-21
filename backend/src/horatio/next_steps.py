@@ -6,7 +6,7 @@ player's.
 
 Each kind of step has its own small function, and reads what its own module keeps
 (approvals, backstories, downtimes, boon reports, drinks to confirm, quest
-requests, games, free changes) rather than working it out again. The Characters
+requests, games and their RSVPs, free changes) rather than working it out again. The Characters
 page asks for every character at once, and every change in the app asks again, so
 each function makes a query or two for all of them together, never one per
 character (`Asked`).
@@ -20,9 +20,10 @@ from collections import defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Literal, cast
 
-from sqlalchemy import exists, func, select
+from sqlalchemy import exists, select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session
 
 from horatio import backstories, bonds, downtimes, free_changes
@@ -36,14 +37,18 @@ from horatio.models import (
     CycleParticipant,
     Delivery,
     DowntimeCycle,
+    GameRsvp,
     QuestRequest,
     ScheduledGame,
     Submission,
     Troupe,
+    TroupeMembership,
 )
 
 # Theirs to do; waiting on staff (or the Harpy); or coming up.
 Who = Literal["player", "staff", "coming"]
+# Whether the player means to come to a game, as horatio.api.games keeps it.
+Answer = Literal["coming", "maybe", "not_coming"]
 
 
 @dataclass(frozen=True)
@@ -57,6 +62,11 @@ class Step:
     since: datetime | None = None
     # When it is due, starts or ends.
     at: datetime | None = None
+    # For a troupe's next game: the troupe and the game, to answer whether they are
+    # coming, and the player's answer, None until they give one.
+    troupe_id: uuid.UUID | None = None
+    game_id: uuid.UUID | None = None
+    my_answer: Answer | None = None
 
 
 @dataclass(frozen=True)
@@ -391,24 +401,75 @@ def quest_requests(asked: Asked) -> Found:
     ]
 
 
-def next_game(asked: Asked) -> Found:
-    """Its home troupe's next game, not yet over, on the troupe's About page."""
-    homes = {c.home_troupe_id for c in asked.characters if c.home_troupe_id}
-    if not homes:
+def next_games(asked: Asked) -> Found:
+    """The next game, not yet over, of its home troupe and of each troupe it visits,
+    home first, each naming its troupe and linking to the troupe's Overview, where its
+    Games card asks whether they are coming. With its player's answer
+    (horatio.api.games): an RSVP is one per person, so it is the same for each of their
+    characters in that troupe. An archived troupe plays no more games."""
+    troupes = dict(asked.troupes)
+    visits: dict[uuid.UUID, list[uuid.UUID]] = defaultdict(list)
+    homes = {c.id: c.home_troupe_id for c in asked.characters}
+    for character_id, troupe in asked.db.execute(
+        select(TroupeMembership.character_id, Troupe)
+        .join(Troupe, TroupeMembership.troupe_id == Troupe.id)
+        .where(TroupeMembership.character_id.in_(asked.ids), TroupeMembership.left_at.is_(None))
+    ):
+        if troupe.id != homes[character_id]:
+            troupes[troupe.id] = troupe
+            visits[character_id].append(troupe.id)
+    wanted = {
+        t
+        for c in asked.characters
+        for t in (c.home_troupe_id, *visits[c.id])
+        if t and t in troupes and troupes[t].archived_at is None
+    }
+    if not wanted:
         return []
-    starts = {
-        troupe_id: starts_at
-        for troupe_id, starts_at in asked.db.execute(
-            select(ScheduledGame.troupe_id, func.min(ScheduledGame.starts_at))
-            .where(ScheduledGame.troupe_id.in_(homes), ScheduledGame.ends_at > asked.at)
-            .group_by(ScheduledGame.troupe_id)
+    # The soonest of each troupe's games.
+    games = {
+        g.troupe_id: g
+        for g in asked.db.scalars(
+            select(ScheduledGame)
+            .where(ScheduledGame.troupe_id.in_(wanted), ScheduledGame.ends_at > asked.at)
+            .order_by(ScheduledGame.troupe_id, ScheduledGame.starts_at, ScheduledGame.id)
+            .ext(distinct_on(ScheduledGame.troupe_id))
         )
     }
-    return [
-        (c.id, Step("next_game", "coming", "Next game", f"/troupes/{home}", at=starts[home]))
-        for c in asked.characters
-        if (home := c.home_troupe_id) and home in starts
-    ]
+    if not games:
+        return []
+    players = {c.player_id for c in asked.characters}
+    answers = {
+        (game_id, user_id): answer
+        for game_id, user_id, answer in asked.db.execute(
+            select(GameRsvp.game_id, GameRsvp.user_id, GameRsvp.answer).where(
+                GameRsvp.game_id.in_([g.id for g in games.values()]),
+                GameRsvp.user_id.in_(players),
+            )
+        )
+    }
+    found: Found = []
+    for c in asked.characters:
+        home = [h] if (h := c.home_troupe_id) and h in games else []
+        visited = sorted(
+            (t for t in visits[c.id] if t in games),
+            key=lambda t: (games[t].starts_at, troupes[t].name),
+        )
+        for troupe_id in home + visited:
+            game = games[troupe_id]
+            answer = answers.get((game.id, c.player_id))
+            step = Step(
+                "next_game",
+                "coming",
+                f"{troupes[troupe_id].name}'s next game",
+                f"/troupes/{troupe_id}",
+                at=game.starts_at,
+                troupe_id=troupe_id,
+                game_id=game.id,
+                my_answer=cast(Answer, answer) if answer else None,
+            )
+            found.append((c.id, step))
+    return found
 
 
 def free_change_window(asked: Asked) -> Found:
@@ -438,7 +499,7 @@ STEPS: list[Gather] = [
     approvals,
     boon_reports,
     quest_requests,
-    next_game,
+    next_games,
     free_change_window,
 ]
 
