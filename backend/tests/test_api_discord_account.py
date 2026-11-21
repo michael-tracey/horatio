@@ -226,8 +226,11 @@ def test_discord_stays_linked_while_it_is_the_only_way_to_sign_in(
     come_back(player, start(player), code="good-code")
     account = user(session, player)
     account.password_hash = None
-    session.add(AuthIdentity(user_id=account.id, provider="discord", subject=DISCORD_ID))
     session.flush()
+    # Linking made its identity row (#1128): Discord signs them in.
+    assert session.scalars(
+        select(AuthIdentity.subject).where(AuthIdentity.user_id == account.id)
+    ).all() == [DISCORD_ID]
 
     assert player.client.get("/account/discord").json()["can_unlink"] is False
     refused = player.client.delete("/account/discord")

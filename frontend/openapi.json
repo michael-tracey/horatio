@@ -17745,6 +17745,104 @@
         "title": "DiscordSetup",
         "type": "object"
       },
+      "DiscordSignInHelp": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "DiscordSignInHelp",
+        "type": "object"
+      },
+      "DiscordSignUp": {
+        "properties": {
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "DiscordSignUp",
+        "type": "object"
+      },
+      "DiscordSignUpFor": {
+        "description": "What Discord said of someone with no account yet, to start the form with.",
+        "properties": {
+          "discord_username": {
+            "title": "Discord Username",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "discord_username",
+          "display_name",
+          "handle"
+        ],
+        "title": "DiscordSignUpFor",
+        "type": "object"
+      },
+      "DiscordStart": {
+        "properties": {
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          }
+        },
+        "title": "DiscordStart",
+        "type": "object"
+      },
+      "DiscordStarted": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "DiscordStarted",
+        "type": "object"
+      },
       "DiscoveryBlockOut": {
         "properties": {
           "block": {
@@ -64354,6 +64452,132 @@
         "summary": "Change Log Settings",
         "tags": [
           "audit"
+        ]
+      }
+    },
+    "/api/auth/discord": {
+      "get": {
+        "description": "Whether someone can sign in, or up, with Discord here.",
+        "operationId": "discord_sign_in_help_api_auth_discord_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordSignInHelp"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Discord Sign In Help",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/discord/sign-up": {
+      "get": {
+        "description": "What Discord said of someone signing up with it, to start the form with.",
+        "operationId": "sign_up_for_api_auth_discord_sign_up_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordSignUpFor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sign Up For",
+        "tags": [
+          "auth"
+        ]
+      },
+      "post": {
+        "description": "Make the account Discord sign-in waited on, with the email Discord verified, the\nname and handle chosen, no password, and the Discord account linked; and sign in.",
+        "operationId": "sign_up_api_auth_discord_sign_up_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordSignUp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sign Up",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/discord/start": {
+      "post": {
+        "description": "Discord's page for signing in with Discord. The state waits here, and in a\ncookie for the callback, for 10 minutes.",
+        "operationId": "start_api_auth_discord_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordStarted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start",
+        "tags": [
+          "auth"
         ]
       }
     },

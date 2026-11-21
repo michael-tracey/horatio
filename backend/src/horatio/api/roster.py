@@ -736,14 +736,18 @@ MESSAGES: dict[str, str] = {
     "account.password_change_throttled_again": "{actor} was turned away again from changing"
     " their password{from_ip}: too many tries at the account.",
     "account.signed_up": "{actor} signed up{from_ip}.",
+    "account.signed_up.discord": "{actor} signed up with Discord{from_ip}.",
     "account.signed_in": "{actor} signed in{from_ip}.",
     "account.signed_in.app": "{actor} signed in{from_ip}, with their authenticator app.",
     "account.signed_in.recovery_code": "{actor} signed in{from_ip}, with a recovery code.",
     "account.signed_in.passkey": "{actor} signed in{from_ip}, with a passkey.",
     "account.signed_in.passkey_alone": "{actor} signed in{from_ip} with a passkey alone, no"
     " password.",
+    "account.signed_in.discord": "{actor} signed in with Discord{from_ip}.",
     "account.second_step_asked": "{actor} gave their password{from_ip}, and was asked for their"
     " second step.",
+    "account.second_step_asked.discord": "{actor} signed in with Discord{from_ip}, and was asked"
+    " for their second step.",
     "account.second_step_failed": "Someone signing in as {member}{from_ip} gave a wrong second"
     " step.",
     "account.second_step_failed.app": "Someone signing in as {member}{from_ip} gave a wrong code"
@@ -777,6 +781,16 @@ MESSAGES: dict[str, str] = {
     " passkey: it didn't check out.",
     "account.sign_in_failed.passkey_unknown": "Someone failed to sign in{from_ip} with a passkey"
     " no account here has.",
+    "account.sign_in_failed.discord": "Someone failed to sign in with Discord{from_ip}: Discord"
+    " didn't say who they are.",
+    "account.sign_in_failed.discord_no_email": "Someone failed to sign in with Discord{from_ip}:"
+    " Discord has no verified email for them, so no account was made.",
+    "account.sign_in_failed.discord_email": "Someone failed to sign in as {member}{from_ip} with a"
+    " Discord account not linked to theirs, though it has their email. Nothing was linked.",
+    "account.sign_in_failed.discord_merged": "Someone failed to sign in{from_ip} with the Discord"
+    " account of {member}, which is merged into another account.",
+    "account.sign_in_failed.discord_suspended": "{member} was turned away from signing in with"
+    " Discord{from_ip}: they are suspended.",
     "account.sign_in_throttled": "Someone was turned away from signing in as {member}{from_ip}:"
     " {too_many} from where they were.",
     "account.sign_in_throttled.unknown": "Someone was turned away from signing in{from_ip} to an"
@@ -789,10 +803,18 @@ MESSAGES: dict[str, str] = {
     " passkey{from_ip}: {too_many} from where they were.",
     "account.sign_in_throttled_again.passkey": "Someone was turned away again from signing in"
     " with a passkey{from_ip}: {too_many} from where they were.",
+    "account.sign_in_throttled.discord": "Someone was turned away from signing in with"
+    " Discord{from_ip}: {too_many} from where they were.",
+    "account.sign_in_throttled_again.discord": "Someone was turned away again from signing in"
+    " with Discord{from_ip}: {too_many} from where they were.",
     "account.sign_up_throttled": "Someone was turned away from signing up{from_ip}: too many"
     " sign-ups from where they were.",
     "account.sign_up_throttled_again": "Someone was turned away again from signing up{from_ip}:"
     " too many sign-ups from where they were.",
+    "account.sign_up_throttled.discord": "Someone was turned away from signing up with"
+    " Discord{from_ip}: too many sign-ups from where they were.",
+    "account.sign_up_throttled_again.discord": "Someone was turned away again from signing up"
+    " with Discord{from_ip}: too many sign-ups from where they were.",
     "account.throttle_lifted": "{actor} unblocked sign-ins{from_ip}: over the limit of {rule}.",
     "account.throttle_lifted.login": "{actor} unblocked sign-ins at {login}{from_ip}: over the"
     " limit of {rule}.",

@@ -592,6 +592,7 @@ Horatio limits how often anyone can try to sign in or sign up from one place (on
 - **All sign-ins**, right password or not: 60 in a quarter of an hour and 300 a day from one address, so that no one can keep the server busy checking passwords. A troupe signing in together on a venue's Wi-Fi stays well under it.
 - **Sign-ups**: 20 an hour and 50 a day from one address.
 - **Passkeys alone** ([signing in with no password](getting-started.md#signing-in)) count as sign-ins from the address, under the first two limits, and as tries at a login of their own, "a passkey", under the third: 5 failed in a quarter of an hour from one address hold back passkeys from there, never a password. The **Throttled now** card shows it as **at a passkey**. A passkey that doesn't check out is a failed sign-in ("Someone failed to sign in as Agnes from 203.0.113.7 with a passkey: it didn't check out."), and one that does is "Agnes signed in from 203.0.113.7 with a passkey alone, no password."
+- **Signing in with Discord** counts as a sign-in from the address, under the first two limits, and as tries at a login of its own, "Discord", under the third: 5 that didn't sign anyone in (Discord didn't say who it was, Horatio refused them, or the second step was never given) in a quarter of an hour from one address hold back Discord sign-in from there, never a password. The **Throttled now** card shows it as **at Discord**. One that signs in is "Agnes signed in with Discord from 203.0.113.7."; one refused says why, such as "Someone failed to sign in as Agnes from 203.0.113.7 with a Discord account not linked to theirs, though it has their email. Nothing was linked." A new account made with Discord counts under the sign-up limits, and is "Agnes signed up with Discord from 203.0.113.7."
 - **Wrong second-step codes** ([two-step sign-in](getting-started.md#two-step-sign-in)): 20 in a quarter of an hour and 100 a day from one address, and 10 in a quarter of an hour and 30 a day at one account from anywhere. Only someone with the account's password gets that far, so the limit at the account can't be used to keep anyone else out. It shows as **Anywhere at @handle**.
 - **Password changes** while signed in, right password or not: 10 in a quarter of an hour and 30 a day at one account, from anywhere. Only someone signed in as the account can try, so the limit can't be used to keep anyone else out. Someone who has forgotten their password is better served by a reset link. It shows as the account's **@handle** alone.
 
@@ -620,7 +621,7 @@ The server has one Discord bot, which every troupe adds to its own Discord serve
    - Leave **Public Bot** on (the default). Switched off, only you could add the bot to a server, and troupes couldn't add it to theirs.
    - Leave the privileged intents off. Horatio needs none of them: it never reads messages, members or presence.
 3. Open **OAuth2**. Copy the client ID, and the client secret (you may have to reset it to see it; copy it straight away).
-4. Still under **OAuth2**, add a redirect: `https://<your site>/api/discord/callback`, for example `https://horatio.example.org/api/discord/callback`. It must start with `HORATIO_PUBLIC_URL` exactly, `https` and all. Save the change.
+4. Still under **OAuth2**, add a redirect: `https://<your site>/api/discord/callback`, for example `https://horatio.example.org/api/discord/callback`. It must start with `HORATIO_PUBLIC_URL` exactly, `https` and all. Save the change. The same redirect serves troupes adding the bot, players linking their Discord account and everyone signing in with Discord.
 
 You don't need to make an invite link in the portal: Horatio makes its own, asking for every permission the bot uses, and nothing more:
 
@@ -649,6 +650,8 @@ Then fill in the three settings. All three are needed:
 | `HORATIO_DISCORD_CLIENT_ID` | The client ID, from **OAuth2** |
 | `HORATIO_DISCORD_CLIENT_SECRET` | The client secret, from **OAuth2** |
 | `HORATIO_DISCORD_BOT_TOKEN` | The token, from **Bot** |
+
+With all three set, the sign-in and sign-up pages offer **Sign in with Discord** and **Sign up with Discord** (see [Signing in](getting-started.md#signing-in)). They ask Discord only who the person is and the email it has verified for them (the `identify` and `email` scopes). A linked account signs in, unless it's suspended or merged; for anyone who must have two-step sign-in, Discord is the first step only, and their passkey or app is still asked for. A Discord account no one here has makes a new account, with that email and no password; without a verified email, none is made. An account is never linked by its email: if one already uses it, they're told to sign in with the password and link Discord themselves.
 
 The token and the secret are passwords: anyone who has them can post as your bot. Keep them out of the repository (`production.env` and `.env` aren't committed) and out of chat.
 

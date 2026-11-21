@@ -1,11 +1,15 @@
 """A player linking their own Discord account (#857): Discord confirms who they
 are, so Horatio knows their Discord account rather than a username they typed.
 
-Linking uses the `identify` scope only, and changes nothing about how they sign
-in. It comes back through Discord's one callback, `/api/discord/callback`, which
-hands it here when its `state` begins with `link.` (horatio.api.discord). The
-state's other half is also kept in a short-lived cookie, so only the browser that
-started linking can finish it.
+Linking uses the `identify` scope only. Once linked, they can sign in with
+Discord too (#1128, horatio.api.discord_sign_in). It comes back through Discord's
+one callback, `/api/discord/callback`, which hands it here when its `state` begins
+with `link.` (horatio.api.discord). The state's other half is also kept in a
+short-lived cookie, so only the browser that started linking can finish it.
+
+The linked account is `users.discord_user_id`, and an `auth_identities` row with
+provider "discord" says the same: linking, unlinking, signing up with Discord and
+merging accounts keep the two in step (horatio.discord_links.keep_identity).
 
 A Discord account linked to another Horatio account is refused. Unlinking is
 refused while Discord is the person's only way to sign in.
@@ -18,6 +22,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from horatio import audit, discord_links
 from horatio.api.players import DISCORD_HANDLE
@@ -57,6 +62,15 @@ def only_by_discord(db: DbSession, user: User) -> bool:
         )
     ).first()
     return others is None
+
+
+def link(db: Session, user: User, account: discord.Account) -> None:
+    """Link the Discord account to the person, with its username as theirs on Discord."""
+    user.discord_user_id = account.id
+    if DISCORD_HANDLE.fullmatch(account.username):
+        user.discord_handle = account.username
+    db.flush()
+    discord_links.keep_identity(db, user)
 
 
 def account_of(db: DbSession, user: User) -> DiscordAccount:
@@ -104,6 +118,7 @@ def unlink(db: DbSession, user: CurrentUser) -> DiscordAccount:
             "Discord is your only way to sign in, so it stays linked.",
         )
     user.discord_user_id = None
+    discord_links.keep_identity(db, user)
     audit.record(db, user, "account.discord_unlinked")
     db.commit()
     return account_of(db, user)
@@ -136,16 +151,12 @@ def finish_link(
         account = discord.account_from_code(code)
     except SendError as failure:
         return back(failure.reason)
-    holder = db.scalars(
-        select(User).where(User.discord_user_id == account.id, User.id != user.id)
-    ).first()
-    if holder is not None:
+    holder = discord_links.holder_of(db, account.id)
+    if holder is not None and holder.id != user.id:
         audit.record(db, user, "account.discord_link_refused", other_user_id=holder.id)
         db.commit()
         return back("taken")
-    user.discord_user_id = account.id
-    if DISCORD_HANDLE.fullmatch(account.username):
-        user.discord_handle = account.username
+    link(db, user, account)
     audit.record(db, user, "account.discord_linked", discord=user.discord_handle or "")
     discord_links.account_linked(db, user)
     db.commit()

@@ -339,6 +339,24 @@ def passkey_held_back(db: Session, ip: str | None) -> Held | None:
     return held
 
 
+# A sign-in with Discord (#1128) names no login until Discord says who it is: its tries
+# count as tries at a login of their own, "Discord", from where they come.
+DISCORD = sha256(b"discord:").hexdigest()
+
+
+def discord_held_back(db: Session, ip: str | None) -> Held | None:
+    """sign_in_held_back, for a sign-in with Discord: counted as failed until
+    signed_in_at(db, DISCORD, ip) says otherwise."""
+    if not get_settings().auth_limits:
+        return None
+    lock(db)
+    held = held_back(db, SIGN_IN, ip, DISCORD)
+    if held is None:
+        db.add(AuthAttempt(action=SIGN_IN, identity_hash=DISCORD, ip_address=ip))
+        db.commit()
+    return held
+
+
 def second_step_held_back(db: Session, user_id: UUID, ip: str | None) -> Held | None:
     """What holds back someone at `ip` from giving a second step for the account
     `user_id` now, if anything. As for sign-ins: if nothing, the try is counted, as
