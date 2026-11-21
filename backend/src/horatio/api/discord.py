@@ -18,10 +18,11 @@ from horatio import (
     discord_webhooks,
     notification_choices,
 )
-from horatio.api import discord_account, discord_sign_in
+from horatio.api import discord_account, discord_confirm, discord_sign_in
 from horatio.api.connectors import connector_row
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser, current_user
+from horatio.auth.two_step import allowed_first, set_up_first
 from horatio.connectors import SendError, discord
 from horatio.models import Character, NewsAgency, Troupe, TroupeConnector, User
 from horatio.permissions import TroupeAction
@@ -164,6 +165,7 @@ def discord_invite(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> In
 
 
 @router.get("/discord/callback", include_in_schema=False)
+@allowed_first
 def discord_callback(
     request: Request,
     db: DbSession,
@@ -175,9 +177,14 @@ def discord_callback(
     """Where Discord sends a storyteller after they add the bot (or decline), a
     player after they link their own Discord account (`state` begins `link.`), and
     someone signing in or up with Discord (`state` begins `signin.`), who needn't be
-    signed in."""
+    signed in, and someone with no password confirming it's them (`state` begins
+    `confirm.`, #1140). Only confirming is open to someone who must set up two-step
+    sign-in first, so they can add a passkey."""
     if state.startswith(discord.SIGN_IN_STATE):
         return discord_sign_in.finish_sign_in(request, db, state, code, error)
+    if state.startswith(discord.CONFIRM_STATE):
+        return discord_confirm.finish_confirm(request, db, state, code, error)
+    set_up_first(request, db)
     user = current_user(signed_in)
     if state.startswith(discord.LINK_STATE):
         return discord_account.finish_link(request, db, user, state, code, error)

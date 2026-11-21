@@ -17724,6 +17724,23 @@
         "title": "DiscordAccount",
         "type": "object"
       },
+      "DiscordConfirmStart": {
+        "properties": {
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          }
+        },
+        "title": "DiscordConfirmStart",
+        "type": "object"
+      },
       "DiscordOut": {
         "description": "How a post stands on Discord, for its staff.",
         "properties": {
@@ -59554,6 +59571,23 @@
             "title": "Apps Available",
             "type": "boolean"
           },
+          "can_confirm_with_discord": {
+            "default": false,
+            "title": "Can Confirm With Discord",
+            "type": "boolean"
+          },
+          "confirmed_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed Until"
+          },
           "has_password": {
             "default": true,
             "title": "Has Password",
@@ -64795,6 +64829,48 @@
           }
         },
         "summary": "Discord Sign In Help",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/discord/confirm": {
+      "post": {
+        "description": "Discord's page for confirming it's you, in place of a password you don't have.\nThe state waits here, and in a cookie for the callback, for 10 minutes.",
+        "operationId": "start_confirm_api_auth_discord_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordConfirmStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordStarted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Confirm",
         "tags": [
           "auth"
         ]

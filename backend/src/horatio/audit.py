@@ -45,6 +45,9 @@ DEBUG: frozenset[str] = frozenset(
         "account.password_change_throttled_again",
         # The password right, and the second step asked for (#1057).
         "account.second_step_asked",
+        # Confirmed it's them with Discord, having no password (#1140): what it let
+        # them do is recorded at notice.
+        "account.discord_confirmed",
         "account.signed_out",
         "account.signed_up",
     }
@@ -93,6 +96,8 @@ NOTICE: frozenset[str] = frozenset(
         # --- accounts and security: the People tab's cards read most of these ---
         "account.discord_linked",
         "account.discord_link_refused",
+        # Discord said it was another Discord account, or nothing (#1140).
+        "account.discord_confirm_failed",
         "account.discord_unlinked",
         "account.email_change_started",
         "account.email_change_resent",

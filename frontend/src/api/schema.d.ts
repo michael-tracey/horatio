@@ -437,6 +437,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/discord/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Confirm
+         * @description Discord's page for confirming it's you, in place of a password you don't have.
+         *     The state waits here, and in a cookie for the callback, for 10 minutes.
+         */
+        post: operations["start_confirm_api_auth_discord_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/discord/sign-up": {
         parameters: {
             query?: never;
@@ -21337,6 +21358,11 @@ export interface components {
             /** Linked */
             linked: boolean;
         };
+        /** DiscordConfirmStart */
+        DiscordConfirmStart: {
+            /** Next */
+            next?: string | null;
+        };
         /**
          * DiscordOut
          * @description How a post stands on Discord, for its staff.
@@ -37813,6 +37839,13 @@ export interface components {
             /** Apps Available */
             apps_available: boolean;
             /**
+             * Can Confirm With Discord
+             * @default false
+             */
+            can_confirm_with_discord: boolean;
+            /** Confirmed Until */
+            confirmed_until?: string | null;
+            /**
              * Has Password
              * @default true
              */
@@ -40128,6 +40161,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiscordSignInHelp"];
+                };
+            };
+        };
+    };
+    start_confirm_api_auth_discord_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordConfirmStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordStarted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
