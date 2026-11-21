@@ -10,6 +10,7 @@ import { MOTIFS, motifFor, rememberMotif, type Motif, type MotifsBySplat } from 
 import { SplashScreen } from "../../loaders/splash";
 import { useAppearance } from "../../loaders/useMotif";
 import { EmailDesignCard } from "./EmailDesign";
+import { SiteFold } from "./SiteFold";
 import { DiscordCard, MailCard } from "./SiteServices";
 
 /** The site as a whole (#790): what everyone sees that only the custodian chooses,
@@ -121,21 +122,27 @@ function InviteDaysForm({ days }: { days: number }) {
   };
   return (
     <Card title="Getting your troupe ready">
-      <form onSubmit={submit} className="flex flex-col gap-3">
-        <p className="text-sm text-mist">
-          A new troupe's storytellers see its steps on the Overview. <strong className="font-medium text-parchment">Invite players</strong> leaves the list once the troupe
-          is this many days old from the day it was made, done or not, and the count leaves it out. 30 until you change it.
-        </p>
-        <div className="flex flex-wrap items-end gap-3">
-          <Field label="Days before Invite players leaves">
-            <Input type="number" inputMode="numeric" min={1} max={365} required className="w-28" value={chosen} onChange={(e) => setChosen(e.target.value)} />
-          </Field>
-          <Button type="submit" variant="secondary" disabled={save.isPending || chosen === String(days)}>
-            Save
-          </Button>
-        </div>
-        <ErrorText error={save.error} />
-      </form>
+      {/* The number in sight, the form folded, to keep Site short on a phone (#944). */}
+      <div className="flex flex-col gap-4 text-sm">
+        <p className="text-parchment">Invite players leaves a troupe's list once it is {days} days old.</p>
+        <SiteFold summary="Change the number of days">
+          <form onSubmit={submit} className="flex flex-col gap-3">
+            <p className="text-mist">
+              A new troupe's storytellers see its steps on the Overview. <strong className="font-medium text-parchment">Invite players</strong> leaves the list once the
+              troupe is this many days old from the day it was made, done or not, and the count leaves it out. 30 until you change it.
+            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <Field label="Days before Invite players leaves">
+                <Input type="number" inputMode="numeric" min={1} max={365} required className="w-28" value={chosen} onChange={(e) => setChosen(e.target.value)} />
+              </Field>
+              <Button type="submit" variant="secondary" disabled={save.isPending || chosen === String(days)}>
+                Save
+              </Button>
+            </div>
+            <ErrorText error={save.error} />
+          </form>
+        </SiteFold>
+      </div>
     </Card>
   );
 }

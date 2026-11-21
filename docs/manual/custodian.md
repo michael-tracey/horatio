@@ -312,7 +312,7 @@ The very first screen shows before the app has asked the server anything, so it 
 
 A new troupe's lead storyteller and storytellers see **Getting your troupe ready** on its Overview and in Customise › Setup: the steps a new troupe takes, each ticked from what the troupe holds (see [Customise: setup](running-a-troupe.md#customise-setup)). The last step, **Invite players**, leaves the list once the troupe is a number of days old, counted from the day it was made, whether it was ticked or not. By then a troupe has players or knows how to find them, and a visit left behind by a declined request no longer keeps the step ticked.
 
-The **Getting your troupe ready** card sets the number of days, from 1 to 365; it's 30 until you change it. It applies to every troupe at once, old and new. Once the step has left, the list's count leaves it out too: "5 of 7 done", not "5 of 8". Changing the number goes in the audit log.
+The **Getting your troupe ready** card says the number of days now, and sets it under **Change the number of days**, from 1 to 365; it's 30 until you change it. It applies to every troupe at once, old and new. Once the step has left, the list's count leaves it out too: "5 of 7 done", not "5 of 8". Changing the number goes in the audit log.
 
 ### Mail
 

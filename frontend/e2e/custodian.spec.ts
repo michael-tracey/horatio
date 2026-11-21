@@ -1220,6 +1220,9 @@ test("the custodian chooses after how many days Invite players leaves a troupe's
   await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "Site", exact: true }).click();
   const card = c.locator("section").filter({ has: c.getByRole("heading", { name: "Getting your troupe ready", exact: true }) });
+  // The number is in sight; changing it is folded away (#944).
+  await expect(card.getByText(/^Invite players leaves a troupe's list once it is \d+ days old\.$/)).toBeVisible();
+  await card.getByText("Change the number of days").click();
   const days = card.getByLabel("Days before Invite players leaves");
   // The other project's run of this test may change it at the same time: only the answer to this run's save is checked.
   const chosen = test.info().project.name === "phone" ? "21" : "45";
@@ -1263,6 +1266,7 @@ test("Clan logos and Site fit a phone: nothing sideways, the loading animations 
   await expect(card("Email design").getByText(/^Now: /)).toBeVisible();
   await expect(card("Discord").getByText("Discord is off", { exact: true })).toBeVisible();
   await expect(card("Discord").getByText(/^Troupes can't connect Discord until these are set: /)).toBeVisible();
+  await expect(card("Getting your troupe ready").getByText(/^Invite players leaves a troupe's list once it is \d+ days old\.$/)).toBeVisible();
   await expect(card("What is running").getByText("Running since")).toBeVisible();
   await expect(c.locator("main details[open]")).toHaveCount(0);
   expect(await sideways()).toBe(0);
