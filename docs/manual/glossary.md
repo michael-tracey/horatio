@@ -46,10 +46,6 @@ A way out of Horatio that a troupe sets up, such as its Discord server or email,
 
 The person who looks after the whole site, above every troupe. The custodian appoints lead storytellers, looks after people's accounts and the system, and can do anything in any troupe.
 
-## Customise
-
-The troupe's tab group where its storytellers set it up: its settings, its rules and [house rules](#house-rule), specialisations and connectors.
-
 ## Delivery
 
 Sending downtime responses to their players. By default only submissions with every response written go out; staff can choose to send partly written ones too.
@@ -177,6 +173,10 @@ A character its player has stopped playing: Final Death, Off-field or Inactive. 
 ## Scene
 
 Several characters of one troupe on one page of the Play View, side by side, for staff running a scene.
+
+## Setting up
+
+The troupe's tab group where its storytellers set it up: its settings, its [house rules](#house-rule), specialisations, connectors, and export and import.
 
 ## Sire lines
 
