@@ -20,6 +20,14 @@ export function spaced(secret: string): string {
   return secret.replace(/(.{4})(?=.)/g, "$1 ");
 }
 
+/** What a passkey that may not sign in alone, with no password, says of itself (#1098):
+ * null for one that can. Those added before passkeys could sign in alone never said. */
+export function aloneNote(discoverable: boolean | null): string | null {
+  if (discoverable === true) return null;
+  if (discoverable === false) return "Signs you in only after your password: the device that keeps it can't sign you in with it alone.";
+  return "May not sign you in alone, without your password: it was added before passkeys could. To be sure, add a new passkey on the same device, then remove this one.";
+}
+
 /** What asks for the password again: turning off the app, new codes, removing a passkey. */
 type Asking = { what: "app" } | { what: "codes" } | { what: "passkey"; id: string; name: string };
 
@@ -118,6 +126,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
                   · added {dates.date(p.created_at)}
                   {p.last_used_at && `, last used ${dates.date(p.last_used_at)}`}
                 </span>
+                {aloneNote(p.discoverable) && <span className="mt-1 block text-mist">{aloneNote(p.discoverable)}</span>}
               </span>
               <Button type="button" variant="ghost" className="min-h-8 px-2" aria-label={`Remove ${p.name}`} onClick={() => setAsking({ what: "passkey", id: p.id, name: p.name })}>
                 Remove
@@ -214,7 +223,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
           <div className="flex flex-col gap-4 text-sm">
             <p className="text-mist">
               After your password, Horatio asks for a second step: a passkey on your phone or computer, or a code from an authenticator app. Someone who learns your password still can't sign in as
-              you.
+              you. A passkey can also sign you in alone, with no password: choose <strong>Sign in with a passkey</strong>. Your password still works, and stays.
             </p>
             {s.required_by.length > 0 && <Notice>You need two-step sign-in as {s.required_by.join(" and as ")}.</Notice>}
             {codes ? (

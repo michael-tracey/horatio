@@ -20,6 +20,8 @@ You're signed in straight away, and land on **Characters**. While you have no ch
 
 Choose **Sign in** at the top of any page. On the sign-in page, give your **Email or handle** and your **Password**, then choose **Sign in**. If you opened a link to a page in Horatio while signed out, or signed in from the top of a page, you go on to that page once you're in.
 
+If you have added a [passkey](#setting-up-two-step-sign-in), you can sign in with it alone, with no password: choose **Sign in with a passkey**, or pick it where your browser offers it from the **Email or handle** box, and confirm with your face, finger or PIN. That counts as both steps, so Horatio asks for nothing more, even if you must have two-step sign-in. Your password still works, and stays: no one is made to sign in without one, and [Forgot your password?](#forgotten-your-password) works as before.
+
 Each page names itself in the browser's tab, its bookmarks and its history, the tab you have open first: "Approvals · ‹troupe› · Horatio", "Sheet · ‹character› · Horatio". With several Horatio tabs open, you can tell them apart.
 
 Horatio keeps you signed in on that browser for about a month. To sign out, choose **Sign out** at the right of the menu. Signing out also clears whatever Horatio kept on that device for you; if taps from the Play View haven't been sent yet, it asks first.
@@ -109,7 +111,9 @@ After many tries at changing it, right or wrong, Horatio stops taking them for a
 
 The **Two-step sign-in** card offers two kinds of second step. You can have both, and several passkeys.
 
-- **A passkey** is kept by your phone, computer or password manager, and unlocked with your face, finger or PIN. Give it a name, such as Phone, and choose **Add a passkey**; your browser asks you to confirm. A passkey made on your phone can usually sign you in on a computer nearby too.
+- **A passkey** is kept by your phone, computer or password manager, and unlocked with your face, finger or PIN. Give it a name, such as Phone, and choose **Add a passkey**; your browser asks you to confirm. A passkey made on your phone can usually sign you in on a computer nearby too. It can also sign you in alone, with no password (see [Signing in](#signing-in)).
+
+  A passkey added while passkeys could only come after the password may not sign you in alone, and the card says so under it: "May not sign you in alone". To be sure, add a new passkey on the same device, then remove the old one. Once a passkey has signed you in alone, the card stops saying it. A few devices, such as some security keys, keep passkeys only as a second step: the card says "Signs you in only after your password" under those.
 - **An authenticator app**, such as Google Authenticator, Microsoft Authenticator or 1Password, shows a new 6-digit code every 30 seconds. Choose **Set up an authenticator app**, scan the QR code with the app, or type the key into it, then give the code it shows and choose **Turn on two-step sign-in**.
 
 With your first second step, Horatio shows ten recovery codes, once. Keep them somewhere safe, away from your phone (**Download** or **Copy** help), and choose **I've kept them**. The card says how many are left; **New recovery codes** makes ten more in place of the old. **Remove** takes away a passkey, and **Turn off** the app. Each asks for your password. If you must have two-step sign-in, you can't remove your last second step.

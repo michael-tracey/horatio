@@ -523,6 +523,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/passkey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign In With Passkey
+         * @description Sign in with a passkey alone (#1098): the browser's answer to the challenge from
+         *     /auth/passkey/options. The device checked the person's face, finger or PIN, so it
+         *     is both steps at once: no second step is asked for, even of someone who must have
+         *     one. Limited and logged as a password is, at a login of its own.
+         */
+        post: operations["sign_in_with_passkey_api_auth_passkey_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/passkey/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passkey Alone Options
+         * @description What the browser needs to sign in with a passkey alone, no password (#1098):
+         *     WebAuthn's PublicKeyCredentialRequestOptions, as JSON, naming no account. Its
+         *     challenge is kept here, named by a cookie, and works once, for 5 minutes.
+         */
+        post: operations["passkey_alone_options_api_auth_passkey_options_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/password": {
         parameters: {
             query?: never;
@@ -28852,6 +28897,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Discoverable */
+            discoverable: boolean | null;
             /**
              * Id
              * Format: uuid
@@ -39926,6 +39973,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    sign_in_with_passkey_api_auth_passkey_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeySigned"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    passkey_alone_options_api_auth_passkey_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };

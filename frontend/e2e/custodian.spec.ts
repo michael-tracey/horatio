@@ -167,10 +167,10 @@ test("the custodian changes a player's email, and the player confirms it from th
   await fresh.getByRole("main").getByRole("link", { name: "Sign in" }).click();
   await fresh.getByLabel("Email or handle").fill(player.email);
   await fresh.getByLabel("Password").fill(PASSWORD);
-  await fresh.getByRole("button", { name: "Sign in" }).click();
+  await fresh.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(fresh.getByText("Wrong email, handle or password.")).toBeVisible();
   await fresh.getByLabel("Email or handle").fill(newEmail);
-  await fresh.getByRole("button", { name: "Sign in" }).click();
+  await fresh.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(fresh.getByRole("heading", { name: "Your characters" })).toBeVisible();
 
   // The link is spent, and the custodian sees the change confirmed.
@@ -519,7 +519,7 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await expect(l.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await l.getByLabel("Email or handle").fill(lead.email);
   await l.getByLabel("Password").fill(PASSWORD);
-  await l.getByRole("button", { name: "Sign in" }).click();
+  await l.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(l.getByText("Your account is suspended. To ask about it, contact the custodian.")).toBeVisible();
   await l.screenshot(shots("suspended-sign-in"));
 
@@ -534,7 +534,7 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await expect(lift).toBeHidden();
   await expect(row.getByText("Suspended", { exact: true })).toHaveCount(0);
   await expect(suspended).toHaveCount(0);
-  await l.getByRole("button", { name: "Sign in" }).click();
+  await l.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(l.getByRole("heading", { name: "Your characters" })).toBeVisible();
 });
 
@@ -837,7 +837,7 @@ test("the custodian merges two accounts of one person: the characters and staff 
   await expect(t.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await t.getByLabel("Email or handle").fill(twice.email);
   await t.getByLabel("Password").fill(PASSWORD);
-  await t.getByRole("button", { name: "Sign in" }).click();
+  await t.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(t.getByText("Wrong email, handle or password.")).toBeVisible();
 
   // The staying account has the character, and is told.

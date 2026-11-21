@@ -243,7 +243,7 @@ test("a link opened signed out goes there once signed in, and never to another s
   // Signed in, they are where the link pointed.
   await page.getByLabel("Email or handle").fill(player.email);
   await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Ines Varga");
   expect(new URL(page.url()).pathname).toBe(log);
 
@@ -252,7 +252,7 @@ test("a link opened signed out goes there once signed in, and never to another s
   await other.goto("/sign-in?next=//evil.example/");
   await other.getByLabel("Email or handle").fill(player.email);
   await other.getByLabel("Password").fill(PASSWORD);
-  await other.getByRole("button", { name: "Sign in" }).click();
+  await other.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
   expect(new URL(other.url()).origin).toBe(new URL(page.url()).origin);
 });

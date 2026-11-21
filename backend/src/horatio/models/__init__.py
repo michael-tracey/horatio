@@ -133,6 +133,7 @@ from horatio.models.troupes import (
 from horatio.models.two_step import (
     AuthenticatorApp,
     Passkey,
+    PasskeySignIn,
     RecoveryCode,
     SecondStepSignIn,
 )
@@ -200,6 +201,7 @@ __all__ = [
     "PostDismissal",
     "PostRead",
     "Passkey",
+    "PasskeySignIn",
     "PushDevice",
     "PushNotice",
     "OwedAction",

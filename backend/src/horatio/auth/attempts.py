@@ -321,6 +321,24 @@ def signed_in_at(db: Session, identity: str, ip: str | None) -> None:
     )
 
 
+# A sign-in with a passkey alone (#1098) names no login until the passkey is checked:
+# its tries count as tries at a login of their own, "a passkey", from where they come.
+PASSKEY = sha256(b"passkey:").hexdigest()
+
+
+def passkey_held_back(db: Session, ip: str | None) -> Held | None:
+    """sign_in_held_back, for a sign-in with a passkey alone: counted as failed until
+    signed_in_at(db, PASSKEY, ip) says otherwise."""
+    if not get_settings().auth_limits:
+        return None
+    lock(db)
+    held = held_back(db, SIGN_IN, ip, PASSKEY)
+    if held is None:
+        db.add(AuthAttempt(action=SIGN_IN, identity_hash=PASSKEY, ip_address=ip))
+        db.commit()
+    return held
+
+
 def second_step_held_back(db: Session, user_id: UUID, ip: str | None) -> Held | None:
     """What holds back someone at `ip` from giving a second step for the account
     `user_id` now, if anything. As for sign-ins: if nothing, the try is counted, as
