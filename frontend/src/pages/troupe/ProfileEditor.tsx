@@ -129,7 +129,7 @@ export function ProfilePartEditor({ profile, part, onDone }: { profile: TroupePr
               <Input maxLength={200} value={setting.era} onChange={(e) => set({ setting: { ...setting, era: e.target.value } })} />
             </Field>
           </div>
-          <p className="text-xs text-mist">Its themes, moods and the rest of its Setting Style Document are under Troupe settings › The setting.</p>
+          <p className="text-xs text-mist">Its themes, moods and the rest of its Setting Style Document are under Settings › The setting.</p>
         </>
       )}
       {part === "newcomers" && (

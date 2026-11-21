@@ -6,7 +6,7 @@ import { SETTINGS } from "./settingsIndex";
 
 /**
  * How many quests a character may ask for each cycle, in the Quests tab's Settings (#785, #909).
- * Quests are switched on and off in the Features list, on Troupe settings (#784), the one place.
+ * Quests are switched on and off in the Features list, on Settings (#784), the one place.
  */
 export function QuestSettings({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };

@@ -16,7 +16,7 @@ export function BeingBuiltTab({ troupeId }: { troupeId: string }) {
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/builds", { params: { path: { troupe_id: troupeId } } })),
   });
 
-  const about = "Characters built to this troupe's rules whose players haven't asked to make it home yet. Once they ask, they move to Approvals.";
+  const about = "Characters built to this troupe's rules whose players haven't asked to make it home yet. Once they ask, they move to To decide.";
   return (
     <>
       {builds.isPending ? (

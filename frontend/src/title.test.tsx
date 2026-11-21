@@ -54,6 +54,41 @@ describe("openTab", () => {
     expect(tabOpens(work, "/troupes/1/downtimesheet")).toBe(false);
     expect(openTab([...tabs, work], "/troupes/1/downtimes/7/work")?.label).toBe("My work");
   });
+
+  it("finds a tab that opens only at its own address open under its also, as the Overview on the troupe's log (#1048)", () => {
+    const overview = { to: "/troupes/1", label: "Overview", end: true, also: "/troupes/1/log" };
+    expect(tabOpens(overview, "/troupes/1")).toBe(true);
+    expect(tabOpens(overview, "/troupes/1/log")).toBe(true);
+    expect(tabOpens(overview, "/troupes/1/approvals")).toBe(false);
+  });
+});
+
+describe("one group of tabs (#1048)", () => {
+  it("is its tabs alone, as the only row, with no group row", () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/troupes/1/news"]}>
+        <GroupedTabs
+          label="Troupe sections"
+          groups={[
+            {
+              label: "Troupe",
+              tabs: [
+                { to: "/troupes/1", label: "Overview", end: true },
+                { to: "/troupes/1/news", label: "News", count: 2, countLabel: "unread" },
+              ],
+            },
+            { label: "Court", tabs: [] },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+    const rows = Array.from(container.querySelectorAll("nav:not(.sm\\:hidden)"));
+    expect(rows.map((n) => n.getAttribute("aria-label"))).toEqual(["Troupe sections"]);
+    const links = Array.from(rows[0]!.querySelectorAll("a"));
+    expect(links.map((a) => a.textContent)).toEqual(["Overview", "News2"]);
+    expect(links.map((a) => a.getAttribute("aria-current"))).toEqual([null, "page"]);
+    expect(document.title).toBe("News · Horatio");
+  });
 });
 
 describe("the browser tab's title", () => {
@@ -68,7 +103,7 @@ describe("the browser tab's title", () => {
           groups={[
             { label: "Troupe", tabs: [{ to: "/troupes/1", label: "About", end: true }] },
             {
-              label: "Customise",
+              label: "Setting up",
               tabs: [
                 { to: "/troupes/1/settings", label: "Settings" },
                 { to: "/troupes/1/rules", label: "Rules" },

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { backstoryOptional, characterTab, inSteps, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, openSections, pagePart, settingsPart, addList, aboutChoice, chooseIn, makeChanges } from "./support";
+import { backstoryOptional, characterTab, inSteps, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, switchFeature, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, openSections, pagePart, settingsPart, addList, aboutChoice, chooseIn, makeChanges, troupeLog } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -270,12 +270,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 
   // The troupe page's Characters group holds Approvals, the Characters list and Players; NPCs
   // are on its Characters list rather than a tab of their own (#556), At game and Award XP
-  // sit under Games (#779), and Players lists the player with their character, linking to their profile.
+  // sit under Game night (#779, #1048), and Players lists the player with their character, linking to their profile.
   // On a phone, the groups are lists in the section picker's sheet (#904).
   const sections = isPhone(lead.page) ? await openSections(lead.page) : lead.page.getByRole("navigation", { name: "Troupe sections" });
-  if (isPhone(lead.page)) await expect(sections.getByRole("list", { name: "Games", exact: true })).toBeVisible();
+  if (isPhone(lead.page)) await expect(sections.getByRole("list", { name: "Game night", exact: true })).toBeVisible();
   else {
-    await expect(sections.getByRole("link", { name: "Games", exact: true })).toBeVisible();
+    await expect(sections.getByRole("link", { name: "Game night", exact: true })).toBeVisible();
     await expect(sections.getByRole("link", { name: "Players", exact: true })).toHaveCount(0);
   }
   const characterTabs = isPhone(lead.page)
@@ -374,7 +374,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText(troupeName)).toBeVisible();
   await staffBadges.screenshot(shots("staff-badges"));
   await staffBadges.close();
-  await troupeTab(lead.page, "Log");
+  await troupeLog(lead.page);
   await expect(lead.page.getByText("lead accepted Agnes (player); this is its home.")).toBeVisible();
   // Asking to make the troupe home is one entry, though it started Agnes visiting too.
   await expect(lead.page.getByText(`player asked for ${troupeName} to be Agnes's home troupe, and it started visiting.`)).toBeVisible();
@@ -421,7 +421,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // The troupe lists the areas its Elite influence covers; Agnes picks one.
   await troupeTab(lead.page, "Specialisations");
   await pagePart(lead.page, "Influence: Elite", "Specialisations");
-  await expect(lead.page).toHaveURL(/\/specializations\/influence-elite$/);
+  await expect(lead.page).toHaveURL(/\/specialisations\/influence-elite$/);
   await lead.page.screenshot(shots("troupe-specializations"));
   const elite = lead.page.locator("section").filter({ has: lead.page.getByRole("heading", { name: "Influence: Elite", exact: true }) });
   await elite.getByRole("button", { name: "Make our own list" }).click();
@@ -450,7 +450,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.screenshot(shots("specializations"));
 
   // The lead runs a cycle.
-  await troupeTab(lead.page, "Cycles");
+  await troupeTab(lead.page, "Downtimes");
   await expect(lead.page.getByRole("heading", { name: "New cycle" })).toBeVisible();
   await lead.page.getByLabel("Name").fill("November");
   await lead.page.getByRole("button", { name: "Create draft" }).click();
@@ -497,7 +497,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // The cycle's own My work (#789): a narrator sees only their work in it, and My work stays open.
   await expect(narrator.page).toHaveURL(/\/troupes\/[^/]+\/downtimes\/[^/]+\/work$/);
   await expect(narrator.page.getByRole("heading", { name: "November" })).toBeVisible();
-  await expectTabOpen(narrator.page, "Downtimes", "My work");
+  await expectTabOpen(narrator.page, "Between games", "My work");
   await expect(narrator.page.getByRole("link", { name: "Fill tables" }).last()).toBeVisible();
   await narrator.page.getByLabel("Response to Agnes").fill("The docks are crowded tonight; you feed well and unseen.");
   await narrator.page.getByRole("button", { name: "Save response" }).click();
@@ -583,7 +583,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await (await topBar(lead.page)).getByRole("link", { name: "Troupes" }).click();
   await lead.page.getByRole("link", { name: troupeName }).click();
   await troupeTab(lead.page, "Connectors");
-  // Customise opens on its Overview, whose features say "Always on" too: look in Connectors' own card.
+  // The Features list in Settings says "Always on" too: look in Connectors' own card.
   const inHoratio = lead.page.locator("section").filter({ has: lead.page.getByRole("heading", { name: "In Horatio", exact: true }) });
   await expect(inHoratio.getByText("Always on")).toBeVisible();
   // In plain words, with no server settings named and nothing to fill in.
@@ -1361,7 +1361,7 @@ test("staff choose the news, announcements and agency channels under Connectors 
   await expect(troupeChannels.getByText(/The Horatio bot lacks Embed Links in #crier-desk/)).toBeVisible();
 
   // News agencies no longer chooses channels: it names the agency's, with a link to change it.
-  await l.goto(`/troupes/${troupe.id}/news-agencies`);
+  await l.goto(`/troupes/${troupe.id}/news/agencies`);
   const row = l.getByRole("row").filter({ hasText: "The Harbour Crier" });
   await expect(row).toContainText("#crier-desk");
   await expect(l.getByText("News on Discord")).toHaveCount(0);
@@ -1707,9 +1707,9 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   // open its progress is who has submitted.
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/downtimes/${cycle.id}$`));
   await expect(l.getByRole("heading", { level: 1, name: troupeName })).toBeVisible();
-  await expectTabOpen(l, "Downtimes", "Cycles");
+  await expectTabOpen(l, "Between games", "Downtimes");
   await expect(l.getByRole("heading", { level: 2, name: "Chase month" })).toBeVisible();
-  await expect(l).toHaveTitle(`Overview · Chase month · Cycles · ${troupeName} · Horatio`);
+  await expect(l).toHaveTitle(`Overview · Chase month · Downtimes · ${troupeName} · Horatio`);
   await expect(l.getByText("1 of 1 submitted")).toBeVisible();
   await expect(l.getByRole("progressbar", { name: "Submitted" })).toBeVisible();
   await expect(l.getByText(/^7 days left · accepted until [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m$/)).toBeVisible();
@@ -1719,7 +1719,7 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   // Staff add Tobias from Participants.
   await l.getByRole("link", { name: "Participants" }).click();
   await expect(l.getByText("1 submitted", { exact: true })).toBeVisible();
-  await expect(l).toHaveTitle(`Participants · Chase month · Cycles · ${troupeName} · Horatio`);
+  await expect(l).toHaveTitle(`Participants · Chase month · Downtimes · ${troupeName} · Horatio`);
   await l.getByRole("button", { name: "Add a character" }).click();
   const adding = l.getByRole("region", { name: "Add a character" });
   await adding.getByLabel("Character").selectOption({ label: `Tobias Wren (@${wren.handle})` });
@@ -2302,7 +2302,7 @@ async function feedingTroupe(custodian: Person, lead: Person, player: Person, tr
   return { lead: lead.page, player: player.page, troupe: troupe.id as string, bram, agnes, cycle: cycle.id as string, send, open };
 }
 
-/** The Feeding card of Troupe settings, in its Blood, diablerie and feeding part (#908). */
+/** The Feeding card of Settings, in its Blood, diablerie and feeding part (#908). */
 const feedingCard = (page: Page) => page.locator("#feature-feeding");
 
 test("a troupe that doesn't track feeding sees none of it, and switching it back on brings back what was recorded", async ({ browser }) => {
@@ -2320,9 +2320,9 @@ test("a troupe that doesn't track feeding sees none of it, and switching it back
   const fed = await send(l, "GET", `/api/cycles/${cycle}/feeding`);
   await send(l, "PUT", `/api/cycles/${cycle}/participants/${fed.characters[0].participant_id}/feeding-answer`, { result: "half" });
 
-  // The lead switches feeding off in the Features list of Troupe settings; its options wait for it.
+  // The lead switches feeding off in the Features list of Settings; its options wait for it.
   await switchFeature(l, troupe, "Feeding", false);
-  // Its row's Settings link lands on its card, in the part of Troupe settings it is in now (#908).
+  // Its row's Settings link lands on its card, in the part of Settings it is in now (#908).
   await l.getByRole("list", { name: "Features" }).getByRole("link", { name: "Settings for Feeding" }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe}/settings/blood#feature-feeding$`));
   await expect(feedingCard(l)).toBeInViewport();

@@ -446,7 +446,7 @@ def dispute(
             closing.staff_ids(db, troupe),
             "play.effect_disputed",
             summary,
-            f"/troupes/{troupe.id}/play",
+            f"/troupes/{troupe.id}/at-game",
             troupe_id=troupe.id,
             character_id=character.id,
         )

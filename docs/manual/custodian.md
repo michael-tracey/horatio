@@ -310,7 +310,7 @@ The very first screen shows before the app has asked the server anything, so it 
 
 ### Getting your troupe ready
 
-A new troupe's lead storyteller and storytellers see **Getting your troupe ready** on its Overview and in Customise › Setup: the steps a new troupe takes, each ticked from what the troupe holds (see [Customise: setup](running-a-troupe.md#customise-setup)). The last step, **Invite players**, leaves the list once the troupe is a number of days old, counted from the day it was made, whether it was ticked or not. By then a troupe has players or knows how to find them, and a visit left behind by a declined request no longer keeps the step ticked.
+A new troupe's lead storyteller and storytellers see **Getting your troupe ready** on its Overview and in Settings › Getting ready: the steps a new troupe takes, each ticked from what the troupe holds (see [Getting ready](running-a-troupe.md#getting-ready)). The last step, **Invite players**, leaves the list once the troupe is a number of days old, counted from the day it was made, whether it was ticked or not. By then a troupe has players or knows how to find them, and a visit left behind by a declined request no longer keeps the step ticked.
 
 The **Getting your troupe ready** card says the number of days now, and sets it under **Change the number of days**, from 1 to 365; it's 30 until you change it. It applies to every troupe at once, old and new. Once the step has left, the list's count leaves it out too: "5 of 7 done", not "5 of 8". Changing the number goes in the audit log.
 
@@ -342,7 +342,7 @@ Leave a box as it was to keep Horatio's own: its name, night and gold. **Put bac
 The **Discord** card says whether the Horatio bot can work, and if not, which of the three settings are missing (see [Discord: the Horatio app and its bot](#discord-the-horatio-app-and-its-bot)), and how many troupes have connected a server. What it uses, the links for Discord's developer portal and the troupes connected are under **Details, and the troupes connected**.
 
 - **What it uses:** the client ID. The client secret and bot token only show as **Set** or **Not set**, never their values.
-- **For Discord's developer portal:** the **OAuth2 redirect** to register, made from `HORATIO_PUBLIC_URL`, and an **Invite link for the bot**, each with **Copy**. The invite adds the bot to a server by hand, asking for [every permission the bot uses](#discord-the-horatio-app-and-its-bot) (opened again for a server the bot is in already, it updates the bot's permissions there); troupes connect their own servers from **Customise › Connectors**, which tells Horatio which server is theirs.
+- **For Discord's developer portal:** the **OAuth2 redirect** to register, made from `HORATIO_PUBLIC_URL`, and an **Invite link for the bot**, each with **Copy**. The invite adds the bot to a server by hand, asking for [every permission the bot uses](#discord-the-horatio-app-and-its-bot) (opened again for a server the bot is in already, it updates the bot's permissions there); troupes connect their own servers from **Setting up › Connectors**, which tells Horatio which server is theirs.
 - **Check the bot:** asks Discord who the bot is, with the server's token, and shows its name and how many servers it's in. A refused token says so, naming the setting.
 - **Troupes connected:** each troupe that has connected a Discord server, its server's name, how many characters have a channel for their results, whether it has a test channel, and which posts have a channel.
 - **Discord posts that failed lately:** listed only when something has failed. Results, quests' news and posts to Discord that failed or are being tried again, each with when and why, and **Retry** for one Horatio gave up on.
@@ -570,14 +570,14 @@ Then choose **Search**, or **Clear** to start again. The search is kept in the p
 
 ![Changes found in the audit log](images/custodian/audit.png)
 
-A troupe's running staff see their own troupe's part of this on its **Log** tab, without debug events. Only you see the whole of it. What it records, and how long it keeps it, is set on the **Audit log** card above the search: see [What the log records and keeps](#what-the-log-records-and-keeps).
+A troupe's running staff see their own troupe's part of this in its log (**See the whole log**, on the troupe's Overview), without debug events. Only you see the whole of it. What it records, and how long it keeps it, is set on the **Audit log** card above the search: see [What the log records and keeps](#what-the-log-records-and-keeps).
 
 ### What the log records and keeps
 
 The **Audit log** card at the top of **Custodian › Audit** sets what the log records and how long it keeps it. Each change in the log has a level:
 
 - **Notice**: kept forever. Suspensions, merges, moves, deletions, password resets, changes to the site's settings, and everything Horatio reads back from the log as history, such as title history, the chronicle and a location's log.
-- **Info**: most changes, as each troupe sees them on its **Log** tab.
+- **Info**: most changes, as each troupe sees them in its log.
 - **Debug**: routine events, many a day: signing in and out, failed sign-ins, signing up, and someone turned away again for too many sign-ins or sign-ups from one place. Only you see them, here in the audit log; never a troupe's or a character's log.
 
 The first attempt turned away by a limit on signing in or up, from one place (or at one login, for the limit at one login), is info, so it is always recorded: "Someone was turned away from signing in as Agnes from 203.0.113.7: too many failed sign-ins from where they were." The ones after it, until the limit's window has passed (a quarter of an hour, an hour or a day), are debug, so a flood of them doesn't fill the log.
@@ -608,7 +608,7 @@ An address shows in full only while **Record IP addresses with sign-in events** 
 
 ## Setting up Discord and email
 
-Troupes can send downtime results, news and announcements to Discord, and results to players by email (see [Connectors](running-a-troupe.md#connectors-discord-and-email)). Neither works until you set it up for the whole server, once. Until then, a troupe's **Customise › Connectors** page says it isn't set up, and shows you, as the custodian, the settings it needs.
+Troupes can send downtime results, news and announcements to Discord, and results to players by email (see [Connectors](running-a-troupe.md#connectors-discord-and-email)). Neither works until you set it up for the whole server, once. Until then, a troupe's **Setting up › Connectors** page says it isn't set up, and shows you, as the custodian, the settings it needs.
 
 Both are server settings: environment variables starting `HORATIO_`. On a server deployed with `deploy/deploy.sh` they go in `deploy/production.env`; on your own computer, in `backend/.env`. No troupe ever sees or stores them.
 
@@ -645,7 +645,7 @@ You don't need to make an invite link in the portal: Horatio makes its own, aski
 
 Discord's screen lets whoever adds the bot untick any of them. Horatio then says, where a feature needs one, that the bot lacks it. It never asks for Administrator or Manage Expressions (which would let it change anyone's emoji, not just its own). **Create Invite**, which lets Horatio invite a player who isn't on a server yet, isn't asked for; a troupe can give it to the bot's role if it wants.
 
-A server that added the bot before Horatio asked for all of these can update it: **Update the bot's permissions** under Discord on the troupe's **Customise › Connectors** goes through Discord's screen again for that server (see [Adding the Horatio bot](running-a-troupe.md#adding-the-horatio-bot)).
+A server that added the bot before Horatio asked for all of these can update it: **Update the bot's permissions** under Discord on the troupe's **Setting up › Connectors** goes through Discord's screen again for that server (see [Adding the Horatio bot](running-a-troupe.md#adding-the-horatio-bot)).
 
 If you set **Installation** in the portal too, choose **Guild Install** only, with the `bot` scope and these permissions.
 
@@ -696,7 +696,7 @@ Phones only take notifications from a site over HTTPS, which a server deployed w
 
 ### Putting the settings live
 
-Horatio reads its settings when it starts, so redeploy after changing them: `deploy/deploy.sh --no-build` on the server (see [Updating the server](#updating-the-server)), or restart `./start-local.sh` on your own computer. Then open any troupe's **Customise › Connectors**: Discord and email no longer say they aren't set up, and the troupe's staff can [add the bot to their server](running-a-troupe.md#adding-the-horatio-bot).
+Horatio reads its settings when it starts, so redeploy after changing them: `deploy/deploy.sh --no-build` on the server (see [Updating the server](#updating-the-server)), or restart `./start-local.sh` on your own computer. Then open any troupe's **Setting up › Connectors**: Discord and email no longer say they aren't set up, and the troupe's staff can [add the bot to their server](running-a-troupe.md#adding-the-horatio-bot).
 
 ## Updating the server
 

@@ -218,7 +218,7 @@ test("Enlightened: a Sabbat follower of an Accepted path holds it, and a Camaril
   await expect(rule).toContainText("Vol. 2, p. 267");
 });
 
-test("a troupe names the Gangrel a pillar clan in Customise, and the Camarilla's lesser status ban on its Gangrel goes (#553)", async ({ browser }) => {
+test("a troupe names the Gangrel a pillar clan in Setting up, and the Camarilla's lesser status ban on its Gangrel goes (#553)", async ({ browser }) => {
   const custodian = await person(browser, "pillar-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "pillar-lead");
@@ -605,7 +605,7 @@ test("a troupe chooses whether its badges print titles and status: by default al
   await l.screenshot(shots("badges-status"));
 
   // In At game's settings (#784), the lead turns titles off and prints negative status only.
-  await l.goto(`/troupes/${troupeId}/play#settings`);
+  await l.goto(`/troupes/${troupeId}/at-game#settings`);
   const setting = (await tabSettings(l, "At game")).locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
   await expect(setting.getByLabel("Print titles")).toBeChecked();
   await expect(setting.getByLabel(/^All/)).toBeChecked();
@@ -784,7 +784,7 @@ test("where the troupe chooses the night's status at check-in, an elder Senescha
 
   // The lead switches the house rule on in At game's settings (#784), and the players' House rules tab says so.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/play#settings`);
+  await l.goto(`/troupes/${troupeId}/at-game#settings`);
   const card = (await tabSettings(l, "At game")).locator("section").filter({ has: l.getByRole("heading", { name: "The night's status" }) });
   await card.getByLabel("Choose the night's status at check-in").click();
   await expect(card.getByLabel("Choose the night's status at check-in")).toBeChecked();

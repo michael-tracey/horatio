@@ -28,7 +28,7 @@ function item(section: string, index: number, status: ShareReviewItemOut["status
 
 const ITEMS = [item("xp", 0, "changes", []), item("book_traits", 0, "new"), item("book_traits", 1, "same"), item("fill_tables", 0, "new", [ENTRIES])];
 const review = (items: ShareReviewItemOut[]) =>
-  ({ troupe: "Court of Ashes", warnings: [], sections: [{ key: "xp", label: "XP", group: "Troupe settings", items }] }) as unknown as ShareReviewOut;
+  ({ troupe: "Court of Ashes", warnings: [], sections: [{ key: "xp", label: "XP", group: "Settings", items }] }) as unknown as ShareReviewOut;
 
 describe("sharing settings (#521)", () => {
   it("names the file for the troupe and the day", () => {

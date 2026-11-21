@@ -34,10 +34,10 @@ test("a troupe takes ghouls once its storytellers tick Ghoul on About, and a gho
   expect(refused.status()).toBe(409);
   expect((await refused.json()).detail).toBe(`${troupeName} does not take ghoul characters.`);
 
-  // The lead ticks Ghoul, in Customise's Troupe settings. Vampire, the only splat ticked until then, could not be unticked.
-  await troupeTab(l, "Troupe settings");
+  // The lead ticks Ghoul, in Setting up › Settings. Vampire, the only splat ticked until then, could not be unticked.
+  await troupeTab(l, "Settings");
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings$`));
-  await pagePart(l, "Who may join", "Troupe settings");
+  await pagePart(l, "Who may join", "Settings");
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings/joining$`));
   const splats = l.locator("section").filter({ has: l.getByRole("heading", { name: "Splats", exact: true }) });
   await expect(splats.getByRole("checkbox", { name: "Vampire" })).toBeChecked();
@@ -282,7 +282,7 @@ test("a ghoul at a game spends vitae but never its human Blood, drinks vitae, an
 
   // The troupe's roster, with the ghoul on it, still loads.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/characters`);
+  await l.goto(`/troupes/${troupeId}/roster`);
   await expect(l.getByRole("link", { name: "Mina Harker" })).toBeVisible();
   // Its domitor's clan, and "Ghoul" where a vampire's social age would be.
   const mina = l.getByRole("row").filter({ has: l.getByRole("link", { name: "Mina Harker" }) });

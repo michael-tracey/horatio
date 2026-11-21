@@ -158,7 +158,7 @@ test("represented by: a Ravnos's player says the Brujah speak for them at court,
 
   // Staff see it on the Roster tab.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/characters`);
+  await l.goto(`/troupes/${troupeId}/roster`);
   await expect(l.getByRole("row").filter({ hasText: "Ravindra" }).getByText("Represented by: Brujah").filter({ visible: true })).toBeVisible();
 
   // Seating the Ravnos moves Ravindra into their own section.
@@ -405,14 +405,14 @@ test("lines and veils: a player adds them, staff see them, another player only o
   const odile = l.getByRole("article", { name: "Odile" });
   await expect(odile.getByRole("definition").filter({ hasText: "Spiders in the dark, Drowning" })).toBeVisible();
   await expect(odile.getByRole("definition").filter({ hasText: "Needles" })).toBeVisible();
-  await l.goto(`/troupes/${troupeId}/characters`);
+  await l.goto(`/troupes/${troupeId}/roster`);
   await expect(l.getByLabel("Lines and veils of lv-ana")).toContainText("Spiders in the dark");
   // At game they show under her character, and the troupe's whole list is a tap away.
-  await l.goto(`/troupes/${troupeId}/play`);
+  await l.goto(`/troupes/${troupeId}/at-game`);
   await expect(l.getByLabel("Lines and veils of lv-ana")).toContainText("Needles");
   const atGame = l.locator("section").filter({ has: l.getByRole("heading", { name: "At game", exact: true }) });
   await atGame.getByRole("link", { name: "Lines and veils" }).click();
-  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/lines-veils$`));
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/lines-and-veils$`));
   await l.goto(`/troupes/${troupeId}/players`);
   await troupeTab(l, "Lines and veils");
   await expect(l.getByRole("list", { name: "Lines" })).toContainText("Spiders in the dark");
@@ -517,7 +517,7 @@ test("pronouns: a player gives their own and their character's, the Who's Who sh
   await expect(badge.getByText("Neonate", { exact: false })).toBeVisible();
   await expect(badge.getByText("she/her")).toHaveCount(0);
   // Badges are At game's settings, behind its tab's Settings button (#784, #909).
-  await l.goto(`/troupes/${troupeId}/play#settings`);
+  await l.goto(`/troupes/${troupeId}/at-game#settings`);
   const setting = (await tabSettings(l, "At game")).locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
   await expect(setting.getByLabel(/^Print character pronouns/)).not.toBeChecked();
   await setting.getByLabel(/^Print character pronouns/).click();

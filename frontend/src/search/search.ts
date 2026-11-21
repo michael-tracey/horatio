@@ -49,9 +49,9 @@ export const manualSource: LocalSource = {
 };
 
 /**
- * The settings of the troupe the person is on, as Customise's Find a setting finds them (#1047):
+ * The settings of the troupe the person is on, as Setting up's Find a setting finds them (#1047):
  * only for its storytellers (the lead too) and the custodian, and only that troupe's. Its
- * assistant storytellers open Customise, and find a setting there, but not here (#1133).
+ * assistant storytellers open Setting up, and find a setting there, but not here (#1133).
  * Each opens the setting: its tab or part, its tab's Settings, or its card.
  */
 export const settingsSource: LocalSource = {

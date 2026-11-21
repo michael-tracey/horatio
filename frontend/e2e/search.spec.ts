@@ -74,7 +74,7 @@ test("the top bar finds a character and a boon, each opening its page (#1046)", 
   await expect(panel).toBeVisible();
 });
 
-test("Find a setting on Customise, and the top bar, open a setting where it is (#1047, #1133)", async ({ browser }) => {
+test("Find a setting on Setting up, and the top bar, open a setting where it is (#1047, #1133)", async ({ browser }) => {
   const custodian = await person(browser, "findset-custodian");
   makeCustodian(custodian.email);
   await custodian.page.reload();
@@ -89,8 +89,8 @@ test("Find a setting on Customise, and the top bar, open a setting where it is (
   const base = `/troupes/${troupe.id}`;
   const width = l.viewportSize()!.width;
 
-  // From Setup: part of a card's name, and the card is scrolled to and glows on its part of Troupe settings.
-  await l.goto(`${base}/customise`);
+  // From Settings › Getting ready: part of a card's name, and the card is scrolled to and glows on its part of Settings.
+  await l.goto(`${base}/settings/getting-ready`);
   const find = l.getByRole("searchbox", { name: "Find a setting" });
   await find.fill("ceiling");
   const found = l.getByRole("list", { name: "Settings found" });
@@ -106,12 +106,12 @@ test("Find a setting on Customise, and the top bar, open a setting where it is (
   await expect(card).toHaveAttribute("data-found", "");
   await expect(find).toHaveValue("");
 
-  // From another Customise tab, a word of what it does: Enter opens the first, its tab's Settings open at its card.
-  await l.goto(`${base}/specializations`);
+  // From another Setting up tab, a word of what it does: Enter opens the first, its tab's Settings open at its card.
+  await l.goto(`${base}/specialisations`);
   await find.fill("stickers");
   await expect(found.getByRole("link").first()).toContainText("Badges");
   await find.press("Enter");
-  await expect(l).toHaveURL(new RegExp(`${base}/play#settings-badges$`));
+  await expect(l).toHaveURL(new RegExp(`${base}/at-game#settings-badges$`));
   const dialog = l.getByRole("dialog", { name: "At game settings" });
   await expect(dialog.getByRole("region", { name: "Badges" })).toBeInViewport();
   await l.keyboard.press("Escape");
@@ -127,12 +127,12 @@ test("Find a setting on Customise, and the top bar, open a setting where it is (
   await l.getByRole("searchbox", { name: "Search for" }).fill("throw pictures");
   const settings = l.getByRole("dialog", { name: "Search" }).getByRole("region", { name: "Settings" });
   await settings.getByRole("link", { name: /^Throw pictures/ }).click();
-  await expect(l).toHaveURL(new RegExp(`${base}/play#settings-throw-pictures$`));
+  await expect(l).toHaveURL(new RegExp(`${base}/at-game#settings-throw-pictures$`));
   await expect(l.getByRole("dialog", { name: "At game settings" }).getByRole("region", { name: "Throw pictures" })).toBeVisible();
 
-  // An assistant storyteller finds a setting on Customise, but not from the top bar (#1133).
+  // An assistant storyteller finds a setting on Setting up, but not from the top bar (#1133).
   const a = assistant.page;
-  await a.goto(`${base}/customise`);
+  await a.goto(`${base}/settings/getting-ready`);
   await a.getByRole("searchbox", { name: "Find a setting" }).fill("ceiling");
   await expect(a.getByRole("list", { name: "Settings found" }).getByRole("link", { name: /^XP floor and ceiling/ })).toBeVisible();
   await a.goto(base);
@@ -146,7 +146,7 @@ test("Find a setting on Customise, and the top bar, open a setting where it is (
   await expect(assistantSearch.getByRole("region", { name: "Help" })).toBeVisible();
   await expect(assistantSearch.getByRole("region", { name: "Settings" })).toHaveCount(0);
 
-  // A narrator has no Customise, and finds no settings.
+  // A narrator has no Setting up, and finds no settings.
   const n = narrator.page;
   await n.goto(base);
   await expect(n.getByRole("searchbox", { name: "Find a setting" })).toHaveCount(0);

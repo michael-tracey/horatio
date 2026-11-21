@@ -108,7 +108,7 @@ export function StoryBibleParts({ bible, troupeId, print = false }: { bible: Sto
         tone={tone}
         more={
           !print && {
-            to: `${base}/characters?show=npcs`,
+            to: `${base}/roster?show=npcs`,
             label: "Keep them under Characters",
           }
         }

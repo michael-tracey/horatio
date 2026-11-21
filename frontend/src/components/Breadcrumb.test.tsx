@@ -15,7 +15,7 @@ describe("Breadcrumb", () => {
     const links = within(screen.getByRole("navigation", { name: "Breadcrumb" })).getAllByRole("link");
     expect(links.map((l) => [l.textContent, l.getAttribute("href")])).toEqual([
       ["The Night Court", "/troupes/t1"],
-      ["At game", "/troupes/t1/play"],
+      ["At game", "/troupes/t1/at-game"],
       ["Scenes", "/play/troupes/t1/scenes"],
     ]);
   });

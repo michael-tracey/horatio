@@ -48,7 +48,7 @@ export function TroupeImportPage({ troupeId }: { troupeId: string }) {
   const apply = useAction(() => unwrap(api.POST("/api/troupes/{troupe_id}/character-imports", { ...path, body: form() as never, ...asForm })), [["roster", troupeId]]);
   const decide = (key: string, change: Decision) => setDecisions((d) => ({ ...d, [key]: { ...d[key], ...change } }));
   const back = (
-    <Link to={`/troupes/${troupeId}/characters`} className="underline hover:text-parchment">
+    <Link to={`/troupes/${troupeId}/roster`} className="underline hover:text-parchment">
       Back to the characters
     </Link>
   );

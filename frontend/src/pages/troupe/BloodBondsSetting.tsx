@@ -10,7 +10,7 @@ import { SETTINGS } from "./settingsIndex";
  * How Horatio tracks the troupe's blood bonds, once they're on: with its running staff
  * recording them; with players reporting drinks for staff to approve; or with players
  * recording them (#661). In the Bonds tab's Settings (#784, #909); bonds are switched on
- * and off in Troupe settings' Features list, which hides every bond and every drink
+ * and off in Settings' Features list, which hides every bond and every drink
  * waiting while keeping what was recorded.
  */
 export function BloodBondsSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {

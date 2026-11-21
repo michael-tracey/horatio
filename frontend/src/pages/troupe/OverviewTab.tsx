@@ -27,16 +27,16 @@ import { XpRangeCard } from "./XpRange";
  * the latest of its news and the games to come; then its profile, as its players
  * see it, which its storytellers edit here and switch public; who may join; its
  * XP floor and ceiling; for its running staff, the latest of its log; and its
- * lead's archiving. The troupe's settings are under Customise.
+ * lead's archiving. The troupe's settings are under Setting up.
  */
 export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
   const base = `/troupes/${troupe.id}`;
   const change = can.storyteller && !troupe.archived;
   const leading = can.lead && !troupe.archived;
-  // Who may join and the XP range each have a part of Troupe settings (#908).
+  // Who may join and the XP range each have a part of Settings (#908).
   const settings = (part: TroupeSettingsPart) => (
     <Link to={`${base}/${troupeSettings(part)}`} className="text-sm text-mist underline hover:text-parchment">
-      Edit in Customise
+      Edit in Settings
     </Link>
   );
   return (
@@ -57,7 +57,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
         link={
           <>
             {can.running && (
-              <Link to={`${base}/xp`} className="text-sm text-mist underline hover:text-parchment">
+              <Link to={`${base}/award-xp`} className="text-sm text-mist underline hover:text-parchment">
                 Award XP
               </Link>
             )}

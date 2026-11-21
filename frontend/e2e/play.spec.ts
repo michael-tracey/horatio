@@ -136,7 +136,7 @@ test("a troupe switches Play View tabs off: Pools goes from a player's Play View
   await expect(tabs.getByRole("tab", { name: "Pools" })).toBeVisible();
 
   // The lead switches Pools off in At game's settings, behind its tab's Settings button (#784, #909).
-  await l.goto(`/troupes/${troupeId}/play#settings`);
+  await l.goto(`/troupes/${troupeId}/at-game#settings`);
   const setting = (await tabSettings(l, "At game")).locator("section").filter({ has: l.getByRole("heading", { name: "Play View tabs", exact: true }) });
   const pools = setting.getByRole("switch", { name: "Pools", exact: true });
   await expect(pools).toBeChecked();
@@ -179,7 +179,7 @@ test("a troupe switches Play View tabs off: Pools goes from a player's Play View
   await expect(npcTabs.getByRole("tab", { name: "Tracker" })).toBeVisible();
 
   // And runs a scene with it from At game.
-  await l.goto(`/troupes/${troupeId}/play`);
+  await l.goto(`/troupes/${troupeId}/at-game`);
   await l.getByRole("link", { name: "Open the scenes" }).click();
   await expect(l.getByRole("heading", { name: "Scenes", exact: true })).toBeVisible();
   const sceneId = await openScene(l, troupeId, "The bindery");
@@ -411,7 +411,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await p.screenshot(shots("play"));
 
   // After the game the lead resets the whole troupe, from People → At game.
-  await p.goto(`/troupes/${troupeId}/play`);
+  await p.goto(`/troupes/${troupeId}/at-game`);
   await expect(p.getByText("Blood 7/12")).toBeVisible();
   await p.getByRole("button", { name: "Reset everyone…" }).click();
   await p.getByRole("button", { name: "Reset everyone for the next game" }).click();
@@ -1630,7 +1630,7 @@ test("a troupe uploads its own rock, paper and scissors, names the set and previ
   const troupeId: string = (await made.json()).id;
 
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/play#settings`);
+  await l.goto(`/troupes/${troupeId}/at-game#settings`);
   const card = (await tabSettings(l, "At game")).locator("section").filter({ has: l.getByRole("heading", { name: "Throw pictures", exact: true }) });
   await expect(card.getByText("None yet")).toHaveCount(3);
 

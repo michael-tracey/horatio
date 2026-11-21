@@ -3,7 +3,7 @@ and importing one into another troupe, merging.
 
 **The document** is what Export downloads and Import reads: a format version, the
 Horatio and rule set versions it was made against, the source troupe's name, and
-its settings by section, grouped as Customise groups them. It never holds an id:
+its settings by section, grouped as Setting up groups them. It never holds an id:
 traits, categories and checks are named by their keys and names. Only what differs
 from Horatio's default goes in: a troupe setting at its default is left out, and
 every row a troupe keeps for itself (a house merit, a house check, a price) is a
@@ -18,7 +18,7 @@ The client edits the document's text, and finds and replaces in it, between
 reviewing and applying.
 
 **Applying** takes the edited document and the items ticked, in one transaction:
-all of them or none. Each goes through the same service as its editor in Customise
+all of them or none. Each goes through the same service as its editor in Setting up
 (horatio.house_traits, horatio.house_checks, horatio.keywords, the rule store's
 checks of prices and starting points...), so an imported item is checked exactly as
 one made by hand; a failure names the item and saves nothing. It merges: what
@@ -348,8 +348,8 @@ Settings = list[SettingItem]
 
 
 class Sections(Strict):
-    """The settings by section, as Customise groups them. The first seven are the
-    groups of its Troupe settings page."""
+    """The settings by section, as Setting up groups them. The first seven are the
+    groups of its Settings page."""
 
     who_may_join: Settings = []
     xp: Settings = []
@@ -410,9 +410,9 @@ SectionKey = Literal[
     "news_agencies",
 ]
 
-TROUPE_SETTINGS = "Troupe settings"
-# Each section's name, and the group it is in: those of the Troupe settings page,
-# then the tabs of Customise › Rules, then the troupe's other catalogues.
+TROUPE_SETTINGS = "Settings"
+# Each section's name, and the group it is in: those of the Settings page, then the
+# parts of House rules, then the troupe's other catalogues.
 SECTIONS: dict[SectionKey, tuple[str, str | None]] = {
     "who_may_join": ("Who may join", TROUPE_SETTINGS),
     "xp": ("XP", TROUPE_SETTINGS),
@@ -1003,6 +1003,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "projects": PLAY,
     "quest_requests": PLAY,
     "quests": PLAY,
+    "recent_troupe_tabs": "people's own last tabs opened",
     "remembrances": PLAY,
     "scenes": PLAY,
     "scheduled_games": "games are the troupe's own",
@@ -2428,7 +2429,7 @@ def failing(where: str) -> Iterator[None]:
 
 
 def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, SettingItem]]) -> None:
-    """Set some of the troupe's settings, each through what sets it in Customise; those
+    """Set some of the troupe's settings, each through what sets it in Setting up; those
     that are set together (feeding, languages, free changes...) with the troupe's
     others. A failure names the setting, or for several, them all."""
     db, troupe = target.db, target.troupe
