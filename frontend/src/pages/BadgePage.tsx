@@ -28,7 +28,7 @@ export function TroupeBadgesPage() {
   if (badges.error) return <p className="p-8 text-black">{badges.error.message}</p>;
   return (
     <Sheets
-      back={{ label: "Characters", to: `/troupes/${troupeId}/characters` }}
+      back={{ label: "Characters", to: `/troupes/${troupeId}/roster` }}
       troupe={badges.data.troupe_name}
       printStatus={badges.data.print_status}
       items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))}
@@ -71,7 +71,7 @@ export function StaffBadgesPage() {
   if (staff.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (staff.error) return <p className="p-8 text-black">{staff.error.message}</p>;
   return (
-    <Sheets back={{ label: "Characters", to: `/troupes/${troupeId}/characters` }} troupe={staff.data.troupe_name} items={staff.data.staff.map((s, i) => ({ key: `${i}`, staff: s }))} />
+    <Sheets back={{ label: "Characters", to: `/troupes/${troupeId}/roster` }} troupe={staff.data.troupe_name} items={staff.data.staff.map((s, i) => ({ key: `${i}`, staff: s }))} />
   );
 }
 

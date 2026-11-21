@@ -23,7 +23,7 @@ export async function undoInHeader(page: Page, tap: string | RegExp) {
 
 /**
  * Switches one of a troupe's optional features on or off, by its row in the Features list
- * of Troupe settings (#783), the one place each is switched (#784). Waits for the toast.
+ * of Settings (#783), the one place each is switched (#784). Waits for the toast.
  */
 export async function switchFeature(page: Page, troupeId: string, name: string, on: boolean) {
   await settingsPart(page, troupeId);
@@ -108,10 +108,10 @@ export async function groupTabs(page: Page, group: string, nav = "Troupe section
   return (await openSections(page, nav)).getByRole("list", { name: group, exact: true });
 }
 
-/** On a phone, opens a tab through the section picker named `nav`. */
+/** On a phone, opens a tab through the section picker named `nav`: in its group, below any Recent at the top (#1048). */
 async function pickSection(page: Page, nav: string, name: string) {
   const sheet = await openSections(page, nav);
-  await sheet.getByRole("link", { name: tabName(name) }).click();
+  await sheet.getByRole("link", { name: tabName(name) }).last().click();
   await expect(sheet).toBeHidden();
 }
 
@@ -132,10 +132,13 @@ export async function expectTabOpen(page: Page, group: string, tab: string, nav 
   const main = page.locator("main");
   if (isPhone(page)) {
     const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const named = group === tab ? escape(tab) : `${escape(group)}\\W+${escape(tab)}`;
+    // Just the tab for someone who sees one group (#1048).
+    const named = group === tab ? escape(tab) : `(${escape(group)}\\W+)?${escape(tab)}`;
     return expect(main.getByRole("navigation", { name: nav, exact: true }).getByRole("button")).toHaveAccessibleName(new RegExp(`^${named}\\b`));
   }
-  await expect(main.getByRole("navigation", { name: group, exact: true }).getByRole("link", { name: tabName(tab) })).toHaveAttribute("aria-current", "page");
+  // In the group's own row, or the only row for someone who sees one group (#1048).
+  const row = main.getByRole("navigation", { name: group, exact: true }).or(main.getByRole("navigation", { name: nav, exact: true }));
+  await expect(row.getByRole("link", { name: tabName(tab) })).toHaveAttribute("aria-current", "page");
 }
 
 /**
@@ -143,55 +146,51 @@ export async function expectTabOpen(page: Page, group: string, tab: string, nav 
  * open group's row on a wide screen; on a phone, in the section picker's sheet, shut again after.
  */
 export async function expectTabCount(page: Page, tab: string, count: string | null, nav = "Troupe sections") {
+  // The last: in its group, below any Recent at the top of a phone's sheet (#1048).
   const shown = (within: Locator) =>
-    count === null ? within.getByRole("link", { name: tab, exact: true }) : within.getByRole("link", { name: tabName(tab) }).getByLabel(count);
+    count === null ? within.getByRole("link", { name: tab, exact: true }).last() : within.getByRole("link", { name: tabName(tab) }).getByLabel(count).last();
   if (!isPhone(page)) return expect(shown(page.locator("main"))).toBeVisible();
   const sheet = await openSections(page, nav);
   await expect(shown(sheet)).toBeVisible();
   await shutSections(page, nav);
 }
 
-/** The group(s) each of a troupe's tabs is in (troupeTabs.ts): House rules is under Customise for those who change it. */
+/** The group(s) each of a troupe's tabs is in (troupeTabs.ts): House rules is under Setting up for those who change it. */
 const TROUPE_GROUPS: Record<string, string[]> = {
   Overview: ["Troupe"],
   "The setting": ["Troupe"],
-  "Story bible": ["Troupe"],
   "Who's Who": ["Troupe"],
   News: ["Troupe"],
   Announcements: ["Troupe"],
   Nominations: ["Troupe"],
   Remembrances: ["Troupe"],
-  "House rules": ["Customise", "Troupe"],
+  Chronicle: ["Troupe"],
+  "House rules": ["Setting up", "Troupe"],
   Staff: ["Troupe"],
-  Log: ["Troupe"],
   Approvals: ["Characters"],
-  "Being built": ["Characters"],
   Roster: ["Characters"],
   Players: ["Characters"],
   "Lines and veils": ["Characters"],
-  "At game": ["Games"],
-  Scenes: ["Games"],
-  "Award XP": ["Games"],
+  Equipment: ["Characters"],
+  "Shared backgrounds": ["Characters"],
+  "At game": ["Game night"],
+  Scenes: ["Game night"],
+  "Award XP": ["Game night"],
   Titles: ["Court"],
   "Court over time": ["Court"],
-  Chronicle: ["Court"],
   Boons: ["Court"],
   Bonds: ["Court"],
   "Web of obligation": ["Court"],
-  Cycles: ["Downtimes"],
-  "My work": ["Downtimes"],
-  "Fill tables": ["Downtimes"],
-  "Influence log": ["Downtimes"],
-  Quests: ["Downtimes"],
-  Locations: ["World"],
-  Equipment: ["World"],
-  "Shared backgrounds": ["World"],
-  Setup: ["Customise"],
-  "Troupe settings": ["Customise"],
-  Specialisations: ["Customise"],
-  "News agencies": ["Customise"],
-  Connectors: ["Customise"],
-  "Export and import": ["Customise"],
+  Downtimes: ["Between games"],
+  "My work": ["Between games"],
+  "Fill tables": ["Between games"],
+  "Influence log": ["Between games"],
+  Locations: ["Between games"],
+  Quests: ["Between games"],
+  Settings: ["Setting up"],
+  Specialisations: ["Setting up"],
+  Connectors: ["Setting up"],
+  "Export and import": ["Setting up"],
 };
 
 /**
@@ -206,6 +205,9 @@ export async function troupeTab(page: Page, name: string) {
   await sections.waitFor();
   const groups = TROUPE_GROUPS[name];
   if (!groups) throw new Error(`No troupe tab named ${name}`);
+  // Someone who sees one group has its tabs as the only row (#1048).
+  const only = sections.getByRole("link", { name: tabName(name) });
+  if (await only.count()) return only.click();
   let group = groups[0]!;
   for (const g of groups) {
     if (await sections.getByRole("link", { name: tabName(g) }).count()) {
@@ -220,6 +222,16 @@ export async function troupeTab(page: Page, name: string) {
   await expect(groupLink).toHaveAttribute("aria-current", "true");
   // A group of one is its tab; a group of more opens its first, or the one it names.
   if (await tab.count()) await tab.click();
+}
+
+/**
+ * Opens a troupe's log from wherever on its page: it has no tab of its own, and opens
+ * from the Overview's Latest in the log, for running staff (#1048).
+ */
+export async function troupeLog(page: Page) {
+  await troupeTab(page, "Overview");
+  await page.locator("main").getByRole("link", { name: "See the whole log" }).click();
+  await expect(page).toHaveURL(/\/troupes\/[^/]+\/log$/);
 }
 
 /** Below `lg`, where a page's parts are one part picker's button (#906). */
@@ -264,9 +276,10 @@ export async function expectPartOpen(page: Page, name: string, nav = "House rule
   await expect(picker.getByRole("button")).toHaveAccessibleName(new RegExp(`(^|\\W)${escaped}$`));
 }
 
-/** The parts of Troupe settings (#908), by their address under `settings/`; the Features list has none. */
+/** The parts of Settings (#908), by their address under `settings/`; the Features list has none. */
 const SETTINGS_PARTS = {
   features: "Features",
+  "getting-ready": "Getting ready",
   setting: "The setting",
   joining: "Who may join",
   xp: "XP",
@@ -276,12 +289,12 @@ const SETTINGS_PARTS = {
 } as const;
 
 /**
- * Goes to a part of a troupe's Troupe settings (#908) at its own address, `settings/xp` say,
+ * Goes to a part of a troupe's Settings (#908) at its own address, `settings/xp` say,
  * or to the Features list it opens on, and waits until it is the open part.
  */
 export async function settingsPart(page: Page, troupeId: string, part: keyof typeof SETTINGS_PARTS = "features") {
   await page.goto(`/troupes/${troupeId}/settings${part === "features" ? "" : `/${part}`}`);
-  await expectPartOpen(page, SETTINGS_PARTS[part], "Troupe settings");
+  await expectPartOpen(page, SETTINGS_PARTS[part], "Settings");
 }
 
 export async function person(browser: Browser, name: string, options: BrowserContextOptions = {}): Promise<{ page: Page; email: string; handle: string }> {

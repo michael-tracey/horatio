@@ -137,7 +137,7 @@ def test_backstories_to_read_link_to_the_one_or_to_the_roster(troupe: Troupe) ->
     assert line["link"] == f"/characters/{agnes}/backstory?troupe={troupe.id}"
     write(troupe.player, bea, "Born in 1920.")
     line = waiting(troupe, troupe.assistant)["backstories"]
-    assert (line["count"], line["link"]) == (2, f"/troupes/{troupe.id}/characters")
+    assert (line["count"], line["link"]) == (2, f"/troupes/{troupe.id}/roster")
     # The roster marks each.
     roster = troupe.lead.client.get(f"/troupes/{troupe.id}/characters").json()
     assert {r["character_name"]: r["backstory_waiting"] for r in roster} == {
@@ -314,8 +314,8 @@ def test_influence_entries_that_need_details_and_effects_ending_this_week(
 
     lines = waiting(troupe, troupe.assistant)
     assert lines["influence_details"]["count"] == 1
-    assert lines["influence_details"]["link"] == f"/troupes/{troupe.id}/influence?needs=details"
+    assert lines["influence_details"]["link"] == f"/troupes/{troupe.id}/influence-log?needs=details"
     assert lines["effects_ending"]["count"] == 1
-    assert lines["effects_ending"]["link"] == f"/troupes/{troupe.id}/influence/effects"
+    assert lines["effects_ending"]["link"] == f"/troupes/{troupe.id}/influence-log/effects"
     # Narrators never see the influence log.
     assert counts(troupe, troupe.narrator) == {}

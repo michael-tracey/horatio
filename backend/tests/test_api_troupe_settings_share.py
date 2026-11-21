@@ -235,7 +235,7 @@ def test_only_what_differs_from_the_default_is_exported(troupe: Troupe) -> None:
     assert found["sections"][0] == {
         "key": "who_may_join",
         "label": "Who may join",
-        "group": "Troupe settings",
+        "group": "Settings",
         "count": 0,
     }
 

@@ -680,7 +680,7 @@ test("staff find who holds what in the Characters filter, and items on the Equip
 
   // Camarilla characters holding a staking item: only Ilse, with her stake shown.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/characters?show=everyone`);
+  await l.goto(`/troupes/${troupe.id}/roster?show=everyone`);
   await expect(l.getByText("4 of 4 characters")).toBeVisible();
   await l.getByRole("button", { name: "Filter" }).click();
   await l.getByRole("button", { name: "+ Condition", exact: true }).click();
@@ -712,7 +712,7 @@ test("staff find who holds what in the Characters filter, and items on the Equip
   await expect(found.getByRole("row", { name: "Flak Vest, held by Ilse" })).toBeVisible();
 
   // Those with no protective gear: Pell and Rhea, with what they do hold.
-  await l.goto(`/troupes/${troupe.id}/characters?show=everyone`);
+  await l.goto(`/troupes/${troupe.id}/roster?show=everyone`);
   await l.getByRole("button", { name: "Filter" }).click();
   await l.getByRole("button", { name: "+ Condition", exact: true }).click();
   const armour = l.getByRole("group", { name: "Condition" }).nth(1);

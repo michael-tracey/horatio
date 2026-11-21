@@ -30,7 +30,7 @@ import {
 const MAX_BYTES = 2 * 1024 * 1024;
 
 /**
- * Customise › Export and import (#521, named so in #905): the troupe's customisation, exported as a file
+ * Setting up › Export and import (#521, named so in #905): the troupe's customisation, exported as a file
  * any storyteller can import, even on another Horatio; and importing a file, or
  * another troupe its storyteller runs, into this one, merging. Running staff export;
  * storytellers import.
@@ -39,9 +39,9 @@ export function ShareSettingsTab({ troupe, canImport }: { troupe: TroupeOut; can
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm text-mist">
-        Share this troupe's house rules, costs, wording and the rest of Customise with another troupe: start a new chronicle from these rules, or give them to another
+        Share this troupe's house rules, costs, wording and the rest of its settings with another troupe: start a new chronicle from these rules, or give them to another
         storyteller. An import merges: what matches is changed, the rest is added, and nothing else is reset or removed.{" "}
-        <Link to={manualLink("running-a-troupe", "customise-export-and-import")} className="underline hover:text-parchment">
+        <Link to={manualLink("running-a-troupe", "setting-up-export-and-import")} className="underline hover:text-parchment">
           What is and isn't carried
         </Link>
       </p>
@@ -73,7 +73,7 @@ function download(document_: SettingsDocument, troupe: string) {
   URL.revokeObjectURL(link.href);
 }
 
-/** Sections in their groups, as Customise has them: the Troupe settings page's, then each of the others. */
+/** Sections in their groups, as Setting up has them: the Settings page's, then each of the others. */
 function grouped<T extends { group?: string | null }>(sections: T[]): { group: string | null; sections: T[] }[] {
   const found: { group: string | null; sections: T[] }[] = [];
   for (const section of sections) {

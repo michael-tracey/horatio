@@ -30,7 +30,7 @@ const InfluenceCharts = lazy(() => import("./InfluenceCharts").then((m) => ({ de
  */
 export function InfluenceLogTab({ troupeId }: { troupeId: string }) {
   useWidePage();
-  const base = `/troupes/${troupeId}/influence`;
+  const base = `/troupes/${troupeId}/influence-log`;
   return (
     <>
       <PageTabs

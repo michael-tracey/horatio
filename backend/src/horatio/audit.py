@@ -147,6 +147,7 @@ NOTICE: frozenset[str] = frozenset(
         "audit.exported",
         "audit.settings_changed",
         "appearance.loading_animation",
+        "site.invite_players_days",
         "mail.sender_set",
         "mail.design_set",
         "mail.header_uploaded",

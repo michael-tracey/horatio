@@ -69,7 +69,7 @@ function TagPicker({
         <p className="text-mist">
           The troupe's setting has no themes or moods yet. Write them under{" "}
           <Link to={`/troupes/${troupeId}/${troupeSettings("setting")}`} className="underline hover:text-parchment">
-            Troupe settings
+            Settings
           </Link>
           .
         </p>

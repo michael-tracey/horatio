@@ -7,6 +7,9 @@ import { CountBubble, type Tab } from "./ui";
 
 type Group = { label: string; tabs: Tab[] };
 
+/** The heading of the tabs opened last, at the top of the sheet. */
+export const RECENT = "Recent";
+
 /** What a group's counts add up to: what waits, leaving out a count that waits on no one (#774). */
 function waiting(tabs: Tab[]): number {
   return tabs.filter((t) => t.countInGroup !== false).reduce((sum, t) => sum + (t.count ?? 0), 0);
@@ -14,12 +17,15 @@ function waiting(tabs: Tab[]): number {
 
 /**
  * A page's tabs on a phone (#904): one button that says where you are, such as
- * "Customise › Troupe settings", with all that waits counted at its right. It
- * opens a sheet of every group with its tabs under it, one to a line, so every
- * tab is two taps from any other with nothing to scroll sideways. Choosing one
- * closes the sheet and goes there. `label` names the place on the page and the sheet.
+ * "Setting up › Settings", with all that waits counted at its right. It opens a
+ * sheet of every group with its tabs under it, one to a line, so every tab is two
+ * taps from any other with nothing to scroll sideways. Choosing one closes the
+ * sheet and goes there. `label` names the place on the page and the sheet.
+ * Someone who sees one group has its tabs alone, with no group named (#1048).
+ * `recent`, the last few tabs opened but for the open one, head a sheet of more
+ * than one group, so the two or three used all evening are at the top (#1048).
  */
-export function SectionPicker({ label, groups, className }: { label: string; groups: Group[]; className?: string }) {
+export function SectionPicker({ label, groups, recent = [], className }: { label: string; groups: Group[]; recent?: Tab[]; className?: string }) {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const shown = groups.filter((g) => g.tabs.length > 0);
@@ -29,16 +35,18 @@ export function SectionPicker({ label, groups, className }: { label: string; gro
   const group = tab && shown.find((g) => g.tabs.includes(tab));
   const at = tab && group ? { tab, group } : undefined;
   const total = waiting(tabs);
+  const only = shown.length === 1;
+  const sheet = only ? [{ tabs: shown[0]!.tabs }] : [...(recent.length > 0 ? [{ label: RECENT, tabs: recent }] : []), ...shown];
   // Shut when the page changes underneath it, as by the browser's Back.
   useEffect(() => setOpen(false), [pathname]);
 
   return (
     <nav aria-label={label} className={className ?? "mb-6"}>
       <PickerButton open={open} onOpen={() => setOpen(true)} after={<CountBubble count={total} label="waiting" />}>
-        {!at ? "Sections" : <Where group={at.group.label === at.tab.label ? undefined : at.group.label} tab={at.tab.label} />}
+        {!at ? "Sections" : <Where group={only || at.group.label === at.tab.label ? undefined : at.group.label} tab={at.tab.label} />}
       </PickerButton>
       <Dialog title={label} open={open} onClose={() => setOpen(false)} phoneFull>
-        <TabSheet groups={shown} open={at?.tab} onChoose={() => setOpen(false)} />
+        <TabSheet groups={sheet} open={at?.tab} onChoose={() => setOpen(false)} />
       </Dialog>
     </nav>
   );
@@ -67,13 +75,13 @@ export function PickerButton({ open, onOpen, after, children }: { open: boolean;
   );
 }
 
-/** The open tab's name on a picker's button, after its group's when it has one: "Customise › Troupe settings". */
+/** The open tab's name on a picker's button, after its group's when it has one: "Setting up › Settings". */
 export function Where({ group, tab }: { group?: string; tab: string }) {
   if (!group) return <>{tab}</>;
   return (
     <>
       <span className="text-mist">{group}</span>
-      {/* Read as "Customise, Troupe settings". */}
+      {/* Read as "Setting up, Settings". */}
       <span className="sr-only">, </span>
       <span aria-hidden className="px-1.5 text-mist">
         ›

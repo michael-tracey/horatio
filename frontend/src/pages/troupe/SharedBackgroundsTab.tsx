@@ -84,7 +84,7 @@ function One({ troupeId }: { troupeId: string }) {
     queryKey: ["shared", sharedId],
     queryFn: () => unwrap(api.GET("/api/shared-backgrounds/{shared_id}", { params: { path: { shared_id: sharedId } } })),
   });
-  const back = `/troupes/${troupeId}/shared`;
+  const back = `/troupes/${troupeId}/shared-backgrounds`;
   return (
     <div className="flex flex-col gap-4">
       <BackLink label="All shared backgrounds" to={back} className="self-start" />
@@ -111,7 +111,7 @@ function SetUpForm({ troupeId, choices, onDone }: { troupeId: string; choices: S
       }),
     );
     onDone();
-    navigate(`/troupes/${troupeId}/shared/${made.id}`);
+    navigate(`/troupes/${troupeId}/shared-backgrounds/${made.id}`);
   });
   return (
     <form

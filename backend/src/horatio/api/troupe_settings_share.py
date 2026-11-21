@@ -1,4 +1,4 @@
-"""Sharing a troupe's settings (horatio.troupe_settings_share), under Customise › Export
+"""Sharing a troupe's settings (horatio.troupe_settings_share), under Setting up › Export
 and import: its running staff export them; its storytellers review a file, or another
 troupe they run, against it, and import what they tick."""
 
@@ -27,7 +27,7 @@ async def capped(request: Request) -> None:
 class ShareSectionOut(BaseModel):
     key: share.SectionKey
     label: str
-    # The group it is in: "Troupe settings", whose page has several; None for its own tab.
+    # The group it is in: "Settings", whose page has several; None for its own tab.
     group: str | None
     count: int
 

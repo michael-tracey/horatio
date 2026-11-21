@@ -31,7 +31,7 @@ export function StockNpcBuilder({ troupeId }: { troupeId: string }) {
   const stock = useQuery({ queryKey: ["stock-npc", characterId], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/npc/stock", path)) });
   const kinds = useQuery({ queryKey: ["npc-kinds"], queryFn: () => unwrap(api.GET("/api/npc-kinds")), staleTime: Infinity });
   const catalogue = useCatalogue("vampire", troupeId);
-  const back = <BackLink label="NPCs" to={`/troupes/${troupeId}/characters?show=npcs`} className="self-start" />;
+  const back = <BackLink label="NPCs" to={`/troupes/${troupeId}/roster?show=npcs`} className="self-start" />;
   if (character.isPending || stock.isPending || kinds.isPending || catalogue.isPending) return <Loading />;
   const error = character.error ?? stock.error ?? kinds.error ?? catalogue.error;
   if (error || !character.data || !stock.data || !kinds.data || !catalogue.data) {

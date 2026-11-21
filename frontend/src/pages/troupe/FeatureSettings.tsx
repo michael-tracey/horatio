@@ -39,7 +39,7 @@ function scrollWithin(card: HTMLElement) {
 /**
  * A feature's own settings, behind one Settings button right-aligned above its tab's content
  * (#909), in a dialog named after the tab: full screen on a phone. Switching the feature on and
- * off is the Features list's, on Troupe settings; its Settings link lands here, with the dialog
+ * off is the Features list's, on Settings; its Settings link lands here, with the dialog
  * open. An address ending `#settings-<part>` (#785) opens it at that part's card. Those who may
  * read but not change them see the same cards, read-only.
  */
@@ -94,7 +94,7 @@ export function FeatureSettings({ tab, children, single = false }: { tab: string
 /** The features whose settings are behind the Settings button of their own tab. */
 type OnTab = Extract<SettingsDialog, "whos_who" | "play_view" | "boons" | "blood_bonds">;
 
-/** A feature's tab's Settings, with the cards that were on Troupe settings (#784). */
+/** A feature's tab's Settings, with the cards that were on Troupe settings, now Settings (#784). */
 export function TabSettings({ troupe, feature, canEdit }: { troupe: TroupeOut; feature: OnTab; canEdit: boolean }) {
   return (
     <FeatureSettings tab={SETTINGS_DIALOGS[feature].tab} single={feature !== "play_view"}>
@@ -117,7 +117,7 @@ type Place = Extract<SettingsDialog, "locations" | "quests" | "characters" | "ap
 
 /**
  * The house rules that set up a feature rather than a rule, behind the Settings button of the
- * tab where staff meet that feature (#785): Locations on World › Locations, Quests on Downtimes › Quests,
+ * tab where staff meet that feature (#785): Locations on Between games › Locations, Quests on Between games › Quests,
  * Retainers on Characters, and Backstories, Teachers and Free changes on Approvals, where what
  * they ask for is reviewed. Running staff read them; storytellers change them, as under House rules.
  */

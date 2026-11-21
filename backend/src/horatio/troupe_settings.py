@@ -1,7 +1,7 @@
 """The writes behind a few of a troupe's settings that check what they are given, or
 change characters as they go: who may join, Golconda, clan rarity, default
 bloodlines and the clans the sects' status bans name. Shared by their routes in
-Customise and by importing settings (horatio.troupe_settings_share), so both are
+Setting up and by importing settings (horatio.troupe_settings_share), so both are
 checked alike."""
 
 from collections.abc import Mapping, Sequence

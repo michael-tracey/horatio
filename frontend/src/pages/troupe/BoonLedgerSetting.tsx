@@ -16,7 +16,7 @@ import { SETTINGS } from "./settingsIndex";
 /**
  * How the troupe keeps its boon ledger (#685): what players see, review, the Harpy, talons
  * and the ban. In the Boons tab's Settings (#784, #909); the ledger itself is switched on
- * and off in Troupe settings' Features list. Switched off, it's hidden everywhere; what was
+ * and off in Settings' Features list. Switched off, it's hidden everywhere; what was
  * registered is kept, and comes back when it is switched on again.
  */
 export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {

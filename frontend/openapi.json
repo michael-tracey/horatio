@@ -24107,6 +24107,32 @@
         "title": "GettingReadyOut",
         "type": "object"
       },
+      "GettingReadySiteIn": {
+        "properties": {
+          "invite_players_days": {
+            "title": "Invite Players Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invite_players_days"
+        ],
+        "title": "GettingReadySiteIn",
+        "type": "object"
+      },
+      "GettingReadySiteOut": {
+        "properties": {
+          "invite_players_days": {
+            "title": "Invite Players Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invite_players_days"
+        ],
+        "title": "GettingReadySiteOut",
+        "type": "object"
+      },
       "GiftIn": {
         "properties": {
           "amount": {
@@ -45139,6 +45165,41 @@
         "title": "ReceivedOut",
         "type": "object"
       },
+      "RecentTabsIn": {
+        "properties": {
+          "tabs": {
+            "items": {
+              "maxLength": 100,
+              "pattern": "^(/[a-z0-9-]+)*$",
+              "type": "string"
+            },
+            "maxItems": 4,
+            "title": "Tabs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tabs"
+        ],
+        "title": "RecentTabsIn",
+        "type": "object"
+      },
+      "RecentTabsOut": {
+        "properties": {
+          "tabs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tabs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tabs"
+        ],
+        "title": "RecentTabsOut",
+        "type": "object"
+      },
       "RecipientOut": {
         "properties": {
           "character_id": {
@@ -48962,7 +49023,7 @@
       },
       "Sections": {
         "additionalProperties": false,
-        "description": "The settings by section, as Customise groups them. The first seven are the\ngroups of its Troupe settings page.",
+        "description": "The settings by section, as Setting up groups them. The first seven are the\ngroups of its Settings page.",
         "properties": {
           "actions": {
             "default": [],
@@ -86521,6 +86582,70 @@
         ]
       }
     },
+    "/api/site/getting-ready": {
+      "get": {
+        "description": "How long Invite players stays on every troupe's list, for the custodian.",
+        "operationId": "read_getting_ready_site_api_site_getting_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadySiteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Getting Ready Site",
+        "tags": [
+          "troupes",
+          "site"
+        ]
+      },
+      "put": {
+        "description": "The custodian chooses after how many days Invite players leaves every troupe's list.",
+        "operationId": "change_getting_ready_site_api_site_getting_ready_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GettingReadySiteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadySiteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Getting Ready Site",
+        "tags": [
+          "troupes",
+          "site"
+        ]
+      }
+    },
     "/api/site/mail": {
       "get": {
         "operationId": "mail_api_site_mail_get",
@@ -101697,6 +101822,101 @@
         "summary": "Set Rare Disciplines",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/recent-tabs": {
+      "get": {
+        "operationId": "read_recent_tabs_api_troupes__troupe_id__recent_tabs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentTabsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Recent Tabs",
+        "tags": [
+          "troupes"
+        ]
+      },
+      "put": {
+        "description": "Keep the list the page sends, whole: the page puts the tab just opened first.",
+        "operationId": "keep_recent_tabs_api_troupes__troupe_id__recent_tabs_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecentTabsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentTabsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Keep Recent Tabs",
+        "tags": [
+          "troupes"
         ]
       }
     },

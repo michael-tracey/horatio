@@ -38,16 +38,17 @@ export type Feature = {
   switchable: boolean;
 };
 
-/** The id of a feature's settings card on Troupe settings, for the list to link to. */
+/** The id of a feature's settings card on Settings, for the list to link to. */
 export const settingsAnchor = (key: FeatureKey) => `feature-${key.replace(/_/g, "-")}`;
 
 /**
- * The parts of Troupe settings after the Features list, each at `settings/<part>` (#908):
- * the setting, who may join, XP, status and titles, Blood, diablerie and feeding, and names.
+ * The parts of Settings after the Features list, each at `settings/<part>` (#908): getting
+ * the troupe ready (#1048), the setting, who may join, XP, status and titles, Blood,
+ * diablerie and feeding, and names.
  */
-export type TroupeSettingsPart = "setting" | "joining" | "xp" | "status" | "blood" | "names";
+export type TroupeSettingsPart = "getting-ready" | "setting" | "joining" | "xp" | "status" | "blood" | "names";
 
-/** The address of Troupe settings under the troupe, at a part of it; the Features list without one. */
+/** The address of Settings under the troupe, at a part of it; the Features list without one. */
 export const troupeSettings = (part?: TroupeSettingsPart) => (part ? `settings/${part}` : "settings");
 
 /** The address of the Settings dialog of a feature's own tab, which opens it (#784, #909). */
@@ -60,7 +61,7 @@ export type SettingsPart = "locations" | "quests" | "retainers" | "backstories" 
 export const PART_HOMES: Record<SettingsPart, string> = {
   locations: "locations",
   quests: "quests",
-  retainers: "characters",
+  retainers: "roster",
   backstories: "approvals",
   teachers: "approvals",
   "free-changes": "approvals",
@@ -107,7 +108,7 @@ export function features(troupe: TroupeOut): Feature[] {
       on: !troupe.archived,
       state: troupe.archived ? "Off while archived" : "Always on",
       tab: troupe.archived ? undefined : { label: "News", to: "news" },
-      settings: "news-agencies",
+      settings: troupe.archived ? undefined : "news/agencies",
       switchable: false,
     },
     {
@@ -116,8 +117,8 @@ export function features(troupe: TroupeOut): Feature[] {
       adds: "The players' screen at games: their sheet, tracker, pools, throws and more, kept on the phone for games with no signal.",
       on: playTabs.length > 0,
       state: playTabs.length === 0 ? "Off for players" : playTabs.length === everyPlayTab ? "Every tab on" : `${playTabs.length} of ${everyPlayTab} tabs on`,
-      tab: { label: "At game", to: "play" },
-      settings: onTab("play"),
+      tab: { label: "At game", to: "at-game" },
+      settings: onTab("at-game"),
       switchable: false,
     },
     {
@@ -165,7 +166,7 @@ export function features(troupe: TroupeOut): Feature[] {
       adds: "Who held each title, and when, on a Court over time tab for the troupe's players: titles are public at court, but not how each one ended, nor anyone's status. Staff always have it.",
       on: troupe.court_history_players,
       state: troupe.court_history_players ? "Players see it" : "Staff only",
-      tab: { label: "Court over time", to: "court" },
+      tab: { label: "Court over time", to: "court-over-time" },
       switchable: true,
     },
     {

@@ -80,7 +80,7 @@ class CheckOut(BaseModel):
     key: str
     # What it is about: a trait, a category, or names starting with a prefix.
     category: str
-    # The kind of check it is, as Customise groups them: "Techniques", or "Clan
+    # The kind of check it is, as House rules groups them: "Techniques", or "Clan
     # merits, only for their clan or bloodline" (CHECK_GROUPS).
     group: str
     about: str
@@ -99,7 +99,7 @@ class CheckChange(BaseModel):
     strength: Strength | None
 
 
-# The groups of checks, in the order Customise shows them: those the rule set
+# The groups of checks, in the order House rules shows them: those the rule set
 # writes, by what they are about, then those that follow from the catalogue's
 # requirements (horatio.rules.files.derived_checks), the most numerous.
 CHECK_GROUPS = [

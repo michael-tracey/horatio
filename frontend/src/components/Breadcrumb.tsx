@@ -29,6 +29,6 @@ export function Breadcrumb({ crumbs, className = "" }: { crumbs: Crumb[]; classN
 export function atGameCrumbs(troupeId: string, troupeName: string | undefined): Crumb[] {
   return [
     { label: troupeName ?? "Troupe", to: `/troupes/${troupeId}` },
-    { label: "At game", to: `/troupes/${troupeId}/play` },
+    { label: "At game", to: `/troupes/${troupeId}/at-game` },
   ];
 }

@@ -90,6 +90,7 @@ from horatio.models.quests import (
     QuestRequirement,
     QuestScenario,
 )
+from horatio.models.recent_tabs import RecentTroupeTabs
 from horatio.models.retainers import AlternateIdentity, Retainer, RetainerGrowth
 from horatio.models.rules import (
     ActionKind,
@@ -176,6 +177,7 @@ __all__ = [
     "StatusBanMark",
     "StatusSuppression",
     "StoryBibleNote",
+    "RecentTroupeTabs",
     "DisciplinePurchase",
     "DiscordWebhook",
     "DowntimeCycle",

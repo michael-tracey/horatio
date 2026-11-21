@@ -7,10 +7,11 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from horatio.models import TroupeMembership
+from horatio.models import AuditEvent, TroupeMembership
+from horatio.models import Troupe as TroupeRow
 from tests.api_helpers import Troupe, new_character
 from tests.test_api_downtimes import new_cycle
 
@@ -148,6 +149,97 @@ def test_a_character_asking_to_join_ticks_invite_players(
     )
     session.flush()
     assert ready(troupe.lead.client, troupe)["players"] is (end is None)
+
+
+def made_days_ago(session: Session, troupe: Troupe, days: float) -> None:
+    session.execute(
+        update(TroupeRow)
+        .where(TroupeRow.id == uuid.UUID(troupe.id))
+        .values(created_at=datetime.now(UTC) - timedelta(days=days))
+    )
+    session.flush()
+
+
+def test_invite_players_leaves_the_list_once_the_troupe_is_30_days_old(
+    troupe: Troupe, session: Session
+) -> None:
+    made_days_ago(session, troupe, 29.9)
+    assert "players" in ready(troupe.lead.client, troupe)
+
+    # Done or not, it goes, and the list counts the seven left (#1129).
+    made_days_ago(session, troupe, 30)
+    steps = ready(troupe.lead.client, troupe)
+    assert "players" not in steps
+    assert len(steps) == 7
+    session.add(
+        TroupeMembership(
+            troupe_id=uuid.UUID(troupe.id),
+            character_id=uuid.UUID(new_character(troupe, troupe.player)),
+        )
+    )
+    session.flush()
+    assert "players" not in ready(troupe.lead.client, troupe)
+
+
+def test_the_custodian_chooses_how_long_invite_players_stays(
+    troupe: Troupe, session: Session
+) -> None:
+    custodian = troupe.custodian.client
+    assert custodian.get("/site/getting-ready").json() == {"invite_players_days": 30}
+    made_days_ago(session, troupe, 40)
+    assert "players" not in ready(troupe.lead.client, troupe)
+
+    changed = custodian.put("/site/getting-ready", json={"invite_players_days": 45})
+
+    assert changed.status_code == 200, changed.text
+    assert changed.json() == {"invite_players_days": 45}
+    assert custodian.get("/site/getting-ready").json() == {"invite_players_days": 45}
+    assert "players" in ready(troupe.lead.client, troupe)
+    custodian.put("/site/getting-ready", json={"invite_players_days": 7})
+    assert "players" not in ready(troupe.lead.client, troupe)
+
+    events = session.scalars(
+        select(AuditEvent)
+        .where(AuditEvent.action == "site.invite_players_days")
+        .order_by(AuditEvent.created_at, AuditEvent.id)
+    ).all()
+    assert [(e.data["before"], e.data["days"]) for e in events] == [(30, 45), (45, 7)]
+    log = custodian.get("/audit", params={"group": "system"}).json()
+    assert any(
+        e["message"] == "custodian set Invite players to leave Getting your troupe ready once a"
+        " troupe is 45 days old (was 30)."
+        for e in log["entries"]
+    )
+    # Saving it unchanged logs nothing.
+    custodian.put("/site/getting-ready", json={"invite_players_days": 7})
+    assert (
+        len(
+            session.scalars(
+                select(AuditEvent).where(AuditEvent.action == "site.invite_players_days")
+            ).all()
+        )
+        == 2
+    )
+
+
+def test_only_the_custodian_reads_and_sets_the_days(
+    troupe: Troupe, client_for: Callable[[], TestClient]
+) -> None:
+    for person in (troupe.lead, troupe.player, troupe.stranger):
+        assert person.client.get("/site/getting-ready").status_code == 403
+        assert (
+            person.client.put("/site/getting-ready", json={"invite_players_days": 5}).status_code
+            == 403
+        )
+    assert (
+        client_for().put("/site/getting-ready", json={"invite_players_days": 5}).status_code == 401
+    )
+    for days in (0, 366):
+        refused = troupe.custodian.client.put(
+            "/site/getting-ready", json={"invite_players_days": days}
+        )
+        assert refused.status_code == 422, refused.text
+    assert troupe.custodian.client.get("/site/getting-ready").json() == {"invite_players_days": 30}
 
 
 def test_storytellers_hide_it_and_bring_it_back(troupe: Troupe) -> None:
