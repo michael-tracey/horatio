@@ -6,6 +6,7 @@
  */
 import type { NextStepOut } from "../../api/types";
 import type { Dates } from "../../dates";
+import { answerLabel } from "../troupe/games";
 import { isNew } from "./resultsSeen";
 
 export type Step = NextStepOut;
@@ -27,10 +28,13 @@ export function shown(steps: Step[] | undefined, seen: string | null, now: numbe
   return (steps ?? []).filter((s) => s.kind !== "results" || (!!s.since && isNew(s.since, seen, now)));
 }
 
-/** A step's words, with its time where it has one: "Downtime due Sat 7 Nov, 11:59 pm", "Next game Sat 14 Nov, 7 pm EST". */
+/**
+ * A step's words, with its time where it has one: "Downtime due Sat 7 Nov, 11:59 pm",
+ * "Court of Ashes's next game Sat 14 Nov, 7 pm EST" (the server's words name the troupe).
+ */
 export function stepText(s: Step, dates: Dates, now: Date = new Date()): string {
   if (s.kind === "downtime_due" && s.at) return new Date(s.at) <= now ? "Downtime overdue" : `Downtime due ${dates.due(s.at, now)}`;
-  if (s.kind === "next_game" && s.at) return `Next game ${dates.gameStart(s.at, now)}`;
+  if (s.kind === "next_game" && s.at) return `${s.label} ${dates.gameStart(s.at, now)}`;
   if (s.kind === "free_changes" && s.at) return `Free changes until ${dates.dueDay(s.at, now)}`;
   return s.label;
 }
@@ -38,6 +42,22 @@ export function stepText(s: Step, dates: Dates, now: Date = new Date()): string 
 /** Since when a step has waited on staff, "since Fri 20 Nov"; null for any other. */
 export function sinceText(s: Step, dates: Dates, now: Date = new Date()): string | null {
   return s.who === "staff" && s.since ? `since ${dates.dueDay(s.since, now)}` : null;
+}
+
+/** A next game still to answer: with its troupe, game and start. */
+export type Asking = Step & { troupe_id: string; game_id: string; at: string };
+
+/**
+ * A troupe's next game the player hasn't said whether they are coming to (#1109): the
+ * step asks them. The answer is the person's, so it goes for all their characters there.
+ */
+export function asksAnswer(s: Step): s is Asking {
+  return s.kind === "next_game" && !!s.troupe_id && !!s.game_id && !!s.at && s.my_answer === null;
+}
+
+/** A next game's answer once given, "answered Coming"; null for none, or any other step. */
+export function answerText(s: Step): string | null {
+  return s.kind === "next_game" && s.my_answer ? `answered ${answerLabel(s.my_answer)}` : null;
 }
 
 /** Gold for what the player does, red for a downtime due, mist for the rest. */

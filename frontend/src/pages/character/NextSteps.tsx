@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { useDates } from "../../dates";
+import { RsvpButtons } from "../troupe/RsvpButtons";
 import { useSeenUpTo } from "./resultsSeen";
-import { GROUPS, shown, sinceText, stepText, toneOf, type Step } from "./nextSteps";
+import { answerText, asksAnswer, GROUPS, shown, sinceText, stepText, toneOf, type Asking, type Step } from "./nextSteps";
 
 /** What is next for each of the player's characters, for the Characters page: one request for them all. */
 export function useNextSteps() {
@@ -14,6 +15,8 @@ export function useNextSteps() {
  * Next for this character (#1051), at the top of its page for its player: what is
  * theirs to do, what waits on staff and since when, and what is coming up, each a
  * link to where it is done. Hidden when nothing is next. On a phone the groups stack.
+ * A troupe's next game the player hasn't answered asks here whether they're coming,
+ * with its Games card's buttons (#1109).
  */
 export function NextForCharacter({ characterId }: { characterId: string }) {
   const next = useQuery({
@@ -38,6 +41,8 @@ export function NextForCharacter({ characterId }: { characterId: string }) {
                   <li key={`${s.kind} ${s.link}`}>
                     <StepLink step={s} />
                     <Since step={s} />
+                    <Answered step={s} />
+                    {asksAnswer(s) && <AnswerHere step={s} />}
                   </li>
                 ))}
               </ul>
@@ -52,7 +57,8 @@ export function NextForCharacter({ characterId }: { characterId: string }) {
 /**
  * A character's steps on the Characters page, under its name: what is the player's
  * first, then what waits on staff, then what is coming up, each group on a line of its
- * own that wraps on a phone. Nothing when nothing is next.
+ * own that wraps on a phone. Nothing when nothing is next. A next game not yet
+ * answered links to the troupe's Games card to say whether they're coming.
  */
 export function NextLine({ steps, seen, className = "" }: { steps: Step[] | undefined; seen: string | null; className?: string }) {
   const listed = shown(steps, seen);
@@ -70,6 +76,15 @@ export function NextLine({ steps, seen, className = "" }: { steps: Step[] | unde
                 {i > 0 && <span className="text-mist"> · </span>}
                 <StepLink step={s} />
                 <Since step={s} />
+                <Answered step={s} />
+                {asksAnswer(s) && (
+                  <>
+                    <span className="text-mist">, </span>
+                    <Link to={s.link} className="text-gold underline decoration-ash underline-offset-2 hover:decoration-gold">
+                      say whether you're coming
+                    </Link>
+                  </>
+                )}
               </span>
             ))}
           </li>
@@ -92,4 +107,20 @@ function Since({ step }: { step: Step }) {
   const dates = useDates();
   const since = sinceText(step, dates);
   return since && <span className="whitespace-nowrap text-mist">, {since}</span>;
+}
+
+/** A next game's answer, once given: ", answered Coming". */
+function Answered({ step }: { step: Step }) {
+  const answered = answerText(step);
+  return answered && <span className="text-mist">, {answered}</span>;
+}
+
+/** Coming, Maybe or Not coming, for a next game not yet answered: the Games card's own buttons. */
+function AnswerHere({ step }: { step: Asking }) {
+  const dates = useDates();
+  return (
+    <div className="mt-1.5 mb-1">
+      <RsvpButtons troupeId={step.troupe_id} gameId={step.game_id} when={dates.gameStart(step.at)} answer={null} />
+    </div>
+  );
 }

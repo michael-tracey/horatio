@@ -2458,7 +2458,7 @@ test("the characters list and each Troupes tab say where a character stands: in 
   await expect(p).toHaveURL(new RegExp(`/characters/${halfway}/create`));
 });
 
-test("a new character's Next card changes as it is built, asks to join and is accepted, and the Characters page lists the same (#1051)", async ({ browser }) => {
+test("a new character's Next card changes as it is built, asks to join and is accepted, and the Characters page lists the same (#1051, #1109)", async ({ browser }) => {
   const custodian = await person(browser, "nextstep-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "nextstep-lead");
@@ -2517,6 +2517,26 @@ test("a new character's Next card changes as it is built, asks to join and is ac
   await p.goto("/characters");
   await expect(row).toContainText(`Home: ${troupeName}`);
   await expect(row.getByRole("list", { name: "Next" })).toHaveCount(0);
+
+  // A game planned: coming up, it asks whether they're coming, answered on the card (#1109).
+  const start = new Date(Date.now() + 3 * 24 * 3600 * 1000);
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/games`, { starts_at: start.toISOString(), ends_at: new Date(start.getTime() + 5 * 3600 * 1000).toISOString() });
+  await p.reload();
+  const line = row.getByRole("list", { name: "Next" });
+  await expect(line.getByRole("link", { name: `${troupeName}'s next game` })).toHaveAttribute("href", `/troupes/${troupe.id}`);
+  await expect(line.getByRole("link", { name: "say whether you're coming" })).toHaveAttribute("href", `/troupes/${troupe.id}`);
+  await p.goto(`/characters/${id}`);
+  const coming = card.getByRole("list", { name: "Coming up" });
+  await expect(coming.getByRole("link", { name: `${troupeName}'s next game` })).toBeVisible();
+  await coming.getByRole("group", { name: /^Are you coming on / }).getByRole("button", { name: "Maybe" }).click();
+  await expect(coming).toContainText(", answered Maybe");
+  await expect(coming.getByRole("group")).toHaveCount(0);
+  // The troupe's Games card has the same answer.
+  await p.goto(`/troupes/${troupe.id}`);
+  await expect(p.getByRole("list", { name: "Games to come" }).getByRole("button", { name: "Maybe" })).toHaveAttribute("aria-pressed", "true");
+  await p.goto("/characters");
+  await expect(line).toContainText(", answered Maybe");
+  await expect(line.getByRole("link", { name: "say whether you're coming" })).toHaveCount(0);
 });
 
 test("a player leaves the home troupe after a dialog naming the title that ends, and the card says there is none (#459)", async ({ browser }) => {
