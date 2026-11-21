@@ -206,6 +206,12 @@ Keep the link to yourself: anyone with it can see those dates and your answers. 
 
 **About Horatio**, at the foot of every page, says what Horatio is: free, open source, and unofficial fan-made material under Paradox Interactive's Dark Pack Agreement. It links to the project's source code and to the agreement. Anyone can read it, signed in or not.
 
+## Searching everything
+
+The magnifying glass at the top of every page, or **/** or **Ctrl K** (**⌘K** on a Mac) on any page, opens a search of everything you may see: characters, players, boons, locations, quests, equipment, news, announcements and this manual, and a troupe's settings for its storytellers. Each kind is a group of its own, and each result opens its page; **Enter** opens the first.
+
+Within each group, the troupe you're on comes first: the troupe whose pages you're on, or on a character's pages, that character's home troupe. A result from another troupe names it. With no troupe in view, or on a character with no home troupe, no troupe comes first.
+
 ## Finding help
 
 **Help**, in the menu at the top of every page, opens this manual. You can read it without signing in, and the sign-in page and About page link to it too.

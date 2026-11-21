@@ -23,7 +23,8 @@ test("the top bar finds a character and a boon, each opening its page (#1046)", 
   await custodian.page.reload();
   const viewport = onPhone() ? { width: 375, height: 800 } : { width: 1280, height: 720 };
   const lead = await person(browser, "search-lead", { viewport });
-  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Court of Searching ${run}`, lead_handle: lead.handle });
+  const court = `Court of Searching ${run}`;
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: court, lead_handle: lead.handle });
   const l = lead.page;
   // A word only this test's troupe has.
   const word = `Quillon${run}`;
@@ -64,7 +65,11 @@ test("the top bar finds a character and a boon, each opening its page (#1046)", 
   await expect(l).toHaveURL(new RegExp(`/characters/${npc.id}$`));
   await expect(search).toBeHidden();
 
-  await (await open()).getByRole("region", { name: "Boons" }).getByRole("link").first().click();
+  // On the character's page its home troupe is the current one (#1147): its hits needn't name it.
+  const boons = (await open()).getByRole("region", { name: "Boons" });
+  await expect(boons.getByRole("link").first()).toContainText("Passage past the docks");
+  await expect(boons.getByRole("link").first()).not.toContainText(court);
+  await boons.getByRole("link").first().click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/boons\\?boon=${boon.id}`));
   const panel = onPhone() ? l.getByRole("dialog", { name: `${word} Marsh owes The Harbourmaster` }) : l.getByRole("complementary", { name: `${word} Marsh owes The Harbourmaster` });
   await expect(panel).toBeVisible();

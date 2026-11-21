@@ -12,12 +12,13 @@ afterEach(() => {
 
 const HERE = "01a1f972-9b2f-78ce-ad90-4eb19b104d1c";
 const THERE = "01a1f972-0000-78ce-ad90-4eb19b104d1c";
+const CHARACTER = "01a1f972-1111-78ce-ad90-4eb19b104d1c";
 
 function Where() {
   return <p data-testid="where">{useLocation().pathname + useLocation().search}</p>;
 }
 
-function setup() {
+function setup(at = `/troupes/${HERE}/boons`, client = new QueryClient()) {
   const asked = vi.spyOn(api, "GET").mockResolvedValue({
     data: {
       groups: [
@@ -41,8 +42,8 @@ function setup() {
     response: new Response(null, { status: 200 }),
   } as never);
   render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={[`/troupes/${HERE}/boons`]}>
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[at]}>
         <SiteSearch />
         <Routes>
           <Route path="*" element={<Where />} />
@@ -81,6 +82,29 @@ describe("SiteSearch", () => {
     expect(screen.getByRole("link", { name: /Raven Two/ }).textContent).toContain("Other Court");
     expect(screen.getByRole("link", { name: /^Ravenna$/ }).textContent).not.toContain("Lords of the Night");
     expect(screen.getByText(/More than these/)).toBeTruthy();
+  });
+
+  it("on a character's page, puts its home troupe first, from the character its page holds (#1147)", async () => {
+    const client = new QueryClient();
+    client.setQueryData(["character", CHARACTER], { id: CHARACTER, home_troupe_id: THERE });
+    const { asked } = setup(`/characters/${CHARACTER}/sheet`, client);
+    fireEvent.click(screen.getByRole("button", { name: "Search everything" }));
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "raven" } });
+
+    await screen.findByRole("heading", { name: "Characters" });
+    expect(asked).toHaveBeenCalledWith("/api/search", { params: { query: { q: "raven", troupe_id: THERE } } });
+    expect(asked).not.toHaveBeenCalledWith("/api/characters/{character_id}", expect.anything());
+  });
+
+  it("on a character's page with no home troupe, puts no troupe first", async () => {
+    const client = new QueryClient();
+    client.setQueryData(["character", CHARACTER], { id: CHARACTER, home_troupe_id: null });
+    const { asked } = setup(`/characters/${CHARACTER}`, client);
+    fireEvent.click(screen.getByRole("button", { name: "Search everything" }));
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "raven" } });
+
+    await screen.findByRole("heading", { name: "Characters" });
+    expect(asked).toHaveBeenCalledWith("/api/search", { params: { query: { q: "raven", troupe_id: undefined } } });
   });
 
   it("opens the first hit on Enter, and a hit on choosing it, closing", async () => {

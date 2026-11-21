@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import { useMe } from "../hooks";
-import { isSearchShortcut, searchHere, SHORTEST, troupeOf, type SearchGroup, type SearchHit } from "../search/search";
+import { characterOf, currentTroupe, isSearchShortcut, searchHere, SHORTEST, type SearchGroup, type SearchHit } from "../search/search";
 import { Dialog } from "./Dialog";
 import { ErrorText, Input } from "./ui";
 
@@ -11,8 +11,9 @@ import { ErrorText, Input } from "./ui";
  * Search everything from the top bar (#1046): its button, and `/` or Ctrl+K (⌘K) from any
  * page, open a box that finds the characters, players, boons, locations, quests,
  * equipment, news, announcements and help the person may see, each kind a group, the
- * troupe they are on first, and that troupe's settings for its storytellers (#1047, #1133).
- * Each hit opens its page. On a phone it fills the screen.
+ * troupe they are on first (on a character's pages, its home troupe: #1147), and that
+ * troupe's settings for its storytellers (#1047, #1133). Each hit opens its page. On a
+ * phone it fills the screen.
  */
 export function SiteSearch() {
   const [open, setOpen] = useState(false);
@@ -64,7 +65,15 @@ function useSettled(value: string, ms = 200): string {
 export function SearchPanel({ onPick }: { onPick: () => void }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const troupeId = troupeOf(pathname);
+  // On a character's pages, its home troupe counts as the current troupe (#1147). Its page
+  // holds the character already (ClanNames' route wrapper asks for it), so this only reads it.
+  const characterId = characterOf(pathname);
+  const character = useQuery({
+    queryKey: ["character", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}", { params: { path: { character_id: characterId! } } })),
+    enabled: false,
+  });
+  const troupeId = currentTroupe(pathname, character.data?.home_troupe_id);
   // The troupe as the person sees it, as its pages have it, for its settings (#1047).
   const me = useMe();
   const troupe = useQuery({
