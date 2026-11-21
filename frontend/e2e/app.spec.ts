@@ -169,8 +169,8 @@ test("the browser tab names the page: the tab open, then the troupe or character
   const troupeId: string = (await made.json()).id;
   const p = lead.page;
 
-  await p.goto(`/troupes/${troupeId}/approvals`);
-  await expect(p).toHaveTitle(`Approvals · ${troupe} · Horatio`);
+  await p.goto(`/troupes/${troupeId}/players`);
+  await expect(p).toHaveTitle(`Players · ${troupe} · Horatio`);
   // A tab's own tabs come first.
   await p.goto(`/troupes/${troupeId}/house-rules/costs`);
   await expectPartOpen(p, "Costs");

@@ -1709,7 +1709,7 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   await expect(l.getByRole("heading", { level: 1, name: troupeName })).toBeVisible();
   await expectTabOpen(l, "Between games", "Downtimes");
   await expect(l.getByRole("heading", { level: 2, name: "Chase month" })).toBeVisible();
-  await expect(l).toHaveTitle(`Overview · Chase month · Cycles · ${troupeName} · Horatio`);
+  await expect(l).toHaveTitle(`Overview · Chase month · Downtimes · ${troupeName} · Horatio`);
   await expect(l.getByText("1 of 1 submitted")).toBeVisible();
   await expect(l.getByRole("progressbar", { name: "Submitted" })).toBeVisible();
   await expect(l.getByText(/^7 days left · accepted until [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m$/)).toBeVisible();
@@ -1719,7 +1719,7 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   // Staff add Tobias from Participants.
   await l.getByRole("link", { name: "Participants" }).click();
   await expect(l.getByText("1 submitted", { exact: true })).toBeVisible();
-  await expect(l).toHaveTitle(`Participants · Chase month · Cycles · ${troupeName} · Horatio`);
+  await expect(l).toHaveTitle(`Participants · Chase month · Downtimes · ${troupeName} · Horatio`);
   await l.getByRole("button", { name: "Add a character" }).click();
   const adding = l.getByRole("region", { name: "Add a character" });
   await adding.getByLabel("Character").selectOption({ label: `Tobias Wren (@${wren.handle})` });

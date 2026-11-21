@@ -787,10 +787,8 @@ test("a troupe's tabs: a player's one group is the only row, the phone's list st
 
   // The lead opens a few tabs; the list is saved on their account a moment after the last.
   const l = lead.page;
-  for (const tab of ["approvals", "roster", "downtimes"]) {
-    await l.goto(`${base}/${tab}`);
-    await expect(l.locator("main").getByRole("navigation", { name: "Troupe sections" })).toBeVisible();
-  }
+  await l.goto(base);
+  for (const tab of ["Approvals", "Roster", "Downtimes"]) await troupeTab(l, tab);
   const saved = l.waitForResponse((r) => r.url().endsWith(`/api${base}/recent-tabs`) && r.request().method() === "PUT");
   await troupeTab(l, "Settings");
   expect((await saved).status()).toBe(200);

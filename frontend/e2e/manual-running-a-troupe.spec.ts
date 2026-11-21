@@ -191,7 +191,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
 
   // Staff.
   await l.goto(`${base}/staff`);
-  await expect(l.getByText("Oren Pike")).toBeVisible();
+  await expect(l.getByRole("link", { name: "Oren Pike" })).toBeVisible();
   await shot(l, "staff", undefined, 900);
 
   // Settings › Getting ready.
