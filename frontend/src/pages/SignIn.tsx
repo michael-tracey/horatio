@@ -60,26 +60,29 @@ export function SignInPage() {
     navigate(next ?? "/characters");
   });
   // The browser offers passkeys from the login box too (conditional UI), until one is
-  // picked; again after the button's request ends, which took its place.
+  // picked; again after the button's request ends, which took its place. What goes
+  // wrong with that offer stays off the page, in the console at most (#1124): no one
+  // asked for it, and some browsers turn it down as the page opens.
   const [offered, setOffered] = useState(0);
-  const [autofillError, setAutofillError] = useState<unknown>(null);
   useEffect(() => {
     let on = true;
     void (async () => {
-      if (!(await browserSupportsWebAuthnAutofill())) return;
-      while (on) {
-        try {
-          await signInWithPasskey(true);
-          if (!on) return;
-          await client.invalidateQueries();
-          navigate(next ?? "/characters");
-          return;
-        } catch (error) {
-          if (!on || passkeyAborted(error)) return;
-          setAutofillError(error);
-          // Its challenge timed out: offer them again with a new one.
-          if (!(error instanceof ApiError && error.status === 410)) return;
+      try {
+        if (!(await browserSupportsWebAuthnAutofill())) return;
+        while (on) {
+          try {
+            await signInWithPasskey(true);
+            if (!on) return;
+            await client.invalidateQueries();
+            navigate(next ?? "/characters");
+            return;
+          } catch (error) {
+            // Its challenge timed out: offer them again with a new one.
+            if (!(error instanceof ApiError && error.status === 410)) throw error;
+          }
         }
+      } catch (error) {
+        if (on && !passkeyAborted(error)) console.info("The login box's passkey offer ended:", error);
       }
     })();
     return () => {
@@ -117,14 +120,11 @@ export function SignInPage() {
               type="button"
               variant="secondary"
               disabled={passkey.isPending}
-              onClick={() => {
-                setAutofillError(null);
-                passkey.mutate(undefined, { onError: () => setOffered((n) => n + 1) });
-              }}
+              onClick={() => passkey.mutate(undefined, { onError: () => setOffered((n) => n + 1) })}
             >
               Sign in with a passkey
             </Button>
-            <ErrorText error={passkeyProblem(passkey.error ?? autofillError)} />
+            <ErrorText error={passkeyProblem(passkey.error)} />
           </>
         )}
         <p className="text-center text-sm text-mist">
