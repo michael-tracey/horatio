@@ -489,6 +489,8 @@ MESSAGES: dict[str, str] = {
     " Discord server.",
     "delivery.retried": "{actor} retried {character}'s {channel} delivery.",
     "delivery.marked_sent": "{actor} marked {character}'s {channel} delivery as sent by hand.",
+    "delivery.cancelled": "{character}'s {what} was cancelled, not sent to its own Discord"
+    " channel: its player turned the channel off.",
     "post.published": "{actor} published {what} “{title}”.",
     "post.scheduled": "{actor} scheduled {what} “{title}”.",
     "post.unscheduled": "{actor} cancelled {what} “{title}”, which was scheduled.",

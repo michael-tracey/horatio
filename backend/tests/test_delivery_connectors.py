@@ -11,9 +11,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import delivery
+from horatio import audit, delivery, notification_choices
 from horatio.connectors import CONNECTORS, Connector, Message, Recipient, SendError
-from horatio.models import Character, Delivery, Quest, User
+from horatio.models import AuditEvent, Character, Delivery, Quest, User
 from tests.api_helpers import Troupe
 from tests.test_api_responses import Scene
 
@@ -471,3 +471,117 @@ def test_quest_news_skips_a_channel_turned_off(
     own_channel(scene, on=True)
     session.refresh(player)
     assert delivery.queue_quest(session, staff, quest.troupe_id, quest.id, agnes, "Sent", "") == 1
+
+
+# --- cancelled when the channel is turned off (#1134) ------------------------------------
+
+
+def cancelled_events(session: Session) -> list[AuditEvent]:
+    return list(
+        session.scalars(
+            select(AuditEvent)
+            .where(AuditEvent.action == "delivery.cancelled")
+            .order_by(AuditEvent.created_at, AuditEvent.id)
+        )
+    )
+
+
+def test_turning_the_channel_off_cancels_what_waits_there(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    troupe = scene.troupe
+    connect(scene)
+    assert deliver(scene)["queued"] == 1
+    staff = session.get_one(User, uuid.UUID(troupe.storyteller.id))
+    quest = Quest(troupe_id=uuid.UUID(troupe.id), name="The Lost Journal", created_by=staff.id)
+    session.add(quest)
+    session.flush()
+    agnes = session.get_one(Character, uuid.UUID(scene.agnes))
+    assert delivery.queue_quest(session, staff, quest.troupe_id, quest.id, agnes, "Quest", "") == 1
+
+    own_channel(scene, on=False)
+
+    # Each on its own record: cancelled, never sent.
+    waiting = list(session.scalars(select(Delivery).where(Delivery.channel == "discord")))
+    assert [d.status for d in waiting] == ["cancelled", "cancelled"]
+    assert all(d.next_attempt_at is None and d.sent_at is None for d in waiting)
+    assert agnes_on(scene, "discord")["status"] == "cancelled"
+    assert send_due(session) == 0
+    assert fake.sent == []
+    # In the log, as the player's doing, at info.
+    events = cancelled_events(session)
+    assert [(str(e.actor_id), e.troupe_id, e.character_id) for e in events] == [
+        (troupe.player.id, uuid.UUID(troupe.id), agnes.id)
+    ] * 2
+    assert audit.level("delivery.cancelled") == "info"
+    log = [
+        e["message"]
+        for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()
+        if e["action"] == "delivery.cancelled"
+    ]
+    assert log == [
+        "Agnes (player)'s Quest was cancelled, not sent to its own Discord channel: its player"
+        " turned the channel off.",
+        f"Agnes (player)'s downtime results ({scene.cycle['name']}) was cancelled, not sent to"
+        " its own Discord channel: its player turned the channel off.",
+    ]
+    # Staff can't send it after all, nor mark it sent.
+    cancelled = agnes_on(scene, "discord")["id"]
+    for done in ("retry", "mark-sent"):
+        refused = troupe.assistant.client.post(f"/deliveries/{cancelled}/{done}")
+        assert refused.status_code == 409, done
+
+    # Turned on again, the next delivery sends the results it never had.
+    own_channel(scene, on=True)
+    assert deliver(scene) == {"delivered": 0, "updated": 0, "queued": 1}
+    send_due(session)
+    assert [target for target, _ in fake.sent] == ["#agnes"]
+    assert agnes_on(scene, "discord")["status"] == "sent"
+
+
+def test_the_sender_cancels_one_for_a_channel_turned_off_since(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    """One the switch didn't find, such as one being sent as it was turned off whose
+    try failed, or one queued at that moment: the sender cancels it, not sends it."""
+    connect(scene)
+    fake.failures.append(SendError("Discord is busy.", retry=True))
+    deliver(scene)
+    assert send_due(session) == 1
+    assert agnes_on(scene, "discord")["status"] == "pending"
+    agnes = session.get_one(Character, uuid.UUID(scene.agnes))
+    player = session.get_one(User, agnes.player_id)
+    notification_choices.choose_own_channel(player, agnes.id, on=False)
+    session.flush()
+
+    assert send_due(session, START + timedelta(hours=1)) == 1
+
+    assert fake.sent == []
+    assert agnes_on(scene, "discord")["status"] == "cancelled"
+    [event] = cancelled_events(session)
+    assert event.actor_id is None
+    assert event.data["what"] == f"downtime results ({scene.cycle['name']})"
+
+
+def test_a_cancelled_delivery_is_never_sent(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    connect(scene)
+    deliver(scene)
+    [waiting] = session.scalars(select(Delivery).where(Delivery.channel == "discord"))
+    waiting.status = "cancelled"
+    delivery.send_one(session, waiting, START)
+    assert fake.sent == []
+    assert (waiting.status, waiting.attempts) == ("cancelled", 0)
+
+
+def test_the_channel_off_leaves_test_mode_alone(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    connect(scene, test_mode=True)
+    deliver(scene)
+    own_channel(scene, on=False)
+    assert agnes_on(scene, "discord")["status"] == "pending"
+    send_due(session)
+    assert [target for target, _ in fake.sent] == ["#st-test"]
+    assert cancelled_events(session) == []
