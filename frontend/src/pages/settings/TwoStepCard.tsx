@@ -30,18 +30,20 @@ export function aloneNote(discoverable: boolean | null): string | null {
   return "May not sign you in alone, without your password: it was added before passkeys could. To be sure, replace it on the device that keeps it.";
 }
 
-/** What asks for the password again: turning off the app, new codes, removing a passkey. */
-type Asking = { what: "app" } | { what: "codes" } | { what: "passkey"; id: string; name: string };
+/** What asks for the password again: turning off the app, new codes, removing or
+ * replacing a passkey. Adding one asks for it in its own form. */
+type Asking = { what: "app" } | { what: "codes" } | { what: "passkey" | "replace"; id: string; name: string };
 
 /**
  * Two-step sign-in (#1057): after the password, a passkey on the person's phone or
  * computer, or a code from an authenticator app, with one-time recovery codes for
  * when both are lost. A passkey is made by the browser; an app is set up with a QR
  * code (and the key, to type in), then a code from it. The recovery codes come once,
- * with the first second step. Removing one, or making new recovery codes, asks for the
- * password again. Someone who must have it can't remove their last. A passkey that may
- * not sign in alone is replaced in one go (#1110): the new one is made and kept before
- * the old one goes, so a cancelled or failed try leaves the old one as it was.
+ * with the first second step. Adding, replacing or removing a passkey, turning off the
+ * app, or making new recovery codes, asks for the password again, before the browser
+ * is asked for anything (#1110). Someone who must have it can't remove their last. A
+ * passkey that may not sign in alone is replaced in one go: the new one is made and
+ * kept before the old one goes, so a cancelled or failed try leaves the old one as it was.
  */
 export function TwoStepCard({ onDone }: { onDone?: () => void }) {
   const toast = useToast();
@@ -53,6 +55,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
   const [asking, setAsking] = useState<Asking | null>(null);
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [addingPassword, setAddingPassword] = useState("");
 
   /** A second step is on: the recovery codes, if they came with it, then on. */
   const turnedOn = (made: string[], message: string) => {
@@ -61,7 +64,8 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
     else onDone?.();
   };
   const addPasskey = useAction(async () => {
-    const optionsJSON = await unwrap(api.POST("/api/two-step/passkeys/options"));
+    const optionsJSON = await unwrap(api.POST("/api/two-step/passkeys/options", { body: { password: addingPassword } }));
+    setAddingPassword("");
     // The browser asks the person to make it, with their face, finger or PIN.
     const credential = await startRegistration({ optionsJSON: optionsJSON as never });
     const made = await unwrap(api.POST("/api/two-step/passkeys", { body: { credential: credential as never, name: name.trim() || "Passkey" } }));
@@ -72,12 +76,14 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
     async (old: { id: string; name: string }) => {
       const path = { passkey_id: old.id };
       try {
-        const optionsJSON = await unwrap(api.POST("/api/two-step/passkeys/{passkey_id}/replace/options", { params: { path } }));
+        const optionsJSON = await unwrap(api.POST("/api/two-step/passkeys/{passkey_id}/replace/options", { params: { path }, body: { password } }));
+        setPassword("");
         const credential = await startRegistration({ optionsJSON: optionsJSON as never });
         await unwrap(api.POST("/api/two-step/passkeys/{passkey_id}/replace", { params: { path }, body: { credential: credential as never } }));
       } catch (error) {
         throw replaceProblem(error, old.name);
       }
+      setAsking(null);
       toast({ message: `${old.name} replaced. It signs you in alone now, with no password.` });
     },
     [TWO_STEP],
@@ -105,31 +111,50 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
     [TWO_STEP, ["me"]],
   );
 
-  const passwordForm = (asked: Asking) => (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        withPassword.mutate(asked);
-      }}
-    >
-      <Field
-        label="Your password"
-        hint={asked.what === "codes" ? "To make new recovery codes. The ones you have stop working." : asked.what === "app" ? "To turn off your authenticator app." : `To remove ${asked.name}.`}
+  const passwordForm = (asked: Asking) => {
+    const action = asked.what === "replace" ? replacePasskey : withPassword;
+    return (
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (asked.what === "replace") replacePasskey.mutate({ id: asked.id, name: asked.name });
+          else withPassword.mutate(asked);
+        }}
       >
-        <Input type="password" required autoFocus autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      </Field>
-      <ErrorText error={withPassword.error} />
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" variant={asked.what === "codes" ? "primary" : "danger"} disabled={withPassword.isPending}>
-          {asked.what === "codes" ? "Make new codes" : asked.what === "app" ? "Turn off" : "Remove"}
-        </Button>
-        <Button type="button" variant="secondary" onClick={() => setAsking(null)}>
-          Cancel
-        </Button>
-      </div>
-    </form>
-  );
+        <Field
+          label="Your password"
+          hint={
+            asked.what === "codes"
+              ? "To make new recovery codes. The ones you have stop working."
+              : asked.what === "app"
+                ? "To turn off your authenticator app."
+                : asked.what === "replace"
+                  ? `To replace ${asked.name} with a new passkey on this device, which signs you in alone. Your browser asks you to confirm next.`
+                  : `To remove ${asked.name}.`
+          }
+        >
+          <Input type="password" required autoFocus autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </Field>
+        <ErrorText error={action.error} />
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" variant={asked.what === "codes" || asked.what === "replace" ? "primary" : "danger"} disabled={action.isPending}>
+            {asked.what === "codes" ? "Make new codes" : asked.what === "app" ? "Turn off" : asked.what === "replace" ? "Replace" : "Remove"}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setAsking(null);
+              action.reset();
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    );
+  };
 
   const canMake = (s: TwoStep) => s.passkeys_available && browserSupportsWebAuthn();
   const passkeys = (s: TwoStep) => (
@@ -153,15 +178,13 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
                     className="mt-2 min-h-8 px-2"
                     aria-label={`Replace this passkey, ${p.name}`}
                     disabled={replacePasskey.isPending}
-                    onClick={() => replacePasskey.mutate({ id: p.id, name: p.name })}
+                    onClick={() => {
+                      replacePasskey.reset();
+                      setAsking({ what: "replace", id: p.id, name: p.name });
+                    }}
                   >
                     Replace this passkey
                   </Button>
-                )}
-                {replacePasskey.variables?.id === p.id && (
-                  <div className="mt-2">
-                    <ErrorText error={replacePasskey.error} />
-                  </div>
                 )}
               </div>
               <Button type="button" variant="ghost" className="min-h-8 px-2" aria-label={`Remove ${p.name}`} onClick={() => setAsking({ what: "passkey", id: p.id, name: p.name })}>
@@ -171,8 +194,8 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
           ))}
         </ul>
       )}
-      {asking?.what === "passkey" && passwordForm(asking)}
-      {!s.passkeys_available ? (
+      {(asking?.what === "passkey" || asking?.what === "replace") && passwordForm(asking)}
+      {asking?.what === "passkey" || asking?.what === "replace" ? null : !s.passkeys_available ? (
         <p className="text-mist">Passkeys need this site on https.</p>
       ) : !browserSupportsWebAuthn() ? (
         <p className="text-mist">This browser can't make passkeys. An authenticator app works anywhere.</p>
@@ -186,6 +209,9 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
         >
           <Field label="Passkey name" hint="So you can tell them apart, such as Phone.">
             <Input value={name} maxLength={60} placeholder="Passkey" onChange={(e) => setName(e.target.value)} />
+          </Field>
+          <Field label="Your password" hint="Asked again, so a sign-in left open can't add one.">
+            <Input type="password" required autoComplete="current-password" value={addingPassword} onChange={(e) => setAddingPassword(e.target.value)} />
           </Field>
           <Button type="submit" variant={s.passkeys.length ? "secondary" : "primary"} disabled={addPasskey.isPending}>
             Add a passkey

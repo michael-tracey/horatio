@@ -38,6 +38,10 @@ describe("a passkey that wasn't replaced (#1110)", () => {
     expect(said(cannot)).toBe("This device can't keep a passkey that signs you in alone. Phone is kept as it was.");
   });
 
+  it("says a wrong password was wrong: the browser wasn't asked (#1110)", () => {
+    expect(said(new ApiError(403, "That's not your password."))).toBe("That's not your password. Phone is kept as it was.");
+  });
+
   it("passes on what the server said, with the old one kept", () => {
     expect(said(new ApiError(422, "This device can't keep a passkey that signs you in alone."))).toBe("This device can't keep a passkey that signs you in alone. Phone is kept as it was.");
   });

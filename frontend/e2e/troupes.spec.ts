@@ -199,6 +199,7 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await card.getByRole("switch", { name: "Staff must sign in with two steps" }).click();
   await expect(card.getByText(/Set up two-step sign-in yourself first/)).toBeVisible();
   await lead.goto("/account/sign-in");
+  await lead.getByLabel("Your password").fill(PASSWORD);
   await lead.getByRole("button", { name: "Add a passkey" }).click();
   await lead.getByRole("button", { name: "I've kept them" }).click();
   await lead.goto(`/troupes/${troupeId}/staff`);
@@ -221,6 +222,8 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await stCdp.send("WebAuthn.addVirtualAuthenticator", {
     options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true },
   });
+  // Asked for their password again, as on Account (#1110).
+  await st.getByLabel("Your password").fill(PASSWORD);
   await st.getByRole("button", { name: "Add a passkey" }).click();
   await st.getByRole("button", { name: "I've kept them" }).click();
   await st.goto("/");

@@ -79,7 +79,7 @@ def at(client_for: Callable[[], TestClient]) -> Iterator[Callable[[str], TestCli
 
 
 def add(person: Person, device: Device, name: str = "Phone") -> None:
-    options = person.client.post("/two-step/passkeys/options")
+    options = person.client.post("/two-step/passkeys/options", json={"password": PASSWORD})
     assert options.status_code == 200, options.text
     added = person.client.post(
         "/two-step/passkeys", json={"credential": device.create(options.json()), "name": name}
@@ -274,7 +274,7 @@ def test_whether_a_passkey_can_sign_in_alone_is_kept_and_learnt(
     }
     # Asked to say, and only those known to sign in alone are kept from being made
     # again: a device holding another may make a new one in its place.
-    adding = agnes.client.post("/two-step/passkeys/options").json()
+    adding = agnes.client.post("/two-step/passkeys/options", json={"password": PASSWORD}).json()
     assert adding["extensions"] == {"credProps": True}
     assert adding["authenticatorSelection"]["residentKey"] == "preferred"
     assert [c["id"] for c in adding["excludeCredentials"]] == [b64(kept_alone.id)]
@@ -288,7 +288,9 @@ def test_whether_a_passkey_can_sign_in_alone_is_kept_and_learnt(
 
 
 def replacing(person: Person, passkey_id: str) -> dict[str, Any]:
-    asked = person.client.post(f"/two-step/passkeys/{passkey_id}/replace/options")
+    asked = person.client.post(
+        f"/two-step/passkeys/{passkey_id}/replace/options", json={"password": PASSWORD}
+    )
     assert asked.status_code == 200, asked.text
     return asked.json()
 
@@ -382,13 +384,17 @@ def test_only_ones_own_passkey_that_may_not_sign_in_alone_is_replaced(
     by_name = {p["name"]: p["id"] for p in agnes.client.get("/two-step").json()["passkeys"]}
 
     # One that signs in alone already needs no replacing.
-    already = agnes.client.post(f"/two-step/passkeys/{by_name['Phone']}/replace/options")
+    already = agnes.client.post(
+        f"/two-step/passkeys/{by_name['Phone']}/replace/options", json={"password": PASSWORD}
+    )
     assert (already.status_code, already.json()["detail"]) == (
         409,
         "Phone signs you in alone already.",
     )
     # Someone else's is no one's to replace.
-    brams = bram.client.post(f"/two-step/passkeys/{by_name['Older']}/replace/options")
+    brams = bram.client.post(
+        f"/two-step/passkeys/{by_name['Older']}/replace/options", json={"password": PASSWORD}
+    )
     assert brams.status_code == 404
     asked = replacing(agnes, by_name["Older"])
     taken = replace(bram, by_name["Older"], Device().create(asked))
@@ -397,6 +403,47 @@ def test_only_ones_own_passkey_that_may_not_sign_in_alone_is_replaced(
     assert [c["id"] for c in asked["excludeCredentials"]] == [b64(phone.id)]
     names = [p["name"] for p in agnes.client.get("/two-step").json()["passkeys"]]
     assert names == ["Phone", "Older"]
+
+
+def test_adding_or_replacing_a_passkey_asks_for_the_password_and_counts_towards_its_limit(
+    client_for: Callable[[], TestClient], session: Session, limits: None
+) -> None:
+    agnes = sign_up(client_for, "agnes")
+    add(agnes, Device(says=None), "Older")
+    [old] = agnes.client.get("/two-step").json()["passkeys"]
+    wrong = {"password": "not my password"}
+
+    # Asked before the browser is: a wrong password gives no challenge to make one with.
+    adding = agnes.client.post("/two-step/passkeys/options", json=wrong)
+    replacing_it = agnes.client.post(f"/two-step/passkeys/{old['id']}/replace/options", json=wrong)
+    assert (adding.status_code, replacing_it.status_code) == (403, 403)
+    assert adding.json()["detail"] == "That's not your password."
+    made = Device().create({"challenge": b64(b"x" * 32), "user": {"id": b64(b"agnes")}})
+    assert replace(agnes, old["id"], made).status_code == 409
+    assert [p["id"] for p in agnes.client.get("/two-step").json()["passkeys"]] == [old["id"]]
+
+    # Every try counts, right or wrong, with changing the password, at the account: 10
+    # in a quarter of an hour (one was adding Older).
+    for _ in range(6):
+        agnes.client.post("/two-step/passkeys/options", json=wrong)
+    change = {"current": "not my password", "password": "a new password 123"}
+    assert agnes.client.post("/auth/password", json=change).status_code == 403
+
+    held = agnes.client.post(
+        f"/two-step/passkeys/{old['id']}/replace/options", json={"password": PASSWORD}
+    )
+    assert (held.status_code, held.json()["detail"]) == (
+        429,
+        "Too many tries at your password. Try again later.",
+    )
+    assert agnes.client.post("/auth/password", json=change).status_code == 429
+    [event] = events(session, "account.password_change_throttled")
+    assert (event.level, event.data["kind"]) == ("info", "two_step")
+    assert message(event.action, "Agnes", None, event.data) == (
+        "Agnes was turned away from giving their password for two-step sign-in from"
+        " testclient: too many tries at the account."
+    )
+    assert [p["id"] for p in agnes.client.get("/two-step").json()["passkeys"]] == [old["id"]]
 
 
 def test_passkey_sign_ins_are_limited_from_one_address(

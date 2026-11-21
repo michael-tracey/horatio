@@ -470,6 +470,8 @@ test("two-step sign-in with a passkey: added from Account, then signed in with a
   await page.goto("/account/sign-in");
   const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
   await card.getByLabel("Passkey name").fill("This laptop");
+  // Asked for the password again first, so a sign-in left open can't add one (#1110).
+  await card.getByLabel("Your password").fill(PASSWORD);
   await card.getByRole("button", { name: "Add a passkey" }).click();
   // The first second step brings the recovery codes.
   await expect(card.getByRole("list", { name: "Recovery codes" }).getByRole("listitem")).toHaveCount(10);
@@ -498,6 +500,7 @@ test("signing in with a passkey alone: no password, and no second step after it 
   await page.goto("/account/sign-in");
   const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
   await card.getByLabel("Passkey name").fill("This laptop");
+  await card.getByLabel("Your password").fill(PASSWORD);
   await card.getByRole("button", { name: "Add a passkey" }).click();
   await card.getByRole("button", { name: "I've kept them" }).click();
   await expect(card.getByRole("region", { name: "Passkeys" }).getByText("This laptop")).toBeVisible();
@@ -533,20 +536,29 @@ test("replacing a passkey that may not sign in alone, in one go: the old one sta
   const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
   const passkeys = card.getByRole("region", { name: "Passkeys" });
   await card.getByLabel("Passkey name").fill("Old key");
+  await card.getByLabel("Your password").fill(PASSWORD);
   await card.getByRole("button", { name: "Add a passkey" }).click();
   await card.getByRole("button", { name: "I've kept them" }).click();
   await expect(passkeys.getByText(/Signs you in only after your password/)).toBeVisible();
 
-  // It can't make one that signs in alone, so nothing changes, and the card says so.
+  // It asks for the password first: a wrong one, and the browser isn't asked.
   await passkeys.getByRole("button", { name: "Replace this passkey, Old key" }).click();
-  await expect(passkeys.getByRole("alert")).toHaveText(/Old key is kept as it was\.$/);
+  await passkeys.getByLabel("Your password").fill("not my password");
+  await passkeys.getByRole("button", { name: "Replace", exact: true }).click();
+  await expect(passkeys.getByRole("alert")).toHaveText("That's not your password. Old key is kept as it was.");
+
+  // It can't make one that signs in alone, so nothing changes, and the card says so.
+  await passkeys.getByLabel("Your password").fill(PASSWORD);
+  await passkeys.getByRole("button", { name: "Replace", exact: true }).click();
+  await expect(passkeys.getByRole("alert")).toHaveText(/^(?!That's not).*Old key is kept as it was\.$/);
   await expect(passkeys.getByRole("listitem")).toHaveCount(1);
   await expect(passkeys.getByText(/Signs you in only after your password/)).toBeVisible();
 
   // On a device that can: replaced, under the same name, and the note is gone.
   await older.remove();
   const device = await passkeyDevice(page);
-  await passkeys.getByRole("button", { name: "Replace this passkey, Old key" }).click();
+  await passkeys.getByLabel("Your password").fill(PASSWORD);
+  await passkeys.getByRole("button", { name: "Replace", exact: true }).click();
   await expect(page.getByText("Old key replaced. It signs you in alone now, with no password.")).toBeVisible();
   await expect(passkeys.getByRole("listitem")).toHaveCount(1);
   await expect(passkeys.getByText(/Old key · added/)).toBeVisible();

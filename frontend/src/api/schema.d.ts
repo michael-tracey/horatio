@@ -13927,7 +13927,8 @@ export interface paths {
         /**
          * Passkey Options
          * @description What the browser needs to make a passkey for Horatio: WebAuthn's
-         *     PublicKeyCredentialCreationOptions, as JSON. Its challenge works once.
+         *     PublicKeyCredentialCreationOptions, as JSON, giving their password first. Its
+         *     challenge works once, so the passkey it makes is kept only after the password.
          */
         post: operations["passkey_options_api_two_step_passkeys_options_post"];
         delete?: never;
@@ -13971,8 +13972,8 @@ export interface paths {
          *     made, which does (#1110), under the same name. The new one is kept and the old one
          *     removed together, only once the new one checks out, so a cancelled or failed try
          *     leaves the old one as it was, and someone who must have two-step sign-in is never
-         *     left without a second step. No password is asked, as for adding one: it leaves
-         *     them as many second steps as before.
+         *     left without a second step. The password was given for its challenge, at
+         *     POST .../replace/options.
          */
         post: operations["replace_passkey_api_two_step_passkeys__passkey_id__replace_post"];
         delete?: never;
@@ -13993,7 +13994,8 @@ export interface paths {
         /**
          * Replace Options
          * @description What the browser needs to make a passkey in place of one that may not sign in
-         *     alone (#1110): as for adding one, but the device must make it so it can.
+         *     alone (#1110), giving their password first: as for adding one, but the device must
+         *     make it so it can.
          */
         post: operations["replace_options_api_two_step_passkeys__passkey_id__replace_options_post"];
         delete?: never;
@@ -66065,7 +66067,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -66076,6 +66082,15 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -66157,7 +66172,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

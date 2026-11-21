@@ -735,6 +735,10 @@ MESSAGES: dict[str, str] = {
     " password{from_ip}: too many tries at the account.",
     "account.password_change_throttled_again": "{actor} was turned away again from changing"
     " their password{from_ip}: too many tries at the account.",
+    "account.password_change_throttled.two_step": "{actor} was turned away from giving their"
+    " password for two-step sign-in{from_ip}: too many tries at the account.",
+    "account.password_change_throttled_again.two_step": "{actor} was turned away again from"
+    " giving their password for two-step sign-in{from_ip}: too many tries at the account.",
     "account.signed_up": "{actor} signed up{from_ip}.",
     "account.signed_in": "{actor} signed in{from_ip}.",
     "account.signed_in.app": "{actor} signed in{from_ip}, with their authenticator app.",
@@ -802,7 +806,7 @@ MESSAGES: dict[str, str] = {
     " limit of {rule}.",
     "account.throttle_lifted.second_step_account": "{actor} unblocked second steps at {login}:"
     " over the limit of {rule}.",
-    "account.throttle_lifted.password_change": "{actor} unblocked password changes at {login}:"
+    "account.throttle_lifted.password_change": "{actor} unblocked password tries at {login}:"
     " over the limit of {rule}.",
     "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups{from_ip}: over the limit of"
     " {rule}.",
