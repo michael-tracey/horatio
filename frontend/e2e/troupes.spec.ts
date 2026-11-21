@@ -245,11 +245,20 @@ test("a lead storyteller asks the staff to sign in with two steps, and a storyte
   await stCdp.send("WebAuthn.addVirtualAuthenticator", {
     options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true },
   });
+  // On a slow connection, who they are answers after the recovery codes are up: going
+  // on waits for it, rather than meeting the gate's old answer and landing back (#1168).
+  await st.route("**/api/auth/me", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.continue();
+  });
   // Asked for their password again, as on Account (#1110).
   await st.getByLabel("Your password").fill(PASSWORD);
   await st.getByRole("button", { name: "Add a passkey" }).click();
   await st.getByRole("button", { name: "I've kept them" }).click();
-  await expect(st).not.toHaveURL(/\/two-step/);
+  // On to the troupe's page: its heading, as the address can pass through it on the way back.
+  await expect(st.getByRole("heading", { name: owls })).toBeVisible();
+  await expect(st).toHaveURL(new RegExp(`/troupes/${troupeId}$`));
+  await st.unroute("**/api/auth/me");
   // Set up, the bell is as usual again, with its settings.
   await st.getByRole("button", { name: /^Notifications/ }).click();
   await expect(st.getByRole("dialog", { name: "Notifications" }).getByRole("link", { name: "Notification settings" })).toBeVisible();
