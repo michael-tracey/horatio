@@ -24957,6 +24957,8 @@ export interface components {
             to: string;
             /** Troupe */
             troupe: string | null;
+            /** Troupe Abbreviation */
+            troupe_abbreviation?: string | null;
             /** Troupe Id */
             troupe_id: string | null;
         };
@@ -37767,6 +37769,8 @@ export interface components {
         };
         /** TroupeChanges */
         TroupeChanges: {
+            /** Abbreviation */
+            abbreviation?: string | null;
             /** Allowed Sects */
             allowed_sects?: string[] | null;
             /** Allowed Splats */
@@ -37944,6 +37948,12 @@ export interface components {
         };
         /** TroupeOut */
         TroupeOut: {
+            /** Abbreviation */
+            abbreviation: string;
+            /** Abbreviation Default */
+            abbreviation_default: string;
+            /** Abbreviation Set */
+            abbreviation_set: string | null;
             /** Allowed Sects */
             allowed_sects: string[];
             /** Allowed Splats */
@@ -38258,6 +38268,8 @@ export interface components {
         };
         /** TroupeProfileOut */
         TroupeProfileOut: {
+            /** Abbreviation */
+            abbreviation: string;
             /** Banner */
             banner: string | null;
             /** Can Edit */

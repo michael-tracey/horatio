@@ -81,6 +81,12 @@ function ProfileBody({ profile: p, signedIn, prompt }: { profile: TroupeProfileO
         <Avatar name={p.name} picture={p.portrait} size={p.portrait ? "md" : "sm"} />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <p className="text-sm whitespace-pre-line">{p.description || "No description yet."}</p>
+          {/* What it goes by on search results and wherever its name won't fit (#1153), when that isn't its name. */}
+          {p.abbreviation !== p.name && (
+            <p className="text-sm">
+              <span className="text-mist">Abbreviation:</span> <span className="font-medium text-parchment">{p.abbreviation}</span>
+            </p>
+          )}
           {(newPlayers || p.min_age !== null) && (
             <div className="flex flex-wrap gap-2">
               {newPlayers && <Badge tone={p.new_players === "welcoming" ? "gold" : "mist"}>{newPlayers}</Badge>}
