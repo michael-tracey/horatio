@@ -5,6 +5,7 @@ import { editable, hasProfile, linksOf, newPlayersText } from "./profile";
 const bare: TroupeProfileOut = {
   id: "t1",
   name: "Lords of the Night",
+  abbreviation: "LotN",
   description: "",
   public: false,
   portrait: null,

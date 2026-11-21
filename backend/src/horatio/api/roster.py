@@ -382,6 +382,9 @@ MESSAGES: dict[str, str] = {
     "troupe.lead_appointed.replacing": "{actor} appointed {member} lead storyteller in place of"
     " {former}, who has left the staff.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
+    "troupe.abbreviation_set": "{actor} set the troupe's abbreviation to {abbreviation}.",
+    "troupe.abbreviation_cleared": "{actor} cleared the troupe's abbreviation: it goes by"
+    " {abbreviation} now.",
     "troupe.archived": "{actor} archived the troupe{because}.",
     "troupe.settled.home": "{character} left {troupe} as it was archived, and has no home troupe"
     " now{because}.",

@@ -36,7 +36,15 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
-from horatio import boon_harpy, boon_ledger, boons, locations, quests, whos_who
+from horatio import (
+    boon_harpy,
+    boon_ledger,
+    boons,
+    locations,
+    quests,
+    troupe_abbreviations,
+    whos_who,
+)
 from horatio.models import (
     Boon,
     Character,
@@ -641,9 +649,20 @@ def search(db: Session, user: User, text: str, current: uuid.UUID | None = None)
     return groups
 
 
-def troupe_names(db: Session, groups: Sequence[Group]) -> dict[uuid.UUID, str]:
-    """The names of the troupes the hits are in, asked once."""
+@dataclass(frozen=True)
+class TroupeNamed:
+    name: str
+    # What it goes by on a hit's pill (horatio.troupe_abbreviations, #1153).
+    abbreviation: str
+
+
+def troupe_names(db: Session, groups: Sequence[Group]) -> dict[uuid.UUID, TroupeNamed]:
+    """The names and abbreviations of the troupes the hits are in."""
     ids = {h.troupe_id for g in groups for h in g.hits if h.troupe_id is not None}
     if not ids:
         return {}
-    return dict(db.execute(select(Troupe.id, Troupe.name).where(Troupe.id.in_(ids))).all())
+    abbreviations = troupe_abbreviations.effective(db)
+    return {
+        troupe_id: TroupeNamed(name, abbreviations[troupe_id].abbreviation)
+        for troupe_id, name in db.execute(select(Troupe.id, Troupe.name).where(Troupe.id.in_(ids)))
+    }

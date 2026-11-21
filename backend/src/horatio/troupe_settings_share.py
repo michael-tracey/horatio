@@ -66,6 +66,7 @@ from horatio import (
     specializations,
     teaching,
     titles,
+    troupe_abbreviations,
     troupe_settings,
     written_rules,
 )
@@ -81,6 +82,7 @@ from horatio.models import (
     User,
     WrittenRule,
 )
+from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules import conditions
 from horatio.rules import locations as location_catalogue
 from horatio.rules.house_checks import HouseCheckData, is_house_check
@@ -125,6 +127,10 @@ Name = Annotated[str, Field(min_length=1, max_length=200)]
 
 
 Blood = Annotated[int, Field(ge=0, le=30)]
+Abbreviation = Annotated[
+    str,
+    Field(min_length=1, max_length=troupe_abbreviations.LONGEST, pattern=r"^[\w.\-]+$"),
+]
 Chart = Annotated[list[int], Field(max_length=20)]
 
 
@@ -816,6 +822,13 @@ SETTINGS: dict[str, Setting] = {
         Setting("feeding_resonance", "feeding", "Blood Resonance", bool, on_off),
         Setting("feeding_territories", "feeding", "Feeding territories", bool, on_off),
         Setting("feeding_rack", "feeding", "The Rack", bool, on_off),
+        # Unique on the site: it comes in only where no other troupe has it (#1153).
+        Setting(
+            "abbreviation",
+            "names",
+            "The troupe's abbreviation",
+            Abbreviation | None,
+        ),
         Setting(
             "assamite_name", "names", "The Assamites are called", Literal["Banu Haqim", "Assamite"]
         ),
@@ -1049,6 +1062,8 @@ class Target:
     troupe: Troupe
     # The document coming in, for what it brings with it: splats, house merits.
     document: SettingsDocument | None = None
+    # Who is importing it, for what only some may set: the troupe's abbreviation.
+    user: User | None = None
 
     def rules(self, splat: str) -> TroupeRules:
         return read_troupe_rules(self.db, splat, self.troupe.id)
@@ -1205,9 +1220,11 @@ class SettingKind(Kind[SettingItem]):
         if found is None:
             return "Not a setting this Horatio has."
         try:
-            found.adapter.validate_python(item.value)
+            value = found.adapter.validate_python(item.value)
         except ValidationError as error:
             return f"Not a value it can have: {error.errors()[0]['msg']}."
+        if item.key == "abbreviation":
+            return abbreviation_problem(target, value)
         return None
 
     def same(self, item: SettingItem, current: SettingItem | None) -> bool:
@@ -1233,6 +1250,23 @@ class SettingKind(Kind[SettingItem]):
         self, target: Target, user: User, item: SettingItem, current: SettingItem | None
     ) -> None:
         raise NotImplementedError  # together, in `apply_settings`
+
+
+def abbreviation_problem(target: Target, value: str | None) -> str | None:
+    """Why the troupe can't take this abbreviation: another troupe has it, or the importer
+    may not rename the troupe, as only those who may can set it (#1153)."""
+    user = target.user
+    if (
+        user is not None
+        and value != target.troupe.abbreviation
+        and not allows(
+            troupe_role(target.db, user, target.troupe),
+            TroupeAction.RENAME,
+            is_custodian=user.is_custodian,
+        )
+    ):
+        return "Only the lead storyteller sets the troupe's abbreviation."
+    return troupe_abbreviations.clash(target.db, value, target.troupe) if value else None
 
 
 def known_checks(target: Target) -> dict[str, str]:
@@ -2280,9 +2314,11 @@ def review_item(target: Target, section: SectionKey, index: int, item: Any) -> R
     return Reviewed(section, index, label, "changes", before=before, after=after, editable=editable)
 
 
-def review(db: Session, troupe: Troupe, document: SettingsDocument) -> Review:
-    """Each item of the document as it stands against the troupe."""
-    target = Target(db, troupe, document)
+def review(
+    db: Session, troupe: Troupe, document: SettingsDocument, user: User | None = None
+) -> Review:
+    """Each item of the document as it stands against the troupe, for `user` to import."""
+    target = Target(db, troupe, document, user)
     found = [review_item(target, s, i, item) for s, i, item in section_items(document)]
     return Review(troupe=document.troupe, items=found, warnings=warnings(target, document))
 
@@ -2363,7 +2399,7 @@ def apply(
     applied = Applied()
     try:
         with db.begin_nested(), audit.quiet(db):
-            target = Target(db, troupe, document)
+            target = Target(db, troupe, document, user)
             priced = False
             for section in order:
                 chosen_items = sorted(
@@ -2504,6 +2540,8 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
         if touched("one_holder_titles"):
             # The rule sets' titles only: the troupe's own aren't carried.
             troupe.one_holder_titles = titles.offices(db, values["one_holder_titles"])
+        if touched("abbreviation"):
+            troupe_abbreviations.set_abbreviation(db, user, troupe, values["abbreviation"])
         if touched("golconda_enlightened"):
             troupe_settings.set_golconda(db, user, troupe, values["golconda_enlightened"])
         if touched("feeding", "feeding_resonance", "feeding_territories", "feeding_rack"):

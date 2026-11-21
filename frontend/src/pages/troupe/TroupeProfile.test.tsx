@@ -12,6 +12,7 @@ afterEach(cleanup);
 const BARE: TroupeProfileOut = {
   id: "t1",
   name: "Lords of the Night",
+  abbreviation: "LotN",
   description: "",
   public: false,
   portrait: null,
@@ -76,6 +77,14 @@ describe("the troupe's profile on its Overview (#781, #912)", () => {
     expect(within(region).getAllByRole("button").map((b) => b.textContent)).toEqual(["Edit profile"]);
     expect(region.textContent).toBe(`${reader!.replace("Profile", "ProfileEdit profile")}`);
     expect(screen.queryByRole("switch", { name: "Public" })).toBeNull();
+  });
+
+  it("shows what the troupe goes by, unless that is its name (#1153)", () => {
+    draw(false);
+    expect(screen.getByText("Abbreviation:").parentElement!.textContent).toBe("Abbreviation: LotN");
+    cleanup();
+    draw(false, { ...BARE, abbreviation: BARE.name });
+    expect(screen.queryByText("Abbreviation:")).toBeNull();
   });
 
   it("shows the initials small beside the description when there is no portrait", () => {

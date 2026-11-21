@@ -5,6 +5,7 @@ import { api, unwrap } from "../api/client";
 import { useMe } from "../hooks";
 import { characterOf, currentTroupe, isSearchShortcut, searchHere, SHORTEST, type SearchGroup, type SearchHit } from "../search/search";
 import { Dialog } from "./Dialog";
+import { TroupePill } from "./TroupePill";
 import { ErrorText, Input } from "./ui";
 
 /**
@@ -170,9 +171,9 @@ export function SearchPanel({ onPick }: { onPick: () => void }) {
 }
 
 function HitLink({ hit, troupeId, onPick }: { hit: SearchHit; troupeId: string | null; onPick: () => void }) {
-  // The troupe it is in, unless it is the one the person is on.
-  const troupe = hit.troupe_id && hit.troupe_id !== troupeId ? hit.troupe : null;
-  const more = [hit.detail, troupe].filter(Boolean).join(" · ");
+  // Another troupe's hit carries a pill with what that troupe goes by (#1153). The current
+  // troupe's needn't: its hits come first, and a pill on each would only say the same again.
+  const other = hit.troupe_id && hit.troupe_id !== troupeId && hit.troupe ? hit.troupe : null;
   return (
     <Link
       to={hit.to}
@@ -180,8 +181,11 @@ function HitLink({ hit, troupeId, onPick }: { hit: SearchHit; troupeId: string |
       onClick={onPick}
       className="flex min-h-11 flex-col justify-center rounded-md px-3 py-1.5 hover:bg-ash/40 focus:bg-ash/40 focus:outline-none"
     >
-      <span className="text-parchment wrap-anywhere">{hit.title}</span>
-      {more && <span className="line-clamp-2 text-xs text-mist wrap-anywhere">{more}</span>}
+      <span className="flex items-start justify-between gap-2">
+        <span className="min-w-0 text-parchment wrap-anywhere">{hit.title}</span>
+        {other && <TroupePill name={other} abbreviation={hit.troupe_abbreviation ?? other} className="mt-0.5" />}
+      </span>
+      {hit.detail && <span className="line-clamp-2 text-xs text-mist wrap-anywhere">{hit.detail}</span>}
     </Link>
   );
 }

@@ -210,7 +210,7 @@ Keep the link to yourself: anyone with it can see those dates and your answers. 
 
 The magnifying glass at the top of every page, or **/** or **Ctrl K** (**⌘K** on a Mac) on any page, opens a search of everything you may see: characters, players, boons, locations, quests, equipment, news, announcements and this manual, and a troupe's settings for its storytellers. Each kind is a group of its own, and each result opens its page; **Enter** opens the first.
 
-Within each group, the troupe you're on comes first: the troupe whose pages you're on, or on a character's pages, that character's home troupe. A result from another troupe names it. With no troupe in view, or on a character with no home troupe, no troupe comes first.
+Within each group, the troupe you're on comes first: the troupe whose pages you're on, or on a character's pages, that character's home troupe. A result from another troupe carries a small pill with that troupe's abbreviation, such as **CoA** for Court of Ashes; point at it, or listen with a screen reader, for the troupe's full name. Results from the troupe you're on have no pill. With no troupe in view, or on a character with no home troupe, no troupe comes first, and every result has its troupe's pill.
 
 ## Finding help
 
