@@ -464,6 +464,18 @@ async function passkeyDevice(page: Page, { hasResidentKey = true } = {}) {
   };
 }
 
+/** Whether the sign-in page's login box offers passkeys (#1098). The virtual
+ * authenticator picks one from it as soon as it may, which signs in and leaves the
+ * page, so a test of the button turns the offer off first: otherwise it can win the
+ * race to the click. The app is one page, so this lasts until a reload. */
+async function loginBoxOffers(page: Page, on: boolean) {
+  await page.evaluate((on) => {
+    const kept = window as unknown as { offers?: typeof PublicKeyCredential.isConditionalMediationAvailable };
+    kept.offers ??= PublicKeyCredential.isConditionalMediationAvailable;
+    PublicKeyCredential.isConditionalMediationAvailable = on ? kept.offers : async () => false;
+  }, on);
+}
+
 test("two-step sign-in with a passkey: added from Account, then signed in with after the password (#1057)", async ({ browser }) => {
   const { page, email } = await person(browser, "passkey-player");
   const device = await passkeyDevice(page);
@@ -496,7 +508,7 @@ test("two-step sign-in with a passkey: added from Account, then signed in with a
 
 test("signing in with a passkey alone: no password, and no second step after it (#1098)", async ({ browser }) => {
   const { page } = await person(browser, "passkey-alone");
-  const device = await passkeyDevice(page);
+  await passkeyDevice(page);
   await page.goto("/account/sign-in");
   const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
   await card.getByLabel("Passkey name").fill("This laptop");
@@ -508,17 +520,17 @@ test("signing in with a passkey alone: no password, and no second step after it 
   await expect(card.getByText(/May not sign you in alone/)).toHaveCount(0);
 
   // Signed out, the button: signed in at once, back where they signed out from, with no
-  // password and no second step.
-  await device.present(false);
+  // password and no second step. The login box offers nothing meanwhile.
+  await loginBoxOffers(page, false);
   await (await topBar(page)).getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByLabel("Email or handle")).toHaveAttribute("autocomplete", "username webauthn");
   await page.screenshot(shots("sign-in-passkey"));
-  await device.present(true);
   const asked = page.waitForRequest((r) => r.url().endsWith("/api/auth/passkey/options"));
   await page.getByRole("button", { name: "Sign in with a passkey" }).click();
   await asked;
   await expect(page).toHaveURL(/\/account\/sign-in$/);
   await expect(card.getByText(/This laptop · added .*, last used/)).toBeVisible();
+  await loginBoxOffers(page, true);
 
   // Signed out again, the passkey the login box offers: picked, and signed in by itself.
   const picked = page.waitForResponse((r) => r.url().endsWith("/api/auth/passkey") && r.status() === 200);
@@ -556,7 +568,7 @@ test("replacing a passkey that may not sign in alone, in one go: the old one sta
 
   // On a device that can: replaced, under the same name, and the note is gone.
   await older.remove();
-  const device = await passkeyDevice(page);
+  await passkeyDevice(page);
   await passkeys.getByLabel("Your password").fill(PASSWORD);
   await passkeys.getByRole("button", { name: "Replace", exact: true }).click();
   await expect(page.getByText("Old key replaced. It signs you in alone now, with no password.")).toBeVisible();
@@ -566,11 +578,10 @@ test("replacing a passkey that may not sign in alone, in one go: the old one sta
   await expect(passkeys.getByRole("button", { name: /^Replace this passkey/ })).toHaveCount(0);
   await expect(card.getByText("10 of 10 recovery codes left.")).toBeVisible();
 
-  // It signs in alone.
-  await device.present(false);
+  // It signs in alone: signed out, picked from the login box at once.
+  const picked = page.waitForResponse((r) => r.url().endsWith("/api/auth/passkey") && r.status() === 200);
   await (await topBar(page)).getByRole("button", { name: "Sign out" }).click();
-  await device.present(true);
-  await page.getByRole("button", { name: "Sign in with a passkey" }).click();
+  await picked;
   await expect(page).toHaveURL(/\/account\/sign-in$/);
   await expect(passkeys.getByText(/Old key · added .*, last used/)).toBeVisible();
 });
