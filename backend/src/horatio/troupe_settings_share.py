@@ -48,6 +48,7 @@ from horatio import (
     book_traits,
     boon_standings,
     boons,
+    clan_weaknesses,
     downtimes,
     feeding,
     free_changes,
@@ -649,6 +650,13 @@ SETTINGS: dict[str, Setting] = {
             "Blood at the start of a game",
             Blood | None,
             blood,
+        ),
+        Setting(
+            "core_weaknesses",
+            "at_game",
+            "Clans played by the core book's weakness",
+            Annotated[list[str], Field(max_length=50)],
+            listing,
         ),
         Setting(
             "diablerie_flaws",
@@ -2513,6 +2521,8 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             troupe_settings.set_clan_rarity(db, user, troupe, values["clan_rarity"])
         if touched("status_ban_clans"):
             troupe_settings.set_status_ban_clans(db, user, troupe, values["status_ban_clans"])
+        if touched("core_weaknesses"):
+            clan_weaknesses.set_core(db, user, troupe, values["core_weaknesses"])
         if touched("default_bloodlines"):
             troupe_settings.set_default_bloodlines(db, user, troupe, values["default_bloodlines"])
         if touched("influence_lookback_days"):

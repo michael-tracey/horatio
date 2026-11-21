@@ -1076,7 +1076,7 @@ test("the custodian unblocks a login held back for too many failed sign-ins, and
   await c.evaluate(() => window.dispatchEvent(new Event("visibilitychange")));
   const account = card.getByRole("listitem").filter({ hasText: `@${player.handle}` });
   await expect(account.locator("p").first()).toHaveText(`@${player.handle}`);
-  await expect(account).toContainText("Password changes over the limit of 10 password changes tried at one account in 15 minutes.");
+  await expect(account).toContainText("Password tries over the limit of 10 password tries at one account in 15 minutes.");
   await account.getByRole("button", { name: `Unblock @${player.handle}` }).click();
   await expect(account).toHaveCount(0);
 
@@ -1085,7 +1085,7 @@ test("the custodian unblocks a login held back for too many failed sign-ins, and
   await c.getByLabel("Words").fill(`unblocked ${player.handle}`);
   await c.getByRole("button", { name: "Search", exact: true }).click();
   const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem").filter({ hasText: "unblock-cust" });
-  await expect(found.first()).toContainText(`unblock-cust unblocked password changes at @${player.handle}: over the limit of 10 password changes tried at one account in 15 minutes.`);
+  await expect(found.first()).toContainText(`unblock-cust unblocked password tries at @${player.handle}: over the limit of 10 password tries at one account in 15 minutes.`);
   await expect(found.nth(1)).toContainText(`unblock-cust unblocked sign-ins at @${player.handle}`);
   await expect(found.nth(1)).toContainText(": over the limit of 5 failed sign-ins at one login in 15 minutes.");
   await expect(found.first().getByText("notice", { exact: true })).toBeVisible();

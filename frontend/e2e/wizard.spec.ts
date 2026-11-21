@@ -699,6 +699,11 @@ test("a new player picks the clan first and sees its disciplines and weakness, a
   const coyote = p.getByRole("region", { name: "About Gangrel: Coyote" });
   await expect(coyote).toContainText("Weakness: One animal feature for good");
   await expect(coyote).toContainText("The clan takes Bloodline: Coyote (2 points) from your merit points.");
+  // Built for no troupe yet, the Tremere's weakness varies by troupe: both are given (#1127).
+  await chooseIn(p, "Clan", "Tremere");
+  const tremere = p.getByRole("region", { name: "About Tremere" });
+  await expect(tremere).toContainText("Weakness: varies by troupe.");
+  await expect(tremere.getByRole("listitem")).toHaveText([/^Volume 2: .*\(Vol\. 2, p\. 22\)$/, /^Core book: .*\(p\. 64\)$/]);
   await chooseIn(p, "Clan", "Brujah");
   await expect(card).toContainText("In-clan now: Celerity, Potence and Presence.");
   await expect(card).not.toContainText("Bloodline: Coyote");

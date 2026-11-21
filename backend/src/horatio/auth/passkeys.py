@@ -90,12 +90,21 @@ def _descriptors(
     ]
 
 
-def adding_options(db: Session, session: SignInSession, user: User) -> dict[str, Any]:
+def adding_options(
+    db: Session, session: SignInSession, user: User, *, alone: bool = False
+) -> dict[str, Any]:
     """What the browser needs to make a new passkey for `user`, as JSON; its challenge
     is kept with the sign-in session making it. Discoverable where the device can, so
     it can sign in alone, and the browser is asked to say whether it is (credProps).
-    A device holding one that may not be discoverable may make a new one in its place."""
+    A device holding one that may not be discoverable may make a new one in its place.
+    With `alone`, for one replacing such a passkey (#1110), the device must make one
+    that signs in alone, discoverable and checking the person's face, finger or PIN,
+    or make none."""
     rp_id, _ = relying_party()
+    required = ResidentKeyRequirement.REQUIRED if alone else ResidentKeyRequirement.PREFERRED
+    verified = (
+        UserVerificationRequirement.REQUIRED if alone else UserVerificationRequirement.PREFERRED
+    )
     options = generate_registration_options(
         rp_id=rp_id,
         rp_name=NAME,
@@ -104,8 +113,7 @@ def adding_options(db: Session, session: SignInSession, user: User) -> dict[str,
         user_display_name=user.display_name,
         exclude_credentials=_descriptors(db, user, discoverable_only=True),
         authenticator_selection=AuthenticatorSelectionCriteria(
-            resident_key=ResidentKeyRequirement.PREFERRED,
-            user_verification=UserVerificationRequirement.PREFERRED,
+            resident_key=required, user_verification=verified
         ),
     )
     session.passkey_challenge = options.challenge
@@ -124,9 +132,18 @@ def _discoverable(credential: dict[str, Any]) -> bool | None:
 
 
 def add(
-    db: Session, session: SignInSession, user: User, credential: dict[str, Any], name: str
+    db: Session,
+    session: SignInSession,
+    user: User,
+    credential: dict[str, Any],
+    name: str,
+    *,
+    alone: bool = False,
 ) -> Passkey:
-    """Keep the passkey the browser made, once its answer checks out."""
+    """Keep the passkey the browser made, once its answer checks out. With `alone`
+    (adding_options' own), it must sign in alone: the person verified, and not one the
+    browser says isn't discoverable. One the browser says nothing of is, as the device
+    was told to make it so or make none."""
     challenge = session.passkey_challenge
     session.passkey_challenge = None
     if challenge is None:
@@ -138,6 +155,7 @@ def add(
             expected_challenge=challenge,
             expected_rp_id=rp_id,
             expected_origin=origin,
+            require_user_verification=alone,
         )
     except (WebAuthnException, ValueError, KeyError, TypeError) as error:
         raise HTTPException(
@@ -145,6 +163,12 @@ def add(
         ) from error
     if db.scalar(select(Passkey).where(Passkey.credential_id == made.credential_id)):
         raise HTTPException(status.HTTP_409_CONFLICT, "That passkey is set up already.")
+    discoverable = _discoverable(credential)
+    if alone and discoverable is False:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "This device can't keep a passkey that signs you in alone.",
+        )
     transports = credential.get("response", {}).get("transports", [])
     if not isinstance(transports, list):
         transports = []
@@ -155,7 +179,7 @@ def add(
         sign_count=made.sign_count,
         transports=[t.value for t in _transports(transports)],
         name=name.strip() or "Passkey",
-        discoverable=_discoverable(credential),
+        discoverable=True if alone else discoverable,
     )
     db.add(passkey)
     db.flush()

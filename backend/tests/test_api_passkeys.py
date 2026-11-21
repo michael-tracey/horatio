@@ -16,11 +16,14 @@ import cbor2
 import pytest
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
+from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio.api.roster import message
+from horatio.app import app
+from horatio.auth import two_step
 from horatio.config import get_settings
 from horatio.models import AuditEvent, Notification, Passkey, Troupe
 from tests.api_helpers import PASSWORD, Person, sign_up
@@ -99,7 +102,7 @@ def required(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def add_passkey(person: Person, name: str = "Phone") -> tuple[Authenticator, list[str]]:
     device = Authenticator()
-    options = person.client.post("/two-step/passkeys/options")
+    options = person.client.post("/two-step/passkeys/options", json={"password": PASSWORD})
     assert options.status_code == 200, options.text
     added = person.client.post(
         "/two-step/passkeys", json={"credential": device.create(options.json()), "name": name}
@@ -138,7 +141,7 @@ def test_a_passkey_is_added_from_account_with_recovery_codes(
 ) -> None:
     agnes = sign_up(client_for, "agnes")
 
-    options = agnes.client.post("/two-step/passkeys/options").json()
+    options = agnes.client.post("/two-step/passkeys/options", json={"password": PASSWORD}).json()
     assert options["rp"] == {"id": RP_ID, "name": "Horatio"}
     assert options["user"]["name"] == "@agnes"
     device = Authenticator()
@@ -169,7 +172,7 @@ def test_a_passkey_made_for_another_site_is_refused(
     client_for: Callable[[], TestClient],
 ) -> None:
     agnes = sign_up(client_for, "agnes")
-    options = agnes.client.post("/two-step/passkeys/options").json()
+    options = agnes.client.post("/two-step/passkeys/options", json={"password": PASSWORD}).json()
     elsewhere = Authenticator(origin="https://evil.example")
     refused = agnes.client.post(
         "/two-step/passkeys", json={"credential": elsewhere.create(options), "name": "Phone"}
@@ -346,7 +349,11 @@ def test_the_staff_are_told_in_the_bell_as_their_troupe_starts_asking(
         if i["kind"] == "troupe.staff_two_step"
     ]
     assert (item["troupe_name"], item["link"]) == ("Lords of the Night", "/account/sign-in")
-    # Once someone held sets one up, it's in their bell with the rest.
+    # Someone held reads it before they set one up (#1111), and it's still there after.
+    assert any(
+        i["summary"] == set_it_up
+        for i in troupe.narrator.client.get("/notifications").json()["items"]
+    )
     add_passkey(troupe.narrator)
     assert any(
         i["summary"] == set_it_up
@@ -362,6 +369,48 @@ def test_the_staff_are_told_in_the_bell_as_their_troupe_starts_asking(
     # An archived troupe asks nothing, so turning it on tells no one.
     ask(troupe.custodian, troupe.id)
     assert len(told(session)) == 3
+
+
+def test_staff_held_to_it_may_read_their_bell_and_nothing_else_first(troupe: TroupeFixture) -> None:
+    add_passkey(troupe.lead)
+    assert ask(troupe.lead, troupe.id).status_code == 200
+    narrator = troupe.narrator.client
+    assert narrator.get("/auth/me").json()["two_step_needed"] is True
+
+    # The bell, its count and marking read answer them (#1111).
+    bell = narrator.get("/notifications")
+    assert bell.status_code == 200, bell.text
+    [item] = [i for i in bell.json()["items"] if i["kind"] == "troupe.staff_two_step"]
+    assert item["read"] is False
+    waiting = bell.json()["count"]
+    assert waiting >= 1
+    read = narrator.post("/notifications/read", json={"ids": [item["id"]]})
+    assert read.status_code == 204
+    assert narrator.get("/notifications").json()["count"] == waiting - 1
+    assert narrator.post("/notifications/read", json={}).status_code == 204
+
+    # Nothing else: not the bell's settings, nor the troupe and pages its notices link to.
+    for refused in (
+        narrator.get("/notification-settings"),
+        narrator.put("/notification-settings", json={}),
+        narrator.get("/preferences"),
+        narrator.get(f"/troupes/{troupe.id}"),
+        narrator.get("/characters"),
+        narrator.get("/troupes"),
+    ):
+        assert refused.status_code == 403
+        assert refused.json()["detail"] == two_step.NEEDED
+
+
+def test_only_reading_the_bell_is_allowed_first_of_the_notifications() -> None:
+    allowed = {
+        (method, route.path)
+        for route in iter_route_contexts(app.routes)
+        if route.endpoint in two_step.ALLOWED_FIRST
+        and (route.path or "").startswith(("/api/notification", "/api/preferences"))
+        for method in route.methods or ()
+    }
+    assert allowed == {("GET", "/api/notifications"), ("POST", "/api/notifications/read")}
 
 
 def test_staff_of_two_troupes_need_it_if_either_asks(

@@ -15,6 +15,7 @@ from sqlalchemy import select
 from horatio import (
     audit,
     clan_merits,
+    clan_weaknesses,
     creation_xp,
     diablerie,
     downtimes,
@@ -1079,6 +1080,75 @@ def set_clan_names(
     return troupe_out(db, user, troupe)
 
 
+# --- Clan weaknesses --------------------------------------------------------------
+
+
+class ClanWeaknessVersion(BaseModel):
+    # The book it is from: "vol2", the default, or "core"; and that book's name.
+    book: Literal["vol2", "core"]
+    label: str
+    weakness: str
+    page: str | None
+
+
+class ClanWeaknessRow(BaseModel):
+    # A clan, without its bloodlines, which play as it does, whose weakness a later book
+    # replaced: the later book's first, then the core book's.
+    clan: str
+    versions: list[ClanWeaknessVersion]
+    # Which the troupe plays.
+    chosen: Literal["vol2", "core"]
+
+
+class ClanWeaknessesOut(BaseModel):
+    clans: list[ClanWeaknessRow]
+
+
+class ClanWeaknessesIn(BaseModel):
+    # The clans the troupe plays by the core book's weakness; every other plays the
+    # later book's.
+    core: list[str] = Field(max_length=50)
+
+
+def clan_weaknesses_out(db: DbSession, troupe: Troupe) -> ClanWeaknessesOut:
+    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    return ClanWeaknessesOut(
+        clans=[
+            ClanWeaknessRow(
+                clan=clan,
+                versions=[
+                    ClanWeaknessVersion(book=w.book, label=w.label, weakness=w.text, page=w.page)
+                    for w in clan_weaknesses.versions(rule_set, clan)
+                ],
+                chosen=clan_weaknesses.chosen(troupe, clan),
+            )
+            for clan in clan_weaknesses.choosable(rule_set)
+        ]
+    )
+
+
+@router.get("/clan-weaknesses")
+def read_clan_weaknesses(
+    troupe_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> ClanWeaknessesOut:
+    """Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),
+    with both weaknesses and the one the troupe plays (horatio.clan_weaknesses)."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    return clan_weaknesses_out(db, troupe)
+
+
+@router.put("/clan-weaknesses")
+def set_clan_weaknesses(
+    troupe_id: uuid.UUID, body: ClanWeaknessesIn, db: DbSession, user: CurrentUser
+) -> ClanWeaknessesOut:
+    """Play the core book's weakness for these clans, and the later book's for every
+    other. What the troupe's characters and rules show changes at once."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    clan_weaknesses.set_core(db, user, troupe, body.core)
+    db.commit()
+    return clan_weaknesses_out(db, troupe)
+
+
 # --- Clan rarity ------------------------------------------------------------------
 
 Rarity = Literal["common", "uncommon", "rare", "restricted"]
@@ -1488,6 +1558,13 @@ def free_changes_setting(troupe: Troupe) -> HouseSettingOut:
     )
 
 
+def page_words(page: str | None) -> str:
+    """A page reference as the rules data has it, in words: "p. 64", "Vol. 2, p. 22"."""
+    if not page:
+        return "no page"
+    return f"p. {page}" if page[0].isdigit() else page
+
+
 def other_settings(db: DbSession, troupe: Troupe, *, rarity: bool = True) -> list[HouseSettingOut]:
     """The troupe's other house rules that differ from the book; without how rare it
     rates clans, for a reader that shows that apart (`rarity` False)."""
@@ -1601,6 +1678,20 @@ def other_settings(db: DbSession, troupe: Troupe, *, rarity: bool = True) -> lis
                     name=f"How rare the {row.clan} are",
                     text=row.house.capitalize(),
                     book_text=book or "Not given",
+                )
+            )
+    if troupe.core_weaknesses:
+        # The clans played by the core book's weakness, beside the later book's.
+        for row in clan_weaknesses_out(db, troupe).clans:
+            later, core = row.versions[0], row.versions[-1]
+            if row.chosen != "core":
+                continue
+            found.append(
+                HouseSettingOut(
+                    name=f"The {row.clan} weakness",
+                    text=f"The core book's: {core.weakness} ({page_words(core.page)})",
+                    book_text=f"{later.label}'s, which replaced it: {later.weakness}"
+                    f" ({page_words(later.page)})",
                 )
             )
     if troupe.default_bloodlines:

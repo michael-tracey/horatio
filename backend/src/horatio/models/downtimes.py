@@ -367,7 +367,7 @@ class Delivery(Record):
     __tablename__ = "deliveries"
     __table_args__ = (
         CheckConstraint("channel in ('horatio', 'discord', 'email')", name="channel"),
-        CheckConstraint("status in ('pending', 'sent', 'failed')", name="status"),
+        CheckConstraint("status in ('pending', 'sent', 'failed', 'cancelled')", name="status"),
         CheckConstraint(
             "(submission_id is not null and quest_id is null and character_id is null"
             " and post_id is null)"
@@ -417,6 +417,8 @@ class Delivery(Record):
     # delivered after responses were written or changed (horatio.responses).
     revision: Mapped[int] = mapped_column(default=1, server_default="1")
     channel: Mapped[str]
+    # pending, sent or failed; or cancelled, never sent, when the player turned off the
+    # character's own Discord channel while it waited (#1134, horatio.delivery).
     status: Mapped[str] = mapped_column(default="pending", server_default="pending")
     test_mode: Mapped[bool] = mapped_column(default=False, server_default="false")
     message: Mapped[str]

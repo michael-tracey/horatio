@@ -89,7 +89,7 @@ To change someone's role, choose another in the list beside their name. **Remove
 
 Staff see players' emails and lines and veils, so the lead storyteller can ask every one of them to sign in with [two steps](getting-started.md#two-step-sign-in): on the **Staff** tab, turn on **Staff must sign in with two steps** in the **Two-step sign-in** card. Set up your own first, in Account › Sign-in and email: it asks it of you too.
 
-The rest of the staff are told in the bell as you turn it on. Anyone on the staff without it is sent to set it up when they next open Horatio, and can do nothing else until they have; they see the bell's notice once they have. The card lists who hasn't yet. Someone on the staff of two troupes needs it if either troupe asks, since one sign-in opens both. Taking someone off the staff stops asking it of them. Turning it on or off is kept in the troupe's log.
+The rest of the staff are told in the bell as you turn it on. Anyone on the staff without it is sent to set it up when they next open Horatio, and can do nothing else until they have but read their bell, where your notice says why. The card lists who hasn't yet. Someone on the staff of two troupes needs it if either troupe asks, since one sign-in opens both. Taking someone off the staff stops asking it of them. Turning it on or off is kept in the troupe's log.
 
 ### Renaming or archiving the troupe
 
@@ -196,7 +196,7 @@ The same **⋯** has **Import characters and NPCs…**, for a troupe's export fr
 - **A retired character** comes in retired.
 - **What can't come in** says why: a file that isn't a Horatio character, one from a newer Horatio, or a trait this troupe's rules don't have. The rest still come in.
 
-An NPC's equipment comes in with it, sheeted or Stock, if the file has it: each item given from the troupe's equipment and checked by its rules, with the member of a [group](#a-group-of-stock-npcs) who carries it. An item the rules refuse is left out, saying why. An NPC that **replaces** one here is never given an item twice: what the NPC here holds already, of the same name and kind, is **Kept** as it is, and only what it lacks is given. A group's three knives in the file and two here are two kept and one given. An item the NPC holds that isn't in the file is left alone. The review says which is which, and who carries each now.
+An NPC's equipment comes in with it, sheeted or Stock, if the file has it: each item given from the troupe's equipment and checked by its rules, with the member of a [group](#a-group-of-stock-npcs) who carries it. An item the rules refuse is left out, saying why. An NPC that **replaces** one here is never given an item twice: what the NPC here holds already, of the same name and kind, is **Kept**, and only what it lacks is given. A group's three knives in the file and two here are two kept and one given. A kept item takes the file's grade, qualities and effects, changed as staff change an item: checked by this troupe's rules and noted in its history. The review says what changed ("Held here already: grade standard → special, qualities updated"), or that it's kept as it is. If the file's version breaks the rules here, the item stays as it was, and the review says why. An item the NPC holds that isn't in the file is **Left alone**. The review says which is which, and who carries each now.
 
 A player character's equipment, and titles and status, are shown, not imported: give them here as usual. **Import** brings everything in at once, and lists each character with a link to it.
 
@@ -524,7 +524,7 @@ The **Log** tab in the Troupe group shows what has happened in the troupe, newes
 
 Everything under **Customise** can stay as the book has it. Storytellers and the lead change it; assistant storytellers can read it all.
 
-**Find a setting**, at the top of every Customise tab, finds a setting by its name or by a word of what it does. Type part of it, such as `ceiling` or `stickers`, and choose a setting from the list, or press Enter for the first. It opens where the setting is: its tab or its part, or the **Settings** of the tab it belongs to, with its card scrolled to and lit gold for a moment. It finds the Customise tabs, the parts of Troupe settings and House rules, each feature's switch, each tab's Settings and every settings card. The search in the top bar finds them too, under **Settings**, while you're on the troupe's pages. Only its storytellers, assistant storytellers and the custodian find a troupe's settings, and only the troupe they're on.
+**Find a setting**, at the top of every Customise tab, finds a setting by its name or by a word of what it does. Type part of it, such as `ceiling` or `stickers`, and choose a setting from the list, or press Enter for the first. It opens where the setting is: its tab or its part, or the **Settings** of the tab it belongs to, with its card scrolled to and lit gold for a moment. It finds the Customise tabs, the parts of Troupe settings and House rules, each feature's switch, each tab's Settings and every settings card. The search in the top bar finds them too, under **Settings**, while you're on the troupe's pages, but only for its storytellers and the custodian, and only the troupe they're on. Assistant storytellers find a setting here, on Customise, but not from the top bar.
 
 **Customise › Setup** starts with **Getting your troupe ready**, the steps a new troupe takes, in order, each linked to where you do it. Each ticks itself from what the troupe holds now; nothing is ticked by hand:
 
@@ -682,6 +682,7 @@ NPCs are never limited by either.
 
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
+- **Clan weaknesses**: which weakness a clan plays here where Volume 2 replaced the core book's. So far that's only the Tremere: **Volume 2's** (the default), where their blood bonds other vampires only to the first stage (Vol. 2, p. 22), or **Core book's**, where they're bound more easily themselves (p. 64). Telyav play as their clan does. The creation wizard, the character's ⓘ beside the clan, the Play View and the rules pages inside the troupe show the one you choose, and players read it on the **House rules** tab. Where there's no troupe, such as the rules page on its own, Horatio says the weakness varies by troupe and gives both. Horatio doesn't apply either one: bonds count drinks the same way for every clan, so staff apply the weakness as they record drinks. Each change goes in the troupe log.
 
 #### Feeding
 
@@ -961,7 +962,7 @@ Where a channel's name matches a character's, Horatio suggests it: **Suggested: 
 
 The list above the characters names any with no channel yet. They still get their results in Horatio, and by email if it's on, but nothing on Discord until one is chosen. Delivering a cycle warns of them too (see [Delivering results](#delivering-results)).
 
-A player can turn off what Horatio posts to their character's channel, on their Account › Notifications. The character's row then says **Player turned it off**. Nothing goes to that channel while it's off: you deliver as usual, the cycle's **Delivery** tab says **Turned off by the player** in that character's Discord column, and the player still gets their results in Horatio. The troupe's own channels for news and announcements still post, and test mode still sends to the test channel.
+A player can turn off what Horatio posts to their character's channel, on their Account › Notifications. The character's row then says **Player turned it off**. Nothing goes to that channel while it's off: you deliver as usual, the cycle's **Delivery** tab says **Turned off by the player** in that character's Discord column, and the player still gets their results in Horatio. Results or quest news already waiting to go there when the player turns it off are cancelled, not sent: the Delivery tab shows them as **Cancelled**, and the troupe's log says so. Turned back on, the next delivery sends the results it never had. The troupe's own channels for news and announcements still post, and test mode still sends to the test channel.
 
 #### Trying it in test mode
 

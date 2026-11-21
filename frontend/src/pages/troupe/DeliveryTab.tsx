@@ -226,6 +226,9 @@ function DeliverCard({ cycle, participants, testing }: { cycle: CycleOut; partic
   );
 }
 
+/** A delivery's state in a word; one sent says whether by hand. */
+const STATUS_WORDS: Partial<Record<DeliveryOut["status"], string>> = { pending: "Waiting", failed: "Failed", cancelled: "Cancelled" };
+
 function DeliveryCell({ delivery, who, channel, off }: { delivery: DeliveryOut | undefined; who: string; channel: string; off: boolean }) {
   const path = { params: { path: { delivery_id: delivery?.id ?? "" } } };
   const retry = useAction(() => unwrap(api.POST("/api/deliveries/{delivery_id}/retry", path)));
@@ -238,8 +241,8 @@ function DeliveryCell({ delivery, who, channel, off }: { delivery: DeliveryOut |
   return (
     <div className="flex flex-col items-start gap-1">
       <span className="flex flex-wrap items-center gap-1.5">
-        <Badge tone={delivery.status === "sent" ? "mist" : delivery.status === "failed" ? "blood" : "gold"}>
-          {delivery.status === "sent" ? (delivery.marked_by ? "Sent by hand" : "Sent") : delivery.status === "failed" ? "Failed" : "Waiting"}
+        <Badge tone={delivery.status === "sent" || delivery.status === "cancelled" ? "mist" : delivery.status === "failed" ? "blood" : "gold"}>
+          {STATUS_WORDS[delivery.status] ?? (delivery.marked_by ? "Sent by hand" : "Sent")}
         </Badge>
         {delivery.test_mode && <Badge>Test</Badge>}
       </span>
@@ -250,8 +253,10 @@ function DeliveryCell({ delivery, who, channel, off }: { delivery: DeliveryOut |
           {delivery.next_attempt_at && `; next at ${dates.time(delivery.next_attempt_at)}`}
         </span>
       )}
-      {delivery.last_error && delivery.status !== "sent" && <span className="text-xs text-blood-bright">{delivery.last_error}</span>}
-      {delivery.status !== "sent" && (
+      {/* Waiting when the player turned their character's own channel off (#1134): never sent. */}
+      {delivery.status === "cancelled" && <span className="text-xs text-mist">The player turned their channel off before it went.</span>}
+      {delivery.last_error && delivery.status !== "sent" && delivery.status !== "cancelled" && <span className="text-xs text-blood-bright">{delivery.last_error}</span>}
+      {delivery.status !== "sent" && delivery.status !== "cancelled" && (
         <span className="flex flex-wrap gap-1">
           {delivery.status === "failed" && (
             <Button variant="secondary" className="min-h-8 px-2 text-xs" aria-label={`Retry ${label}`} onClick={() => retry.mutate(undefined)}>
