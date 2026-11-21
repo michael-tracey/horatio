@@ -112,6 +112,12 @@ test("the top bar is one line, on a phone too: the bell and a menu that holds th
   // A custodian with a long name: the widest bar there is.
   const { page, email } = await person(browser, "phonebar-custodian-with-a-long-name");
   makeCustodian(email);
+  // A troupe of their own, asked and approved, leaves a long notice in the bell.
+  const headers = { "X-Horatio": "1" };
+  const asked = await page.request.post("/api/troupe-requests", { headers, data: { name: `Top Bar Court of the Long Notice ${run}` } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const approved = await page.request.post(`/api/troupe-requests/${(await asked.json()).id}/approve`, { headers });
+  expect(approved.status(), await approved.text()).toBeLessThan(300);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
   const bell = page.getByRole("button", { name: /^Notifications/ });
@@ -141,9 +147,15 @@ test("the top bar is one line, on a phone too: the bell and a menu that holds th
     await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Custodian", exact: true })).toBeVisible();
   }
 
-  // The bell still opens its list.
+  // The bell still opens its list, and a long notice wraps inside it, on a computer too,
+  // where the bar's links don't wrap (#1123).
   await bell.click();
-  await expect(page.getByRole("dialog", { name: "Notifications" })).toBeVisible();
+  const panel = page.getByRole("dialog", { name: "Notifications" });
+  await expect(panel).toBeVisible();
+  const notice = panel.getByText(/^Your troupe Top Bar Court of the Long Notice .+ is ready, with you as its lead storyteller$/);
+  await expect(notice).toBeVisible();
+  expect((await notice.boundingBox())!.height, "the notice takes more than one line").toBeGreaterThan(30);
+  expect(await panel.evaluate((el) => el.scrollWidth - el.clientWidth), "nothing in the panel scrolls sideways").toBeLessThanOrEqual(0);
   await page.screenshot(shots("top-bar"));
 });
 
