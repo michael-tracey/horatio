@@ -16,6 +16,7 @@ from horatio.models.backstories import (
     BackstoryQuestionSet,
 )
 from horatio.models.base import Base
+from horatio.models.blog_authors import BlogAuthor
 from horatio.models.bonds import BloodBond, BondEntry, BondReport
 from horatio.models.boon_audits import BoonAudit
 from horatio.models.boon_reviews import BoonFlag, BoonReportStaff
@@ -148,6 +149,7 @@ __all__ = [
     "WrittenRule",
     "ChronicleMotif",
     "Backstory",
+    "BlogAuthor",
     "BloodBond",
     "BondEntry",
     "BondReport",

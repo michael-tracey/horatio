@@ -20,6 +20,7 @@ from horatio.api import (
     backstories,
     backups,
     badges,
+    blog_authors,
     bond_web,
     bonds,
     book_traits,
@@ -351,6 +352,7 @@ for module in (
     vtes_symbols,
     jyhad_card,
     search,
+    blog_authors,
 ):
     api.include_router(module.router)
 # The signed-in person's choice of throw pictures (#671), beside the troupe's own.

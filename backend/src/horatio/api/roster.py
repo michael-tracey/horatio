@@ -839,6 +839,8 @@ MESSAGES: dict[str, str] = {
     " over the limit of {rule}.",
     "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups{from_ip}: over the limit of"
     " {rule}.",
+    "account.blog_author_cleared": "{actor} cleared the {cleared} of {member}'s author profile"
+    " on the blog, @{handle}{because}.",
     "account.suspended": "{actor} suspended {member}{because}.",
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",

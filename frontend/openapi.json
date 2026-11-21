@@ -2505,6 +2505,60 @@
         "title": "AuditTroupe",
         "type": "object"
       },
+      "AuthorPage": {
+        "description": "An author's page. The articles they have published join it with the blog's\nreading pages (#1158).",
+        "properties": {
+          "bio": {
+            "title": "Bio",
+            "type": "string"
+          },
+          "can_clear": {
+            "title": "Can Clear",
+            "type": "boolean"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "yours": {
+            "title": "Yours",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "handle",
+          "display_name",
+          "bio",
+          "links",
+          "picture",
+          "yours",
+          "can_clear"
+        ],
+        "title": "AuthorPage",
+        "type": "object"
+      },
       "AutoAcceptIn": {
         "properties": {
           "kinds": {
@@ -5577,6 +5631,60 @@
           "file"
         ],
         "title": "Body_upload_masthead_api_agencies__agency_id__picture_post",
+        "type": "object"
+      },
+      "Body_upload_mine_api_blog_author_picture_post": {
+        "properties": {
+          "crop_size": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Size"
+          },
+          "crop_x": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop X"
+          },
+          "crop_y": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Y"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_mine_api_blog_author_picture_post",
         "type": "object"
       },
       "Body_upload_page_api_yorick_imports__troupe_id__page_post": {
@@ -14156,18 +14264,6 @@
           "clans"
         ],
         "title": "ClanWeaknessesOut",
-        "type": "object"
-      },
-      "ClearIn": {
-        "properties": {
-          "note": {
-            "default": "",
-            "maxLength": 2000,
-            "title": "Note",
-            "type": "string"
-          }
-        },
-        "title": "ClearIn",
         "type": "object"
       },
       "Cleared": {
@@ -33274,6 +33370,109 @@
           "name"
         ],
         "title": "MoveTroupe",
+        "type": "object"
+      },
+      "MyAuthor": {
+        "description": "The signed-in person's own author profile, as Account \u203a Blog author edits it.\nBefore they first save it, what it would start as.",
+        "properties": {
+          "bio": {
+            "title": "Bio",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "picture_crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CropIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pictures_available": {
+            "title": "Pictures Available",
+            "type": "boolean"
+          },
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          },
+          "saved": {
+            "title": "Saved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "saved",
+          "display_name",
+          "handle",
+          "bio",
+          "links",
+          "picture",
+          "picture_crop",
+          "public",
+          "pictures_available"
+        ],
+        "title": "MyAuthor",
+        "type": "object"
+      },
+      "MyAuthorIn": {
+        "properties": {
+          "bio": {
+            "default": "",
+            "title": "Bio",
+            "type": "string"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "maxLength": 31,
+            "title": "Handle",
+            "type": "string"
+          },
+          "links": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "title": "Links",
+            "type": "array"
+          }
+        },
+        "required": [
+          "display_name",
+          "handle"
+        ],
+        "title": "MyAuthorIn",
         "type": "object"
       },
       "MyDowntime": {
@@ -63033,6 +63232,34 @@
         "title": "TeachingOut",
         "type": "object"
       },
+      "horatio__api__blog_authors__ClearIn": {
+        "description": "What the custodian clears; at least one.",
+        "properties": {
+          "bio": {
+            "default": false,
+            "title": "Bio",
+            "type": "boolean"
+          },
+          "links": {
+            "default": false,
+            "title": "Links",
+            "type": "boolean"
+          },
+          "picture": {
+            "default": false,
+            "title": "Picture",
+            "type": "boolean"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "ClearIn",
+        "type": "object"
+      },
       "horatio__api__bonds__ChangeOut": {
         "description": "What time does next to a bond (#665): it drops a stage, or ends, on a day.",
         "properties": {
@@ -63076,6 +63303,18 @@
           "due"
         ],
         "title": "ChangeOut",
+        "type": "object"
+      },
+      "horatio__api__boon_reviews__ClearIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "ClearIn",
         "type": "object"
       },
       "horatio__api__discord__MatchOut": {
@@ -65867,6 +66106,323 @@
         "summary": "Download Backup",
         "tags": [
           "backups"
+        ]
+      }
+    },
+    "/api/blog/author": {
+      "get": {
+        "description": "The signed-in person's own author profile.",
+        "operationId": "read_mine_api_blog_author_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyAuthor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Mine",
+        "tags": [
+          "blog authors"
+        ]
+      },
+      "put": {
+        "description": "Save the signed-in person's author profile, making it the first time.",
+        "operationId": "save_mine_api_blog_author_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MyAuthorIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyAuthor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Mine",
+        "tags": [
+          "blog authors"
+        ]
+      }
+    },
+    "/api/blog/author-pictures/{author_id}/{picture_id}/{name}": {
+      "get": {
+        "description": "One of an author's picture's files, for whoever may see their page.",
+        "operationId": "picture_file_api_blog_author_pictures__author_id___picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "author_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Author Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Picture File",
+        "tags": [
+          "blog authors"
+        ]
+      }
+    },
+    "/api/blog/author/picture": {
+      "delete": {
+        "operationId": "remove_mine_api_blog_author_picture_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyAuthor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Remove Mine",
+        "tags": [
+          "blog authors"
+        ]
+      },
+      "post": {
+        "description": "A new picture, cut square. Without a crop, the biggest square in the middle.",
+        "operationId": "upload_mine_api_blog_author_picture_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_mine_api_blog_author_picture_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyAuthor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Mine",
+        "tags": [
+          "blog authors"
+        ]
+      }
+    },
+    "/api/blog/author/picture/crop": {
+      "put": {
+        "description": "Move the picture's crop, cutting it again from the picture as kept.",
+        "operationId": "crop_mine_api_blog_author_picture_crop_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CropIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyAuthor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Crop Mine",
+        "tags": [
+          "blog authors"
+        ]
+      }
+    },
+    "/api/blog/authors/{handle}": {
+      "get": {
+        "description": "An author's page, for anyone at all while they write for the blog.",
+        "operationId": "read_author_api_blog_authors__handle__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "title": "Handle",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Author",
+        "tags": [
+          "blog authors"
+        ]
+      }
+    },
+    "/api/blog/authors/{handle}/clear": {
+      "post": {
+        "description": "For the custodian: clear an author's bio, links or picture, such as one that\nbreaks the site's rules. Logged; the rest of their profile stays.",
+        "operationId": "clear_author_api_blog_authors__handle__clear_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "title": "Handle",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__blog_authors__ClearIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clear Author",
+        "tags": [
+          "blog authors"
         ]
       }
     },
@@ -90341,7 +90897,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ClearIn"
+                "$ref": "#/components/schemas/horatio__api__boon_reviews__ClearIn"
               }
             }
           },
