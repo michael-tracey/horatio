@@ -995,6 +995,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "projects": PLAY,
     "quest_requests": PLAY,
     "quests": PLAY,
+    "recent_troupe_tabs": "people's own last tabs opened",
     "remembrances": PLAY,
     "scenes": PLAY,
     "scheduled_games": "games are the troupe's own",

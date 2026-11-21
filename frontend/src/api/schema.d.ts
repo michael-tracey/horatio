@@ -12539,6 +12539,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/recent-tabs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Recent Tabs */
+        get: operations["read_recent_tabs_api_troupes__troupe_id__recent_tabs_get"];
+        /**
+         * Keep Recent Tabs
+         * @description Keep the list the page sends, whole: the page puts the tab just opened first.
+         */
+        put: operations["keep_recent_tabs_api_troupes__troupe_id__recent_tabs_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/remembrances": {
         parameters: {
             query?: never;
@@ -31962,6 +31983,16 @@ export interface components {
             character_name: string;
             /** Submitted */
             submitted: boolean;
+        };
+        /** RecentTabsIn */
+        RecentTabsIn: {
+            /** Tabs */
+            tabs: string[];
+        };
+        /** RecentTabsOut */
+        RecentTabsOut: {
+            /** Tabs */
+            tabs: string[];
         };
         /** RecipientOut */
         RecipientOut: {
@@ -63095,6 +63126,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_recent_tabs_api_troupes__troupe_id__recent_tabs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentTabsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    keep_recent_tabs_api_troupes__troupe_id__recent_tabs_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecentTabsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentTabsOut"];
                 };
             };
             /** @description Validation Error */
