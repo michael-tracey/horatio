@@ -1,0 +1,87 @@
+import uuid
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+
+from horatio.models.base import Record
+
+
+class BlogPost(Record):
+    """An article for the site-wide game developer blog (issue #1156, horatio.blog):
+    written by a member of staff of any troupe, published by the custodian. Not a
+    troupe's post (horatio.posts): it belongs to no troupe, though it may name the
+    one its author runs."""
+
+    __tablename__ = "blog_posts"
+    __table_args__ = (
+        CheckConstraint(
+            "status in ('draft', 'submitted', 'published', 'unpublished')", name="status"
+        ),
+        CheckConstraint("status <> 'published' or published_at is not null", name="published"),
+        CheckConstraint("status <> 'submitted' or submitted_at is not null", name="submitted"),
+        CheckConstraint("revision is null or status = 'published'", name="revision"),
+        CheckConstraint(
+            "revision_submitted_at is null or revision is not null", name="revision_submitted"
+        ),
+        CheckConstraint("slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'", name="slug"),
+    )
+
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    # The troupe it names, one where the author was on staff when they submitted it;
+    # kept if they leave it. None names none.
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
+    status: Mapped[str] = mapped_column(default="draft", server_default="draft")
+    title: Mapped[str]
+    # Its address on the blog, made from the title; fixed once first published.
+    slug: Mapped[str] = mapped_column(unique=True)
+    # Set by hand: the title no longer changes it.
+    slug_chosen: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # A line or two for lists and link previews.
+    summary: Mapped[str] = mapped_column(default="", server_default="")
+    # Markdown, from the rich text editor.
+    body: Mapped[str] = mapped_column(default="", server_default="")
+    # Its hero picture (horatio.pictures, "blog"), or None.
+    picture_id: Mapped[uuid.UUID | None]
+    featured: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The custodian's note to the author: why it came back, or why it was unpublished.
+    note: Mapped[str] = mapped_column(default="", server_default="")
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # When it was first published: its date on the blog, kept through unpublishing.
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    published_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # When changes to it were last published.
+    revised_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    unpublished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Changes to a published article, waiting for the custodian while the published
+    # version stays up: {"title", "summary", "body", "troupe_id", "picture_id"}.
+    revision: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    # When those changes were sent to the custodian; None while still being written.
+    revision_submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class BlogTag(Record):
+    """One of the blog's tags, a list the custodian keeps (seeded by its migration)."""
+
+    __tablename__ = "blog_tags"
+
+    name: Mapped[str] = mapped_column(unique=True)
+    slug: Mapped[str] = mapped_column(unique=True)
+    # Where it comes in the list.
+    position: Mapped[int] = mapped_column(default=0, server_default="0")
+
+
+class BlogPostTag(Record):
+    """An article tagged with one of the blog's tags."""
+
+    __tablename__ = "blog_post_tags"
+    __table_args__ = (UniqueConstraint("post_id", "tag_id", name="uq_blog_post_tags_tag"),)
+
+    post_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("blog_posts.id", ondelete="CASCADE"), index=True
+    )
+    tag_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("blog_tags.id", ondelete="CASCADE"), index=True
+    )

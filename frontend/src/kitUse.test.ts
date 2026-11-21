@@ -15,10 +15,11 @@ const raw: { what: string; pattern: RegExp; max: number; use: string }[] = [
   // `\b` so that `<ButtonGroup` and the like don't count; JSX is case-sensitive anyway.
   // 162: the boon ledger's totals strip (#977), a number with a small label, not a Button's shape.
   { what: "<button", pattern: /<button\b/g, max: 162, use: "`Button` (components/ui.tsx) or `LinkButton` (components/LinkButton.tsx)" },
+  // 162: the blog article's hidden picture input (#1156), opened by a Button, as a post's is.
   {
     what: "<input",
     pattern: /<input\b/g,
-    max: 161,
+    max: 162,
     use: "`Input` (components/ui.tsx), or `Checkbox`, `Toggle`, `RadioList` or `Segmented` for a checkbox or radio",
   },
   { what: "<select", pattern: /<select\b/g, max: 7, use: "`Select` (components/ui.tsx)" },

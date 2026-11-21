@@ -2286,6 +2286,7 @@
           "house_rules",
           "troupes",
           "accounts",
+          "blog",
           "system"
         ],
         "title": "AuditGroup",
@@ -5216,6 +5217,483 @@
         "title": "BlockWarningOut",
         "type": "object"
       },
+      "BlogArticleIn": {
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 100000,
+            "title": "Body",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "BlogArticleIn",
+        "type": "object"
+      },
+      "BlogArticleOut": {
+        "properties": {
+          "author_id": {
+            "format": "uuid",
+            "title": "Author Id",
+            "type": "string"
+          },
+          "author_name": {
+            "title": "Author Name",
+            "type": "string"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "featured": {
+            "title": "Featured",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mine": {
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "revised_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revised At"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlogRevisionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "slug_fixed": {
+            "title": "Slug Fixed",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "submitted",
+              "published",
+              "unpublished"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/BlogTagOut"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlogTroupeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unpublished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unpublished At"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "waiting": {
+            "anyOf": [
+              {
+                "enum": [
+                  "article",
+                  "changes"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waiting"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "slug",
+          "slug_fixed",
+          "title",
+          "summary",
+          "body",
+          "picture",
+          "author_id",
+          "author_name",
+          "troupe",
+          "featured",
+          "note",
+          "tags",
+          "created_at",
+          "updated_at",
+          "submitted_at",
+          "published_at",
+          "revised_at",
+          "unpublished_at",
+          "revision",
+          "waiting",
+          "mine"
+        ],
+        "title": "BlogArticleOut",
+        "type": "object"
+      },
+      "BlogFeaturedIn": {
+        "properties": {
+          "featured": {
+            "title": "Featured",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "featured"
+        ],
+        "title": "BlogFeaturedIn",
+        "type": "object"
+      },
+      "BlogNoteIn": {
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "BlogNoteIn",
+        "type": "object"
+      },
+      "BlogQueueOut": {
+        "description": "For the custodian: articles and changes waiting, longest waiting first; then\nthose published and unpublished, the latest first.",
+        "properties": {
+          "published": {
+            "items": {
+              "$ref": "#/components/schemas/BlogArticleOut"
+            },
+            "title": "Published",
+            "type": "array"
+          },
+          "unpublished": {
+            "items": {
+              "$ref": "#/components/schemas/BlogArticleOut"
+            },
+            "title": "Unpublished",
+            "type": "array"
+          },
+          "waiting": {
+            "items": {
+              "$ref": "#/components/schemas/BlogArticleOut"
+            },
+            "title": "Waiting",
+            "type": "array"
+          }
+        },
+        "required": [
+          "waiting",
+          "published",
+          "unpublished"
+        ],
+        "title": "BlogQueueOut",
+        "type": "object"
+      },
+      "BlogReasonIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "BlogReasonIn",
+        "type": "object"
+      },
+      "BlogRevisionOut": {
+        "description": "Changes to a published article, while the published version stays up.",
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlogTroupeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "summary",
+          "body",
+          "troupe",
+          "picture",
+          "submitted_at"
+        ],
+        "title": "BlogRevisionOut",
+        "type": "object"
+      },
+      "BlogSlugIn": {
+        "properties": {
+          "slug": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "title": "BlogSlugIn",
+        "type": "object"
+      },
+      "BlogTagOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ],
+        "title": "BlogTagOut",
+        "type": "object"
+      },
+      "BlogTagsIn": {
+        "properties": {
+          "tag_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Tag Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tag_ids"
+        ],
+        "title": "BlogTagsIn",
+        "type": "object"
+      },
+      "BlogTroupeOut": {
+        "description": "The troupe an article names.",
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived"
+        ],
+        "title": "BlogTroupeOut",
+        "type": "object"
+      },
+      "BlogWriterOut": {
+        "description": "Whether the caller may write for the blog, and the troupes an article of theirs\nmay name: those that are running where they're on staff.",
+        "properties": {
+          "can_write": {
+            "title": "Can Write",
+            "type": "boolean"
+          },
+          "troupes": {
+            "items": {
+              "$ref": "#/components/schemas/BlogTroupeOut"
+            },
+            "title": "Troupes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "can_write",
+          "troupes"
+        ],
+        "title": "BlogWriterOut",
+        "type": "object"
+      },
       "BloodBondsIn": {
         "properties": {
           "setting": {
@@ -5592,6 +6070,21 @@
           "file"
         ],
         "title": "Body_upload_page_api_yorick_imports__troupe_id__page_post",
+        "type": "object"
+      },
+      "Body_upload_picture_api_blog_articles__article_id__picture_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_picture_api_blog_articles__article_id__picture_post",
         "type": "object"
       },
       "Body_upload_picture_api_characters__character_id__picture_post": {
@@ -65867,6 +66360,869 @@
         "summary": "Download Backup",
         "tags": [
           "backups"
+        ]
+      }
+    },
+    "/api/blog/articles": {
+      "post": {
+        "description": "A new draft, by a member of staff of a troupe that is running, or the custodian.",
+        "operationId": "new_article_api_blog_articles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogArticleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "New Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/mine": {
+      "get": {
+        "description": "The caller's own articles, the latest changed first.",
+        "operationId": "my_articles_api_blog_articles_mine_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogArticleOut"
+                  },
+                  "title": "Response My Articles Api Blog Articles Mine Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Articles",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}": {
+      "delete": {
+        "description": "Its author throws away an article never published.",
+        "operationId": "delete_article_api_blog_articles__article_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Article",
+        "tags": [
+          "blog"
+        ]
+      },
+      "get": {
+        "operationId": "read_article_api_blog_articles__article_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Article",
+        "tags": [
+          "blog"
+        ]
+      },
+      "put": {
+        "description": "Its author's change. A published article stays up as it is: the change is to\nits revision, for the custodian to publish once submitted.",
+        "operationId": "change_article_api_blog_articles__article_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogArticleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/featured": {
+      "put": {
+        "operationId": "feature_article_api_blog_articles__article_id__featured_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogFeaturedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Feature Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/picture": {
+      "delete": {
+        "operationId": "remove_picture_api_blog_articles__article_id__picture_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Picture",
+        "tags": [
+          "blog"
+        ]
+      },
+      "post": {
+        "description": "Its hero picture, as a post's is kept (1200 and 600 px wide). On a published\narticle it is part of the changes, so the old one stays up until they are.",
+        "operationId": "upload_picture_api_blog_articles__article_id__picture_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_picture_api_blog_articles__article_id__picture_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Picture",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/pictures/{picture_id}/{name}": {
+      "get": {
+        "description": "An article's hero picture, or its changes', for its author and the custodian\nuntil the blog's pages are public (#1158). Its files never change (a new one has\na new id), so browsers may keep them, privately.",
+        "operationId": "article_picture_api_blog_articles__article_id__pictures__picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Article Picture",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/publish": {
+      "post": {
+        "description": "Publish an article waiting, or put up a published one's changes in place of\nthe old.",
+        "operationId": "publish_article_api_blog_articles__article_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/return": {
+      "post": {
+        "description": "Send an article waiting, or a published one's changes, back to its author with\na note.",
+        "operationId": "return_article_api_blog_articles__article_id__return_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogNoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Return Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/revision": {
+      "delete": {
+        "description": "Throw away a published article's changes; it stays as published.",
+        "operationId": "discard_revision_api_blog_articles__article_id__revision_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discard Revision",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/slug": {
+      "put": {
+        "description": "Its address on the blog, by its author or the custodian, until it is published.",
+        "operationId": "change_slug_api_blog_articles__article_id__slug_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogSlugIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Slug",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/submit": {
+      "post": {
+        "description": "Send it, or a published article's changes, to the custodian to publish.",
+        "operationId": "submit_article_api_blog_articles__article_id__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/tags": {
+      "put": {
+        "description": "Its tags: the custodian's at any time, its author's while it is being written.",
+        "operationId": "tag_article_api_blog_articles__article_id__tags_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogTagsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tag Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/unpublish": {
+      "post": {
+        "description": "Take a published article down, telling its author why.",
+        "operationId": "unpublish_article_api_blog_articles__article_id__unpublish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unpublish Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/articles/{article_id}/withdraw": {
+      "post": {
+        "description": "Take it, or a published article's changes, back from the custodian's queue.",
+        "operationId": "withdraw_article_api_blog_articles__article_id__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/queue": {
+      "get": {
+        "description": "Custodian \u203a Blog: what waits, then what is published and unpublished.",
+        "operationId": "queue_api_blog_queue_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogQueueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Queue",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/tags": {
+      "get": {
+        "description": "The blog's tags, in the custodian's order.",
+        "operationId": "list_tags_api_blog_tags_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogTagOut"
+                  },
+                  "title": "Response List Tags Api Blog Tags Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Tags",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/writer": {
+      "get": {
+        "operationId": "writer_api_blog_writer_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogWriterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Writer",
+        "tags": [
+          "blog"
         ]
       }
     },

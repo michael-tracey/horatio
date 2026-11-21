@@ -20,6 +20,7 @@ const CHECKED: Record<string, number> = {
   "pages/character/Retainers.tsx": 1, // a menu's options
   "pages/character/TroupesTab.tsx": 1, // isPending first
   "pages/custodian/AuditTab.tsx": 1, // isPending first
+  "pages/custodian/BlogTab.tsx": 1, // the tags' chips, none shown until they're in
   "pages/news/PostsSection.tsx": 1, // isPending first
   "pages/nominations/NominationsAbout.tsx": 1, // nothing shown for none
   "pages/play/OnOthers.tsx": 1, // "No one else" only once answered
