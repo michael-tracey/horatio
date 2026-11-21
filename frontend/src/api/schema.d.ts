@@ -1010,9 +1010,10 @@ export interface paths {
         };
         /**
          * Article Picture
-         * @description An article's hero picture, or its changes', for its author and the custodian
-         *     until the blog's pages are public (#1158). Its files never change (a new one has
-         *     a new id), so browsers may keep them, privately.
+         * @description An article's hero picture. A published article's is anyone's to see, signed in
+         *     or not, and shared caches may keep it a while (#1158). Any other, a draft's or a
+         *     published article's changes', is for its author and the custodian alone. Its
+         *     files never change (a new one has a new id).
          */
         get: operations["article_picture_api_blog_articles__article_id__pictures__picture_id___name__get"];
         put?: never;
@@ -1179,6 +1180,89 @@ export interface paths {
          * @description Take it, or a published article's changes, back from the custodian's queue.
          */
         post: operations["withdraw_article_api_blog_articles__article_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/public/articles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Articles
+         * @description The blog: published articles, newest first, a page at a time, with those its
+         *     `tag` (a slug) has if given; and the featured ones for the top.
+         */
+        get: operations["list_articles_api_blog_public_articles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/public/articles/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Article
+         * @description A published article, by its address. Anything else is "no such article", so
+         *     nobody learns what is being written.
+         */
+        get: operations["read_article_api_blog_public_articles__slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/public/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tags
+         * @description The blog's tags, in the custodian's order, with how many published articles
+         *     have each.
+         */
+        get: operations["list_tags_api_blog_public_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/public/tags/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tag Articles
+         * @description A tag's published articles, newest first, a page at a time.
+         */
+        get: operations["tag_articles_api_blog_public_tags__slug__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17157,6 +17241,131 @@ export interface components {
         BlogNoteIn: {
             /** Note */
             note: string;
+        };
+        /**
+         * BlogPublicArticleOut
+         * @description An article, to read.
+         */
+        BlogPublicArticleOut: {
+            author: components["schemas"]["BlogPublicAuthorOut"];
+            /** Body */
+            body: string;
+            /** Edit */
+            edit: string | null;
+            /** Featured */
+            featured: boolean;
+            /** Picture */
+            picture: string | null;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /** Revised At */
+            revised_at: string | null;
+            /** Slug */
+            slug: string;
+            /** Summary */
+            summary: string;
+            /** Tags */
+            tags: components["schemas"]["BlogPublicTagOut"][];
+            /** Title */
+            title: string;
+            troupe: components["schemas"]["BlogPublicTroupeOut"] | null;
+        };
+        /**
+         * BlogPublicAuthorOut
+         * @description Who wrote it, as the blog shows them.
+         */
+        BlogPublicAuthorOut: {
+            /** Handle */
+            handle: string | null;
+            /** Name */
+            name: string;
+        };
+        /**
+         * BlogPublicPageOut
+         * @description A page of articles, newest first, with the featured ones for the top of the
+         *     blog.
+         */
+        BlogPublicPageOut: {
+            /** Articles */
+            articles: components["schemas"]["BlogPublicSummaryOut"][];
+            /** Featured */
+            featured: components["schemas"]["BlogPublicSummaryOut"][];
+            /** Page */
+            page: number;
+            /** Pages */
+            pages: number;
+            /** Total */
+            total: number;
+        };
+        /**
+         * BlogPublicSummaryOut
+         * @description An article in a list of them.
+         */
+        BlogPublicSummaryOut: {
+            author: components["schemas"]["BlogPublicAuthorOut"];
+            /** Featured */
+            featured: boolean;
+            /** Picture */
+            picture: string | null;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /** Revised At */
+            revised_at: string | null;
+            /** Slug */
+            slug: string;
+            /** Summary */
+            summary: string;
+            /** Tags */
+            tags: components["schemas"]["BlogPublicTagOut"][];
+            /** Title */
+            title: string;
+            troupe: components["schemas"]["BlogPublicTroupeOut"] | null;
+        };
+        /** BlogPublicTagCountOut */
+        BlogPublicTagCountOut: {
+            /** Articles */
+            articles: number;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** BlogPublicTagOut */
+        BlogPublicTagOut: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** BlogPublicTagPageOut */
+        BlogPublicTagPageOut: {
+            /** Articles */
+            articles: components["schemas"]["BlogPublicSummaryOut"][];
+            /** Featured */
+            featured: components["schemas"]["BlogPublicSummaryOut"][];
+            /** Page */
+            page: number;
+            /** Pages */
+            pages: number;
+            tag: components["schemas"]["BlogPublicTagOut"];
+            /** Total */
+            total: number;
+        };
+        /**
+         * BlogPublicTroupeOut
+         * @description The troupe an article names. A private or archived troupe is its name only.
+         */
+        BlogPublicTroupeOut: {
+            /** Id */
+            id: string | null;
+            /** Name */
+            name: string;
         };
         /**
          * BlogQueueOut
@@ -42056,6 +42265,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlogArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_articles_api_blog_public_articles_get: {
+        parameters: {
+            query?: {
+                /** @description Counting from 1. */
+                page?: number;
+                tag?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogPublicPageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_article_api_blog_public_articles__slug__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogPublicArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tags_api_blog_public_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogPublicTagCountOut"][];
+                };
+            };
+        };
+    };
+    tag_articles_api_blog_public_tags__slug__get: {
+        parameters: {
+            query?: {
+                /** @description Counting from 1. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogPublicTagPageOut"];
                 };
             };
             /** @description Validation Error */

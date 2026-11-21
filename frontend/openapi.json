@@ -5482,6 +5482,366 @@
         "title": "BlogNoteIn",
         "type": "object"
       },
+      "BlogPublicArticleOut": {
+        "description": "An article, to read.",
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/BlogPublicAuthorOut"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "edit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edit"
+          },
+          "featured": {
+            "title": "Featured",
+            "type": "boolean"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "revised_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revised At"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/BlogPublicTagOut"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlogPublicTroupeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "summary",
+          "picture",
+          "author",
+          "troupe",
+          "tags",
+          "featured",
+          "published_at",
+          "revised_at",
+          "body",
+          "edit"
+        ],
+        "title": "BlogPublicArticleOut",
+        "type": "object"
+      },
+      "BlogPublicAuthorOut": {
+        "description": "Who wrote it, as the blog shows them.",
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "handle"
+        ],
+        "title": "BlogPublicAuthorOut",
+        "type": "object"
+      },
+      "BlogPublicPageOut": {
+        "description": "A page of articles, newest first, with the featured ones for the top of the\nblog.",
+        "properties": {
+          "articles": {
+            "items": {
+              "$ref": "#/components/schemas/BlogPublicSummaryOut"
+            },
+            "title": "Articles",
+            "type": "array"
+          },
+          "featured": {
+            "items": {
+              "$ref": "#/components/schemas/BlogPublicSummaryOut"
+            },
+            "title": "Featured",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "pages": {
+            "title": "Pages",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "articles",
+          "page",
+          "pages",
+          "total",
+          "featured"
+        ],
+        "title": "BlogPublicPageOut",
+        "type": "object"
+      },
+      "BlogPublicSummaryOut": {
+        "description": "An article in a list of them.",
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/BlogPublicAuthorOut"
+          },
+          "featured": {
+            "title": "Featured",
+            "type": "boolean"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "revised_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revised At"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/BlogPublicTagOut"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlogPublicTroupeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "summary",
+          "picture",
+          "author",
+          "troupe",
+          "tags",
+          "featured",
+          "published_at",
+          "revised_at"
+        ],
+        "title": "BlogPublicSummaryOut",
+        "type": "object"
+      },
+      "BlogPublicTagCountOut": {
+        "properties": {
+          "articles": {
+            "title": "Articles",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "articles"
+        ],
+        "title": "BlogPublicTagCountOut",
+        "type": "object"
+      },
+      "BlogPublicTagOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "slug"
+        ],
+        "title": "BlogPublicTagOut",
+        "type": "object"
+      },
+      "BlogPublicTagPageOut": {
+        "properties": {
+          "articles": {
+            "items": {
+              "$ref": "#/components/schemas/BlogPublicSummaryOut"
+            },
+            "title": "Articles",
+            "type": "array"
+          },
+          "featured": {
+            "items": {
+              "$ref": "#/components/schemas/BlogPublicSummaryOut"
+            },
+            "title": "Featured",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "pages": {
+            "title": "Pages",
+            "type": "integer"
+          },
+          "tag": {
+            "$ref": "#/components/schemas/BlogPublicTagOut"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "articles",
+          "page",
+          "pages",
+          "total",
+          "featured",
+          "tag"
+        ],
+        "title": "BlogPublicTagPageOut",
+        "type": "object"
+      },
+      "BlogPublicTroupeOut": {
+        "description": "The troupe an article names. A private or archived troupe is its name only.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "id"
+        ],
+        "title": "BlogPublicTroupeOut",
+        "type": "object"
+      },
       "BlogQueueOut": {
         "description": "For the custodian: articles and changes waiting, longest waiting first; then\nthose published and unpublished, the latest first.",
         "properties": {
@@ -66761,7 +67121,7 @@
     },
     "/api/blog/articles/{article_id}/pictures/{picture_id}/{name}": {
       "get": {
-        "description": "An article's hero picture, or its changes', for its author and the custodian\nuntil the blog's pages are public (#1158). Its files never change (a new one has\na new id), so browsers may keep them, privately.",
+        "description": "An article's hero picture. A published article's is anyone's to see, signed in\nor not, and shared caches may keep it a while (#1158). Any other, a draft's or a\npublished article's changes', is for its author and the custodian alone. Its\nfiles never change (a new one has a new id).",
         "operationId": "article_picture_api_blog_articles__article_id__pictures__picture_id___name__get",
         "parameters": [
           {
@@ -67202,6 +67562,197 @@
           }
         },
         "summary": "Withdraw Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/public/articles": {
+      "get": {
+        "description": "The blog: published articles, newest first, a page at a time, with those its\n`tag` (a slug) has if given; and the featured ones for the top.",
+        "operationId": "list_articles_api_blog_public_articles_get",
+        "parameters": [
+          {
+            "description": "Counting from 1.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Counting from 1.",
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogPublicPageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Articles",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/public/articles/{slug}": {
+      "get": {
+        "description": "A published article, by its address. Anything else is \"no such article\", so\nnobody learns what is being written.",
+        "operationId": "read_article_api_blog_public_articles__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogPublicArticleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Article",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/public/tags": {
+      "get": {
+        "description": "The blog's tags, in the custodian's order, with how many published articles\nhave each.",
+        "operationId": "list_tags_api_blog_public_tags_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogPublicTagCountOut"
+                  },
+                  "title": "Response List Tags Api Blog Public Tags Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Tags",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/public/tags/{slug}": {
+      "get": {
+        "description": "A tag's published articles, newest first, a page at a time.",
+        "operationId": "tag_articles_api_blog_public_tags__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Counting from 1.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Counting from 1.",
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogPublicTagPageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tag Articles",
         "tags": [
           "blog"
         ]

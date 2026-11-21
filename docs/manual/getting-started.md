@@ -206,6 +206,16 @@ Keep the link to yourself: anyone with it can see those dates and your answers. 
 
 **About Horatio**, at the foot of every page, says what Horatio is: free, open source, and unofficial fan-made material under Paradox Interactive's Dark Pack Agreement. It links to the project's source code and to the agreement. Anyone can read it, signed in or not.
 
+## Reading the blog
+
+Horatio's blog, at **/blog**, has articles on playing and running a game, written by the staff of troupes on Horatio and published by the custodian. Anyone can read it, signed in or not, so you can share a link to an article with anyone.
+
+- The newest articles come first, a page at a time, with any featured ones across the top. **Previous** and **Next** at the foot move between pages.
+- The tags above the articles, such as **Storytelling** or **Safety and consent**, show only the articles with that tag. **All** shows every one again. Each article's own tags lead to the same lists.
+- An article shows who wrote it and when, and the troupe it comes from. A troupe whose profile is public is a link to that profile.
+
+Readers can't comment on articles. If you wrote an article, its page has **Change it**, which opens it for writing.
+
 ## Searching everything
 
 The magnifying glass at the top of every page, or **/** or **Ctrl K** (**⌘K** on a Mac) on any page, opens a search of everything you may see: characters, players, boons, locations, quests, equipment, news, announcements and this manual, and a troupe's settings for its storytellers. Each kind is a group of its own, and each result opens its page; **Enter** opens the first.

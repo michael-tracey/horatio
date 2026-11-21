@@ -50,6 +50,8 @@ from horatio.permissions import TROUPE_POLICY, TroupeAction
 STATUSES = ("draft", "submitted", "published", "unpublished")
 # The longest slug made from a title, before any "-2" that keeps it unique.
 SLUG_LENGTH = 80
+# Addresses under /blog that are the blog's own pages, not articles (#1158).
+RESERVED_SLUGS = frozenset({"write", "tags", "authors", "feed", "rss"})
 
 
 def now() -> datetime:
@@ -128,7 +130,7 @@ def free_slug(db: Session, wanted: str, keeping: uuid.UUID | None = None) -> str
     )
     if keeping is not None:
         query = query.where(BlogPost.id != keeping)
-    taken = set(db.scalars(query))
+    taken = set(db.scalars(query)) | RESERVED_SLUGS
     n = 1
     slug = wanted
     while slug in taken:
@@ -154,6 +156,8 @@ def choose_slug(db: Session, user: User, article: BlogPost, wanted: str) -> None
     clash = db.scalar(
         select(BlogPost.id).where(BlogPost.slug == slug, BlogPost.id != article.id).limit(1)
     )
+    if slug in RESERVED_SLUGS:
+        raise HTTPException(status.HTTP_409_CONFLICT, "That address is one of the blog's own.")
     if clash is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Another article has that address.")
     article.slug_chosen = True

@@ -267,7 +267,7 @@ Under the table, three cards show what's going on with accounts:
 
 ## The blog
 
-Horatio has a blog of its own: articles on playing and running a game, for everyone who uses Horatio, written by the staff of any troupe that isn't archived, narrators included. Nothing is on it until you publish it, and readers can't comment. Its reading pages aren't open yet: for now an article, published or not, is seen only by its author and you.
+Horatio has a blog of its own: articles on playing and running a game, for everyone who uses Horatio, written by the staff of any troupe that isn't archived, narrators included. Nothing is on it until you publish it, and readers can't comment. A published article is on the blog, at **/blog**, for anyone at all, signed in or not, with its picture; see [Reading the blog](getting-started.md#reading-the-blog). An article not published is seen only by its author and you.
 
 **Custodian › Blog** holds the articles sent to you, and the tab shows how many are waiting. It has three lists:
 
@@ -293,7 +293,7 @@ To take an article down, choose **Unpublish…**, say why under **Why unpublish 
 
 ### An article's address
 
-Each article has an address on the blog, made from its title, such as /blog/running-your-first-elysium. Until it is first published its author can change it, and so can you: choose **Change** beside **Address**. Once it has been published the address stays as it is, even if the title changes, so links to it keep working.
+Each article has an address on the blog, made from its title, such as /blog/running-your-first-elysium. A few words are the blog's own pages and are never an article's address, such as write and tags. Until it is first published its author can change it, and so can you: choose **Change** beside **Address**. Once it has been published the address stays as it is, even if the title changes, so links to it keep working.
 
 Each step goes in the audit log, under **Blog**.
 
