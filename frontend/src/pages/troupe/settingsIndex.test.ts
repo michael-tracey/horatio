@@ -36,7 +36,7 @@ const TROUPE = {
 const storyteller = abilities("storyteller", false);
 const titles = (t: TroupeOut = TROUPE, can = storyteller) => settingsIndex(t, can).map((e) => e.title);
 
-/** The source of the troupe's screens and the news screens, Customise's News agencies among them. */
+/** The source of the troupe's screens and the news screens, News › Agencies among them. */
 function sources(dir: URL): { file: string; text: string }[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((f) =>
     f.isDirectory() ? sources(new URL(`${f.name}/`, dir)) : /\.tsx?$/.test(f.name) && !/\.test\./.test(f.name) ? [{ file: f.name, text: readFileSync(new URL(f.name, dir), "utf8") }] : [],
@@ -75,12 +75,14 @@ describe("the settings index", () => {
     expect(anchors.filter((a) => parts.includes(a) || a === SETTINGS_HASH)).toEqual([]);
   });
 
-  it("finds every Customise tab, part, feature, dialog and card of a troupe with every feature on", () => {
+  it("finds every Setting up tab, part, feature, dialog and card of a troupe with every feature on", () => {
     const found = titles();
     const can = storyteller;
-    const customise = troupeTabGroups(TROUPE, can).find((g) => g.label === "Customise")!.tabs.map((t) => t.label);
-    expect(customise.length).toBeGreaterThan(0);
-    for (const label of customise) expect(found).toContain(label);
+    const settingUp = troupeTabGroups(TROUPE, can).find((g) => g.label === "Setting up")!.tabs.map((t) => t.label);
+    expect(settingUp.length).toBeGreaterThan(0);
+    for (const label of settingUp) expect(found).toContain(label);
+    expect(found).toContain("Getting ready");
+    expect(found).toContain("News agencies");
     for (const p of TROUPE_SETTINGS_PARTS) expect(found).toContain(p.label);
     for (const s of RULE_SECTIONS) expect(found).toContain(s.label);
     for (const f of features(TROUPE)) expect(found).toContain(f.name);
@@ -89,13 +91,15 @@ describe("the settings index", () => {
     expect(new Set(addresses).size).toBe(addresses.length);
   });
 
-  it("opens each card where it is: its part of Troupe settings, or its tab's Settings, at its card", () => {
+  it("opens each card where it is: its part of Settings, or its tab's Settings, at its card", () => {
     const at = (title: string, where: string) => settingsIndex(TROUPE, storyteller).find((e) => e.title === title && e.where === where)?.to;
-    expect(at("XP floor and ceiling", "Troupe settings › XP")).toBe("/troupes/t1/settings/xp#settings-xp-range");
+    expect(at("XP floor and ceiling", "Settings › XP")).toBe("/troupes/t1/settings/xp#settings-xp-range");
     expect(at("Boons", "Boons settings")).toBe("/troupes/t1/boons#settings-boon-ledger");
     expect(at("Teachers", "Approvals settings")).toBe("/troupes/t1/approvals#settings-teacher-rules");
     expect(at("Boons settings", "Boons tab")).toBe("/troupes/t1/boons#settings");
-    expect(at("Golconda and Enlightened", "Troupe settings › Features")).toBe("/troupes/t1/settings#switch-golconda");
+    expect(at("Golconda and Enlightened", "Settings › Features")).toBe("/troupes/t1/settings#switch-golconda");
+    expect(at("Getting ready", "Settings")).toBe("/troupes/t1/settings/getting-ready");
+    expect(at("News agencies", "News")).toBe("/troupes/t1/news/agencies");
     expect(at("Costs", "House rules")).toBe("/troupes/t1/house-rules/costs");
   });
 
@@ -107,7 +111,7 @@ describe("the settings index", () => {
     expect(found.map((e) => e.title)).not.toContain("Quest requests");
     expect(found.map((e) => e.title)).not.toContain("Feeding territories");
     // Still switched on and off in the Features list.
-    expect(found.find((e) => e.title === "Boons")?.where).toBe("Troupe settings › Features");
+    expect(found.find((e) => e.title === "Boons")?.where).toBe("Settings › Features");
   });
 
   it("is for those who may open the settings: running staff and the custodian, nobody else", () => {
@@ -144,10 +148,10 @@ describe("the top bar's settings", () => {
   it("are the troupe's the person is on, for its storytellers alone", async () => {
     const hits = await settingsSource.find("sects", { troupeId: "t1", troupe: TROUPE, custodian: false });
     expect(hits[0]).toMatchObject({ title: "Sects", to: "/troupes/t1/settings/joining#settings-sects", troupe_id: "t1" });
-    expect(hits[0]?.detail).toMatch(/^Troupe settings › Who may join · Which sects/);
+    expect(hits[0]?.detail).toMatch(/^Settings › Who may join · Which sects/);
     expect(await settingsSource.find("sects", { troupeId: null })).toEqual([]);
     expect(await settingsSource.find("sects", { troupeId: "t1", troupe: { ...TROUPE, my_role: "lead_storyteller" } })).not.toEqual([]);
-    // An assistant storyteller finds them on Customise, but not from the top bar (#1133).
+    // An assistant storyteller finds them on Setting up, but not from the top bar (#1133).
     expect(await settingsSource.find("sects", { troupeId: "t1", troupe: { ...TROUPE, my_role: "assistant_storyteller" } })).toEqual([]);
     expect(findSettings(settingsIndex(TROUPE, abilities("assistant_storyteller", false)), "sects")).not.toEqual([]);
     expect(await settingsSource.find("sects", { troupeId: "t1", troupe: { ...TROUPE, my_role: "narrator" } })).toEqual([]);

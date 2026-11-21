@@ -350,7 +350,7 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   // A breadcrumb leads back up: the troupe, its At game tab, then its scenes (#777).
   const crumbs = p.getByRole("navigation", { name: "Breadcrumb" });
   await expect(crumbs.getByRole("link")).toHaveText([troupeName, "At game", "Scenes"]);
-  await expect(crumbs.getByRole("link", { name: "At game" })).toHaveAttribute("href", `/troupes/${troupeId}/play`);
+  await expect(crumbs.getByRole("link", { name: "At game" })).toHaveAttribute("href", `/troupes/${troupeId}/at-game`);
   await crumbs.getByRole("link", { name: "Scenes" }).click();
   await expect(p.getByRole("heading", { name: "Scenes", exact: true })).toBeVisible();
   await expect(crumbs.getByRole("link")).toHaveText([troupeName, "At game"]);
@@ -610,7 +610,7 @@ test("a group of four Stock NPCs made from New NPC is one Scene card: two damage
   const p = lead.page;
 
   // Four shovelheads, rating 2, from New NPC: they open on their own page as a group.
-  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   await p.getByRole("button", { name: "New NPC" }).click();
   await p.getByLabel("Name").fill("Shovelheads");
   await p.getByRole("radio", { name: "Stock" }).click();

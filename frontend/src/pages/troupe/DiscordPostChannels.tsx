@@ -69,8 +69,8 @@ export function DiscordPostChannels({ troupeId }: { troupeId: string }) {
             ) : agencies.data.length === 0 ? (
               <p className="text-xs text-mist">
                 The troupe has no news agencies yet. They're added under{" "}
-                <Link to={`/troupes/${troupeId}/news-agencies`} className="underline hover:text-parchment">
-                  News agencies
+                <Link to={`/troupes/${troupeId}/news/agencies`} className="underline hover:text-parchment">
+                  News › Agencies
                 </Link>
                 .
               </p>

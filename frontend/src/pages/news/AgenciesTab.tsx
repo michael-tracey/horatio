@@ -17,7 +17,7 @@ import { useAgencies } from "./queries";
 import { Masthead } from "./Story";
 
 /**
- * Customise › News agencies (#510, #782): the troupe's news agencies, each with its
+ * News › Agencies (#510, #1048): the troupe's news agencies, each with its
  * masthead. Storytellers and assistant storytellers keep them. Their Discord
  * channels, and the troupe's news and announcements channels, are chosen under
  * Connectors › Discord (#882); here an agency shows the channel it has of its own.
@@ -31,6 +31,9 @@ export function AgenciesTab({ troupeId, archived }: { troupeId: string; archived
   const [adding, setAdding] = useState(false);
   return (
     <div className="flex flex-col gap-6">
+      <Link to=".." relative="path" className="self-start text-sm text-mist underline hover:text-parchment">
+        News, as players read it
+      </Link>
       <Card
         title="News agencies"
         actions={

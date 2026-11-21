@@ -22,6 +22,7 @@ import { RULE_SECTIONS } from "./settingsIndex";
 import { KeywordsSection } from "./KeywordsSection";
 import { LanguagesSection } from "./LanguagesSection";
 import { OwnChecks } from "./OwnChecks";
+import { PlayedDifferently } from "./PlayedDifferently";
 import { writtenStrength } from "./checkStrength";
 import { StartingSection } from "./StartingSection";
 import { WrittenRulesSection } from "./WrittenRulesSection";
@@ -61,8 +62,9 @@ const STRENGTHS: { value: Strength; label: string; meaning: string; tone: "blood
 const strength = (value: string) => STRENGTHS.find((s) => s.value === value);
 
 /**
- * The House rules tab for running staff (#782): what players read, then the troupe's
- * house rules part by part: how it plays the rule set's checks, what traits cost
+ * The House rules tab for running staff (#782): where the troupe plays differently from
+ * the book over what players read (#1048), then the troupe's house rules part by part:
+ * how it plays the rule set's checks, what traits cost
  * here, what new characters start with, how many downtime actions characters get,
  * how many languages Linguistics gives, and the troupe's own merits and flaws.
  * Storytellers change them here; assistant storytellers read them. The status of
@@ -80,7 +82,15 @@ export function RulesTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: bool
       parts={[{ to: base, label: "As players read it", end: true }, ...RULE_SECTIONS.map((s) => ({ to: `${base}/${s.path}`, label: s.label }))]}
     >
       <Routes>
-        <Route index element={<HouseRulesTab troupe={troupe} staff />} />
+        <Route
+          index
+          element={
+            <div className="flex flex-col gap-6">
+              <PlayedDifferently troupeId={troupeId} canEdit={canEdit} />
+              <HouseRulesTab troupe={troupe} staff />
+            </div>
+          }
+        />
         <Route path="checks" element={<ChecksSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="costs" element={<CostsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />

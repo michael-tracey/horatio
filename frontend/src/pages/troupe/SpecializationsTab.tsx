@@ -21,7 +21,7 @@ export function SpecializationsTab({ troupeId, canEdit }: { troupeId: string; ca
   });
   if (kinds.isPending) return <Loading />;
   if (kinds.error) return <ErrorText error={kinds.error} />;
-  const base = `/troupes/${troupeId}/specializations`;
+  const base = `/troupes/${troupeId}/specialisations`;
   const first = kinds.data[0];
   return (
     <div className="flex flex-col gap-4">

@@ -112,7 +112,7 @@ describe("the Features list (#783)", () => {
     expect(within(list.getByRole("listitem", { name: "Blood bonds" })).getByText("Players manage")).toBeTruthy();
     // A feature with a tab of its own keeps its settings behind that tab's Settings button (#784, #909).
     expect(list.getByRole("link", { name: "Settings for Boons" }).getAttribute("href")).toBe("/troupes/t1/boons#settings");
-    // Feeding's card is in its part of Troupe settings (#908).
+    // Feeding's card is in its part of Settings (#908).
     expect(list.getByRole("link", { name: "Settings for Feeding" }).getAttribute("href")).toBe("/troupes/t1/settings/blood#feature-feeding");
     expect(list.getAllByRole("link", { name: "Open Nominations" })).toHaveLength(1);
   });
@@ -139,7 +139,7 @@ describe("the parts moved out of House rules (#785)", () => {
     expect(PART_HOMES).toEqual({
       locations: "locations",
       quests: "quests",
-      retainers: "characters",
+      retainers: "roster",
       backstories: "approvals",
       teachers: "approvals",
       "free-changes": "approvals",

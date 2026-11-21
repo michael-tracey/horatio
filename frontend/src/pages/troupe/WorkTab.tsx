@@ -16,7 +16,7 @@ export function useWorkCycles(troupeId: string) {
   });
 }
 
-/** Downtimes › My work: each cycle with something to answer, opening its My work tab (#789). */
+/** Between games › My work: each cycle with something to answer, opening its My work tab (#789). */
 export function WorkTab({ troupeId }: { troupeId: string }) {
   const dates = useDates();
   const cycles = useWorkCycles(troupeId);
@@ -121,7 +121,7 @@ export function MyWork({ troupeId, canLog = false }: { troupeId: string; canLog?
       )}
       <p className="text-sm text-mist">
         For a random result, roll on the troupe's{" "}
-        <Link to={`/troupes/${troupeId}/tables`} className="text-gold hover:underline">
+        <Link to={`/troupes/${troupeId}/fill-tables`} className="text-gold hover:underline">
           Fill tables
         </Link>
         .

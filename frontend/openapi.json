@@ -45148,6 +45148,41 @@
         "title": "ReceivedOut",
         "type": "object"
       },
+      "RecentTabsIn": {
+        "properties": {
+          "tabs": {
+            "items": {
+              "maxLength": 100,
+              "pattern": "^(/[a-z0-9-]+)*$",
+              "type": "string"
+            },
+            "maxItems": 4,
+            "title": "Tabs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tabs"
+        ],
+        "title": "RecentTabsIn",
+        "type": "object"
+      },
+      "RecentTabsOut": {
+        "properties": {
+          "tabs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tabs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tabs"
+        ],
+        "title": "RecentTabsOut",
+        "type": "object"
+      },
       "RecipientOut": {
         "properties": {
           "character_id": {
@@ -48971,7 +49006,7 @@
       },
       "Sections": {
         "additionalProperties": false,
-        "description": "The settings by section, as Customise groups them. The first seven are the\ngroups of its Troupe settings page.",
+        "description": "The settings by section, as Setting up groups them. The first seven are the\ngroups of its Settings page.",
         "properties": {
           "actions": {
             "default": [],
@@ -101711,6 +101746,101 @@
         "summary": "Set Rare Disciplines",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/recent-tabs": {
+      "get": {
+        "operationId": "read_recent_tabs_api_troupes__troupe_id__recent_tabs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentTabsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Recent Tabs",
+        "tags": [
+          "troupes"
+        ]
+      },
+      "put": {
+        "description": "Keep the list the page sends, whole: the page puts the tab just opened first.",
+        "operationId": "keep_recent_tabs_api_troupes__troupe_id__recent_tabs_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecentTabsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentTabsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Keep Recent Tabs",
+        "tags": [
+          "troupes"
         ]
       }
     },

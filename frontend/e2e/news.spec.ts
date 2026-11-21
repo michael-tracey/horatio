@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, closeContextsAfterEach, makeCustodian, person, run, shots, troupeTab, expectTabCount } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, closeContextsAfterEach, makeCustodian, person, run, shots, troupeTab, expectTabCount, expectTabOpen } from "./support";
 
 /** Troupe news (#510): storytellers write as the troupe's news agencies, schedule a story, and its players read it when it goes out. */
 
@@ -31,9 +31,12 @@ test("news: a storyteller makes an agency and schedules a story, it goes out, an
   const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
 
-  // The lead makes an agency under Customise › News agencies.
+  // The lead makes an agency under News › Agencies (#1048), beside the desk.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/news-agencies`);
+  await l.goto(`/troupes/${troupe.id}/news`);
+  await l.locator("main").getByRole("link", { name: "Agencies", exact: true }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/news/agencies$`));
+  await expectTabOpen(l, "Troupe", "News");
   await l.getByRole("button", { name: "Add an agency" }).click();
   const dialog = l.getByRole("dialog", { name: "Add an agency" });
   await dialog.getByLabel("Name").fill("The Evening Gazette");
@@ -111,7 +114,7 @@ test("an agency's portrait: a storyteller uploads and crops it, and it shows bes
   await send(lead.page, "POST", `/api/troupes/${troupe.id}/agencies`, { name: "The Crimson Herald" });
 
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/news-agencies`);
+  await l.goto(`/troupes/${troupe.id}/news/agencies`);
   await l.getByRole("button", { name: "Actions for The Crimson Herald" }).click();
   await l.getByRole("menuitem", { name: "Portrait…" }).click();
   const dialog = l.getByRole("dialog", { name: "The Crimson Herald's portrait" });

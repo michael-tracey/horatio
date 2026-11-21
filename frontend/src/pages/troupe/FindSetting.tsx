@@ -10,7 +10,7 @@ import { findSettings, settingsIndex } from "./settingsIndex";
 const SHOWN = 8;
 
 /**
- * Find a setting (#1047), at the top of every Customise tab: type part of a setting's name, or
+ * Find a setting (#1047), at the top of every Setting up tab: type part of a setting's name, or
  * a word of what it does, and choose it to go there, its tab's Settings open or its card
  * scrolled to and glowing. Enter opens the first; Up and Down go through them; Escape clears.
  */
