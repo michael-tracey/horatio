@@ -208,13 +208,13 @@ export function RetainerSection({ character, retainers, label, merit }: { charac
   );
 }
 
-/** Under the last Retainers row: what a Retainer's dots are, and (with `onBuy`) buying another. */
-export function BuyAnotherRetainer({ onBuy }: { onBuy?: () => void }) {
+/** Under the last Retainers row: what a Retainer's dots are, and (with `onBuy`) buying another; `tuck` hides its button while a phone reads the sheet. */
+export function BuyAnotherRetainer({ onBuy, tuck = "" }: { onBuy?: () => void; tuck?: string }) {
   return (
     <p className="mb-1 ml-3 pl-3 text-xs text-mist">
       Each Retainer is bought on its own; its dots are how capable it is.
       {onBuy && (
-        <button type="button" className="ml-2 rounded border border-dashed border-mist/60 px-1.5 hover:border-gold hover:text-gold" onClick={onBuy}>
+        <button type="button" className={`ml-2 rounded border border-dashed border-mist/60 px-1.5 hover:border-gold hover:text-gold ${tuck}`} onClick={onBuy}>
           Buy another Retainer
         </button>
       )}

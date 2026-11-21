@@ -42,11 +42,14 @@ export function SpecializationRow({
   kind,
   editable,
   orphaned = false,
+  tuck = "",
 }: {
   character: CharacterOut;
   kind: Kind;
   editable: boolean;
   orphaned?: boolean;
+  /** Classes that hide its + Add and × while the sheet is read on a phone. */
+  tuck?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -108,7 +111,7 @@ export function SpecializationRow({
             {editable && (
               <button
                 aria-label={`Remove ${h.label}`}
-                className="text-mist hover:text-blood-bright"
+                className={`text-mist hover:text-blood-bright ${tuck}`}
                 onClick={() => change.mutate({ name: h.name, detail: h.detail, rating: 0 })}
               >
                 ×
@@ -121,7 +124,7 @@ export function SpecializationRow({
             aria-label={`Add to ${kind.name}`}
             aria-expanded={open}
             onClick={() => setOpen(!open)}
-            className={`rounded border px-1.5 ${open ? "border-gold text-gold" : "border-dashed border-mist/60 text-mist hover:border-gold hover:text-gold"}`}
+            className={`rounded border px-1.5 ${open ? "border-gold text-gold" : `border-dashed border-mist/60 text-mist hover:border-gold hover:text-gold ${tuck}`}`}
           >
             {open ? "Close" : "+ Add"}
           </button>

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList, chooseIn } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar, troupeTab, expectTabOpen, expectTabCount, isPhone, shutSections, groupTabs, pagePart, tabSettings, closeTabSettings, settingsPart, expectPartOpen, addList, chooseIn, makeChanges } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -495,6 +495,7 @@ test("a teacher rule asks for a teacher, and a Lore specialisation is bought fro
   const p = pupil.page;
   await p.goto(`/characters/${wren}`);
   const lore = p.locator("section").filter({ has: p.getByRole("heading", { name: "Skills", exact: true }) }).locator("li[data-trait='Lore']");
+  await makeChanges(p);
   await lore.getByRole("button", { name: "Add to Lore Specialisations" }).click();
   await lore.getByRole("button", { name: "Sabbat", exact: true }).click();
   await expect(lore.getByText("Needs a teacher who holds it at 1 or more.")).toBeVisible();
@@ -782,6 +783,7 @@ test("a lead prices skills at 1× for Generation background 2, and a Generation 
   const accepted = await l.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
   expect(accepted.status(), await accepted.text()).toBeLessThan(300);
   await p.goto(`/characters/${id}`);
+  await makeChanges(p);
   await tapMid(p, "Raise Brawl");
   const cart = p.getByRole("list", { name: "Changes in the cart" });
   await expect(cart.getByRole("listitem").filter({ hasText: "Brawl 4 → 5" })).toContainText("Brawl 4 → 5 · 5 XP");
@@ -1274,6 +1276,7 @@ test("a lead bans a merit on the Book traits page: it is greyed out with the rea
   // In the merit picker, Lucky is greyed out with the troupe's reason.
   await p.goto(`/characters/${id}`);
   const part = p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
+  await makeChanges(p);
   await part.getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Show").selectOption("all");
   await p.getByRole("combobox", { name: "Search Merits", exact: true }).fill("Lucky");
@@ -1380,6 +1383,7 @@ test("a lead makes Soul Shard a general flaw on the Book traits page, and a play
   // Among the general flaws, Soul Shard, marked as changed here.
   await p.goto(`/characters/${id}`);
   const part = p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
+  await makeChanges(p);
   await part.getByRole("button", { name: "Add" }).click();
   await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Flaws/ }).click();
   await p.getByLabel("Show").selectOption("kind:General");

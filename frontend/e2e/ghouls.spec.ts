@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, slotsAt, topBar, troupeTab, goToStep, pagePart } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, slotsAt, topBar, troupeTab, goToStep, pagePart, makeChanges } from "./support";
 
 /** Ghouls: building, playing and Embracing them. */
 
@@ -384,6 +384,7 @@ test("staff Embrace a ghoul: it becomes a vampire in XP debt, the cart waits, an
   await expect(p.getByText("vampire", { exact: true })).toBeVisible();
   await p.screenshot(shots("embrace-sheet"));
   // The cart refuses what costs XP while she owes it.
+  await makeChanges(p);
   await p.getByRole("button", { name: "Raise Brawl" }).click();
   const cart = p.getByRole("list", { name: "Changes in the cart" });
   await expect(cart).toContainText("The character owes 9 XP of debt.");
