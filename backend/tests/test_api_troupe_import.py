@@ -1,6 +1,6 @@
 """Importing characters by the batch (issue #567): a troupe's staff bring in a troupe's
-export, matching player characters to their players, and a player imports the .zip
-of their characters."""
+export, matching player characters to their players, and an NPC's equipment with it
+(issue #1100), and a player imports the .zip of their characters."""
 
 import io
 import json
@@ -18,6 +18,8 @@ from tests.test_api_character_backup import built, exported, sheet
 from tests.test_api_downtimes import member_character
 from tests.test_api_npc_gifts import built as npc
 from tests.test_api_pictures import kept, photo, upload  # noqa: F401
+from tests.test_api_play_stock import stock_npc
+from tests.test_api_troupe_equipment import DAGGER, RIFLE, given
 
 pytestmark = pytest.mark.usefixtures("without_bank")
 
@@ -256,6 +258,122 @@ def test_a_players_character_here_is_never_replaced(troupe: Troupe) -> None:
     # Asked to, it still waits to be skipped or copied.
     replace = by_name(review(troupe.storyteller, troupe.id, content, Agnes={"choice": "replace"}))
     assert replace["Agnes"]["outcome"] == "undecided"
+
+
+def items_here(person: Person, troupe_id: str, character_id: str) -> list[tuple[str, str]]:
+    response = person.client.get(
+        f"/troupes/{troupe_id}/equipment", params={"character_id": character_id}
+    )
+    assert response.status_code == 200, response.text
+    return sorted((i["name"], i["id"]) for i in response.json()["items"])
+
+
+def equipment_review(entry: dict[str, Any]) -> list[tuple[str, str, str | None]]:
+    parts = entry["review"]["parts"]
+    return [
+        (i["label"], i["status"], i["reason"])
+        for p in parts
+        if p["key"] == "equipment"
+        for i in p["items"]
+    ]
+
+
+def test_a_sheeted_npcs_equipment_comes_in_and_is_never_doubled(troupe: Troupe, other: str) -> None:
+    lucien = npc(troupe, "Lucien")
+    given(troupe, lucien, **DAGGER)
+    given(troupe, lucien, **RIFLE)
+    agnes = member_character(troupe, troupe.player, "Agnes")
+    given(troupe, agnes, **DAGGER)
+    content = troupe_zip(troupe, sections=["equipment"])
+
+    found = by_name(review(troupe.storyteller, other, content))
+    assert equipment_review(found["Lucien"]) == [
+        ("Hunting rifle", "new", "Given from the troupe's equipment."),
+        ("Silver Dagger", "new", "Given from the troupe's equipment."),
+    ]
+    # A player character's is shown only.
+    assert equipment_review(found["Agnes"]) == [
+        ("Silver Dagger", "info", "Give it from the troupe's equipment.")
+    ]
+    done = run(troupe.storyteller, other, content)
+    assert done.status_code == 201, done.text
+    entries = by_name(done.json())
+    copy = entries["Lucien"]["character_id"]
+    items = items_here(troupe.storyteller, other, copy)
+    assert [name for name, _ in items] == ["Hunting rifle", "Silver Dagger"]
+    assert items_here(troupe.storyteller, other, entries["Agnes"]["character_id"]) == []
+
+    # Replacing it with the same file keeps what it holds, and gives nothing twice.
+    again = run(
+        troupe.storyteller, other, content, Lucien={"choice": "replace"}, Agnes={"choice": "skip"}
+    )
+    assert again.status_code == 201, again.text
+    assert equipment_review(by_name(again.json())["Lucien"]) == [
+        ("Hunting rifle", "kept", "Held here already: kept as it is."),
+        ("Silver Dagger", "kept", "Held here already: kept as it is."),
+    ]
+    assert items_here(troupe.storyteller, other, copy) == items
+
+
+def test_a_replaced_stock_group_keeps_what_it_holds_and_gets_what_it_lacks(
+    troupe: Troupe,
+) -> None:
+    group = stock_npc(troupe, "vampire", 2, stock={"rating": 2, "count": 3})
+    first = given(troupe, group, **DAGGER)["id"]
+    second = given(troupe, group, **DAGGER)["id"]
+    rifle = given(troupe, group, **RIFLE)["id"]
+    for item, member in ((first, 1), (second, 2), (rifle, 2)):
+        carried = troupe.storyteller.client.put(
+            f"/characters/{group}/npc/stock/items/{item}", json={"member": member}
+        )
+        assert carried.status_code == 200, carried.text
+
+    def three_daggers(_: str, document: dict[str, Any]) -> None:
+        # The group's three daggers, the first now the whole group's, and no rifle.
+        dagger = next(i for i in document["equipment"] if i["name"] == "Silver Dagger")
+        document["equipment"] = [{**dagger, "member": m} for m in (None, 2, 3)]
+
+    content = rezip(troupe_zip(troupe, sections=["equipment"]), three_daggers)
+    decided = {"Bites-the-Hand": {"choice": "replace"}}
+
+    found = by_name(review(troupe.storyteller, troupe.id, content, **decided))
+    expected = [
+        (
+            "Silver Dagger",
+            "kept",
+            "Held here already: kept as it is. Now the whole group carries it.",
+        ),
+        ("Silver Dagger", "kept", "Held here already: kept as it is. Member 2 carries it."),
+        ("Silver Dagger", "new", "Given from the troupe's equipment: Member 3 carries it."),
+        (
+            "Hunting rifle",
+            "kept",
+            "Held here and not in the file: left alone. Member 2 carries it.",
+        ),
+    ]
+    assert equipment_review(found["Bites-the-Hand"]) == expected
+    # The review changed nothing.
+    assert len(items_here(troupe.storyteller, troupe.id, group)) == 3
+
+    done = run(troupe.storyteller, troupe.id, content, **decided)
+    assert done.status_code == 201, done.text
+    entry = by_name(done.json())["Bites-the-Hand"]
+    assert (entry["outcome"], entry["character_id"]) == ("replaced", group)
+    assert equipment_review(entry) == expected
+    held = items_here(troupe.storyteller, troupe.id, group)
+    ids = [item for _, item in held]
+    assert len(ids) == 4 and {first, second, rifle} < set(ids)
+    (third,) = set(ids) - {first, second, rifle}
+    members = troupe.storyteller.client.get(f"/characters/{group}/npc/stock").json()
+    assert members["item_members"] == {second: 2, third: 3, rifle: 2}
+
+    # A file without its equipment leaves every item here alone, and says nothing of it.
+    bare = run(troupe.storyteller, troupe.id, troupe_zip(troupe), **decided)
+    assert bare.status_code == 201, bare.text
+    assert equipment_review(by_name(bare.json())["Bites-the-Hand"]) == []
+    assert items_here(troupe.storyteller, troupe.id, group) == held
+    members = troupe.storyteller.client.get(f"/characters/{group}/npc/stock").json()
+    assert members["item_members"] == {second: 2, third: 3, rifle: 2}
 
 
 def test_assistants_hold_every_player_character(troupe: Troupe, other: str) -> None:

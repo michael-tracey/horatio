@@ -44,6 +44,7 @@ export function sectionsQuery(chosen: ReadonlySet<Section>, extra: Record<string
 export const STATUS: Record<BackupItemOut["status"], { label: string; tone: "gold" | "mist" | "blood" }> = {
   new: { label: "New", tone: "gold" },
   differs: { label: "Differs", tone: "gold" },
+  kept: { label: "Kept", tone: "mist" },
   cannot: { label: "Can't import", tone: "blood" },
   info: { label: "Shown only", tone: "mist" },
 };
