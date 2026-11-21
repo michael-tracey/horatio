@@ -81,11 +81,12 @@ export function NotificationBell() {
           <CountBubble count={bell.data?.count ?? 0} label="waiting" />
         </span>
       </button>
+      {/* On a computer the bell sits in the top bar's nav, whose links don't wrap; its notices do (#1123). */}
       {open && (
         <div
           role="dialog"
           aria-label="Notifications"
-          className="fixed inset-x-4 top-16 z-20 max-h-[70vh] overflow-y-auto rounded-lg border border-ash bg-dusk shadow-xl sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-96"
+          className="fixed inset-x-4 top-16 z-20 max-h-[70vh] overflow-y-auto rounded-lg border border-ash bg-dusk whitespace-normal shadow-xl sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-96"
         >
           {items.length === 0 && (
             <div className="px-4 py-2">
