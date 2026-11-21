@@ -36,8 +36,9 @@ const key = (troupeId: string) => ["recent-tabs", troupeId];
 /**
  * The tabs of the troupe the person opened last (#1048), kept on their account so they
  * follow them between devices: read once, put in order here as each tab opens, and sent
- * back a few seconds after the last change, or as they leave the troupe. Nothing is sent
- * while the custodian views as someone, which is read-only.
+ * back a few seconds after the last change, or at once as they leave the troupe or the
+ * page is hidden or closed (kept going then). Nothing is sent while the custodian views
+ * as someone, which is read-only.
  */
 export function useRecentTabs(troupeId: string, tabs: Tab[], enabled: boolean): Tab[] {
   const base = `/troupes/${troupeId}`;
@@ -59,7 +60,9 @@ export function useRecentTabs(troupeId: string, tabs: Tab[], enabled: boolean): 
     const due = pending.current;
     pending.current = null;
     if (!due || client.getQueryData(["view-as"])) return;
-    void api.PUT("/api/troupes/{troupe_id}/recent-tabs", { params: { path: { troupe_id: due.troupeId } }, body: { tabs: due.tabs } }).catch(() => {});
+    void api
+      .PUT("/api/troupes/{troupe_id}/recent-tabs", { params: { path: { troupe_id: due.troupeId } }, body: { tabs: due.tabs }, keepalive: true })
+      .catch(() => {});
   });
 
   const list = saved.data?.tabs;
@@ -71,11 +74,23 @@ export function useRecentTabs(troupeId: string, tabs: Tab[], enabled: boolean): 
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(send.current, SAVE_AFTER_MS);
   }, [list, opened, troupeId, client]);
-  // Leaving the troupe, or the page, sends what is waiting.
+  // Leaving the troupe sends what is waiting; so does the page being hidden or closed.
   useEffect(() => {
     const flush = send.current;
     return flush;
   }, [troupeId]);
+  useEffect(() => {
+    const flush = send.current;
+    const hidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, []);
 
   return recentTabs(list ?? [], tabs, base, open);
 }
