@@ -34,10 +34,16 @@ test("manual: getting started", async ({ browser }, info) => {
   test.skip(info.project.name !== "desktop", "desktop only");
   test.setTimeout(120_000);
 
-  // Signed out: the sign-in page.
+  // Signed out: the sign-in page. Headless Chrome turns down the passkeys the login
+  // box offers (#1098) at once, where a person's browser waits quietly, and the page
+  // shows the refusal; so this browser doesn't offer them from the login box.
   const visitor = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  await visitor.addInitScript(() => {
+    PublicKeyCredential.isConditionalMediationAvailable = async () => false;
+  });
   await visitor.goto("/sign-in");
   await expect(visitor.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(visitor.getByRole("button", { name: "Sign in with a passkey" })).toBeVisible();
   await shot(visitor.locator("main"), "sign-in");
 
   // Signing up, with plain names rather than the suite's run numbers: these shots
