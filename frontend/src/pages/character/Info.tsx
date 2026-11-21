@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import type { CatalogueOut } from "../../api/types";
 import { useClanName } from "../../components/ClanNames";
+import { ClanWeakness, hasWeakness, type Weakened } from "../../components/ClanWeakness";
 import { InfoButton } from "../../components/InfoButton";
 import { PageRef, pageLabel } from "../../components/TraitInfo";
 import { categoryInfo, choiceInfo, partInfo } from "./categoryInfo";
@@ -49,9 +50,10 @@ export function CategoryInfo({ category, name, catalogue }: { category: string; 
 
 /**
  * The ⓘ beside a choice in the page title (clan, archetype…): what the choice
- * is, then the rules' description of the choice, its in-clan disciplines, the
- * player's note and the book page, where it has them. Nothing when there is
- * nothing to say. The sheet editor's title and the Play View's subheader both use it.
+ * is, then the rules' description of the choice, its in-clan disciplines, a clan's
+ * weakness as the character's troupe plays it (#1127), the player's note and the book
+ * page, where it has them. Nothing when there is nothing to say. The sheet editor's
+ * title and the Play View's subheader both use it.
  */
 export function ChoiceInfo({
   choice,
@@ -61,13 +63,14 @@ export function ChoiceInfo({
   choice: { category: string; category_name: string; note: string };
   shown: string;
   /** The rules' entry for the choice. */
-  about: { description?: string | null; page_reference?: string | null; in_clan?: string[] | null } | undefined;
+  about: ({ description?: string | null; page_reference?: string | null; in_clan?: string[] | null } & Weakened) | undefined;
 }) {
   const named = useClanName();
   const what = choiceInfo(choice.category);
   const inClan = about?.in_clan?.length ? `In-clan disciplines: ${about.in_clan.join(", ")}.` : null;
   const page = pageLabel(about?.page_reference) && <PageRef page={about?.page_reference} />;
-  const lines: ReactNode[] = [named(about?.description), inClan, choice.note, page].filter(Boolean);
+  const weakness = choice.category === "clan" && hasWeakness(about) && <ClanWeakness trait={about} />;
+  const lines: ReactNode[] = [named(about?.description), inClan, weakness, choice.note, page].filter(Boolean);
   if (!what && lines.length === 0) return null;
   return (
     <InfoButton label={`About ${shown}`} className="ml-1">

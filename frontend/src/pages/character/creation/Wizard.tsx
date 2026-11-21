@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut, TraitRefOut } from "../../../api/types";
 import { useClanName } from "../../../components/ClanNames";
+import { ClanWeakness } from "../../../components/ClanWeakness";
 import { Dialog } from "../../../components/Dialog";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, Textarea } from "../../../components/ui";
 import { useAction, useRatingRefusals, useRefusals, useUnavailable, useRulesAction } from "../../../hooks";
@@ -870,8 +871,8 @@ function ConceptStep({
 }
 
 /** What the clan chosen means: its in-clan disciplines (as they are now, with any
- * merit's change), its weakness from the rules data with the book's page, and any
- * merit it takes. */
+ * merit's change), its weakness from the rules data with the book's page (as the
+ * troupe it is built for plays it), and any merit it takes. */
 function ClanCard({ clan, creation, catalogue }: { clan: string; creation: CreationOut; catalogue: CatalogueOut }) {
   const about = catalogue.traits.find((t) => t.category === "clan" && t.name === clan);
   const merits = clanMeritsLine(creation);
@@ -879,12 +880,7 @@ function ClanCard({ clan, creation, catalogue }: { clan: string; creation: Creat
   return (
     <section aria-label={`About ${named(clan)}`} className="flex flex-col gap-1.5 rounded-md border border-ash bg-night/40 p-3 text-sm">
       <InClanNow creation={creation} />
-      {about?.weakness && (
-        <p className="text-mist">
-          <span className="text-parchment">Weakness:</span> {named(about.weakness)}
-          {about.weakness_page && <span className="text-gold"> ({pageText(about.weakness_page)})</span>}
-        </p>
-      )}
+      <ClanWeakness trait={about} className="text-mist" labelClassName="text-parchment" />
       {merits && <p className="text-mist">{named(merits)}</p>}
     </section>
   );

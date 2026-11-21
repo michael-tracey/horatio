@@ -682,6 +682,7 @@ NPCs are never limited by either.
 
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
+- **Clan weaknesses**: which weakness a clan plays here where Volume 2 replaced the core book's. So far that's only the Tremere: **Volume 2's** (the default), where their blood bonds other vampires only to the first stage (Vol. 2, p. 22), or **Core book's**, where they're bound more easily themselves (p. 64). Telyav play as their clan does. The creation wizard, the character's ⓘ beside the clan, the Play View and the rules pages inside the troupe show the one you choose, and players read it on the **House rules** tab. Where there's no troupe, such as the rules page on its own, Horatio says the weakness varies by troupe and gives both. Horatio doesn't apply either one: bonds count drinks the same way for every clan, so staff apply the weakness as they record drinks. Each change goes in the troupe log.
 
 #### Feeding
 

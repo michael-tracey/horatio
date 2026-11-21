@@ -14040,6 +14040,108 @@
         "title": "ClanSection",
         "type": "object"
       },
+      "ClanWeaknessRow": {
+        "properties": {
+          "chosen": {
+            "enum": [
+              "vol2",
+              "core"
+            ],
+            "title": "Chosen",
+            "type": "string"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/ClanWeaknessVersion"
+            },
+            "title": "Versions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "clan",
+          "versions",
+          "chosen"
+        ],
+        "title": "ClanWeaknessRow",
+        "type": "object"
+      },
+      "ClanWeaknessVersion": {
+        "properties": {
+          "book": {
+            "enum": [
+              "vol2",
+              "core"
+            ],
+            "title": "Book",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "weakness": {
+            "title": "Weakness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "book",
+          "label",
+          "weakness",
+          "page"
+        ],
+        "title": "ClanWeaknessVersion",
+        "type": "object"
+      },
+      "ClanWeaknessesIn": {
+        "properties": {
+          "core": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Core",
+            "type": "array"
+          }
+        },
+        "required": [
+          "core"
+        ],
+        "title": "ClanWeaknessesIn",
+        "type": "object"
+      },
+      "ClanWeaknessesOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanWeaknessRow"
+            },
+            "title": "Clans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "clans"
+        ],
+        "title": "ClanWeaknessesOut",
+        "type": "object"
+      },
       "ClearIn": {
         "properties": {
           "note": {
@@ -39218,6 +39320,42 @@
             "title": "Specialties",
             "type": "array"
           },
+          "weakness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness"
+          },
+          "weakness_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness Page"
+          },
+          "weaknesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WeaknessOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weaknesses"
+          },
           "wording": {
             "default": "",
             "title": "Wording",
@@ -57221,6 +57359,20 @@
             ],
             "title": "Weakness Page"
           },
+          "weaknesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WeaknessOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weaknesses"
+          },
           "written_rules": {
             "items": {
               "$ref": "#/components/schemas/WrittenRuleRef"
@@ -60344,6 +60496,45 @@
           "link"
         ],
         "title": "WaitingLine",
+        "type": "object"
+      },
+      "WeaknessOut": {
+        "description": "One of the weaknesses a clan may have, as each troupe chooses: its line, its\npage, and the book it is from (\"vol2\" or \"core\") with that book's name.",
+        "properties": {
+          "book": {
+            "enum": [
+              "vol2",
+              "core"
+            ],
+            "title": "Book",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "weakness": {
+            "title": "Weakness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "book",
+          "label",
+          "weakness"
+        ],
+        "title": "WeaknessOut",
         "type": "object"
       },
       "WebBondOut": {
@@ -92851,6 +93042,102 @@
           }
         },
         "summary": "Set Clan Rarity",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/clan-weaknesses": {
+      "get": {
+        "description": "Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),\nwith both weaknesses and the one the troupe plays (horatio.clan_weaknesses).",
+        "operationId": "read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanWeaknessesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Clan Weaknesses",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "description": "Play the core book's weakness for these clans, and the later book's for every\nother. What the troupe's characters and rules show changes at once.",
+        "operationId": "set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanWeaknessesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanWeaknessesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Clan Weaknesses",
         "tags": [
           "house rules"
         ]

@@ -45,6 +45,7 @@ from horatio.api.npcs import PanelsOut, StockNpcOut, stock_out
 from horatio.api.play_status import PlayStatusOut, StatusChoiceIn, play_status_out
 from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
 from horatio.api.roster import roster
+from horatio.api.rules import WeaknessOut, weakness_of
 from horatio.api.sect_status import StatusIn
 from horatio.api.troupe_equipment import EquipmentItemOut, Reader
 from horatio.auth.deps import CurrentUser, DbSession
@@ -441,6 +442,11 @@ class PlayTrait(BaseModel):
     note: str = ""
     # For a clan: its in-clan disciplines.
     in_clan: list[str] | None = None
+    # For a clan: its weakness and page, as the character's troupe plays it; with no
+    # troupe, for one that varies by troupe, each it may be (horatio.clan_weaknesses).
+    weakness: str | None = None
+    weakness_page: str | None = None
+    weaknesses: list[WeaknessOut] | None = None
     # A troupe's own merit or flaw: "House merit of Night Court", shown with a ★.
     house: str | None = None
     # What its effects do, in words: shown under its description.
@@ -810,6 +816,8 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
     house = house_traits.marks(db, [r.definition.id for r in rows if r.definition.troupe_id])
     granted = [r for r in rows if r.trait.granted_rating]
     granting = sheets.sheet_effects(db, character).sources if granted else {}
+    troupe_id = sheets.rules_troupe(character)
+    troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
     return [
         PlayTrait(
             category=row.category.key,
@@ -825,6 +833,11 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             else row.definition.page_reference,
             note=row.trait.note,
             in_clan=row.definition.properties.get("in_clan"),
+            **(
+                weakness_of(rule_set, row.definition.name, troupe)
+                if row.category.key == "clan"
+                else {}
+            ),
             house=house[row.definition.id].label if row.definition.id in house else None,
             house_summary=house[row.definition.id].summary or None
             if row.definition.id in house

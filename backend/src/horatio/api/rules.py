@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
-from horatio import written_rules
+from horatio import clan_weaknesses, written_rules
 from horatio.api.etags import revalidate, rules_tag
 from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -19,7 +19,6 @@ from horatio.clan_merits import book_defaults
 from horatio.models import RuleSet, Troupe
 from horatio.reference import catalogue as power_catalogue
 from horatio.rules import conditions, pricing
-from horatio.rules.feeding import clan_family
 from horatio.rules.files import EVERYWHERE
 from horatio.rules.grants import choices
 from horatio.rules.model import (
@@ -119,9 +118,12 @@ class TraitOut(Lean):
     # For a clan: its in-clan disciplines.
     in_clan: list[str] | None = None
     # For a clan: its weakness in a line, and the book's page for it. A bloodline with
-    # none of its own has its clan's.
+    # none of its own has its clan's. For one whose weakness varies by troupe
+    # (horatio.clan_weaknesses), the troupe's choice; with no troupe, none, and
+    # `weaknesses` gives each it may be.
     weakness: str | None = None
     weakness_page: str | None = None
+    weaknesses: list["WeaknessOut"] | None = None
     # For a skill: the attribute it generally goes with (Physical, Social or Mental).
     attribute: str | None = None
     # For a trait that grants something the player picks (Personal Cult: which
@@ -144,6 +146,16 @@ class TraitOut(Lean):
     written_rules: list["WrittenRuleRef"] = Field(default_factory=list["WrittenRuleRef"])
     # The troupe's change to this book trait (horatio.book_traits), if it made one.
     changed: TraitChangeOut | None = None
+
+
+class WeaknessOut(Lean):
+    """One of the weaknesses a clan may have, as each troupe chooses: its line, its
+    page, and the book it is from ("vol2" or "core") with that book's name."""
+
+    book: Literal["vol2", "core"]
+    label: str
+    weakness: str
+    page: str | None = None
 
 
 class WrittenRuleRef(Lean):
@@ -254,7 +266,7 @@ def catalogue_of(
                 fixed_rating=rules.fixed_rating(t.category, t.name),
                 house_rule=house_text.get((t.category, t.name)),
                 in_clan=t.properties.get("in_clan"),
-                **clan_weakness(rules.rule_set, t),
+                **clan_weakness(rules.rule_set, t, troupe),
                 attribute=t.properties.get("attribute"),
                 choices=chooses.get((t.category, t.name)) or t.properties.get("choices"),
                 kind=t.properties.get("type"),
@@ -275,15 +287,25 @@ def catalogue_of(
     )
 
 
-def clan_weakness(rule_set: RuleSetData, trait: TraitData) -> dict[str, str | None]:
-    """A clan's weakness and its page: its own, or for a bloodline with none, its
-    clan's (MET: VtM p. 42). Nothing for any other trait."""
-    if trait.category != "clan":
-        return {}
-    found = trait.properties
-    if "weakness" not in found:
-        found = rule_set.trait_properties("clan", clan_family(trait.name))
-    return {"weakness": found.get("weakness"), "weakness_page": found.get("weakness_page")}
+def clan_weakness(rule_set: RuleSetData, trait: TraitData, troupe: Troupe | None) -> dict[str, Any]:
+    """A clan's weakness and its page, as `troupe` plays it: its own, or for a
+    bloodline with none, its clan's (MET: VtM p. 42). With no troupe, for a clan whose
+    weakness varies by troupe, each it may be. Nothing for any other trait."""
+    return weakness_of(rule_set, trait.name, troupe) if trait.category == "clan" else {}
+
+
+def weakness_of(rule_set: RuleSetData, clan: str, troupe: Troupe | None) -> dict[str, Any]:
+    """The fields a clan's or bloodline's weakness fills, on a TraitOut or a PlayTrait."""
+    found = clan_weaknesses.played(rule_set, clan, troupe)
+    if found is not None:
+        return {"weakness": found.text, "weakness_page": found.page}
+    return {
+        "weaknesses": [
+            WeaknessOut(book=w.book, label=w.label, weakness=w.text, page=w.page)
+            for w in clan_weaknesses.versions(rule_set, clan)
+        ]
+        or None
+    }
 
 
 def change_out(change: TraitChangeData | None) -> TraitChangeOut | None:

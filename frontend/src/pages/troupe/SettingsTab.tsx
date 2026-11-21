@@ -9,6 +9,7 @@ import { PartPicker } from "../../components/PartPicker";
 import { SettingCard, showFound, useSaveOnChange } from "../../components/SettingCard";
 import { ErrorText, Loading } from "../../components/ui";
 import { ClanNamesSetting } from "./ClanNamesSetting";
+import { ClanWeaknesses } from "./ClanWeaknesses";
 import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
 import { FeedingTerritories } from "./FeedingTerritories";
@@ -96,6 +97,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
             <Part title="Blood, diablerie and feeding">
               <StartingBlood troupeId={troupe.id} canEdit={canEdit} />
               <DiablerieFlaws troupeId={troupe.id} canEdit={canEdit} />
+              <ClanWeaknesses troupeId={troupe.id} canEdit={canEdit} />
               <Anchored feature="feeding">
                 <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />
               </Anchored>
