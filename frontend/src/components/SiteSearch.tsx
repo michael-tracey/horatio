@@ -11,7 +11,7 @@ import { ErrorText, Input } from "./ui";
  * Search everything from the top bar (#1046): its button, and `/` or Ctrl+K (⌘K) from any
  * page, open a box that finds the characters, players, boons, locations, quests,
  * equipment, news, announcements and help the person may see, each kind a group, the
- * troupe they are on first, and that troupe's settings for its running staff (#1047).
+ * troupe they are on first, and that troupe's settings for its storytellers (#1047, #1133).
  * Each hit opens its page. On a phone it fills the screen.
  */
 export function SiteSearch() {

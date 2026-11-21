@@ -14,7 +14,10 @@ by hand.
 A player can turn off what the troupe's Discord connector posts to their
 character's own channel (#1077, horatio.notification_choices): nothing is queued
 there while it is off, outside test mode. The troupe's shared channels, the
-delivery in Horatio and the player's notification are unchanged.
+delivery in Horatio and the player's notification are unchanged. What was already
+waiting there when they turned it off is `cancelled`, never sent, and logged
+(#1134): at once (`cancel_own_channel`), and by the sender for one it meets later,
+such as one queued as they turned it off.
 """
 
 import asyncio
@@ -23,12 +26,12 @@ import uuid
 from collections.abc import Collection, Sequence
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 import horatio.connectors.discord
 import horatio.connectors.email
-from horatio import email_design, mail_sender, notification_choices, suspensions
+from horatio import audit, email_design, mail_sender, notification_choices, suspensions
 from horatio.config import get_settings
 from horatio.connectors import CONNECTORS, Message, Recipient, SendError
 from horatio.models import (
@@ -110,6 +113,78 @@ def turned_off(
     return found
 
 
+def own_channel_off(db: Session, delivery: Delivery) -> bool:
+    """Whether the delivery is for a character's own Discord channel, outside test
+    mode, which its player has turned off (#1077): not to be sent."""
+    if delivery.channel != "discord" or delivery.test_mode or delivery.post_id is not None:
+        return False
+    character, _, _ = about(db, delivery)
+    player = db.get_one(User, character.player_id)
+    return not notification_choices.own_channel_on(player, character.id)
+
+
+def about(db: Session, delivery: Delivery) -> tuple[Character, uuid.UUID, str]:
+    """A downtime's results or a quest's news: the character it goes to, its troupe,
+    and what it is, as "downtime results (Spring 1999)" or "Quest: The Lost Journal"."""
+    if delivery.quest_id is not None:
+        assert delivery.character_id is not None
+        troupe_id = db.get_one(Quest, delivery.quest_id).troupe_id
+        return db.get_one(Character, delivery.character_id), troupe_id, delivery.subject
+    character, cycle = db.execute(
+        select(Character, DowntimeCycle)
+        .select_from(Submission)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .join(Character, CycleParticipant.character_id == Character.id)
+        .join(DowntimeCycle, CycleParticipant.cycle_id == DowntimeCycle.id)
+        .where(Submission.id == delivery.submission_id)
+    ).one()
+    what = delivery.subject or "downtime results"
+    return character, cycle.troupe_id, f"{what} ({cycle.name})"
+
+
+def cancel(db: Session, delivery: Delivery, actor: User | None) -> None:
+    """Cancel a delivery waiting for a character's own Discord channel, which its
+    player turned off (#1134): it is never sent. On its record, and in the log."""
+    delivery.status = "cancelled"
+    delivery.next_attempt_at = None
+    character, troupe_id, what = about(db, delivery)
+    audit.record(
+        db,
+        actor,
+        "delivery.cancelled",
+        troupe_id=troupe_id,
+        character_id=character.id,
+        channel=delivery.channel,
+        what=what,
+    )
+
+
+def cancel_own_channel(db: Session, player: User, character: Character) -> int:
+    """The player has turned off the character's own Discord channel (#1134): cancel
+    its results and quest news waiting to go there, outside test mode. One the worker
+    is sending at this moment is locked, and left to go; should that try fail, the
+    sender cancels it before trying again (`send_one`). Returns how many."""
+    submissions = (
+        select(Submission.id)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .where(CycleParticipant.character_id == character.id)
+    )
+    waiting = db.scalars(
+        select(Delivery)
+        .where(
+            Delivery.channel == "discord",
+            Delivery.status == "pending",
+            Delivery.test_mode.is_(False),
+            or_(Delivery.submission_id.in_(submissions), Delivery.character_id == character.id),
+        )
+        .order_by(Delivery.created_at, Delivery.id)
+        .with_for_update(skip_locked=True)
+    ).all()
+    for found in waiting:
+        cancel(db, found, player)
+    return len(waiting)
+
+
 def queue(
     db: Session,
     staff: User,
@@ -137,7 +212,8 @@ def queue(
                 Delivery.test_mode.is_(connector.test_mode),
             )
         ).all()
-        if any(d.revision == revision for d in earlier):
+        # One cancelled never went (#1134): turned back on, it goes again.
+        if any(d.revision == revision and d.status != "cancelled" for d in earlier):
             continue
         update = any(d.status == "sent" for d in earlier)
         if connector.mode == "full":
@@ -184,7 +260,7 @@ def test_only(
         select(Delivery.submission_id, Delivery.channel, Delivery.test_mode).where(
             Delivery.submission_id.in_(list(submission_ids)),
             Delivery.channel.in_(kinds),
-            Delivery.status != "failed",
+            Delivery.status.not_in(("failed", "cancelled")),
         )
     ):
         assert submission_id is not None
@@ -237,7 +313,15 @@ def backoff(attempts: int) -> timedelta:
 
 
 def send_one(db: Session, delivery: Delivery, at: datetime) -> None:
-    """Try to send one locked, pending delivery, and record how it went."""
+    """Try to send one locked, pending delivery, and record how it went. One no longer
+    pending, cancelled while it waited, is left alone; one for a character's own Discord
+    channel that its player has turned off since it was queued is cancelled, not sent
+    (#1134)."""
+    if delivery.status != "pending":
+        return
+    if own_channel_off(db, delivery):
+        cancel(db, delivery, None)
+        return
     delivery.attempts += 1
     try:
         if delivery.post_id is not None:

@@ -50,16 +50,19 @@ export const manualSource: LocalSource = {
 
 /**
  * The settings of the troupe the person is on, as Customise's Find a setting finds them (#1047):
- * only for those who may open them there, its running staff and the custodian, and only that
- * troupe's. Each opens the setting: its tab or part, its tab's Settings, or its card.
+ * only for its storytellers (the lead too) and the custodian, and only that troupe's. Its
+ * assistant storytellers open Customise, and find a setting there, but not here (#1133).
+ * Each opens the setting: its tab or part, its tab's Settings, or its card.
  */
 export const settingsSource: LocalSource = {
   kind: "settings",
   label: "Settings",
   async find(query, { troupe, custodian = false }) {
     if (!troupe) return [];
+    const can = abilities(troupe.my_role, custodian);
+    if (!can.storyteller) return [];
     const { findSettings, settingsIndex } = await import("../pages/troupe/settingsIndex");
-    return findSettings(settingsIndex(troupe, abilities(troupe.my_role, custodian)), query)
+    return findSettings(settingsIndex(troupe, can), query)
       .slice(0, LIMIT + 1)
       .map((s) => ({
         id: s.to,

@@ -16502,7 +16502,8 @@
             "enum": [
               "pending",
               "sent",
-              "failed"
+              "failed",
+              "cancelled"
             ],
             "title": "Status",
             "type": "string"
@@ -80954,7 +80955,7 @@
     },
     "/api/notification-settings/own-channel": {
       "put": {
-        "description": "Turn on or off what a troupe's Discord connector posts to your character's own\nchannel: its downtime results and quest news. They still come in Horatio, and the\ntroupe's shared channels are unchanged.",
+        "description": "Turn on or off what a troupe's Discord connector posts to your character's own\nchannel: its downtime results and quest news. They still come in Horatio, and the\ntroupe's shared channels are unchanged. Turned off, what is waiting to go there is\ncancelled.",
         "operationId": "choose_own_channel_api_notification_settings_own_channel_put",
         "requestBody": {
           "content": {
