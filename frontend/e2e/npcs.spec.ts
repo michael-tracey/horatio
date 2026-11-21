@@ -533,6 +533,15 @@ test("a storyteller imports the troupe's export, choosing what to do with an NPC
   expect(given.status(), await given.text()).toBe(201);
   const zip = await p.request.get(`/api/troupes/${troupeId}/character-backups?which=npcs&sections=equipment`);
   expect(zip.status()).toBe(200);
+  // Since the export, the dagger here has lost Silver, and Anselm has a rifle the file hasn't.
+  const changed = await p.request.put(`/api/troupes/${troupeId}/equipment/${(await given.json()).id}`, {
+    headers: { "X-Horatio": "1" },
+    data: { ...dagger, qualities: [{ name: "Concealable" }], reason: "Tarnished" },
+  });
+  expect(changed.status(), await changed.text()).toBe(200);
+  const rifle = { name: "Hunting rifle", kind: "ranged", grade: "standard", qualities: [{ name: "Accurate" }, { name: "Long Range" }] };
+  const second = await p.request.post(`/api/troupes/${troupeId}/equipment`, { headers: { "X-Horatio": "1" }, data: { character_id: npcId, ...rifle } });
+  expect(second.status(), await second.text()).toBe(201);
   await p.goto(`/troupes/${troupeId}/roster?show=npcs`);
   await p.getByRole("button", { name: "More for the troupe's characters" }).click();
   await p.getByRole("menuitem", { name: "Import characters and NPCs…" }).click();
@@ -542,11 +551,14 @@ test("a storyteller imports the troupe's export, choosing what to do with an NPC
   const anselm = p.getByRole("listitem", { name: "Keeper Anselm" });
   await expect(anselm).toContainText("has this name: skip it, replace it or add a copy.");
   await expect(p.getByRole("button", { name: "Import 0 characters" })).toBeDisabled();
-  // Replacing it keeps the dagger it holds, rather than giving it a second (#1100).
+  // Replacing it keeps the dagger it holds, rather than giving it a second (#1100), with
+  // the file's qualities (#1130). The rifle the file hasn't is left alone.
   await anselm.getByRole("radio", { name: "Replace it" }).check();
   await anselm.getByText("What comes in").click();
-  await expect(anselm).toContainText("Held here already: kept as it is.");
+  await expect(anselm).toContainText("Held here already: qualities updated.");
   await expect(anselm.getByText("Kept", { exact: true })).toBeVisible();
+  await expect(anselm).toContainText("Held here and not in the file.");
+  await expect(anselm.getByText("Left alone", { exact: true })).toBeVisible();
   // A copy is given its own.
   await anselm.getByRole("radio", { name: "Add a copy" }).check();
   await expect(anselm).toContainText("Comes in as a new NPC of the troupe.");

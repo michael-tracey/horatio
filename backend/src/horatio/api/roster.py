@@ -705,6 +705,7 @@ MESSAGES: dict[str, str] = {
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
     "house.default_bloodlines": "{actor} set the clans' default bloodlines here: {defaults}.",
+    "house.clan_weaknesses": "{actor} set the clan weaknesses played here: {setting}.",
     "house.status_ban_clans": "{actor} set the clans of the {sect} status ban “{ban}”: {clans}.",
     "house.written_rule_added": "{actor} added the written rule {title} ({section}).",
     "house.written_rule_changed": "{actor} changed the written rule {title}.",
@@ -737,15 +738,23 @@ MESSAGES: dict[str, str] = {
     " password{from_ip}: too many tries at the account.",
     "account.password_change_throttled_again": "{actor} was turned away again from changing"
     " their password{from_ip}: too many tries at the account.",
+    "account.password_change_throttled.two_step": "{actor} was turned away from giving their"
+    " password for two-step sign-in{from_ip}: too many tries at the account.",
+    "account.password_change_throttled_again.two_step": "{actor} was turned away again from"
+    " giving their password for two-step sign-in{from_ip}: too many tries at the account.",
     "account.signed_up": "{actor} signed up{from_ip}.",
+    "account.signed_up.discord": "{actor} signed up with Discord{from_ip}.",
     "account.signed_in": "{actor} signed in{from_ip}.",
     "account.signed_in.app": "{actor} signed in{from_ip}, with their authenticator app.",
     "account.signed_in.recovery_code": "{actor} signed in{from_ip}, with a recovery code.",
     "account.signed_in.passkey": "{actor} signed in{from_ip}, with a passkey.",
     "account.signed_in.passkey_alone": "{actor} signed in{from_ip} with a passkey alone, no"
     " password.",
+    "account.signed_in.discord": "{actor} signed in with Discord{from_ip}.",
     "account.second_step_asked": "{actor} gave their password{from_ip}, and was asked for their"
     " second step.",
+    "account.second_step_asked.discord": "{actor} signed in with Discord{from_ip}, and was asked"
+    " for their second step.",
     "account.second_step_failed": "Someone signing in as {member}{from_ip} gave a wrong second"
     " step.",
     "account.second_step_failed.app": "Someone signing in as {member}{from_ip} gave a wrong code"
@@ -762,6 +771,8 @@ MESSAGES: dict[str, str] = {
     "account.two_step_added.passkey": "{actor} added a passkey, {name}, for two-step sign-in.",
     "account.two_step_removed.app": "{actor} turned off their authenticator app.",
     "account.two_step_removed.passkey": "{actor} removed their passkey {name}.",
+    "account.two_step_replaced.passkey": "{actor} replaced their passkey {name} with a new one"
+    " that signs in alone, with no password.",
     "account.recovery_codes_made": "{actor} made new recovery codes.",
     "account.recovery_code_used": "{actor} signed in with a recovery code{from_ip}: {left} left.",
     "troupe.staff_two_step": "{actor} set two-step sign-in for the troupe's staff: {setting}.",
@@ -779,6 +790,16 @@ MESSAGES: dict[str, str] = {
     " passkey: it didn't check out.",
     "account.sign_in_failed.passkey_unknown": "Someone failed to sign in{from_ip} with a passkey"
     " no account here has.",
+    "account.sign_in_failed.discord": "Someone failed to sign in with Discord{from_ip}: Discord"
+    " didn't say who they are.",
+    "account.sign_in_failed.discord_no_email": "Someone failed to sign in with Discord{from_ip}:"
+    " Discord has no verified email for them, so no account was made.",
+    "account.sign_in_failed.discord_email": "Someone failed to sign in as {member}{from_ip} with a"
+    " Discord account not linked to theirs, though it has their email. Nothing was linked.",
+    "account.sign_in_failed.discord_merged": "Someone failed to sign in{from_ip} with the Discord"
+    " account of {member}, which is merged into another account.",
+    "account.sign_in_failed.discord_suspended": "{member} was turned away from signing in with"
+    " Discord{from_ip}: they are suspended.",
     "account.sign_in_throttled": "Someone was turned away from signing in as {member}{from_ip}:"
     " {too_many} from where they were.",
     "account.sign_in_throttled.unknown": "Someone was turned away from signing in{from_ip} to an"
@@ -791,10 +812,18 @@ MESSAGES: dict[str, str] = {
     " passkey{from_ip}: {too_many} from where they were.",
     "account.sign_in_throttled_again.passkey": "Someone was turned away again from signing in"
     " with a passkey{from_ip}: {too_many} from where they were.",
+    "account.sign_in_throttled.discord": "Someone was turned away from signing in with"
+    " Discord{from_ip}: {too_many} from where they were.",
+    "account.sign_in_throttled_again.discord": "Someone was turned away again from signing in"
+    " with Discord{from_ip}: {too_many} from where they were.",
     "account.sign_up_throttled": "Someone was turned away from signing up{from_ip}: too many"
     " sign-ups from where they were.",
     "account.sign_up_throttled_again": "Someone was turned away again from signing up{from_ip}:"
     " too many sign-ups from where they were.",
+    "account.sign_up_throttled.discord": "Someone was turned away from signing up with"
+    " Discord{from_ip}: too many sign-ups from where they were.",
+    "account.sign_up_throttled_again.discord": "Someone was turned away again from signing up"
+    " with Discord{from_ip}: too many sign-ups from where they were.",
     "account.throttle_lifted": "{actor} unblocked sign-ins{from_ip}: over the limit of {rule}.",
     "account.throttle_lifted.login": "{actor} unblocked sign-ins at {login}{from_ip}: over the"
     " limit of {rule}.",
@@ -802,7 +831,7 @@ MESSAGES: dict[str, str] = {
     " limit of {rule}.",
     "account.throttle_lifted.second_step_account": "{actor} unblocked second steps at {login}:"
     " over the limit of {rule}.",
-    "account.throttle_lifted.password_change": "{actor} unblocked password changes at {login}:"
+    "account.throttle_lifted.password_change": "{actor} unblocked password tries at {login}:"
     " over the limit of {rule}.",
     "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups{from_ip}: over the limit of"
     " {rule}.",
@@ -894,6 +923,8 @@ MESSAGES: dict[str, str] = {
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "appearance.loading_animation": "{actor} chose the {animation} loading animation.",
+    "site.invite_players_days": "{actor} set Invite players to leave Getting your troupe ready"
+    " once a troupe is {days} days old (was {before}).",
     "mail.sender_set": "{actor} set who Horatio's emails come from: {sends_from}, replies to"
     " {reply_to}.",
     "mail.test_sent": "{actor} sent a test email to {to}.",

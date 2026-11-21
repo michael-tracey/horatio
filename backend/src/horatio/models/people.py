@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     LargeBinary,
+    String,
     Text,
     UniqueConstraint,
     text,
@@ -105,6 +106,31 @@ class AuthIdentity(Record):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     provider: Mapped[str]
     subject: Mapped[str]
+
+
+class DiscordSignIn(Record):
+    """A sign-in with Discord (#1128), waiting on Discord's callback: its `state`,
+    kept here and in a cookie, so only the browser that started it can finish it.
+    Taken by the callback, and good for 10 minutes.
+
+    With `discord_user_id`, Discord has said who they are and Horatio has no account
+    for them: it waits on them choosing their name and handle, as sign-up asks, with
+    the email Discord verified. A cookie names it too, and it is good for 30 minutes."""
+
+    __tablename__ = "discord_sign_ins"
+
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    # Where it was started from (horatio.auth.attempts.source), so one place can't
+    # keep too many waiting.
+    ip_address: Mapped[str | None] = mapped_column(String(64), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    # Where to go once signed in: a path on this site (horatio.auth.resets.same_site_path).
+    next: Mapped[str | None]
+    discord_user_id: Mapped[str | None]
+    email: Mapped[str | None]
+    # Discord's username, and the name they show there, to start the sign-up form with.
+    discord_username: Mapped[str | None]
+    discord_name: Mapped[str | None]
 
 
 class Session(Record):

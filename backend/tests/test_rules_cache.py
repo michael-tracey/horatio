@@ -275,6 +275,7 @@ def test_every_change_to_a_troupes_rules_changes_its_version(
     walk.call("PUT", "/clan-names", {"assamite": "Assamite"}, changes=False)
     walk.call("PUT", "/clan-rarity", {"rarities": {"Toreador": "rare"}}, changes=False)
     walk.call("PUT", "/default-bloodlines", {"defaults": {"Brujah": "Brujah"}}, changes=False)
+    walk.call("PUT", "/clan-weaknesses", {"core": ["Tremere"]}, changes=False)
     walk.call("PATCH", "", {"name": "Lords of the Long Night"}, by=troupe.lead)
     # Changes to the book's traits.
     lucky = {"category": "merits", "name": "Lucky"}

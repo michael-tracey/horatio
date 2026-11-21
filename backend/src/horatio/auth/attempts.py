@@ -19,7 +19,8 @@ who hasn't, and spreading the guesses over many addresses doesn't help.
 Changing a password while signed in (#1095) is limited at the account, from
 anywhere: only someone signed in as it can try, so no one else can use the limit
 to keep its owner out. Every try counts, the right password or not, as each runs
-Argon2.
+Argon2. Giving the password for two-step sign-in, as to add or replace a passkey
+(#1110), counts under the same limit.
 
 Each sign-in is counted as it starts, under a lock, so requests made at once
 cannot all slip under a limit; signing in stops that login's tries from there
@@ -53,7 +54,8 @@ SIGNED_IN = "signed_in"
 SIGN_UP = "sign_up"
 # A code given for a second step, counted as wrong until it signs in.
 SECOND_STEP = "second_step"
-# A password change tried while signed in, right or wrong.
+# A password given while signed in, right or wrong: changing it, or for two-step
+# sign-in, such as adding a passkey (#1110).
 PASSWORD_CHANGE = "password_change"
 # The first try a limit turned away in its window, from one place (at one login, for
 # a limit at one login), so the ones after it are logged at debug. Never counted.
@@ -81,9 +83,10 @@ SIGN_UP_LIMITS = ((timedelta(hours=1), 20), (timedelta(days=1), 50))
 # authenticator app's code is one of a million, three of them good at once, so 30 a
 # day leaves a guesser about one chance in ten thousand.
 SECOND_STEP_ACCOUNT_LIMITS = ((timedelta(minutes=15), 10), (timedelta(days=1), 30))
-# How many password changes may be tried at one account, from anywhere, right or
-# wrong. Someone unsure of their password may try a few; past that, a reset link
-# serves them better. Each try runs Argon2 once or twice.
+# How many times the password may be given at one account while signed in, from
+# anywhere, right or wrong: changing it, or for two-step sign-in. Someone unsure of
+# their password may try a few; past that, a reset link serves them better. Each try
+# runs Argon2 once or twice.
 PASSWORD_CHANGE_LIMITS = ((timedelta(minutes=15), 10), (timedelta(days=1), 30))
 
 SIGN_IN_WAIT = "Too many failed sign-ins from here. Try again later, or reset your password."
@@ -186,7 +189,7 @@ LIMITS: dict[str, tuple[Limit, ...]] = {
     ),
     PASSWORD_CHANGE: limits(
         "password_changes",
-        "password changes tried at one account",
+        "password tries at one account",
         PASSWORD_CHANGE,
         (PASSWORD_CHANGE,),
         PASSWORD_CHANGE_LIMITS,
@@ -335,6 +338,24 @@ def passkey_held_back(db: Session, ip: str | None) -> Held | None:
     held = held_back(db, SIGN_IN, ip, PASSKEY)
     if held is None:
         db.add(AuthAttempt(action=SIGN_IN, identity_hash=PASSKEY, ip_address=ip))
+        db.commit()
+    return held
+
+
+# A sign-in with Discord (#1128) names no login until Discord says who it is: its tries
+# count as tries at a login of their own, "Discord", from where they come.
+DISCORD = sha256(b"discord:").hexdigest()
+
+
+def discord_held_back(db: Session, ip: str | None) -> Held | None:
+    """sign_in_held_back, for a sign-in with Discord: counted as failed until
+    signed_in_at(db, DISCORD, ip) says otherwise."""
+    if not get_settings().auth_limits:
+        return None
+    lock(db)
+    held = held_back(db, SIGN_IN, ip, DISCORD)
+    if held is None:
+        db.add(AuthAttempt(action=SIGN_IN, identity_hash=DISCORD, ip_address=ip))
         db.commit()
     return held
 

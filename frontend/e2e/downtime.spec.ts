@@ -2302,7 +2302,7 @@ async function feedingTroupe(custodian: Person, lead: Person, player: Person, tr
   return { lead: lead.page, player: player.page, troupe: troupe.id as string, bram, agnes, cycle: cycle.id as string, send, open };
 }
 
-/** The Feeding card of Troupe settings, in its Blood, diablerie and feeding part (#908). */
+/** The Feeding card of Settings, in its Blood, diablerie and feeding part (#908). */
 const feedingCard = (page: Page) => page.locator("#feature-feeding");
 
 test("a troupe that doesn't track feeding sees none of it, and switching it back on brings back what was recorded", async ({ browser }) => {
@@ -2320,9 +2320,9 @@ test("a troupe that doesn't track feeding sees none of it, and switching it back
   const fed = await send(l, "GET", `/api/cycles/${cycle}/feeding`);
   await send(l, "PUT", `/api/cycles/${cycle}/participants/${fed.characters[0].participant_id}/feeding-answer`, { result: "half" });
 
-  // The lead switches feeding off in the Features list of Troupe settings; its options wait for it.
+  // The lead switches feeding off in the Features list of Settings; its options wait for it.
   await switchFeature(l, troupe, "Feeding", false);
-  // Its row's Settings link lands on its card, in the part of Troupe settings it is in now (#908).
+  // Its row's Settings link lands on its card, in the part of Settings it is in now (#908).
   await l.getByRole("list", { name: "Features" }).getByRole("link", { name: "Settings for Feeding" }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe}/settings/blood#feature-feeding$`));
   await expect(feedingCard(l)).toBeInViewport();

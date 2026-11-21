@@ -377,6 +377,18 @@ def what_taught(db: Session, teaching: Teaching, verb: str = "Teaching") -> str:
     return f"{verb} {trait_name(db, teaching)} {teaching.rating} to {student.name}"
 
 
+def what_asked(db: Session, teaching: Teaching) -> tuple[str, User | None]:
+    """Teaching as it is asked of the teacher (#1131): "Teaching Firearms 2 to Elmer
+    (Nick)", naming the student's player after them, and that player, whose name the
+    app links to their profile. An NPC student has no player to name."""
+    student = db.get_one(Character, teaching.character_id)
+    what = what_taught(db, teaching)
+    if student.kind != "pc":
+        return what, None
+    player = db.get_one(User, student.player_id)
+    return f"{what} ({player.display_name})", player
+
+
 def can_answer(db: Session, user: User, teaching: Teaching) -> bool:
     """The teacher's player answers for a PC; staff who approve changes, for an NPC."""
     if teaching.teacher_id is None:

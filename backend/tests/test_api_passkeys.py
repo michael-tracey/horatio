@@ -102,7 +102,7 @@ def required(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def add_passkey(person: Person, name: str = "Phone") -> tuple[Authenticator, list[str]]:
     device = Authenticator()
-    options = person.client.post("/two-step/passkeys/options")
+    options = person.client.post("/two-step/passkeys/options", json={"password": PASSWORD})
     assert options.status_code == 200, options.text
     added = person.client.post(
         "/two-step/passkeys", json={"credential": device.create(options.json()), "name": name}
@@ -141,7 +141,7 @@ def test_a_passkey_is_added_from_account_with_recovery_codes(
 ) -> None:
     agnes = sign_up(client_for, "agnes")
 
-    options = agnes.client.post("/two-step/passkeys/options").json()
+    options = agnes.client.post("/two-step/passkeys/options", json={"password": PASSWORD}).json()
     assert options["rp"] == {"id": RP_ID, "name": "Horatio"}
     assert options["user"]["name"] == "@agnes"
     device = Authenticator()
@@ -172,7 +172,7 @@ def test_a_passkey_made_for_another_site_is_refused(
     client_for: Callable[[], TestClient],
 ) -> None:
     agnes = sign_up(client_for, "agnes")
-    options = agnes.client.post("/two-step/passkeys/options").json()
+    options = agnes.client.post("/two-step/passkeys/options", json={"password": PASSWORD}).json()
     elsewhere = Authenticator(origin="https://evil.example")
     refused = agnes.client.post(
         "/two-step/passkeys", json={"credential": elsewhere.create(options), "name": "Phone"}

@@ -17,7 +17,7 @@ const REFRESH = 30_000;
  * login, for the limit at one login), the limit it is over and when that clears, with
  * Unblock to let it try again at once. An address shows in full only while sign-in
  * events keep IP addresses; otherwise only its start, and Unblock still works.
- * Wrong second-step codes and password changes are limited at an account, from
+ * Wrong second-step codes and password tries are limited at an account, from
  * anywhere: those name the account.
  *
  * It asks again every half minute and when the window comes back into focus, but not
@@ -49,7 +49,7 @@ export function ThrottledCard() {
             <div className="flex flex-col gap-2 text-sm">
               <p className="text-mist">
                 Held back for too many tries from one place, or too many wrong
-                second-step codes or password changes at one account. Each may
+                second-step codes or password tries at one account. Each may
                 try again once its limit clears, or at once if you unblock it.
               </p>
               <ul className="divide-y divide-ash/50" aria-label="Throttled now">
@@ -97,7 +97,7 @@ function Row({
 }) {
   const dates = useDates();
   // Wrong second-step codes are also limited at the account, from anywhere (#1057);
-  // password changes only there, so they show the account alone (#1095).
+  // password tries only there, so they show the account alone (#1095, #1110).
   const account = throttled.held === "second_step" || throttled.held === "password_change";
   const login = throttled.login ?? (account ? "an account no longer here" : "a login no account uses");
   const alone = throttled.held === "password_change";
@@ -107,7 +107,7 @@ function Row({
     sign_up: "Sign-ups",
     sign_in: "Sign-ins",
     second_step: "Second-step codes",
-    password_change: "Password changes",
+    password_change: "Password tries",
   }[throttled.held];
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2">

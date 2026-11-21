@@ -3,7 +3,7 @@ and importing one into another troupe, merging.
 
 **The document** is what Export downloads and Import reads: a format version, the
 Horatio and rule set versions it was made against, the source troupe's name, and
-its settings by section, grouped as Customise groups them. It never holds an id:
+its settings by section, grouped as Setting up groups them. It never holds an id:
 traits, categories and checks are named by their keys and names. Only what differs
 from Horatio's default goes in: a troupe setting at its default is left out, and
 every row a troupe keeps for itself (a house merit, a house check, a price) is a
@@ -18,7 +18,7 @@ The client edits the document's text, and finds and replaces in it, between
 reviewing and applying.
 
 **Applying** takes the edited document and the items ticked, in one transaction:
-all of them or none. Each goes through the same service as its editor in Customise
+all of them or none. Each goes through the same service as its editor in Setting up
 (horatio.house_traits, horatio.house_checks, horatio.keywords, the rule store's
 checks of prices and starting points...), so an imported item is checked exactly as
 one made by hand; a failure names the item and saves nothing. It merges: what
@@ -48,6 +48,7 @@ from horatio import (
     book_traits,
     boon_standings,
     boons,
+    clan_weaknesses,
     downtimes,
     feeding,
     free_changes,
@@ -347,8 +348,8 @@ Settings = list[SettingItem]
 
 
 class Sections(Strict):
-    """The settings by section, as Customise groups them. The first seven are the
-    groups of its Troupe settings page."""
+    """The settings by section, as Setting up groups them. The first seven are the
+    groups of its Settings page."""
 
     who_may_join: Settings = []
     xp: Settings = []
@@ -649,6 +650,13 @@ SETTINGS: dict[str, Setting] = {
             "Blood at the start of a game",
             Blood | None,
             blood,
+        ),
+        Setting(
+            "core_weaknesses",
+            "at_game",
+            "Clans played by the core book's weakness",
+            Annotated[list[str], Field(max_length=50)],
+            listing,
         ),
         Setting(
             "diablerie_flaws",
@@ -2421,7 +2429,7 @@ def failing(where: str) -> Iterator[None]:
 
 
 def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, SettingItem]]) -> None:
-    """Set some of the troupe's settings, each through what sets it in Customise; those
+    """Set some of the troupe's settings, each through what sets it in Setting up; those
     that are set together (feeding, languages, free changes...) with the troupe's
     others. A failure names the setting, or for several, them all."""
     db, troupe = target.db, target.troupe
@@ -2514,6 +2522,8 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             troupe_settings.set_clan_rarity(db, user, troupe, values["clan_rarity"])
         if touched("status_ban_clans"):
             troupe_settings.set_status_ban_clans(db, user, troupe, values["status_ban_clans"])
+        if touched("core_weaknesses"):
+            clan_weaknesses.set_core(db, user, troupe, values["core_weaknesses"])
         if touched("default_bloodlines"):
             troupe_settings.set_default_bloodlines(db, user, troupe, values["default_bloodlines"])
         if touched("influence_lookback_days"):

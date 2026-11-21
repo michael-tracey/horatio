@@ -201,7 +201,7 @@ The same **⋯** has **Import characters and NPCs…**, for a troupe's export fr
 - **A retired character** comes in retired.
 - **What can't come in** says why: a file that isn't a Horatio character, one from a newer Horatio, or a trait this troupe's rules don't have. The rest still come in.
 
-An NPC's equipment comes in with it, sheeted or Stock, if the file has it: each item given from the troupe's equipment and checked by its rules, with the member of a [group](#a-group-of-stock-npcs) who carries it. An item the rules refuse is left out, saying why. An NPC that **replaces** one here is never given an item twice: what the NPC here holds already, of the same name and kind, is **Kept** as it is, and only what it lacks is given. A group's three knives in the file and two here are two kept and one given. An item the NPC holds that isn't in the file is left alone. The review says which is which, and who carries each now.
+An NPC's equipment comes in with it, sheeted or Stock, if the file has it: each item given from the troupe's equipment and checked by its rules, with the member of a [group](#a-group-of-stock-npcs) who carries it. An item the rules refuse is left out, saying why. An NPC that **replaces** one here is never given an item twice: what the NPC here holds already, of the same name and kind, is **Kept**, and only what it lacks is given. A group's three knives in the file and two here are two kept and one given. A kept item takes the file's grade, qualities and effects, changed as staff change an item: checked by this troupe's rules and noted in its history. The review says what changed ("Held here already: grade standard → special, qualities updated"), or that it's kept as it is. If the file's version breaks the rules here, the item stays as it was, and the review says why. An item the NPC holds that isn't in the file is **Left alone**. The review says which is which, and who carries each now.
 
 A player character's equipment, and titles and status, are shown, not imported: give them here as usual. **Import** brings everything in at once, and lists each character with a link to it.
 
@@ -560,7 +560,7 @@ Storytellers switch a feature on or off with the switch at the start of its row.
 5. **House rules**: any house rule at all.
 6. **Staff**: anyone besides the lead storyteller.
 7. **First game**: a game is on the calendar.
-8. **Invite players**: a player's character is or has been in the troupe, at home or visiting, or has asked to make it home. A request counts while it waits. Asking also starts the character visiting, and it stays a visitor if the request is declined or withdrawn, so the step stays done.
+8. **Invite players**: a player's character is or has been in the troupe, at home or visiting, or has asked to make it home. A request counts while it waits. Asking also starts the character visiting, and it stays a visitor if the request is declined or withdrawn, so the step stays done. Once the troupe is 30 days old, the step leaves the list, done or not, and the count leaves it out; the custodian can change the number of days.
 
 Features, Who may join and Starting points tick only once something differs from how a new troupe starts: a troupe that keeps the defaults can hide the list instead. The same steps are a card at the top of the Overview for the lead storyteller and storytellers (see [The Overview](#the-overview-and-whats-waiting-on-you)). **Hide from the Overview** here takes the card away for every storyteller, and **Show on the Overview** brings it back. Hiding it with **Hide** on the Overview says where it went: "Hidden. Bring it back from Settings › Getting ready."
 
@@ -682,6 +682,7 @@ NPCs are never limited by either.
 
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
+- **Clan weaknesses**: which weakness a clan plays here where Volume 2 replaced the core book's. So far that's only the Tremere: **Volume 2's** (the default), where their blood bonds other vampires only to the first stage (Vol. 2, p. 22), or **Core book's**, where they're bound more easily themselves (p. 64). Telyav play as their clan does. The creation wizard, the character's ⓘ beside the clan, the Play View and the rules pages inside the troupe show the one you choose, and players read it on the **House rules** tab. Where there's no troupe, such as the rules page on its own, Horatio says the weakness varies by troupe and gives both. Horatio doesn't apply either one: bonds count drinks the same way for every clan, so staff apply the weakness as they record drinks. Each change goes in the troupe log.
 
 #### Feeding
 

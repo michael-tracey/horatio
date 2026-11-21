@@ -13,6 +13,7 @@ import { ImportCharacterPage } from "./pages/character/Backup";
 import { ClaimPage } from "./pages/ClaimPage";
 import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { DiscordSignUpPage } from "./pages/DiscordSignIn";
 import { ForgotPasswordPage, ResetPasswordPage, SecondStepPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
@@ -115,6 +116,7 @@ export const routes = createRoutesFromElements(
       <Route path="/sign-in/second-step" element={<SecondStepPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/sign-up" element={<SignUpPage />} />
+      <Route path="/sign-up/discord" element={<DiscordSignUpPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { DiscordAccount } from "../../api/types";
 import { Button, Card, ErrorText } from "../../components/ui";
@@ -18,7 +18,7 @@ export function outcome(said: string | null): { ok: boolean; text: string } | nu
 /**
  * Linking the player's own Discord account (#857): Discord confirms who they are,
  * so staff and the troupe's Discord know it's really them, not just a username
- * they typed. It changes nothing about how they sign in.
+ * they typed. Once linked, it signs them in too (#1128).
  */
 export function DiscordLinkCard() {
   const [params, setParams] = useSearchParams();
@@ -64,20 +64,26 @@ export function DiscordLinkCard() {
           <>
             <p className="text-sm text-mist">
               Linked to <span className="text-parchment">@{data.handle}</span>, as Discord confirmed it. Your profile shows that username, and staff can see it's really you.
+              {data.available && " You can sign in with Discord too."}
             </p>
             {data.can_unlink ? (
               <Button type="button" variant="secondary" className="self-start" disabled={unlink.isPending} onClick={() => unlink.mutate(undefined)}>
                 Unlink Discord
               </Button>
             ) : (
-              <p className="text-sm text-mist">Discord is your only way to sign in, so it stays linked.</p>
+              <p className="text-sm text-mist">
+                Discord is your only way to sign in, so it stays linked. To unlink it, set a password first: ask for a link from{" "}
+                <Link to="/forgot-password" className="text-gold underline">
+                  Forgot your password?
+                </Link>
+              </p>
             )}
           </>
         ) : (
           <>
             <p className="text-sm text-mist">
-              Link your Discord account so staff and your troupe's Discord know it's really you. Discord tells Horatio your username and nothing else, and it doesn't change how you
-              sign in.
+              Link your Discord account so staff and your troupe's Discord know it's really you. Discord tells Horatio your username and nothing else. Once it's linked, you can
+              sign in with Discord too.
             </p>
             <Button type="button" variant="secondary" className="self-start" disabled={link.isPending} onClick={() => link.mutate(undefined)}>
               Link my Discord

@@ -417,6 +417,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discord Sign In Help
+         * @description Whether someone can sign in, or up, with Discord here.
+         */
+        get: operations["discord_sign_in_help_api_auth_discord_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/discord/sign-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sign Up For
+         * @description What Discord said of someone signing up with it, to start the form with.
+         */
+        get: operations["sign_up_for_api_auth_discord_sign_up_get"];
+        put?: never;
+        /**
+         * Sign Up
+         * @description Make the account Discord sign-in waited on, with the email Discord verified, the
+         *     name and handle chosen, no password, and the Discord account linked; and sign in.
+         */
+        post: operations["sign_up_api_auth_discord_sign_up_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/discord/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start
+         * @description Discord's page for signing in with Discord. The state waits here, and in a
+         *     cookie for the callback, for 10 minutes.
+         */
+        post: operations["start_api_auth_discord_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/email-change/{token}": {
         parameters: {
             query?: never;
@@ -7948,6 +8014,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/site/getting-ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Getting Ready Site
+         * @description How long Invite players stays on every troupe's list, for the custodian.
+         */
+        get: operations["read_getting_ready_site_api_site_getting_ready_get"];
+        /**
+         * Change Getting Ready Site
+         * @description The custodian chooses after how many days Invite players leaves every troupe's list.
+         */
+        put: operations["change_getting_ready_site_api_site_getting_ready_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/site/mail": {
         parameters: {
             query?: never;
@@ -10175,6 +10265,32 @@ export interface paths {
          *     it names straight away; finished characters keep theirs.
          */
         put: operations["set_clan_rarity_api_troupes__troupe_id__clan_rarity_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/clan-weaknesses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Clan Weaknesses
+         * @description Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),
+         *     with both weaknesses and the one the troupe plays (horatio.clan_weaknesses).
+         */
+        get: operations["read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get"];
+        /**
+         * Set Clan Weaknesses
+         * @description Play the core book's weakness for these clans, and the later book's for every
+         *     other. What the troupe's characters and rules show changes at once.
+         */
+        put: operations["set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -13949,7 +14065,8 @@ export interface paths {
         /**
          * Passkey Options
          * @description What the browser needs to make a passkey for Horatio: WebAuthn's
-         *     PublicKeyCredentialCreationOptions, as JSON. Its challenge works once.
+         *     PublicKeyCredentialCreationOptions, as JSON, giving their password first. Its
+         *     challenge works once, so the passkey it makes is kept only after the password.
          */
         post: operations["passkey_options_api_two_step_passkeys_options_post"];
         delete?: never;
@@ -13972,6 +14089,53 @@ export interface paths {
          * @description Remove one of their passkeys, giving their password.
          */
         post: operations["remove_passkey_api_two_step_passkeys__passkey_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/{passkey_id}/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Passkey
+         * @description Replace one of their passkeys that may not sign in alone with the one the browser
+         *     made, which does (#1110), under the same name. The new one is kept and the old one
+         *     removed together, only once the new one checks out, so a cancelled or failed try
+         *     leaves the old one as it was, and someone who must have two-step sign-in is never
+         *     left without a second step. The password was given for its challenge, at
+         *     POST .../replace/options.
+         */
+        post: operations["replace_passkey_api_two_step_passkeys__passkey_id__replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/{passkey_id}/replace/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Options
+         * @description What the browser needs to make a passkey in place of one that may not sign in
+         *     alone (#1110), giving their password first: as for adding one, but the device must
+         *     make it so it can.
+         */
+        post: operations["replace_options_api_two_step_passkeys__passkey_id__replace_options_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16060,7 +16224,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "new" | "differs" | "kept" | "cannot" | "info";
+            status: "new" | "differs" | "kept" | "left_alone" | "cannot" | "info";
         };
         /** BackupOut */
         BackupOut: {
@@ -19795,6 +19959,42 @@ export interface components {
             /** Clan */
             clan: string | null;
         };
+        /** ClanWeaknessRow */
+        ClanWeaknessRow: {
+            /**
+             * Chosen
+             * @enum {string}
+             */
+            chosen: "vol2" | "core";
+            /** Clan */
+            clan: string;
+            /** Versions */
+            versions: components["schemas"]["ClanWeaknessVersion"][];
+        };
+        /** ClanWeaknessVersion */
+        ClanWeaknessVersion: {
+            /**
+             * Book
+             * @enum {string}
+             */
+            book: "vol2" | "core";
+            /** Label */
+            label: string;
+            /** Page */
+            page: string | null;
+            /** Weakness */
+            weakness: string;
+        };
+        /** ClanWeaknessesIn */
+        ClanWeaknessesIn: {
+            /** Core */
+            core: string[];
+        };
+        /** ClanWeaknessesOut */
+        ClanWeaknessesOut: {
+            /** Clans */
+            clans: components["schemas"]["ClanWeaknessRow"][];
+        };
         /** ClearIn */
         ClearIn: {
             /**
@@ -21169,6 +21369,42 @@ export interface components {
             suggestions: {
                 [key: string]: string;
             };
+        };
+        /** DiscordSignInHelp */
+        DiscordSignInHelp: {
+            /** Available */
+            available: boolean;
+        };
+        /** DiscordSignUp */
+        DiscordSignUp: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle?: string | null;
+        };
+        /**
+         * DiscordSignUpFor
+         * @description What Discord said of someone with no account yet, to start the form with.
+         */
+        DiscordSignUpFor: {
+            /** Discord Username */
+            discord_username: string;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /** Handle */
+            handle: string;
+        };
+        /** DiscordStart */
+        DiscordStart: {
+            /** Next */
+            next?: string | null;
+        };
+        /** DiscordStarted */
+        DiscordStarted: {
+            /** Url */
+            url: string;
         };
         /** DiscoveryBlockOut */
         DiscoveryBlockOut: {
@@ -23553,6 +23789,16 @@ export interface components {
             hidden: boolean;
             /** Steps */
             steps: components["schemas"]["ReadyStepOut"][];
+        };
+        /** GettingReadySiteIn */
+        GettingReadySiteIn: {
+            /** Invite Players Days */
+            invite_players_days: number;
+        };
+        /** GettingReadySiteOut */
+        GettingReadySiteOut: {
+            /** Invite Players Days */
+            invite_players_days: number;
         };
         /** GiftIn */
         GiftIn: {
@@ -27889,6 +28135,10 @@ export interface components {
             link: string;
             /** Picture */
             picture: string | null;
+            /** Player Id */
+            player_id: string | null;
+            /** Player Name */
+            player_name: string | null;
             /** Read */
             read: boolean;
             /** Summary */
@@ -29741,6 +29991,12 @@ export interface components {
             rating: number | null;
             /** Specialties */
             specialties: string[];
+            /** Weakness */
+            weakness?: string | null;
+            /** Weakness Page */
+            weakness_page?: string | null;
+            /** Weaknesses */
+            weaknesses?: components["schemas"]["WeaknessOut"][] | null;
             /**
              * Wording
              * @default
@@ -32180,6 +32436,13 @@ export interface components {
             /** Note */
             note: string | null;
         };
+        /** Replacement */
+        Replacement: {
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            };
+        };
         /** ReportCharacterOut */
         ReportCharacterOut: {
             /** Character Id */
@@ -33450,8 +33713,8 @@ export interface components {
         };
         /**
          * Sections
-         * @description The settings by section, as Customise groups them. The first seven are the
-         *     groups of its Troupe settings page.
+         * @description The settings by section, as Setting up groups them. The first seven are the
+         *     groups of its Settings page.
          */
         Sections: {
             /**
@@ -36202,6 +36465,10 @@ export interface components {
             id: string;
             /** Student */
             student: string;
+            /** Student Player */
+            student_player: string | null;
+            /** Student Player Id */
+            student_player_id: string | null;
             /** What */
             what: string;
             /** Willpower */
@@ -36827,6 +37094,8 @@ export interface components {
             weakness?: string | null;
             /** Weakness Page */
             weakness_page?: string | null;
+            /** Weaknesses */
+            weaknesses?: components["schemas"]["WeaknessOut"][] | null;
             /** Written Rules */
             written_rules?: components["schemas"]["WrittenRuleRef"][];
         };
@@ -37543,6 +37812,11 @@ export interface components {
             app: boolean;
             /** Apps Available */
             apps_available: boolean;
+            /**
+             * Has Password
+             * @default true
+             */
+            has_password: boolean;
             /** Needed */
             needed: boolean;
             /** Passkeys */
@@ -38016,6 +38290,24 @@ export interface components {
             label: string;
             /** Link */
             link: string;
+        };
+        /**
+         * WeaknessOut
+         * @description One of the weaknesses a clan may have, as each troupe chooses: its line, its
+         *     page, and the book it is from ("vol2" or "core") with that book's name.
+         */
+        WeaknessOut: {
+            /**
+             * Book
+             * @enum {string}
+             */
+            book: "vol2" | "core";
+            /** Label */
+            label: string;
+            /** Page */
+            page?: string | null;
+            /** Weakness */
+            weakness: string;
         };
         /** WebBondOut */
         WebBondOut: {
@@ -39807,6 +40099,112 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_sign_in_help_api_auth_discord_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordSignInHelp"];
+                };
+            };
+        };
+    };
+    sign_up_for_api_auth_discord_sign_up_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordSignUpFor"];
+                };
+            };
+        };
+    };
+    sign_up_api_auth_discord_sign_up_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordSignUp"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_api_auth_discord_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordStarted"];
                 };
             };
             /** @description Validation Error */
@@ -54066,6 +54464,59 @@ export interface operations {
             };
         };
     };
+    read_getting_ready_site_api_site_getting_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingReadySiteOut"];
+                };
+            };
+        };
+    };
+    change_getting_ready_site_api_site_getting_ready_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GettingReadySiteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingReadySiteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     mail_api_site_mail_get: {
         parameters: {
             query?: never;
@@ -58217,6 +58668,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClanRarityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanWeaknessesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClanWeaknessesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanWeaknessesOut"];
                 };
             };
             /** @description Validation Error */
@@ -66110,7 +66627,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -66121,6 +66642,15 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -66146,6 +66676,78 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_passkey_api_two_step_passkeys__passkey_id__replace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Replacement"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_options_api_two_step_passkeys__passkey_id__replace_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
             };
             /** @description Validation Error */
             422: {

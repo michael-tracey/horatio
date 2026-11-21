@@ -66,6 +66,7 @@ from horatio.models.notifications import EmailNotice, Notification, PushDevice, 
 from horatio.models.npcs import InCharacterMessage, NpcClaim, StockNpc
 from horatio.models.people import (
     AuthIdentity,
+    DiscordSignIn,
     FormerHandle,
     PasswordReset,
     Session,
@@ -229,6 +230,7 @@ __all__ = [
     "AuditEvent",
     "AuthAttempt",
     "AuthIdentity",
+    "DiscordSignIn",
     "AuthenticatorApp",
     "Base",
     "Character",

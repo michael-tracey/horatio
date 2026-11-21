@@ -117,6 +117,7 @@ NOTICE: frozenset[str] = frozenset(
         # Two-step sign-in (#1057).
         "account.two_step_added",
         "account.two_step_removed",
+        "account.two_step_replaced",
         "account.two_step_reset",
         "account.two_step_email_failed",
         "account.recovery_codes_made",
@@ -141,6 +142,7 @@ NOTICE: frozenset[str] = frozenset(
         "audit.exported",
         "audit.settings_changed",
         "appearance.loading_animation",
+        "site.invite_players_days",
         "mail.sender_set",
         "mail.design_set",
         "mail.header_uploaded",

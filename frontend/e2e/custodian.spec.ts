@@ -1076,7 +1076,7 @@ test("the custodian unblocks a login held back for too many failed sign-ins, and
   await c.evaluate(() => window.dispatchEvent(new Event("visibilitychange")));
   const account = card.getByRole("listitem").filter({ hasText: `@${player.handle}` });
   await expect(account.locator("p").first()).toHaveText(`@${player.handle}`);
-  await expect(account).toContainText("Password changes over the limit of 10 password changes tried at one account in 15 minutes.");
+  await expect(account).toContainText("Password tries over the limit of 10 password tries at one account in 15 minutes.");
   await account.getByRole("button", { name: `Unblock @${player.handle}` }).click();
   await expect(account).toHaveCount(0);
 
@@ -1085,7 +1085,7 @@ test("the custodian unblocks a login held back for too many failed sign-ins, and
   await c.getByLabel("Words").fill(`unblocked ${player.handle}`);
   await c.getByRole("button", { name: "Search", exact: true }).click();
   const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem").filter({ hasText: "unblock-cust" });
-  await expect(found.first()).toContainText(`unblock-cust unblocked password changes at @${player.handle}: over the limit of 10 password changes tried at one account in 15 minutes.`);
+  await expect(found.first()).toContainText(`unblock-cust unblocked password tries at @${player.handle}: over the limit of 10 password tries at one account in 15 minutes.`);
   await expect(found.nth(1)).toContainText(`unblock-cust unblocked sign-ins at @${player.handle}`);
   await expect(found.nth(1)).toContainText(": over the limit of 5 failed sign-ins at one login in 15 minutes.");
   await expect(found.first().getByText("notice", { exact: true })).toBeVisible();
@@ -1212,6 +1212,30 @@ test("the custodian previews fitting a troupe's NPC creation picks, then fits th
   await expect(tool.getByRole("button", { name: "Fit 0 NPCs" })).toBeDisabled();
 });
 
+test("the custodian chooses after how many days Invite players leaves a troupe's Getting your troupe ready (#1129)", async ({ browser }) => {
+  const custodian = await person(browser, "invitedays-cus");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  await c.reload();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Site", exact: true }).click();
+  const card = c.locator("section").filter({ has: c.getByRole("heading", { name: "Getting your troupe ready", exact: true }) });
+  // The number is in sight; changing it is folded away (#944).
+  await expect(card.getByText(/^Invite players leaves a troupe's list once it is \d+ days old\.$/)).toBeVisible();
+  await card.getByText("Change the number of days").click();
+  const days = card.getByLabel("Days before Invite players leaves");
+  // The other project's run of this test may change it at the same time: only the answer to this run's save is checked.
+  const chosen = test.info().project.name === "phone" ? "21" : "45";
+  await expect(days).toHaveValue(/^\d+$/);
+  await days.fill(chosen);
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(c.getByText(`Saved. Invite players leaves the list once a troupe is ${chosen} days old.`)).toBeVisible();
+
+  // Back to 30, as the other tests expect.
+  const reset = await c.request.put("/api/site/getting-ready", { headers: { "X-Horatio": "1" }, data: { invite_players_days: 30 } });
+  expect(reset.status(), await reset.text()).toBe(200);
+});
+
 test("Clan logos and Site fit a phone: nothing sideways, the loading animations two to a row (#911), and Site under 2,500 px (#944)", async ({ browser }) => {
   const custodian = await person(browser, "fitphone-cust");
   makeCustodian(custodian.email);
@@ -1242,6 +1266,7 @@ test("Clan logos and Site fit a phone: nothing sideways, the loading animations 
   await expect(card("Email design").getByText(/^Now: /)).toBeVisible();
   await expect(card("Discord").getByText("Discord is off", { exact: true })).toBeVisible();
   await expect(card("Discord").getByText(/^Troupes can't connect Discord until these are set: /)).toBeVisible();
+  await expect(card("Getting your troupe ready").getByText(/^Invite players leaves a troupe's list once it is \d+ days old\.$/)).toBeVisible();
   await expect(card("What is running").getByText("Running since")).toBeVisible();
   await expect(c.locator("main details[open]")).toHaveCount(0);
   expect(await sideways()).toBe(0);

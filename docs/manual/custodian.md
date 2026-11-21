@@ -289,7 +289,7 @@ Everything since that backup is lost, so make a fresh backup with **Back up now*
 
 ## Site
 
-**Custodian › Site** holds what's the same for everyone on the server: the loading animation, mail, how emails look, and Discord. It also shows what's running. It used to be two tabs, Settings and System; their old links still land here.
+**Custodian › Site** holds what's the same for everyone on the server: the loading animation, how long **Invite players** stays on a new troupe's list, mail, how emails look, and Discord. It also shows what's running. It used to be two tabs, Settings and System; their old links still land here.
 
 Each card shows its status, and its test where it has one, in sight. What you look at less often, such as the settings behind the status, who emails come from, changing the email design and its preview, is folded under a line at the foot of the card: choose it to open it.
 
@@ -307,6 +307,12 @@ While Horatio waits, it shows a loading animation: full screen under the logo as
 Each is shown moving, with the small one that sits beside a line of text, such as a search's count. **Full screen** shows it as the app opens: choose **Close**, or anywhere, to leave. Choosing one changes it for everyone at once, and goes in the audit log. On a device set to reduce motion, each stands still and fades gently instead.
 
 The very first screen shows before the app has asked the server anything, so it shows the animation last seen on that device. Someone who hasn't opened Horatio since you changed it sees the old one once.
+
+### Getting your troupe ready
+
+A new troupe's lead storyteller and storytellers see **Getting your troupe ready** on its Overview and in Settings › Getting ready: the steps a new troupe takes, each ticked from what the troupe holds (see [Getting ready](running-a-troupe.md#getting-ready)). The last step, **Invite players**, leaves the list once the troupe is a number of days old, counted from the day it was made, whether it was ticked or not. By then a troupe has players or knows how to find them, and a visit left behind by a declined request no longer keeps the step ticked.
+
+The **Getting your troupe ready** card says the number of days now, and sets it under **Change the number of days**, from 1 to 365; it's 30 until you change it. It applies to every troupe at once, old and new. Once the step has left, the list's count leaves it out too: "5 of 7 done", not "5 of 8". Changing the number goes in the audit log.
 
 ### Mail
 
@@ -592,8 +598,9 @@ Horatio limits how often anyone can try to sign in or sign up from one place (on
 - **All sign-ins**, right password or not: 60 in a quarter of an hour and 300 a day from one address, so that no one can keep the server busy checking passwords. A troupe signing in together on a venue's Wi-Fi stays well under it.
 - **Sign-ups**: 20 an hour and 50 a day from one address.
 - **Passkeys alone** ([signing in with no password](getting-started.md#signing-in)) count as sign-ins from the address, under the first two limits, and as tries at a login of their own, "a passkey", under the third: 5 failed in a quarter of an hour from one address hold back passkeys from there, never a password. The **Throttled now** card shows it as **at a passkey**. A passkey that doesn't check out is a failed sign-in ("Someone failed to sign in as Agnes from 203.0.113.7 with a passkey: it didn't check out."), and one that does is "Agnes signed in from 203.0.113.7 with a passkey alone, no password."
+- **Signing in with Discord** counts as a sign-in from the address, under the first two limits, and as tries at a login of its own, "Discord", under the third: 5 that didn't sign anyone in (Discord didn't say who it was, Horatio refused them, or the second step was never given) in a quarter of an hour from one address hold back Discord sign-in from there, never a password. The **Throttled now** card shows it as **at Discord**. One that signs in is "Agnes signed in with Discord from 203.0.113.7."; one refused says why, such as "Someone failed to sign in as Agnes from 203.0.113.7 with a Discord account not linked to theirs, though it has their email. Nothing was linked." A new account made with Discord counts under the sign-up limits, and is "Agnes signed up with Discord from 203.0.113.7."
 - **Wrong second-step codes** ([two-step sign-in](getting-started.md#two-step-sign-in)): 20 in a quarter of an hour and 100 a day from one address, and 10 in a quarter of an hour and 30 a day at one account from anywhere. Only someone with the account's password gets that far, so the limit at the account can't be used to keep anyone else out. It shows as **Anywhere at @handle**.
-- **Password changes** while signed in, right password or not: 10 in a quarter of an hour and 30 a day at one account, from anywhere. Only someone signed in as the account can try, so the limit can't be used to keep anyone else out. Someone who has forgotten their password is better served by a reset link. It shows as the account's **@handle** alone.
+- **Password tries** while signed in, right password or not: changing the password, and giving it to add, replace or remove a passkey, turn off an authenticator app or make new recovery codes. 10 in a quarter of an hour and 30 a day at one account, from anywhere. Only someone signed in as the account can try, so the limit can't be used to keep anyone else out. Someone who has forgotten their password is better served by a reset link. It shows as the account's **@handle** alone.
 
 The **Throttled now** card, below the **Audit log** card, lists each address or account over a limit now (with the email or handle, for the limit at one login), which limit, and when it clears. It refreshes by itself every half minute while you have it open, and when you come back to the tab. Choose **Unblock** to let it try again at once, for instance when a whole troupe is held back at a game. Unblocking goes in the audit log, as a notice.
 
@@ -620,7 +627,7 @@ The server has one Discord bot, which every troupe adds to its own Discord serve
    - Leave **Public Bot** on (the default). Switched off, only you could add the bot to a server, and troupes couldn't add it to theirs.
    - Leave the privileged intents off. Horatio needs none of them: it never reads messages, members or presence.
 3. Open **OAuth2**. Copy the client ID, and the client secret (you may have to reset it to see it; copy it straight away).
-4. Still under **OAuth2**, add a redirect: `https://<your site>/api/discord/callback`, for example `https://horatio.example.org/api/discord/callback`. It must start with `HORATIO_PUBLIC_URL` exactly, `https` and all. Save the change.
+4. Still under **OAuth2**, add a redirect: `https://<your site>/api/discord/callback`, for example `https://horatio.example.org/api/discord/callback`. It must start with `HORATIO_PUBLIC_URL` exactly, `https` and all. Save the change. The same redirect serves troupes adding the bot, players linking their Discord account and everyone signing in with Discord.
 
 You don't need to make an invite link in the portal: Horatio makes its own, asking for every permission the bot uses, and nothing more:
 
@@ -649,6 +656,8 @@ Then fill in the three settings. All three are needed:
 | `HORATIO_DISCORD_CLIENT_ID` | The client ID, from **OAuth2** |
 | `HORATIO_DISCORD_CLIENT_SECRET` | The client secret, from **OAuth2** |
 | `HORATIO_DISCORD_BOT_TOKEN` | The token, from **Bot** |
+
+With all three set, the sign-in and sign-up pages offer **Sign in with Discord** and **Sign up with Discord** (see [Signing in](getting-started.md#signing-in)). They ask Discord only who the person is and the email it has verified for them (the `identify` and `email` scopes). A linked account signs in, unless it's suspended or merged; for anyone who must have two-step sign-in, Discord is the first step only, and their passkey or app is still asked for. A Discord account no one here has makes a new account, with that email and no password; without a verified email, none is made. With no password, it can set up an authenticator app as its second step, but not a passkey until it sets a password from **Forgot your password?**, where the server can send email, or from a reset link you make. An account is never linked by its email: if one already uses it, they're told to sign in with the password and link Discord themselves.
 
 The token and the secret are passwords: anyone who has them can post as your bot. Keep them out of the repository (`production.env` and `.env` aren't committed) and out of chat.
 

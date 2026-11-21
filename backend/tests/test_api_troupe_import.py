@@ -1,6 +1,6 @@
 """Importing characters by the batch (issue #567): a troupe's staff bring in a troupe's
 export, matching player characters to their players, and an NPC's equipment with it
-(issue #1100), and a player imports the .zip of their characters."""
+(issues #1100, #1130), and a player imports the .zip of their characters."""
 
 import io
 import json
@@ -315,6 +315,59 @@ def test_a_sheeted_npcs_equipment_comes_in_and_is_never_doubled(troupe: Troupe, 
     assert items_here(troupe.storyteller, other, copy) == items
 
 
+def test_a_kept_item_takes_the_files_grade_and_qualities_as_the_rules_allow(
+    troupe: Troupe, other: str
+) -> None:
+    lucien = npc(troupe, "Lucien")
+    given(troupe, lucien, **DAGGER)
+    given(troupe, lucien, **RIFLE)
+    content = troupe_zip(troupe, sections=["equipment"])
+    copy = by_name(run(troupe.storyteller, other, content).json())["Lucien"]["character_id"]
+    held = dict(items_here(troupe.storyteller, other, copy))
+
+    def changed(_: str, document: dict[str, Any]) -> None:
+        # The dagger now special, with an effect; the rifle cheap, with a quality too many.
+        for item in document["equipment"]:
+            if item["name"] == "Silver Dagger":
+                item["grade"] = "special"
+                item["qualities"] = [*item["qualities"], {"name": "Accurate", "detail": ""}]
+                item["effects"] = [{"name": "Bane", "effect": "Burns the Fae."}]
+            else:
+                item["grade"] = "cheap"
+
+    done = run(troupe.storyteller, other, rezip(content, changed), Lucien={"choice": "replace"})
+    assert done.status_code == 201, done.text
+    assert equipment_review(by_name(done.json())["Lucien"]) == [
+        (
+            "Hunting rifle",
+            "kept",
+            "Held here already: kept as it is. The file's item can't be held here: Cheap gear"
+            " has at most 1 quality, not 2.",
+        ),
+        (
+            "Silver Dagger",
+            "kept",
+            "Held here already: grade standard → special, qualities updated, special effects"
+            " updated.",
+        ),
+    ]
+    dagger = troupe.storyteller.client.get(
+        f"/troupes/{other}/equipment/{held['Silver Dagger']}"
+    ).json()
+    assert dagger["grade"] == "special"
+    assert [q["name"] for q in dagger["qualities"]] == ["Concealable", "Silver", "Accurate"]
+    assert [e["name"] for e in dagger["effects"]] == ["Bane"]
+    # Changed as staff change one: in its history, with why.
+    assert [(e["action"], e["reason"]) for e in dagger["history"]][-1] == (
+        "changed",
+        "Imported from a file",
+    )
+    rifle = troupe.storyteller.client.get(
+        f"/troupes/{other}/equipment/{held['Hunting rifle']}"
+    ).json()
+    assert (rifle["grade"], [e["action"] for e in rifle["history"]]) == ("standard", ["given"])
+
+
 def test_a_replaced_stock_group_keeps_what_it_holds_and_gets_what_it_lacks(
     troupe: Troupe,
 ) -> None:
@@ -347,8 +400,8 @@ def test_a_replaced_stock_group_keeps_what_it_holds_and_gets_what_it_lacks(
         ("Silver Dagger", "new", "Given from the troupe's equipment: Member 3 carries it."),
         (
             "Hunting rifle",
-            "kept",
-            "Held here and not in the file: left alone. Member 2 carries it.",
+            "left_alone",
+            "Held here and not in the file. Member 2 carries it.",
         ),
     ]
     assert equipment_review(found["Bites-the-Hand"]) == expected

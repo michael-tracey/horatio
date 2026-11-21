@@ -431,12 +431,18 @@ def test_the_teachers_willpower_is_confirmed_spent_and_returns_after_two_games(
     assert early.status_code == 409
     assert "Rook's player has not yet confirmed" in early.json()["detail"]
 
-    # The teacher's player is asked, in their bell and on the Play View.
+    # The teacher's player is asked, in their bell and on the Play View, naming the
+    # student's player, whose name links to their profile (#1131).
     bell = other.client.get("/notifications").json()
     task = next(i for i in bell["items"] if i["kind"] == "teaching")
-    assert "Teaching Firearms 2 to Konrad" in task["summary"]
+    assert task["summary"] == "Rook: Teaching Firearms 2 to Konrad (player)? It costs 1 Willpower."
+    assert (task["player_id"], task["player_name"]) == (troupe.player.id, "player")
     asked = other.client.get(f"/characters/{gunman}/teaching").json()["asked"]
-    assert [a["what"] for a in asked] == ["Teaching Firearms 2 to Konrad"]
+    assert [a["what"] for a in asked] == ["Teaching Firearms 2 to Konrad (player)"]
+    assert (asked[0]["student_player_id"], asked[0]["student_player"]) == (
+        troupe.player.id,
+        "player",
+    )
     assert troupe.player.client.post(f"/teachings/{asked[0]['id']}/confirm").status_code == 404
 
     confirmed = other.client.post(f"/teachings/{asked[0]['id']}/confirm")
@@ -509,7 +515,7 @@ def test_teaching_asked_is_pushed_to_the_teachers_player_who_ticks_it(
     assert str(request.url) == phone.endpoint
     assert phone.read(request.content) == {
         "title": "Lords of the Night",
-        "body": "Rook: Teaching Firearms 1 to Konrad? It costs 1 Willpower.",
+        "body": "Rook: Teaching Firearms 1 to Konrad (player)? It costs 1 Willpower.",
         "link": f"/play/characters/{gunman}?tab=tracker",
     }
 
@@ -633,3 +639,28 @@ def test_an_npc_teacher_of_the_troupe_spends_its_willpower_when_approved(
 
     assert approved.status_code == 200, approved.text
     assert willpower(troupe.storyteller, hale)["willpower"]["value"] == full - 1
+
+
+def test_teaching_asked_names_a_pc_students_player_but_no_npcs(
+    troupe: Troupe, other: Person, elder: str, gunman: str, session: Session
+) -> None:
+    """#1131: the student's player in parentheses, for the app to link to their profile;
+    an NPC student has no player to name."""
+    added(troupe, ELDERS_MODERN_SKILLS)
+    assert take(troupe.player, elder, "skills", "Firearms", 1, teacher_id=gunman).status_code == 200
+    asked = session.scalars(select(Teaching).where(Teaching.status == "asked")).one()
+    what, player = teaching.what_asked(session, asked)
+    assert what == "Teaching Firearms 1 to Konrad (player)"
+    assert player is not None and str(player.id) == troupe.player.id
+
+    made = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/npcs", json={"name": "Sergeant Hale", "splat": "vampire"}
+    )
+    assert made.status_code == 201, made.text
+    asked.character_id = uuid.UUID(made.json()["id"])
+    assert teaching.what_asked(session, asked) == ("Teaching Firearms 1 to Sergeant Hale", None)
+    [task] = [
+        i for i in other.client.get("/notifications").json()["items"] if i["kind"] == "teaching"
+    ]
+    assert task["summary"] == "Rook: Teaching Firearms 1 to Sergeant Hale? It costs 1 Willpower."
+    assert (task["player_id"], task["player_name"]) == (None, None)

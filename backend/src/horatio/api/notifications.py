@@ -26,6 +26,10 @@ class NotificationOut(BaseModel):
     read: bool
     # The picture of the character it is about, if any (horatio.pictures).
     picture: str | None
+    # The player the summary names in parentheses, if any, whose name links to their
+    # profile (#1131).
+    player_id: uuid.UUID | None
+    player_name: str | None
 
 
 class NotificationsOut(BaseModel):

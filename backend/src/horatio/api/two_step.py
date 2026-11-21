@@ -14,8 +14,8 @@ from sqlalchemy import select
 from horatio import closing
 from horatio.api.players import player
 from horatio.api.troupes import get_troupe
-from horatio.audit import record
-from horatio.auth import passkeys, two_step
+from horatio.audit import record, sign_in_ip
+from horatio.auth import attempts, passkeys, two_step
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import verify_password
 from horatio.auth.sessions import hash_token
@@ -52,6 +52,9 @@ class TwoStepOut(BaseModel):
     required_by: list[str]
     # They must set one up before anything else.
     needed: bool
+    # They have a password, which the changes above ask for again. An account made
+    # with Discord (#1128) has none until they set one with a reset link.
+    has_password: bool = True
 
 
 class AppSetup(BaseModel):
@@ -80,6 +83,11 @@ class NewPasskey(BaseModel):
     name: str = Field(default="Passkey", max_length=60)
 
 
+class Replacement(BaseModel):
+    # The browser's PublicKeyCredential from navigator.credentials.create, as JSON.
+    credential: dict[str, Any]
+
+
 class StaffTwoStepIn(BaseModel):
     required: bool
 
@@ -102,30 +110,63 @@ class ResetIn(BaseModel):
     reason: str = Field(min_length=1, max_length=2000)
 
 
+def passkey_out(p: Passkey) -> PasskeyOut:
+    return PasskeyOut(
+        id=p.id,
+        name=p.name,
+        created_at=p.created_at,
+        last_used_at=p.last_used_at,
+        discoverable=p.discoverable,
+    )
+
+
 def state(db: DbSession, user: User) -> TwoStepOut:
     return TwoStepOut(
         app=two_step.has_app(db, user),
         apps_available=two_step.apps_available(),
-        passkeys=[
-            PasskeyOut(
-                id=p.id,
-                name=p.name,
-                created_at=p.created_at,
-                last_used_at=p.last_used_at,
-                discoverable=p.discoverable,
-            )
-            for p in passkeys.mine(db, user)
-        ],
+        passkeys=[passkey_out(p) for p in passkeys.mine(db, user)],
         passkeys_available=passkeys.available(),
         recovery_codes_left=two_step.recovery_codes_left(db, user),
         required_by=two_step.required_by(db, user),
         needed=two_step.needed(db, user),
+        has_password=user.password_hash is not None,
     )
 
 
-def check_password(user: User, password: str) -> None:
-    """Turning off a second step, or making new recovery codes, asks for the password
-    again, so a sign-in left open somewhere can't."""
+# Told to someone held back from giving their password here: the limit is the one on
+# changing it, at the account (#1095), so a sign-in left open can't guess it either way.
+PASSWORD_WAIT = "Too many tries at your password. Try again later."
+
+
+NO_PASSWORD = (
+    "This asks for your password, and you have none yet: you sign in with Discord. Set one"
+    " with Forgot your password? on the sign-in page, then try again."
+)
+
+
+def check_password(request: Request, db: DbSession, user: User, password: str) -> None:
+    """Adding, replacing or removing a passkey, turning off the app, or making new
+    recovery codes asks for the password again, so a sign-in left open somewhere can't
+    (#1110). Each try, right or wrong, counts towards the limit on password tries at
+    the account, as changing the password does, checked before the password is. An
+    account with no password (one made with Discord, #1128) is told how to set one."""
+    if user.password_hash is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, NO_PASSWORD)
+    if (held := attempts.password_change_held_back(db, user.id)) is not None:
+        record(
+            db,
+            user,
+            "account.password_change_throttled"
+            if held.first
+            else "account.password_change_throttled_again",
+            kind="two_step",
+            limit=held.limit.key,
+            member=user.display_name,
+            user_id=user.id,
+            **sign_in_ip(db, request),
+        )
+        db.commit()
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, PASSWORD_WAIT)
     ok, _ = verify_password(password, user.password_hash)
     if not ok:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "That's not your password.")
@@ -190,11 +231,15 @@ def this_session(request: Request, db: DbSession, user: User) -> SignInSession:
 
 @router.post("/passkeys/options")
 @allowed_first
-def passkey_options(request: Request, db: DbSession, user: CurrentUser) -> dict[str, Any]:
+def passkey_options(
+    body: Password, request: Request, db: DbSession, user: CurrentUser
+) -> dict[str, Any]:
     """What the browser needs to make a passkey for Horatio: WebAuthn's
-    PublicKeyCredentialCreationOptions, as JSON. Its challenge works once."""
+    PublicKeyCredentialCreationOptions, as JSON, giving their password first. Its
+    challenge works once, so the passkey it makes is kept only after the password."""
     if not passkeys.available():
         raise HTTPException(status.HTTP_409_CONFLICT, "Passkeys need this site on https.")
+    check_password(request, db, user, body.password)
     options = passkeys.adding_options(db, this_session(request, db, user), user)
     db.commit()
     return options
@@ -222,9 +267,11 @@ def add_passkey(
 
 
 @router.post("/passkeys/{passkey_id}/remove", status_code=status.HTTP_204_NO_CONTENT)
-def remove_passkey(passkey_id: uuid.UUID, body: Password, db: DbSession, user: CurrentUser) -> None:
+def remove_passkey(
+    passkey_id: uuid.UUID, body: Password, request: Request, db: DbSession, user: CurrentUser
+) -> None:
     """Remove one of their passkeys, giving their password."""
-    check_password(user, body.password)
+    check_password(request, db, user, body.password)
     passkey = db.get(Passkey, passkey_id)
     if passkey is None or passkey.user_id != user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such passkey.")
@@ -237,6 +284,59 @@ def remove_passkey(passkey_id: uuid.UUID, body: Password, db: DbSession, user: C
         db, user, "account.two_step_removed", kind="passkey", member=user.display_name, name=name
     )
     db.commit()
+
+
+def replaceable(db: DbSession, user: User, passkey_id: uuid.UUID) -> Passkey:
+    """One of their passkeys that may not sign in alone, to replace with one that does."""
+    passkey = db.scalar(select(Passkey).where(Passkey.id == passkey_id).with_for_update())
+    if passkey is None or passkey.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such passkey.")
+    if passkey.discoverable:
+        raise HTTPException(status.HTTP_409_CONFLICT, f"{passkey.name} signs you in alone already.")
+    return passkey
+
+
+@router.post("/passkeys/{passkey_id}/replace/options")
+def replace_options(
+    passkey_id: uuid.UUID, body: Password, request: Request, db: DbSession, user: CurrentUser
+) -> dict[str, Any]:
+    """What the browser needs to make a passkey in place of one that may not sign in
+    alone (#1110), giving their password first: as for adding one, but the device must
+    make it so it can."""
+    if not passkeys.available():
+        raise HTTPException(status.HTTP_409_CONFLICT, "Passkeys need this site on https.")
+    replaceable(db, user, passkey_id)
+    check_password(request, db, user, body.password)
+    options = passkeys.adding_options(db, this_session(request, db, user), user, alone=True)
+    db.commit()
+    return options
+
+
+@router.post("/passkeys/{passkey_id}/replace")
+def replace_passkey(
+    passkey_id: uuid.UUID, body: Replacement, request: Request, db: DbSession, user: CurrentUser
+) -> PasskeyOut:
+    """Replace one of their passkeys that may not sign in alone with the one the browser
+    made, which does (#1110), under the same name. The new one is kept and the old one
+    removed together, only once the new one checks out, so a cancelled or failed try
+    leaves the old one as it was, and someone who must have two-step sign-in is never
+    left without a second step. The password was given for its challenge, at
+    POST .../replace/options."""
+    old = replaceable(db, user, passkey_id)
+    session = this_session(request, db, user)
+    new = passkeys.add(db, session, user, body.credential, old.name, alone=True)
+    db.delete(old)
+    db.flush()
+    record(
+        db,
+        user,
+        "account.two_step_replaced",
+        kind="passkey",
+        member=user.display_name,
+        name=new.name,
+    )
+    db.commit()
+    return passkey_out(new)
 
 
 def keep_one(db: DbSession, user: User) -> None:
@@ -257,9 +357,9 @@ def forget_if_none_left(db: DbSession, user: User) -> None:
 
 
 @router.post("/app/remove", status_code=status.HTTP_204_NO_CONTENT)
-def remove_app(body: Password, db: DbSession, user: CurrentUser) -> None:
+def remove_app(body: Password, request: Request, db: DbSession, user: CurrentUser) -> None:
     """Turn off their authenticator app, giving their password."""
-    check_password(user, body.password)
+    check_password(request, db, user, body.password)
     if not two_step.has_app(db, user):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "You have no authenticator app set up.")
     keep_one(db, user)
@@ -270,9 +370,11 @@ def remove_app(body: Password, db: DbSession, user: CurrentUser) -> None:
 
 
 @router.post("/recovery-codes")
-def new_recovery_codes(body: Password, db: DbSession, user: CurrentUser) -> RecoveryCodes:
+def new_recovery_codes(
+    body: Password, request: Request, db: DbSession, user: CurrentUser
+) -> RecoveryCodes:
     """Ten new recovery codes in place of the ones they had, giving their password."""
-    check_password(user, body.password)
+    check_password(request, db, user, body.password)
     if not two_step.has_second_step(db, user):
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Set up a second step first: recovery codes stand in for it."

@@ -2,9 +2,9 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties
 import type { TraitOut } from "../api/types";
 import { withClanNames } from "../clanNames";
 import { bookSummary, wordingOf } from "../houseWording";
-import { pageText } from "../pages/troupe/bookPage";
 import { AboutButton, AboutTrait, hasAbout } from "./AboutTrait";
 import { useClanName } from "./ClanNames";
+import { ClanWeakness } from "./ClanWeakness";
 import { Input } from "./ui";
 import { pageLabel } from "./TraitInfo";
 
@@ -371,12 +371,7 @@ export function ChoiceBox({
                   lit.summary && <p className="text-xs text-mist">{named(lit.summary)}</p>
                 )}
                 {lit.trait?.in_clan?.length ? <p className="mt-0.5 text-xs text-mist">In-clan disciplines: {lit.trait.in_clan.join(", ")}.</p> : null}
-                {lit.trait?.weakness && (
-                  <p className="mt-0.5 text-xs text-mist">
-                    Weakness: {named(lit.trait.weakness)}
-                    {lit.trait.weakness_page && <span className="text-gold"> ({pageText(lit.trait.weakness_page)})</span>}
-                  </p>
-                )}
+                <ClanWeakness trait={lit.trait} className="mt-0.5 text-xs text-mist" />
               </>
             ) : (
               <p className="text-xs text-mist">Highlight one to read about it: the arrow keys, a hover, or its chevron.</p>

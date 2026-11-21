@@ -265,9 +265,12 @@ class TeachingAskOut(BaseModel):
     """A purchase asking the character to teach it, at the cost of its Willpower."""
 
     id: uuid.UUID
-    # "Teaching Firearms 2 to Elmer".
+    # "Teaching Firearms 2 to Elmer (Nick)", naming a PC student's player (#1131).
     what: str
     student: str
+    # That player, whose name in `what` links to their profile; None for an NPC student.
+    student_player_id: uuid.UUID | None
+    student_player: str | None
     willpower: int
     games: int
 
@@ -280,10 +283,13 @@ class TeachingOut(BaseModel):
 
 
 def ask_out(db: DbSession, t: Teaching) -> TeachingAskOut:
+    what, player = teaching.what_asked(db, t)
     return TeachingAskOut(
         id=t.id,
-        what=teaching.what_taught(db, t),
+        what=what,
         student=db.get_one(Character, t.character_id).name,
+        student_player_id=player.id if player else None,
+        student_player=player.display_name if player else None,
         willpower=t.willpower,
         games=t.games,
     )

@@ -5,13 +5,15 @@ holds; its other settings are on the troupe itself.
 
 And Getting your troupe ready (#1049), the steps a new troupe takes in order, for
 its Overview: each done or not from what the troupe holds now, never ticked by
-hand. Its storytellers hide the card, and bring it back from Settings › Getting ready."""
+hand. Its storytellers hide the card, and bring it back from Settings › Getting ready. Invite
+players leaves it once the troupe is as many days old as the custodian chooses (#1129)."""
 
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import exists, func, or_, select
 
@@ -27,12 +29,13 @@ from horatio.models import (
     DowntimeCycle,
     HouseTrait,
     ScheduledGame,
+    ServerSetting,
     Troupe,
     TroupeMembership,
     TroupeStaff,
     XpRangeEntry,
 )
-from horatio.permissions import TroupeAction
+from horatio.permissions import TroupeAction, require_custodian
 from horatio.rules.splats import SPLATS
 from horatio.troupe_settings_share import column_default
 
@@ -181,7 +184,7 @@ FEATURE_SETTINGS = (
     "items_expire",
     "play_tabs_off",
 )
-# Starting XP and what each game and downtime gives: Troupe settings › XP.
+# Starting XP and what each game and downtime gives: Settings › XP.
 XP_SETTINGS = ("starting_xp", "session_xp", "downtime_xp", "new_character_incentive", "game_xp")
 
 
@@ -194,7 +197,8 @@ class GettingReadyOut(BaseModel):
     # Its storytellers hid the card from the Overview.
     hidden: bool
     # In order: the profile, features, who may join, starting points and XP, house
-    # rules, staff, the first game, and players.
+    # rules, staff, the first game, and players. Players is left out once the troupe
+    # is older than the custodian's invite_players_days, done or not.
     steps: list[ReadyStepOut]
 
 
@@ -205,6 +209,66 @@ class GettingReadyChange(BaseModel):
 def _changed(troupe: Troupe, keys: tuple[str, ...]) -> bool:
     """Any of these settings is no longer what a new troupe has."""
     return any(getattr(troupe, k) != column_default(k) for k in keys)
+
+
+# --- How long Invite players stays on the list (#1129), Custodian › Site ----------------------
+
+INVITE_PLAYERS_DAYS = "invite_players_days"
+DEFAULT_INVITE_PLAYERS_DAYS = 30
+MAX_INVITE_PLAYERS_DAYS = 365
+
+
+class GettingReadySiteOut(BaseModel):
+    # Invite players leaves the list once the troupe is this many days old.
+    invite_players_days: int
+
+
+class GettingReadySiteIn(BaseModel):
+    invite_players_days: int
+
+
+def invite_players_days(db: DbSession) -> int:
+    """What the custodian chose, or 30 days."""
+    row = db.get(ServerSetting, INVITE_PLAYERS_DAYS)
+    days = row.value if row is not None else None
+    return days if isinstance(days, int) else DEFAULT_INVITE_PLAYERS_DAYS
+
+
+def inviting(db: DbSession, troupe: Troupe) -> bool:
+    """Invite players is still on the list: the troupe is younger than the custodian's days.
+    Done or not, it leaves after, so a visit left by a declined request stops mattering."""
+    return datetime.now(UTC) - troupe.created_at < timedelta(days=invite_players_days(db))
+
+
+@router.get("/site/getting-ready", tags=["site"])
+def read_getting_ready_site(db: DbSession, user: CurrentUser) -> GettingReadySiteOut:
+    """How long Invite players stays on every troupe's list, for the custodian."""
+    require_custodian(user)
+    return GettingReadySiteOut(invite_players_days=invite_players_days(db))
+
+
+@router.put("/site/getting-ready", tags=["site"])
+def change_getting_ready_site(
+    body: GettingReadySiteIn, db: DbSession, user: CurrentUser
+) -> GettingReadySiteOut:
+    """The custodian chooses after how many days Invite players leaves every troupe's list."""
+    require_custodian(user)
+    days = body.invite_players_days
+    if not 1 <= days <= MAX_INVITE_PLAYERS_DAYS:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"Choose from 1 to {MAX_INVITE_PLAYERS_DAYS} days.",
+        )
+    before = invite_players_days(db)
+    row = db.get(ServerSetting, INVITE_PLAYERS_DAYS)
+    if row is None:
+        db.add(ServerSetting(key=INVITE_PLAYERS_DAYS, value=days))
+    else:
+        row.value = days
+    if days != before:
+        audit.record(db, user, "site.invite_players_days", days=days, before=before)
+    db.commit()
+    return GettingReadySiteOut(invite_players_days=days)
 
 
 def getting_ready(db: DbSession, troupe: Troupe) -> GettingReadyOut:
@@ -242,6 +306,8 @@ def getting_ready(db: DbSession, troupe: Troupe) -> GettingReadyOut:
         "first_game": bool(games),
         "players": bool(players),
     }
+    if not inviting(db, troupe):
+        del done["players"]
     return GettingReadyOut(
         hidden=troupe.getting_ready_hidden,
         steps=[ReadyStepOut(step=step, done=d) for step, d in done.items()],

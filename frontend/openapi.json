@@ -3961,6 +3961,7 @@
               "new",
               "differs",
               "kept",
+              "left_alone",
               "cannot",
               "info"
             ],
@@ -14040,6 +14041,108 @@
         "title": "ClanSection",
         "type": "object"
       },
+      "ClanWeaknessRow": {
+        "properties": {
+          "chosen": {
+            "enum": [
+              "vol2",
+              "core"
+            ],
+            "title": "Chosen",
+            "type": "string"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/ClanWeaknessVersion"
+            },
+            "title": "Versions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "clan",
+          "versions",
+          "chosen"
+        ],
+        "title": "ClanWeaknessRow",
+        "type": "object"
+      },
+      "ClanWeaknessVersion": {
+        "properties": {
+          "book": {
+            "enum": [
+              "vol2",
+              "core"
+            ],
+            "title": "Book",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "weakness": {
+            "title": "Weakness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "book",
+          "label",
+          "weakness",
+          "page"
+        ],
+        "title": "ClanWeaknessVersion",
+        "type": "object"
+      },
+      "ClanWeaknessesIn": {
+        "properties": {
+          "core": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Core",
+            "type": "array"
+          }
+        },
+        "required": [
+          "core"
+        ],
+        "title": "ClanWeaknessesIn",
+        "type": "object"
+      },
+      "ClanWeaknessesOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanWeaknessRow"
+            },
+            "title": "Clans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "clans"
+        ],
+        "title": "ClanWeaknessesOut",
+        "type": "object"
+      },
       "ClearIn": {
         "properties": {
           "note": {
@@ -17744,6 +17847,104 @@
           "suggestions"
         ],
         "title": "DiscordSetup",
+        "type": "object"
+      },
+      "DiscordSignInHelp": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "DiscordSignInHelp",
+        "type": "object"
+      },
+      "DiscordSignUp": {
+        "properties": {
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "DiscordSignUp",
+        "type": "object"
+      },
+      "DiscordSignUpFor": {
+        "description": "What Discord said of someone with no account yet, to start the form with.",
+        "properties": {
+          "discord_username": {
+            "title": "Discord Username",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "discord_username",
+          "display_name",
+          "handle"
+        ],
+        "title": "DiscordSignUpFor",
+        "type": "object"
+      },
+      "DiscordStart": {
+        "properties": {
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          }
+        },
+        "title": "DiscordStart",
+        "type": "object"
+      },
+      "DiscordStarted": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "DiscordStarted",
         "type": "object"
       },
       "DiscoveryBlockOut": {
@@ -23887,6 +24088,32 @@
           "steps"
         ],
         "title": "GettingReadyOut",
+        "type": "object"
+      },
+      "GettingReadySiteIn": {
+        "properties": {
+          "invite_players_days": {
+            "title": "Invite Players Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invite_players_days"
+        ],
+        "title": "GettingReadySiteIn",
+        "type": "object"
+      },
+      "GettingReadySiteOut": {
+        "properties": {
+          "invite_players_days": {
+            "title": "Invite Players Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invite_players_days"
+        ],
+        "title": "GettingReadySiteOut",
         "type": "object"
       },
       "GiftIn": {
@@ -34607,6 +34834,29 @@
             ],
             "title": "Picture"
           },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
           "read": {
             "title": "Read",
             "type": "boolean"
@@ -34653,7 +34903,9 @@
           "link",
           "at",
           "read",
-          "picture"
+          "picture",
+          "player_id",
+          "player_name"
         ],
         "title": "NotificationOut",
         "type": "object"
@@ -39218,6 +39470,42 @@
             },
             "title": "Specialties",
             "type": "array"
+          },
+          "weakness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness"
+          },
+          "weakness_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness Page"
+          },
+          "weaknesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WeaknessOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weaknesses"
           },
           "wording": {
             "default": "",
@@ -45382,6 +45670,20 @@
         "title": "RemovedOut",
         "type": "object"
       },
+      "Replacement": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "Replacement",
+        "type": "object"
+      },
       "ReportCharacterOut": {
         "properties": {
           "character_id": {
@@ -48704,7 +49006,7 @@
       },
       "Sections": {
         "additionalProperties": false,
-        "description": "The settings by section, as Customise groups them. The first seven are the\ngroups of its Troupe settings page.",
+        "description": "The settings by section, as Setting up groups them. The first seven are the\ngroups of its Settings page.",
         "properties": {
           "actions": {
             "default": [],
@@ -55615,6 +55917,29 @@
             "title": "Student",
             "type": "string"
           },
+          "student_player": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Student Player"
+          },
+          "student_player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Student Player Id"
+          },
           "what": {
             "title": "What",
             "type": "string"
@@ -55628,6 +55953,8 @@
           "id",
           "what",
           "student",
+          "student_player_id",
+          "student_player",
           "willpower",
           "games"
         ],
@@ -57256,6 +57583,20 @@
               }
             ],
             "title": "Weakness Page"
+          },
+          "weaknesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WeaknessOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weaknesses"
           },
           "written_rules": {
             "items": {
@@ -59213,6 +59554,11 @@
             "title": "Apps Available",
             "type": "boolean"
           },
+          "has_password": {
+            "default": true,
+            "title": "Has Password",
+            "type": "boolean"
+          },
           "needed": {
             "title": "Needed",
             "type": "boolean"
@@ -60380,6 +60726,45 @@
           "link"
         ],
         "title": "WaitingLine",
+        "type": "object"
+      },
+      "WeaknessOut": {
+        "description": "One of the weaknesses a clan may have, as each troupe chooses: its line, its\npage, and the book it is from (\"vol2\" or \"core\") with that book's name.",
+        "properties": {
+          "book": {
+            "enum": [
+              "vol2",
+              "core"
+            ],
+            "title": "Book",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "weakness": {
+            "title": "Weakness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "book",
+          "label",
+          "weakness"
+        ],
+        "title": "WeaknessOut",
         "type": "object"
       },
       "WebBondOut": {
@@ -64390,6 +64775,132 @@
         "summary": "Change Log Settings",
         "tags": [
           "audit"
+        ]
+      }
+    },
+    "/api/auth/discord": {
+      "get": {
+        "description": "Whether someone can sign in, or up, with Discord here.",
+        "operationId": "discord_sign_in_help_api_auth_discord_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordSignInHelp"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Discord Sign In Help",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/discord/sign-up": {
+      "get": {
+        "description": "What Discord said of someone signing up with it, to start the form with.",
+        "operationId": "sign_up_for_api_auth_discord_sign_up_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordSignUpFor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sign Up For",
+        "tags": [
+          "auth"
+        ]
+      },
+      "post": {
+        "description": "Make the account Discord sign-in waited on, with the email Discord verified, the\nname and handle chosen, no password, and the Discord account linked; and sign in.",
+        "operationId": "sign_up_api_auth_discord_sign_up_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordSignUp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sign Up",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/discord/start": {
+      "post": {
+        "description": "Discord's page for signing in with Discord. The state waits here, and in a\ncookie for the callback, for 10 minutes.",
+        "operationId": "start_api_auth_discord_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordStarted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start",
+        "tags": [
+          "auth"
         ]
       }
     },
@@ -85995,6 +86506,70 @@
         ]
       }
     },
+    "/api/site/getting-ready": {
+      "get": {
+        "description": "How long Invite players stays on every troupe's list, for the custodian.",
+        "operationId": "read_getting_ready_site_api_site_getting_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadySiteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Getting Ready Site",
+        "tags": [
+          "troupes",
+          "site"
+        ]
+      },
+      "put": {
+        "description": "The custodian chooses after how many days Invite players leaves every troupe's list.",
+        "operationId": "change_getting_ready_site_api_site_getting_ready_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GettingReadySiteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingReadySiteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Getting Ready Site",
+        "tags": [
+          "troupes",
+          "site"
+        ]
+      }
+    },
     "/api/site/mail": {
       "get": {
         "operationId": "mail_api_site_mail_get",
@@ -92887,6 +93462,102 @@
           }
         },
         "summary": "Set Clan Rarity",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/clan-weaknesses": {
+      "get": {
+        "description": "Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),\nwith both weaknesses and the one the troupe plays (horatio.clan_weaknesses).",
+        "operationId": "read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanWeaknessesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Clan Weaknesses",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "description": "Play the core book's weakness for these clans, and the later book's for every\nother. What the troupe's characters and rules show changes at once.",
+        "operationId": "set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanWeaknessesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanWeaknessesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Clan Weaknesses",
         "tags": [
           "house rules"
         ]
@@ -105628,8 +106299,18 @@
     },
     "/api/two-step/passkeys/options": {
       "post": {
-        "description": "What the browser needs to make a passkey for Horatio: WebAuthn's\nPublicKeyCredentialCreationOptions, as JSON. Its challenge works once.",
+        "description": "What the browser needs to make a passkey for Horatio: WebAuthn's\nPublicKeyCredentialCreationOptions, as JSON, giving their password first. Its\nchallenge works once, so the passkey it makes is kept only after the password.",
         "operationId": "passkey_options_api_two_step_passkeys_options_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -105642,6 +106323,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Passkey Options",
@@ -105692,6 +106383,116 @@
           }
         },
         "summary": "Remove Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/passkeys/{passkey_id}/replace": {
+      "post": {
+        "description": "Replace one of their passkeys that may not sign in alone with the one the browser\nmade, which does (#1110), under the same name. The new one is kept and the old one\nremoved together, only once the new one checks out, so a cancelled or failed try\nleaves the old one as it was, and someone who must have two-step sign-in is never\nleft without a second step. The password was given for its challenge, at\nPOST .../replace/options.",
+        "operationId": "replace_passkey_api_two_step_passkeys__passkey_id__replace_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Replacement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/two-step/passkeys/{passkey_id}/replace/options": {
+      "post": {
+        "description": "What the browser needs to make a passkey in place of one that may not sign in\nalone (#1110), giving their password first: as for adding one, but the device must\nmake it so it can.",
+        "operationId": "replace_options_api_two_step_passkeys__passkey_id__replace_options_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Replace Options Api Two Step Passkeys  Passkey Id  Replace Options Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Options",
         "tags": [
           "auth"
         ]

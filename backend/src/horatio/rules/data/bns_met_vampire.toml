@@ -557,9 +557,13 @@ scheme = "free"
 # player chooses, kept as the clan's detail (horatio.rules.splats.clan_choice).
 # `weakness` is the clan's weakness in a line of our own words, for the creation
 # wizard, and `weakness_page` where the book has it in full. A bloodline with no
-# weakness of its own has its clan's (p. 42). Tremere's is Volume 2's, which
-# replaces the core book's (Vol. 2, p. 22). `page_reference` is the page where
-# the clan's or bloodline's write-up starts. Tremere's is the core book's, with
+# weakness of its own has its clan's (p. 42). Where a later book replaced a clan's
+# weakness, `weakness` is the later book's, which Horatio plays unless a troupe
+# chooses otherwise, and `core_weakness` with `core_weakness_page` is the core
+# book's: each troupe chooses which it plays (horatio.clan_weaknesses). Only the
+# Tremere's has been replaced, by Volume 2 (Vol. 2, p. 22); Volume 2's page on the
+# Followers of Set (p. 21) leaves their weakness as it was. `page_reference` is
+# the page where the clan's or bloodline's write-up starts. Tremere's is the core book's, with
 # its disciplines and merits; Volume 2's page on the clan changes only its weakness.
 
 [[traits]]
@@ -809,7 +813,7 @@ properties = { in_clan = ["Auspex", "Celerity", "Presence"] }
 category = "clan"
 name = "Tremere"
 page_reference = "61"
-properties = { in_clan = ["Auspex", "Dominate", "Thaumaturgy: Path of Blood"], weakness = "Their blood bonds other vampires only to the first stage; ghouls are bound as usual.", weakness_page = "Vol. 2, p. 22" }
+properties = { in_clan = ["Auspex", "Dominate", "Thaumaturgy: Path of Blood"], weakness = "Their blood bonds other vampires only to the first stage; ghouls are bound as usual.", weakness_page = "Vol. 2, p. 22", core_weakness = "Easily bound: their first drink of another vampire's blood counts as two, so a second binds them fully.", core_weakness_page = "64" }
 
 [[traits]]
 category = "clan"

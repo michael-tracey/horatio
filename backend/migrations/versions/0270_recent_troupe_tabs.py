@@ -1,8 +1,8 @@
 """The tabs of a troupe's page each person opened last there (#1048), kept on their
 account for the top of the phone's tab list.
 
-Revision ID: 0266
-Revises: 0265
+Revision ID: 0270
+Revises: 0269
 Create Date: 2026-11-21 16:00:00.000000
 """
 
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0266"
-down_revision: str | None = "0265"
+revision: str = "0270"
+down_revision: str | None = "0269"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

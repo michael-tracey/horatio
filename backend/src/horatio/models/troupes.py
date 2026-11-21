@@ -259,6 +259,10 @@ class Troupe(Imported, Record):
     default_bloodlines: Mapped[dict[str, str]] = mapped_column(
         JSONB, default=dict, server_default="{}"
     )
+    # The clans, without their bloodlines, whose weakness here is the core book's where
+    # a later book replaced it (the Tremere's, Vol. 2, p. 22). Every other plays the
+    # later book's, as the rules data has it (horatio.clan_weaknesses, #1127).
+    core_weaknesses: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     # House rule: the clans each of the sects' bans on clans names here, by the ban's
     # key ("pillar_clans": ["Assamite", "Gangrel", ...]), over the rule set's. A ban it
     # leaves out goes by the rule set; one it names no clans for is off here

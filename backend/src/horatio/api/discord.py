@@ -18,10 +18,10 @@ from horatio import (
     discord_webhooks,
     notification_choices,
 )
-from horatio.api import discord_account
+from horatio.api import discord_account, discord_sign_in
 from horatio.api.connectors import connector_row
 from horatio.api.downtimes import staff_troupe
-from horatio.auth.deps import CurrentUser, DbSession
+from horatio.auth.deps import CurrentUser, DbSession, MaybeUser, current_user
 from horatio.connectors import SendError, discord
 from horatio.models import Character, NewsAgency, Troupe, TroupeConnector, User
 from horatio.permissions import TroupeAction
@@ -167,13 +167,18 @@ def discord_invite(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> In
 def discord_callback(
     request: Request,
     db: DbSession,
-    user: CurrentUser,
+    signed_in: MaybeUser,
     state: str = "",
     code: str | None = None,
     error: str | None = None,
 ) -> RedirectResponse:
-    """Where Discord sends a storyteller after they add the bot (or decline), and
-    a player after they link their own Discord account (`state` begins `link.`)."""
+    """Where Discord sends a storyteller after they add the bot (or decline), a
+    player after they link their own Discord account (`state` begins `link.`), and
+    someone signing in or up with Discord (`state` begins `signin.`), who needn't be
+    signed in."""
+    if state.startswith(discord.SIGN_IN_STATE):
+        return discord_sign_in.finish_sign_in(request, db, state, code, error)
+    user = current_user(signed_in)
     if state.startswith(discord.LINK_STATE):
         return discord_account.finish_link(request, db, user, state, code, error)
     troupe_part, _, token = state.partition(".")

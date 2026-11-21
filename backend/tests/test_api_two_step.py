@@ -166,6 +166,7 @@ def test_setting_up_an_authenticator_app_gives_recovery_codes_and_keeps_the_secr
         "recovery_codes_left": 0,
         "required_by": [],
         "needed": False,
+        "has_password": True,
     }
 
     started = agnes.client.post("/two-step/app").json()
