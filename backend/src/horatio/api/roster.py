@@ -742,6 +742,10 @@ MESSAGES: dict[str, str] = {
     " password for two-step sign-in{from_ip}: too many tries at the account.",
     "account.password_change_throttled_again.two_step": "{actor} was turned away again from"
     " giving their password for two-step sign-in{from_ip}: too many tries at the account.",
+    "account.password_change_throttled.discord_confirm": "{actor} was turned away from"
+    " confirming it's them with Discord{from_ip}: too many tries at the account.",
+    "account.password_change_throttled_again.discord_confirm": "{actor} was turned away again"
+    " from confirming it's them with Discord{from_ip}: too many tries at the account.",
     "account.signed_up": "{actor} signed up{from_ip}.",
     "account.signed_up.discord": "{actor} signed up with Discord{from_ip}.",
     "account.signed_in": "{actor} signed in{from_ip}.",
@@ -850,6 +854,12 @@ MESSAGES: dict[str, str] = {
     "account.discord_unlinked": "{actor} unlinked their Discord account.",
     "account.discord_link_refused": "{actor} tried to link a Discord account already linked to"
     " another Horatio account.",
+    "account.discord_confirmed": "{actor} confirmed it's them with Discord{from_ip}, as they"
+    " have no password.",
+    "account.discord_confirm_failed": "{actor} failed to confirm it's them with"
+    " Discord{from_ip}: Discord didn't say who they are.",
+    "account.discord_confirm_failed.other_account": "{actor} failed to confirm it's them with"
+    " Discord{from_ip}: it was a Discord account not linked to theirs.",
     "account.view_as": "{actor} viewed Horatio as {member}, read-only{because}.",
     "account.view_as_ended": "{actor} stopped viewing as {member}.",
     "account.view_as_ended.signed_out": "{actor} signed out, which ended viewing as {member}.",

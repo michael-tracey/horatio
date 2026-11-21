@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import { SectionLabel } from "../../components/Headings";
@@ -31,17 +31,19 @@ export function aloneNote(discoverable: boolean | null): string | null {
   return "May not sign you in alone, without your password: it was added before passkeys could. To be sure, replace it on the device that keeps it.";
 }
 
-/** Said where something asks for the password and the person has none: an account made
- * with Discord (#1128) has none until they set one from a reset link. `what` says what
- * asks for it, "Adding a passkey". */
+/** Said where something asks for the password and the person has none, and no Discord
+ * linked to confirm it's them instead (#1140). An account made with Discord (#1128) has
+ * Discord linked, so this shouldn't happen, but it's said plainly if it does. `what`
+ * says what asks for it, "Adding a passkey". */
 export function NoPassword({ what, appInstead = false }: { what: string; appInstead?: boolean }) {
   return (
     <p className="text-mist">
-      {what} asks for your password, and you have none yet: you sign in with Discord. Set one from{" "}
+      {what} asks for your password, and you have none yet. Set one from{" "}
       <Link to="/forgot-password" className="text-gold underline">
         Forgot your password?
       </Link>
-      , then come back.{appInstead && " An authenticator app, below, asks for no password."}
+      , then come back.
+      {appInstead && " An authenticator app, below, asks for no password."}
     </p>
   );
 }
@@ -49,6 +51,88 @@ export function NoPassword({ what, appInstead = false }: { what: string; appInst
 /** What asks for the password again: turning off the app, new codes, removing or
  * replacing a passkey. Adding one asks for it in its own form. */
 type Asking = { what: "app" } | { what: "codes" } | { what: "passkey" | "replace"; id: string; name: string };
+
+/** What someone with no password went to Discord to confirm it's them for (#1140): one
+ * of the above, or adding a passkey. It goes there and back in the page's address. */
+export type Confirming = "add" | Asking["what"];
+
+// The address's words for it: `?confirming=` with the passkey's `passkey=` id, or the
+// `name=` of a new one; and what Discord's callback said, `discord_confirm=`.
+const CONFIRM_PARAMS = ["discord_confirm", "confirming", "passkey", "name"];
+
+/** What Discord's callback said of confirming it's you (`?discord_confirm=`), in plain
+ * words; null for anything else, so a crafted link can't put words on the page. */
+export function confirmOutcome(said: string | null): { ok: boolean; text: string } | null {
+  switch (said) {
+    case "confirmed":
+      return { ok: true, text: "Discord confirmed it's you. Go on within 5 minutes." };
+    case "cancelled":
+      return { ok: false, text: "Nothing was confirmed: you cancelled on Discord." };
+    case "expired":
+      return { ok: false, text: "That took too long. Confirm with Discord again." };
+    case "other_account":
+      return { ok: false, text: "That Discord account isn't the one linked to yours, so nothing was confirmed." };
+    case "failed":
+      return { ok: false, text: "Discord didn't say who you are, so nothing was confirmed. Try again." };
+    case "throttled":
+      return { ok: false, text: "Too many tries at confirming it's you. Try again later." };
+    case "not_needed":
+      return { ok: false, text: "You have a password now: give it instead." };
+    default:
+      return null;
+  }
+}
+
+/** Where Discord sends them back to: this page, as it was, saying what they were doing. */
+export function confirmNext(pathname: string, search: string, confirming: Confirming, extra: { passkey?: string; name?: string } = {}): string {
+  const params = new URLSearchParams(search);
+  for (const key of CONFIRM_PARAMS) params.delete(key);
+  params.set("confirming", confirming);
+  if (extra.passkey) params.set("passkey", extra.passkey);
+  if (extra.name) params.set("name", extra.name);
+  return `${pathname}?${params}`;
+}
+
+/** The form to open again, back from Discord: "add" for adding a passkey. A passkey
+ * gone since is nothing. */
+export function reopened(confirming: string | null, passkey: string | null, s: Pick<TwoStep, "passkeys">): Asking | "add" | null {
+  if (confirming === "add") return "add";
+  if (confirming === "app" || confirming === "codes") return { what: confirming };
+  if (confirming === "passkey" || confirming === "replace") {
+    const found = s.passkeys.find((p) => p.id === passkey);
+    return found ? { what: confirming, id: found.id, name: found.name } : null;
+  }
+  return null;
+}
+
+/** Whether this sign-in is confirmed with Discord now, standing in for a password the
+ * person hasn't got (#1140). */
+export function confirmedNow(s: Pick<TwoStep, "has_password" | "confirmed_until">, now = Date.now()): boolean {
+  return !s.has_password && !!s.confirmed_until && Date.parse(s.confirmed_until) > now;
+}
+
+/** In place of the password, for someone with none and Discord linked (#1140): to
+ * Discord and back to this page, with the form they were in open again, confirmed.
+ * `children` sit beside the button, such as Cancel. */
+function ConfirmWithDiscord({ confirming, passkey, name, children }: { confirming: Confirming; passkey?: string; name?: string; children?: React.ReactNode }) {
+  const location = useLocation();
+  const go = useAction(async () => {
+    const next = confirmNext(location.pathname, location.search, confirming, { passkey, name });
+    const { url } = await unwrap(api.POST("/api/auth/discord/confirm", { body: { next } }));
+    window.location.assign(url);
+  });
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" disabled={go.isPending} onClick={() => go.mutate(undefined)}>
+          Confirm with Discord
+        </Button>
+        {children}
+      </div>
+      <ErrorText error={go.error} />
+    </div>
+  );
+}
 
 /**
  * Two-step sign-in (#1057): after the password, a passkey on the person's phone or
@@ -72,6 +156,26 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [addingPassword, setAddingPassword] = useState("");
+  // Back from confirming with Discord (#1140): what it said, and the form they were
+  // in, open again. The address forgets it, so going back or reloading doesn't redo it.
+  const [params, setParams] = useSearchParams();
+  const [told, setTold] = useState<{ ok: boolean; text: string } | null>(null);
+  const toldRef = useRef<HTMLParagraphElement>(null);
+  const loaded = state.data;
+  useEffect(() => {
+    const said = params.get("discord_confirm");
+    if (!said || !loaded) return;
+    setTold(confirmOutcome(said));
+    const open = reopened(params.get("confirming"), params.get("passkey"), loaded);
+    if (open === "add") setName(params.get("name") ?? "");
+    else if (open) setAsking(open);
+    const left = new URLSearchParams(params);
+    for (const key of CONFIRM_PARAMS) left.delete(key);
+    setParams(left, { replace: true });
+  }, [params, loaded, setParams]);
+  useEffect(() => {
+    if (told) toldRef.current?.scrollIntoView?.({ block: "center" });
+  }, [told]);
 
   /** A second step is on: the recovery codes, if they came with it, then on. */
   const turnedOn = (made: string[], message: string) => {
@@ -129,15 +233,40 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
 
   const passwordForm = (asked: Asking, s: TwoStep) => {
     const action = asked.what === "replace" ? replacePasskey : withPassword;
-    if (!s.has_password)
-      return (
+    const what = asked.what === "codes" ? "Making new recovery codes" : asked.what === "app" ? "Turning off the app" : asked.what === "replace" ? `Replacing ${asked.name}` : `Removing ${asked.name}`;
+    const hint =
+      asked.what === "codes"
+        ? "To make new recovery codes. The ones you have stop working."
+        : asked.what === "app"
+          ? "To turn off your authenticator app."
+          : asked.what === "replace"
+            ? `To replace ${asked.name} with a new passkey on this device, which signs you in alone. Your browser asks you to confirm next.`
+            : `To remove ${asked.name}.`;
+    const cancel = (
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          setAsking(null);
+          action.reset();
+        }}
+      >
+        Cancel
+      </Button>
+    );
+    const confirmed = confirmedNow(s);
+    if (!s.has_password && !confirmed)
+      return s.can_confirm_with_discord ? (
         <div className="flex flex-col gap-2">
-          <NoPassword
-            what={asked.what === "codes" ? "Making new recovery codes" : asked.what === "app" ? "Turning off the app" : asked.what === "replace" ? `Replacing ${asked.name}` : `Removing ${asked.name}`}
-          />
-          <Button type="button" variant="secondary" className="self-start" onClick={() => setAsking(null)}>
-            Cancel
-          </Button>
+          <p className="text-mist">{what} asks you to confirm it's you. You have no password, so confirm with Discord: Horatio sends you there and back to this form.</p>
+          <ConfirmWithDiscord confirming={asked.what} passkey={"id" in asked ? asked.id : undefined}>
+            {cancel}
+          </ConfirmWithDiscord>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <NoPassword what={what} />
+          <div>{cancel}</div>
         </div>
       );
     return (
@@ -149,35 +278,19 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
           else withPassword.mutate(asked);
         }}
       >
-        <Field
-          label="Your password"
-          hint={
-            asked.what === "codes"
-              ? "To make new recovery codes. The ones you have stop working."
-              : asked.what === "app"
-                ? "To turn off your authenticator app."
-                : asked.what === "replace"
-                  ? `To replace ${asked.name} with a new passkey on this device, which signs you in alone. Your browser asks you to confirm next.`
-                  : `To remove ${asked.name}.`
-          }
-        >
-          <Input type="password" required autoFocus autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </Field>
+        {confirmed ? (
+          <p className="text-mist">{hint} Discord confirmed it's you, so no password is asked.</p>
+        ) : (
+          <Field label="Your password" hint={hint}>
+            <Input type="password" required autoFocus autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </Field>
+        )}
         <ErrorText error={action.error} />
         <div className="flex flex-wrap gap-2">
           <Button type="submit" variant={asked.what === "codes" || asked.what === "replace" ? "primary" : "danger"} disabled={action.isPending}>
             {asked.what === "codes" ? "Make new codes" : asked.what === "app" ? "Turn off" : asked.what === "replace" ? "Replace" : "Remove"}
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setAsking(null);
-              action.reset();
-            }}
-          >
-            Cancel
-          </Button>
+          {cancel}
         </div>
       </form>
     );
@@ -226,8 +339,21 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
         <p className="text-mist">Passkeys need this site on https.</p>
       ) : !browserSupportsWebAuthn() ? (
         <p className="text-mist">This browser can't make passkeys. An authenticator app works anywhere.</p>
-      ) : !s.has_password ? (
-        <NoPassword what="Adding a passkey" appInstead={s.apps_available && !s.app} />
+      ) : !s.has_password && !confirmedNow(s) ? (
+        s.can_confirm_with_discord ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-mist">
+              Adding a passkey asks you to confirm it's you. You have no password, so confirm with Discord: Horatio sends you there and back, and you add it then.
+              {s.apps_available && !s.app && " An authenticator app, below, asks for neither."}
+            </p>
+            <Field label="Passkey name" hint="So you can tell them apart, such as Phone.">
+              <Input value={name} maxLength={60} placeholder="Passkey" onChange={(e) => setName(e.target.value)} />
+            </Field>
+            <ConfirmWithDiscord confirming="add" name={name.trim()} />
+          </div>
+        ) : (
+          <NoPassword what="Adding a passkey" appInstead={s.apps_available && !s.app} />
+        )
       ) : (
         <form
           className="flex flex-wrap items-end gap-2"
@@ -239,9 +365,13 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
           <Field label="Passkey name" hint="So you can tell them apart, such as Phone.">
             <Input value={name} maxLength={60} placeholder="Passkey" onChange={(e) => setName(e.target.value)} />
           </Field>
-          <Field label="Your password" hint="Asked again, so a sign-in left open can't add one.">
-            <Input type="password" required autoComplete="current-password" value={addingPassword} onChange={(e) => setAddingPassword(e.target.value)} />
-          </Field>
+          {s.has_password ? (
+            <Field label="Your password" hint="Asked again, so a sign-in left open can't add one.">
+              <Input type="password" required autoComplete="current-password" value={addingPassword} onChange={(e) => setAddingPassword(e.target.value)} />
+            </Field>
+          ) : (
+            <p className="basis-full text-mist">Discord confirmed it's you, so no password is asked. Your browser asks you to make the passkey next.</p>
+          )}
           <Button type="submit" variant={s.passkeys.length ? "secondary" : "primary"} disabled={addPasskey.isPending}>
             Add a passkey
           </Button>
@@ -317,6 +447,14 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
               you. A passkey can also sign you in alone, with no password: choose <strong>Sign in with a passkey</strong>. Your password still works, and stays.
             </p>
             {s.required_by.length > 0 && <Notice>You need two-step sign-in as {s.required_by.join(" and as ")}.</Notice>}
+            {told && (
+              <p ref={toldRef} role="status" className={`flex flex-wrap items-center gap-2 ${told.ok ? "text-parchment" : "text-blood-bright"}`}>
+                {told.text}
+                <Button type="button" variant="ghost" className="min-h-8 px-2" onClick={() => setTold(null)}>
+                  Dismiss
+                </Button>
+              </p>
+            )}
             {codes ? (
               <RecoveryCodes
                 codes={codes}

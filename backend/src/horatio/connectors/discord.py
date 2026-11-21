@@ -183,6 +183,25 @@ def sign_in_url(state: str) -> str:
     return f"{AUTHORIZE}?{urlencode(query)}"
 
 
+# A `state` that begins with this belongs to someone signed in with no password,
+# confirming it's them with Discord instead (#1140).
+CONFIRM_STATE = "confirm."
+
+
+def confirm_url(state: str) -> str:
+    """Discord's page for confirming it's you with Discord (#1140): `identify` only, to
+    say which Discord account it is. Someone who has agreed before goes straight back."""
+    query = {
+        "client_id": get_settings().discord_client_id,
+        "scope": "identify",
+        "response_type": "code",
+        "redirect_uri": redirect_uri(),
+        "state": f"{CONFIRM_STATE}{state}",
+        "prompt": "none",
+    }
+    return f"{AUTHORIZE}?{urlencode(query)}"
+
+
 @dataclass(frozen=True)
 class Account:
     """A Discord account, as Discord itself says: its id and username; with the
