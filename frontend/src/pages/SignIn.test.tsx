@@ -56,18 +56,21 @@ function show() {
 }
 
 describe("the sign-in page's passkeys (#1124)", () => {
-  it.each([
-    ["the browser turns the login box's offer down", () => start.mockRejectedValue(notSupported)],
-    ["the passkey picked from the login box is refused", () => {
-      start.mockResolvedValue({ id: "k" });
-      signIn = () => refused;
-    }],
-  ])("keep it off the page when %s, in the console only", async (_, arrange) => {
-    arrange();
+  it("keep it off the page when the browser turns the login box's offer down, in the console only", async () => {
+    start.mockRejectedValue(notSupported);
     show();
     await waitFor(() => expect(logged).toHaveBeenCalledOnce());
     expect(start).toHaveBeenCalledWith(true);
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("say what the server said of a passkey picked from the login box, as for the button", async () => {
+    start.mockResolvedValue({ id: "k" });
+    signIn = () => refused;
+    show();
+    expect((await screen.findByRole("alert")).textContent).toBe("That passkey didn't sign you in.");
+    expect(start).toHaveBeenCalledWith(true);
+    expect(logged).not.toHaveBeenCalled();
   });
 
   it("say nothing at all when the login box's offer is stopped", async () => {

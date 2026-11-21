@@ -37,9 +37,13 @@ function useAfterPassword() {
  * names no account, signed by whichever passkey the person picks. The device checks
  * their face, finger or PIN, so no second step follows. With `autofill`, the browser
  * offers their passkeys from the login box rather than at once. */
-async function signInWithPasskey(autofill: boolean) {
+async function pickPasskey(autofill: boolean) {
   const optionsJSON = await unwrap(api.POST("/api/auth/passkey/options"));
-  const credential = await startAuthentication({ optionsJSON: optionsJSON as never, useBrowserAutofill: autofill });
+  return startAuthentication({ optionsJSON: optionsJSON as never, useBrowserAutofill: autofill });
+}
+
+/** The picked passkey, for the server to sign the person in with. */
+async function signInWithPasskey(credential: unknown) {
   await unwrap(api.POST("/api/auth/passkey", { body: { credential: credential as never } }));
 }
 
@@ -56,30 +60,37 @@ export function SignInPage() {
   });
   const withPasskey = browserSupportsWebAuthn();
   const passkey = useAction(async () => {
-    await signInWithPasskey(false);
+    await signInWithPasskey(await pickPasskey(false));
     navigate(next ?? "/characters");
   });
   // The browser offers passkeys from the login box too (conditional UI), until one is
-  // picked; again after the button's request ends, which took its place. What goes
-  // wrong with that offer stays off the page, in the console at most (#1124): no one
-  // asked for it, and some browsers turn it down as the page opens.
+  // picked; again after the button's request ends, which took its place. The offer
+  // itself going wrong stays off the page, in the console at most (#1124): no one
+  // asked for it, and some browsers turn it down as the page opens. A passkey picked
+  // from it that the server refuses is said, as for the button.
   const [offered, setOffered] = useState(0);
+  const [refused, setRefused] = useState<unknown>(null);
   useEffect(() => {
     let on = true;
     void (async () => {
       try {
         if (!(await browserSupportsWebAuthnAutofill())) return;
         while (on) {
+          const credential = await pickPasskey(true);
+          if (!on) return;
           try {
-            await signInWithPasskey(true);
-            if (!on) return;
-            await client.invalidateQueries();
-            navigate(next ?? "/characters");
-            return;
+            await signInWithPasskey(credential);
           } catch (error) {
+            if (!on) return;
+            setRefused(error);
             // Its challenge timed out: offer them again with a new one.
-            if (!(error instanceof ApiError && error.status === 410)) throw error;
+            if (error instanceof ApiError && error.status === 410) continue;
+            return;
           }
+          if (!on) return;
+          await client.invalidateQueries();
+          navigate(next ?? "/characters");
+          return;
         }
       } catch (error) {
         if (on && !passkeyAborted(error)) console.info("The login box's passkey offer ended:", error);
@@ -120,11 +131,14 @@ export function SignInPage() {
               type="button"
               variant="secondary"
               disabled={passkey.isPending}
-              onClick={() => passkey.mutate(undefined, { onError: () => setOffered((n) => n + 1) })}
+              onClick={() => {
+                setRefused(null);
+                passkey.mutate(undefined, { onError: () => setOffered((n) => n + 1) });
+              }}
             >
               Sign in with a passkey
             </Button>
-            <ErrorText error={passkeyProblem(passkey.error)} />
+            <ErrorText error={passkeyProblem(passkey.error ?? refused)} />
           </>
         )}
         <p className="text-center text-sm text-mist">
