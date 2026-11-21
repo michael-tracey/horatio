@@ -31,6 +31,7 @@ describe("confirming it's you with Discord, with no password (#1140)", () => {
     expect(reopened("add", null, s)).toBe("add");
     expect(reopened("codes", null, s)).toEqual({ what: "codes" });
     expect(reopened("app", null, s)).toEqual({ what: "app" });
+    expect(reopened("setup", null, s)).toEqual({ what: "setup" });
     expect(reopened("replace", "p1", s)).toEqual({ what: "replace", id: "p1", name: "Phone" });
     expect(reopened("passkey", "p1", s)).toEqual({ what: "passkey", id: "p1", name: "Phone" });
     // A passkey gone since, or anything else, opens nothing.

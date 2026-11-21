@@ -239,14 +239,22 @@ def otpauth_uri(user: User, secret: str) -> str:
     return TOTP(secret).provisioning_uri(name=f"@{user.handle}", issuer_name=ISSUER)
 
 
-def start_app(db: Session, user: User) -> str:
-    """Start setting up an authenticator app, in place of any being set up: the new
-    secret, base32."""
+def can_start_app(db: Session, user: User) -> None:
+    """Refuse to set up an authenticator app where none can be: this server has no key,
+    or they have one on already."""
+    if not apps_available():
+        raise HTTPException(status.HTTP_409_CONFLICT, NO_KEY)
     if has_app(db, user):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "You have an authenticator app set up. Turn it off first to set up another.",
         )
+
+
+def start_app(db: Session, user: User) -> str:
+    """Start setting up an authenticator app, in place of any being set up: the new
+    secret, base32."""
+    can_start_app(db, user)
     secret = pyotp.random_base32()
     db.execute(delete(AuthenticatorApp).where(AuthenticatorApp.user_id == user.id))
     db.add(AuthenticatorApp(user_id=user.id, secret=encrypt(user.id, secret)))

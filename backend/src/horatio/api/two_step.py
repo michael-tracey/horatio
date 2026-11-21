@@ -169,10 +169,11 @@ CONFIRM_FIRST = (
 
 
 def check_password(request: Request, db: DbSession, user: User, password: str) -> None:
-    """Adding, replacing or removing a passkey, turning off the app, or making new
-    recovery codes asks for the password again, so a sign-in left open somewhere can't
-    (#1110). Each try, right or wrong, counts towards the limit on password tries at
-    the account, as changing the password does, checked before the password is.
+    """Adding, replacing or removing a passkey, setting up or turning off the app, or
+    making new recovery codes asks for the password again, so a sign-in left open
+    somewhere can't (#1110, #1148). Each try, right or wrong, counts towards the limit
+    on password tries at the account, as changing the password does, checked before
+    the password is.
 
     An account with no password (one made with Discord, #1128) confirms it's them with
     Discord instead (#1140, horatio.api.discord_confirm): this sign-in's confirmation
@@ -221,9 +222,12 @@ def two_step_state(request: Request, db: DbSession, user: CurrentUser) -> TwoSte
 
 @router.post("/app")
 @allowed_first
-def start_app(db: DbSession, user: CurrentUser) -> AppSetup:
-    """Start setting up an authenticator app: the secret to scan or type into it. It
-    signs no one in until a code from it is given (POST /two-step/app/confirm)."""
+def start_app(body: Password, request: Request, db: DbSession, user: CurrentUser) -> AppSetup:
+    """Start setting up an authenticator app, giving their password first (#1148): the
+    secret to scan or type into it, so a wrong password never shows one. It signs no
+    one in until a code from it is given (POST /two-step/app/confirm)."""
+    two_step.can_start_app(db, user)
+    check_password(request, db, user, body.password)
     secret = two_step.start_app(db, user)
     db.commit()
     return AppSetup(secret=secret, uri=two_step.otpauth_uri(user, secret))
@@ -231,15 +235,17 @@ def start_app(db: DbSession, user: CurrentUser) -> AppSetup:
 
 @router.post("/app/confirm")
 @allowed_first
-def confirm_app(body: Code, db: DbSession, user: CurrentUser) -> RecoveryCodes:
+def confirm_app(body: Code, request: Request, db: DbSession, user: CurrentUser) -> RecoveryCodes:
     """Turn on the authenticator app being set up with a code from it. With it come
-    ten recovery codes, if they have none left."""
+    ten recovery codes, if they have none left. The password was given for its
+    secret, at POST /two-step/app."""
     if not two_step.check_app(db, user, body.code, setting_up=True):
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "That code isn't right. Check that your phone's clock is right, and give the"
             " newest code.",
         )
+    used_up(request, db, user)
     record(db, user, "account.two_step_added", kind="app", member=user.display_name)
     codes = first_codes(db, user)
     db.commit()

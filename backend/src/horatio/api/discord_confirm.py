@@ -1,9 +1,9 @@
 """Confirming it's you with Discord, for an account with no password (#1140).
 
-Adding, replacing or removing a passkey, turning off the authenticator app and new
-recovery codes ask for the password again (#1110), and an account made with Discord
-(#1128) has none. Such an account, with Discord linked, confirms it's them by going
-through Discord instead. Discord comes back through its one callback,
+Adding, replacing or removing a passkey, setting up or turning off the authenticator
+app and new recovery codes ask for the password again (#1110, #1148), and an account
+made with Discord (#1128) has none. Such an account, with Discord linked, confirms
+it's them by going through Discord instead. Discord comes back through its one callback,
 `/api/discord/callback`, which hands it here when its `state` begins with `confirm.`
 (horatio.api.discord).
 

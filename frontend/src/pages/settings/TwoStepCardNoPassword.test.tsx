@@ -51,10 +51,14 @@ function show(at = "/account/sign-in") {
   );
 }
 
-/** What POSTs answer: Discord's page for confirming, or nothing much for the rest. */
+const SETUP = { secret: "JBSWY3DPEHPK3PXP", uri: "otpauth://totp/Horatio:%40owl?secret=JBSWY3DPEHPK3PXP&issuer=Horatio" };
+
+/** What POSTs answer: Discord's page for confirming, an app's secret, or nothing much
+ * for the rest. */
 function posts() {
   return vi.spyOn(api, "POST").mockImplementation((async (path: string) => {
     if (path === "/api/auth/discord/confirm") return { data: { url: "https://discord.com/oauth2/authorize?state=confirm.x" }, response: new Response(null, { status: 200 }) };
+    if (path === "/api/two-step/app") return { data: SETUP, response: new Response(null, { status: 200 }) };
     return { data: { recovery_codes: [] }, response: new Response(null, { status: 200 }) };
   }) as never);
 }
@@ -62,15 +66,26 @@ function posts() {
 const inFiveMinutes = () => new Date(Date.now() + 5 * 60_000).toISOString();
 
 describe("two-step sign-in for an account made with Discord, with no password (#1128)", () => {
-  it("says adding a passkey needs a password, and how to set one, and still offers the app", async () => {
+  it("says adding a passkey needs a password, and how to set one", async () => {
     answers(state);
     show();
     expect(await screen.findByText(/Adding a passkey asks for your password, and you have none yet/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Forgot your password?" }).getAttribute("href")).toBe("/forgot-password");
-    expect(screen.getByText(/An authenticator app, below, asks for no password\./)).toBeTruthy();
+    expect(screen.queryByText(/asks for no password/)).toBeNull();
     expect(screen.queryByLabelText("Your password")).toBeNull();
     expect(screen.queryByRole("button", { name: "Add a passkey" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Set up an authenticator app" })).toBeTruthy();
+  });
+
+  it("says the same for setting up an authenticator app, and shows no key (#1148)", async () => {
+    answers(state);
+    const post = posts();
+    show();
+    fireEvent.click(await screen.findByRole("button", { name: "Set up an authenticator app" }));
+    const app = within(screen.getByRole("region", { name: "Authenticator app" }));
+    expect(app.getByText(/Setting up an authenticator app asks for your password, and you have none yet/)).toBeTruthy();
+    expect(app.queryByLabelText("Your password")).toBeNull();
+    expect(app.queryByRole("button", { name: "Show the QR code" })).toBeNull();
+    expect(post).not.toHaveBeenCalled();
   });
 
   it("says the same in place of the password form for turning off the app", async () => {
@@ -86,6 +101,31 @@ describe("two-step sign-in for an account made with Discord, with no password (#
     show();
     expect(await screen.findByRole("button", { name: "Add a passkey" })).toBeTruthy();
     expect(screen.queryByText(/you have none yet/)).toBeNull();
+  });
+
+  it("asks for the password before an authenticator app's QR code and key, and shows none for a wrong one (#1148)", async () => {
+    answers({ ...state, has_password: true });
+    const post = vi.spyOn(api, "POST").mockImplementation((async (_path: string, init: { body: { password: string } }) => {
+      if (init.body.password !== "right") return { error: { detail: "That's not your password." }, response: new Response(null, { status: 403 }) };
+      return { data: SETUP, response: new Response(null, { status: 200 }) };
+    }) as never);
+    show();
+    fireEvent.click(await screen.findByRole("button", { name: "Set up an authenticator app" }));
+    const app = within(screen.getByRole("region", { name: "Authenticator app" }));
+    expect(app.getByText("To set up an authenticator app. Its QR code and key show next.")).toBeTruthy();
+
+    fireEvent.change(app.getByLabelText(/Your password/), { target: { value: "wrong" } });
+    fireEvent.click(app.getByRole("button", { name: "Show the QR code" }));
+    expect(await app.findByText("That's not your password.")).toBeTruthy();
+    expect(app.queryByRole("img", { name: "QR code for your authenticator app" })).toBeNull();
+    expect(app.queryByText(/^Key:/)).toBeNull();
+
+    fireEvent.change(app.getByLabelText(/Your password/), { target: { value: "right" } });
+    fireEvent.click(app.getByRole("button", { name: "Show the QR code" }));
+    expect(await app.findByRole("img", { name: "QR code for your authenticator app" })).toBeTruthy();
+    expect(app.getByText("JBSW Y3DP EHPK 3PXP")).toBeTruthy();
+    expect(app.queryByLabelText(/Your password/)).toBeNull();
+    expect(post).toHaveBeenLastCalledWith("/api/two-step/app", { body: { password: "right" } });
   });
 });
 
@@ -136,6 +176,27 @@ describe("confirming it's you with Discord in place of a password (#1140)", () =
 
     fireEvent.click(screen.getByRole("button", { name: "Turn off" }));
     await waitFor(() => expect(post).toHaveBeenCalledWith("/api/two-step/app/remove", { body: { password: "" } }));
+  });
+
+  it("offers it for setting up an authenticator app, and back from Discord shows the QR code with no password (#1148)", async () => {
+    answers(linked);
+    const post = posts();
+    vi.stubGlobal("location", { ...window.location, assign: vi.fn() });
+    show("/two-step?next=%2Ftroupes");
+    fireEvent.click(await screen.findByRole("button", { name: "Set up an authenticator app" }));
+    const app = within(screen.getByRole("region", { name: "Authenticator app" }));
+    expect(app.getByText(/Setting up an authenticator app asks you to confirm it's you/)).toBeTruthy();
+    fireEvent.click(app.getByRole("button", { name: "Confirm with Discord" }));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/api/auth/discord/confirm", { body: { next: "/two-step?next=%2Ftroupes&confirming=setup" } }));
+    cleanup();
+
+    answers({ ...linked, confirmed_until: inFiveMinutes() });
+    show("/two-step?next=%2Ftroupes&confirming=setup&discord_confirm=confirmed");
+    expect(await screen.findByText(/To set up an authenticator app\. Its QR code and key show next\. Discord confirmed it's you, so no password is asked\./)).toBeTruthy();
+    expect(screen.queryByLabelText("Your password")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show the QR code" }));
+    expect(await screen.findByRole("img", { name: "QR code for your authenticator app" })).toBeTruthy();
+    expect(post).toHaveBeenCalledWith("/api/two-step/app", { body: { password: "" } });
   });
 
   it("back from Discord to add a passkey, shows the form with its name and no password box", async () => {

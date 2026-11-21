@@ -401,6 +401,14 @@ test("two-step sign-in: an authenticator app set up from Account, then asked for
   await page.locator("main").getByRole("link", { name: "Sign-in and email", exact: true }).click();
   const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
   await card.getByRole("button", { name: "Set up an authenticator app" }).click();
+  // Asked for the password first (#1148): a wrong one shows no QR code or key.
+  const app = card.getByRole("region", { name: "Authenticator app" });
+  await app.getByLabel("Your password").fill("not my password");
+  await app.getByRole("button", { name: "Show the QR code" }).click();
+  await expect(app.getByText("That's not your password.")).toBeVisible();
+  await expect(app.getByRole("img", { name: "QR code for your authenticator app" })).toHaveCount(0);
+  await app.getByLabel("Your password").fill(PASSWORD);
+  await app.getByRole("button", { name: "Show the QR code" }).click();
   await expect(card.getByRole("img", { name: "QR code for your authenticator app" })).toBeVisible();
   const key = (await card.getByText(/^Key:/).textContent())!.replace("Key:", "").replace(/\s/g, "");
   // A wrong code is refused; the one the app shows turns it on.

@@ -35,7 +35,7 @@ export function aloneNote(discoverable: boolean | null): string | null {
  * linked to confirm it's them instead (#1140). An account made with Discord (#1128) has
  * Discord linked, so this shouldn't happen, but it's said plainly if it does. `what`
  * says what asks for it, "Adding a passkey". */
-export function NoPassword({ what, appInstead = false }: { what: string; appInstead?: boolean }) {
+export function NoPassword({ what }: { what: string }) {
   return (
     <p className="text-mist">
       {what} asks for your password, and you have none yet. Set one from{" "}
@@ -43,14 +43,13 @@ export function NoPassword({ what, appInstead = false }: { what: string; appInst
         Forgot your password?
       </Link>
       , then come back.
-      {appInstead && " An authenticator app, below, asks for no password."}
     </p>
   );
 }
 
-/** What asks for the password again: turning off the app, new codes, removing or
- * replacing a passkey. Adding one asks for it in its own form. */
-type Asking = { what: "app" } | { what: "codes" } | { what: "passkey" | "replace"; id: string; name: string };
+/** What asks for the password again: setting up the app (#1148) or turning it off, new
+ * codes, removing or replacing a passkey. Adding one asks for it in its own form. */
+type Asking = { what: "setup" } | { what: "app" } | { what: "codes" } | { what: "passkey" | "replace"; id: string; name: string };
 
 /** What someone with no password went to Discord to confirm it's them for (#1140): one
  * of the above, or adding a passkey. It goes there and back in the page's address. */
@@ -97,7 +96,7 @@ export function confirmNext(pathname: string, search: string, confirming: Confir
  * gone since is nothing. */
 export function reopened(confirming: string | null, passkey: string | null, s: Pick<TwoStep, "passkeys">): Asking | "add" | null {
   if (confirming === "add") return "add";
-  if (confirming === "app" || confirming === "codes") return { what: confirming };
+  if (confirming === "setup" || confirming === "app" || confirming === "codes") return { what: confirming };
   if (confirming === "passkey" || confirming === "replace") {
     const found = s.passkeys.find((p) => p.id === passkey);
     return found ? { what: confirming, id: found.id, name: found.name } : null;
@@ -139,9 +138,9 @@ function ConfirmWithDiscord({ confirming, passkey, name, children }: { confirmin
  * computer, or a code from an authenticator app, with one-time recovery codes for
  * when both are lost. A passkey is made by the browser; an app is set up with a QR
  * code (and the key, to type in), then a code from it. The recovery codes come once,
- * with the first second step. Adding, replacing or removing a passkey, turning off the
- * app, or making new recovery codes, asks for the password again, before the browser
- * is asked for anything (#1110). Someone who must have it can't remove their last. A
+ * with the first second step. Adding, replacing or removing a passkey, setting up or
+ * turning off the app, or making new recovery codes, asks for the password again,
+ * before the browser is asked for anything or the app's key is shown (#1110, #1148). Someone who must have it can't remove their last. A
  * passkey that may not sign in alone is replaced in one go: the new one is made and
  * kept before the old one goes, so a cancelled or failed try leaves the old one as it was.
  */
@@ -208,10 +207,6 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
     },
     [TWO_STEP],
   );
-  const start = useAction(async () => {
-    setSetup(await unwrap(api.POST("/api/two-step/app")));
-    setCode("");
-  }, [TWO_STEP]);
   const confirm = useAction(async () => {
     const made = await unwrap(api.POST("/api/two-step/app/confirm", { body: { code } }));
     setSetup(null);
@@ -221,27 +216,41 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
   const withPassword = useAction(
     async (asked: Asking) => {
       const body = { password };
-      if (asked.what === "codes") setCodes((await unwrap(api.POST("/api/two-step/recovery-codes", { body }))).recovery_codes);
+      if (asked.what === "setup") {
+        setSetup(await unwrap(api.POST("/api/two-step/app", { body })));
+        setCode("");
+      } else if (asked.what === "codes") setCodes((await unwrap(api.POST("/api/two-step/recovery-codes", { body }))).recovery_codes);
       else if (asked.what === "app") await unwrap(api.POST("/api/two-step/app/remove", { body }));
       else await unwrap(api.POST("/api/two-step/passkeys/{passkey_id}/remove", { params: { path: { passkey_id: asked.id } }, body }));
       setAsking(null);
       setPassword("");
-      if (asked.what !== "codes") toast({ message: asked.what === "app" ? "Authenticator app turned off." : `${asked.name} removed.` });
+      if (asked.what === "passkey" || asked.what === "app") toast({ message: asked.what === "app" ? "Authenticator app turned off." : `${asked.name} removed.` });
     },
     [TWO_STEP, ["me"]],
   );
 
   const passwordForm = (asked: Asking, s: TwoStep) => {
     const action = asked.what === "replace" ? replacePasskey : withPassword;
-    const what = asked.what === "codes" ? "Making new recovery codes" : asked.what === "app" ? "Turning off the app" : asked.what === "replace" ? `Replacing ${asked.name}` : `Removing ${asked.name}`;
+    const what =
+      asked.what === "setup"
+        ? "Setting up an authenticator app"
+        : asked.what === "codes"
+          ? "Making new recovery codes"
+          : asked.what === "app"
+            ? "Turning off the app"
+            : asked.what === "replace"
+              ? `Replacing ${asked.name}`
+              : `Removing ${asked.name}`;
     const hint =
-      asked.what === "codes"
-        ? "To make new recovery codes. The ones you have stop working."
-        : asked.what === "app"
-          ? "To turn off your authenticator app."
-          : asked.what === "replace"
-            ? `To replace ${asked.name} with a new passkey on this device, which signs you in alone. Your browser asks you to confirm next.`
-            : `To remove ${asked.name}.`;
+      asked.what === "setup"
+        ? "To set up an authenticator app. Its QR code and key show next."
+        : asked.what === "codes"
+          ? "To make new recovery codes. The ones you have stop working."
+          : asked.what === "app"
+            ? "To turn off your authenticator app."
+            : asked.what === "replace"
+              ? `To replace ${asked.name} with a new passkey on this device, which signs you in alone. Your browser asks you to confirm next.`
+              : `To remove ${asked.name}.`;
     const cancel = (
       <Button
         type="button"
@@ -287,8 +296,8 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
         )}
         <ErrorText error={action.error} />
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" variant={asked.what === "codes" || asked.what === "replace" ? "primary" : "danger"} disabled={action.isPending}>
-            {asked.what === "codes" ? "Make new codes" : asked.what === "app" ? "Turn off" : asked.what === "replace" ? "Replace" : "Remove"}
+          <Button type="submit" variant={asked.what === "app" || asked.what === "passkey" ? "danger" : "primary"} disabled={action.isPending}>
+            {asked.what === "setup" ? "Show the QR code" : asked.what === "codes" ? "Make new codes" : asked.what === "app" ? "Turn off" : asked.what === "replace" ? "Replace" : "Remove"}
           </Button>
           {cancel}
         </div>
@@ -344,7 +353,6 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
           <div className="flex flex-col gap-2">
             <p className="text-mist">
               Adding a passkey asks you to confirm it's you. You have no password, so confirm with Discord: Horatio sends you there and back, and you add it then.
-              {s.apps_available && !s.app && " An authenticator app, below, asks for neither."}
             </p>
             <Field label="Passkey name" hint="So you can tell them apart, such as Phone.">
               <Input value={name} maxLength={60} placeholder="Passkey" onChange={(e) => setName(e.target.value)} />
@@ -352,7 +360,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
             <ConfirmWithDiscord confirming="add" name={name.trim()} />
           </div>
         ) : (
-          <NoPassword what="Adding a passkey" appInstead={s.apps_available && !s.app} />
+          <NoPassword what="Adding a passkey" />
         )
       ) : (
         <form
@@ -426,10 +434,13 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
       ) : s.apps_available ? (
         <>
           <p className="text-mist">A 6-digit code from an app such as Google Authenticator, Microsoft Authenticator or 1Password.</p>
-          <ErrorText error={start.error} />
-          <Button type="button" variant="secondary" className="self-start" disabled={start.isPending} onClick={() => start.mutate(undefined)}>
-            Set up an authenticator app
-          </Button>
+          {asking?.what === "setup" ? (
+            passwordForm(asking, s)
+          ) : (
+            <Button type="button" variant="secondary" className="self-start" onClick={() => setAsking({ what: "setup" })}>
+              Set up an authenticator app
+            </Button>
+          )}
         </>
       ) : (
         <p className="text-mist">Authenticator apps can't be set up on this server yet. Ask the custodian.</p>
