@@ -13,7 +13,7 @@ from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from sqlalchemy import exists, func, select
+from sqlalchemy import exists, func, or_, select
 
 from horatio import audit
 from horatio.api.connectors import connectors_out
@@ -22,6 +22,7 @@ from horatio.api.house_rules import checks_out, other_settings, splat_house_rule
 from horatio.api.troupe_profiles import Profile
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
+    Approval,
     Character,
     DowntimeCycle,
     HouseTrait,
@@ -215,14 +216,22 @@ def getting_ready(db: DbSession, troupe: Troupe) -> GettingReadyOut:
         select(exists().where(XpRangeEntry.troupe_id == troupe.id, XpRangeEntry.kind == "set"))
     )
     games = db.scalar(select(exists().where(ScheduledGame.troupe_id == troupe.id)))
-    # A player's character here, home or visiting, now or before.
-    players = db.scalar(
-        select(
-            exists()
-            .where(TroupeMembership.troupe_id == troupe.id)
-            .where(Character.id == TroupeMembership.character_id, Character.kind == "pc")
-        )
+    # A player's character here, home or visiting, now or before, or asking to make the
+    # troupe its home (#1114). Asking starts a visit too, which stays if the request is
+    # declined or withdrawn; the request itself counts only while it waits.
+    visited = (
+        exists()
+        .where(TroupeMembership.troupe_id == troupe.id)
+        .where(Character.id == TroupeMembership.character_id, Character.kind == "pc")
     )
+    asking = exists().where(
+        Approval.troupe_id == troupe.id,
+        Approval.kind == "home_troupe_change",
+        Approval.status == "pending",
+        Character.id == Approval.character_id,
+        Character.kind == "pc",
+    )
+    players = db.scalar(select(or_(visited, asking)))
     done: dict[ReadyStep, bool] = {
         "profile": bool(troupe.description.strip()) and profiled(troupe),
         "features": _changed(troupe, FEATURE_SETTINGS),

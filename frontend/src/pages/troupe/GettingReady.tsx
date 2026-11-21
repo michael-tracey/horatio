@@ -60,7 +60,7 @@ const STEPS: Record<ReadyStep, { label: string; todo: string; done: string; to: 
   players: {
     label: "Invite players",
     todo: "Send players the troupe's link: they make a character for it, or bring one, and ask to join.",
-    done: "Players have characters here.",
+    done: "Players have characters here, or have asked to join.",
     to: "/players",
   },
 };
