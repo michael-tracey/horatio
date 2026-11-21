@@ -127,11 +127,13 @@ The **Two-step sign-in** card offers two kinds of second step. You can have both
 
 With your first second step, Horatio shows ten recovery codes, once. Keep them somewhere safe, away from your phone (**Download** or **Copy** help), and choose **I've kept them**. The card says how many are left; **New recovery codes** makes ten more in place of the old. **Remove** takes away a passkey, and **Turn off** the app. Each of these, like adding or replacing a passkey, asks for your password, so no one can change them at a sign-in you left open. Too many tries at your password in a while, right or wrong, here or on the **Password** card, and Horatio asks you to wait: "Too many tries at your password." If you must have two-step sign-in, you can't remove your last second step.
 
+An account made with Discord has no password until you set one, so the card can't add, replace or remove a passkey, turn off the app or make new recovery codes: it says so where it would ask for your password, with a link to **Forgot your password?** to set one. Setting up an authenticator app asks for no password, so you can do that straight away, even where you must have two-step sign-in before anything else.
+
 ### Your Discord account
 
 If the server has Discord set up, the **Discord account** card offers **Link my Discord**. Discord asks you to confirm, then tells Horatio your Discord username and nothing else. Your profile then shows that username, marked as confirmed by Discord, where a typed one is marked "typed, not checked". Staff can rely on it when they give you your character's Discord channel. Once it's linked, **Sign in with Discord** on the sign-in page signs you in too.
 
-While it's linked, your Discord username comes from Discord and can't be typed over. **Unlink Discord** forgets the link and keeps the username, unless Discord is your only way to sign in, as it is for an account made with Discord. To have a password too, ask for one from **Forgot your password?** on the sign-in page; removing a passkey, turning off your authenticator app or making new recovery codes asks for it. A Discord account can be linked to only one Horatio account.
+While it's linked, your Discord username comes from Discord and can't be typed over. **Unlink Discord** forgets the link and keeps the username, unless Discord is your only way to sign in, as it is for an account made with Discord. To have a password too, ask for one from **Forgot your password?** on the sign-in page. A Discord account can be linked to only one Horatio account.
 
 ### When the custodian viewed as you
 

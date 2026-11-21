@@ -37739,6 +37739,11 @@ export interface components {
             app: boolean;
             /** Apps Available */
             apps_available: boolean;
+            /**
+             * Has Password
+             * @default true
+             */
+            has_password: boolean;
             /** Needed */
             needed: boolean;
             /** Passkeys */

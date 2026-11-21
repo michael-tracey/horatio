@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from horatio import discord_links
 from horatio.api import discord_sign_in
+from horatio.api import two_step as two_step_api
 from horatio.api.roster import message
 from horatio.app import app
 from horatio.auth import attempts, two_step
@@ -572,3 +573,20 @@ def test_merging_moves_the_discord_link_and_its_row_where_the_staying_one_has_no
     visitor = client_for()
     assert sign_in(visitor).headers["location"] == "/characters"
     assert visitor.get("/auth/me").json()["handle"] == "agnes"
+
+
+def test_an_account_made_with_discord_is_told_it_needs_a_password_and_can_still_set_up_an_app(
+    fake_discord: FakeDiscord, client_for: Callable[[], TestClient]
+) -> None:
+    visitor = client_for()
+    sign_in(visitor)
+    made = visitor.post("/auth/discord/sign-up", json={"display_name": "Owl"})
+    assert made.status_code == 201, made.text
+
+    assert visitor.get("/two-step").json()["has_password"] is False
+    for path in ("/two-step/passkeys/options", "/two-step/recovery-codes", "/two-step/app/remove"):
+        refused = visitor.post(path, json={"password": "anything at all"})
+        assert refused.status_code == 409, path
+        assert refused.json()["detail"] == two_step_api.NO_PASSWORD
+    # Setting up an authenticator app asks for no password.
+    assert visitor.post("/two-step/app").status_code == 200

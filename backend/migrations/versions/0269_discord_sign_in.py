@@ -1,8 +1,8 @@
 """Signing in and up with Discord (#1128): sign-ins waiting on Discord's callback,
 and sign-ups waiting on a name and handle.
 
-Revision ID: 0264
-Revises: 0259
+Revision ID: 0269
+Revises: 0268
 Create Date: 2026-11-21 12:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0264"
-down_revision: str | None = "0259"
+revision: str = "0269"
+down_revision: str | None = "0268"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

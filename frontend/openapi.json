@@ -59443,6 +59443,11 @@
             "title": "Apps Available",
             "type": "boolean"
           },
+          "has_password": {
+            "default": true,
+            "title": "Has Password",
+            "type": "boolean"
+          },
           "needed": {
             "title": "Needed",
             "type": "boolean"
