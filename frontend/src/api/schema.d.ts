@@ -27978,6 +27978,10 @@ export interface components {
             link: string;
             /** Picture */
             picture: string | null;
+            /** Player Id */
+            player_id: string | null;
+            /** Player Name */
+            player_name: string | null;
             /** Read */
             read: boolean;
             /** Summary */
@@ -36294,6 +36298,10 @@ export interface components {
             id: string;
             /** Student */
             student: string;
+            /** Student Player */
+            student_player: string | null;
+            /** Student Player Id */
+            student_player_id: string | null;
             /** What */
             what: string;
             /** Willpower */

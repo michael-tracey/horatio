@@ -159,6 +159,40 @@ test("the top bar is one line, on a phone too: the bell and a menu that holds th
   await page.screenshot(shots("top-bar"));
 });
 
+test("a bell line naming a player wraps, its name opens their profile and the rest the task (#1131)", async ({ browser }) => {
+  const { page } = await person(browser, "bellname-teacher");
+  const pupil = await person(browser, "bellname-pupil-player");
+  const me: { id: string } = await (await pupil.page.request.get("/api/auth/me")).json();
+  // A teaching request in the bell, as the server words one: the e2e server has no teacher rules to make it.
+  const summary = "Rook of the Long Road: Teaching Firearms 1 to Konrad von Ehrenberg (bellname-pupil-player)? It costs 1 Willpower.";
+  await page.route("**/api/notifications", async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const response = await route.fetch();
+    const body = await response.json();
+    const item = { id: "teaching:e2e", kind: "teaching", task: true, troupe_id: null, troupe_name: null, summary, link: "/account", at: new Date().toISOString(), read: false, picture: null, player_id: me.id, player_name: "bellname-pupil-player" };
+    await route.fulfill({ response, json: { items: [item, ...body.items], count: body.count + 1 } });
+  });
+  await page.reload();
+  const bell = page.getByRole("button", { name: /^Notifications/ });
+  await bell.click();
+  const panel = page.getByRole("dialog", { name: "Notifications" });
+  const task = panel.getByRole("button", { name: summary });
+  await expect(task).toBeVisible();
+  expect((await task.boundingBox())!.height, "the line takes more than one line").toBeGreaterThan(40);
+  expect(await panel.evaluate((el) => el.scrollWidth - el.clientWidth), "nothing in the panel scrolls sideways").toBeLessThanOrEqual(0);
+
+  // The player's name, over the row's button, opens their profile and closes the bell.
+  await panel.getByRole("link", { name: "bellname-pupil-player" }).click();
+  await expect(page).toHaveURL(new RegExp(`/players/${me.id}$`));
+  await expect(page.getByRole("heading", { name: /^bellname-pupil-player/ })).toBeVisible();
+  await expect(panel).toHaveCount(0);
+
+  // The rest of the line opens the task.
+  await bell.click();
+  await panel.getByRole("button", { name: summary }).click();
+  await expect(page).toHaveURL(/\/account$/);
+});
+
 test("the browser tab names the page: the tab open, then the troupe or character, then Horatio; signed out, nothing it couldn't show (#775)", async ({ browser }) => {
   const custodian = await person(browser, "tabtitle-custodian");
   makeCustodian(custodian.email);
