@@ -915,7 +915,7 @@ test("on a phone the − and + are big enough to tap, apart, and a greyed − sa
   await expect(p.getByRole("list", { name: "Changes in the cart" })).toHaveCount(0);
 });
 
-test("on a phone the sheet opens for reading: Make changes brings out the − and +, the cart keeps them out, and Spend XP or Clear puts them away (#1055)", async ({ browser }) => {
+test("on a phone the sheet opens for reading: Make changes brings out the − and +, is remembered across a reload, and only Spend XP or Done puts them away (#1055, #1115)", async ({ browser }) => {
   const { page: p } = await person(browser, "sheet-reader");
   const id = await builtVampire(p, "Odalys", "Toreador", {
     ...ATTRIBUTES_AND_FOCUSES,
@@ -951,30 +951,43 @@ test("on a phone the sheet opens for reading: Make changes brings out the − an
   await expect(raise).toBeVisible();
   await expect(add).toBeVisible();
   await p.screenshot(shots("sheet-making-changes"));
+  // This device remembers the choice for the character, across a reload, either way.
+  await p.reload();
+  await expect(raise).toBeVisible();
   await done.click();
   await expect(raise).toBeHidden();
+  await p.reload();
+  await expect(skills.getByText("Dodge", { exact: true })).toBeVisible();
+  await expect(raise).toBeHidden();
+  await expect(make).toBeVisible();
 
-  // A change in the cart keeps them out, with nothing to switch off, even after a reload.
+  // A change in the cart keeps them out, with nothing to switch off.
   await make.click();
   await raise.click();
   await expect(cart.getByRole("listitem")).toHaveCount(1);
   await expect(done).toHaveCount(0);
   await expect(make).toHaveCount(0);
+  // The cart brings them out by itself, even when the device has forgotten Make changes.
+  await p.evaluate((character) => localStorage.removeItem(`horatio.sheet-changing.${character}`), id);
   // Leaving with a full cart asks first.
   p.once("dialog", (dialog) => void dialog.accept());
   await p.reload();
   await expect(cart.getByRole("listitem")).toHaveCount(1);
   await expect(raise).toBeVisible();
-  // Clear empties the cart, and the sheet is for reading again.
+  // Clear empties the cart and leaves them out, with Done to put them away.
   await p.getByRole("button", { name: "Clear", exact: true }).click();
-  await expect(raise).toBeHidden();
-  await expect(make).toBeVisible();
+  await expect(cart).toHaveCount(0);
+  await expect(raise).toBeVisible();
+  await expect(done).toBeVisible();
 
-  // So does Spend XP.
-  await make.click();
+  // Spend XP, once it has applied the cart, puts them away, and that is remembered too.
   await raise.click();
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText(/^Spent \d+ XP\.$/)).toBeVisible();
+  await expect(raise).toBeHidden();
+  await expect(make).toBeVisible();
+  await p.reload();
+  await expect(skills.getByText("Dodge", { exact: true })).toBeVisible();
   await expect(raise).toBeHidden();
   await expect(make).toBeVisible();
 });

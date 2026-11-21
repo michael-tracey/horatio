@@ -125,7 +125,9 @@ def change_connector(
 class DeliveryOut(BaseModel):
     id: uuid.UUID
     channel: str
-    status: Literal["pending", "sent", "failed"]
+    # "cancelled": never sent, as its player turned off the character's own Discord
+    # channel while it waited (#1134).
+    status: Literal["pending", "sent", "failed", "cancelled"]
     test_mode: bool
     attempts: int
     last_error: str | None
@@ -298,6 +300,11 @@ def mark_delivery_sent(delivery_id: uuid.UUID, db: DbSession, user: CurrentUser)
     d, troupe, character = staff_delivery(db, user, delivery_id)
     if d.status == "sent":
         raise HTTPException(status.HTTP_409_CONFLICT, "That delivery was already sent.")
+    if d.status == "cancelled":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "That delivery was cancelled: its player turned off the character's own channel.",
+        )
     delivery.mark_sent(d, user)
     audit.record(
         db,

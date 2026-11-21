@@ -6131,7 +6131,8 @@ export interface paths {
          * Choose Own Channel
          * @description Turn on or off what a troupe's Discord connector posts to your character's own
          *     channel: its downtime results and quest news. They still come in Horatio, and the
-         *     troupe's shared channels are unchanged.
+         *     troupe's shared channels are unchanged. Turned off, what is waiting to go there is
+         *     cancelled.
          */
         put: operations["choose_own_channel_api_notification_settings_own_channel_put"];
         post?: never;
@@ -20784,7 +20785,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "sent" | "failed";
+            status: "pending" | "sent" | "failed" | "cancelled";
             /** Test Mode */
             test_mode: boolean;
         };

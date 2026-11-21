@@ -48,7 +48,7 @@ When a recovery code signs you in, or the custodian resets your two-step sign-in
 
 Five wrong codes in a row, or ten minutes, and you start again from your password. Many wrong codes at your account, from anywhere, hold back the second step for a while: "Too many wrong codes."
 
-The custodian must have two-step sign-in, and so must the staff of a troupe whose lead storyteller asks it. Horatio sends them to set it up before anything else. Staff are told in the bell when their troupe starts asking.
+The custodian must have two-step sign-in, and so must the staff of a troupe whose lead storyteller asks it. Horatio sends them to set it up before anything else; only the bell, and **Sign out**, are there meanwhile. Staff are told in the bell when their troupe starts asking, and can read it before they set it up.
 
 ## Your account
 
@@ -155,7 +155,7 @@ Untick them all and that kind doesn't come at all. Some always come, and show **
 
 Downtime results and quest news may also go out through your troupe's own connectors, to its Discord or by its own email. That's the troupe's choice, set by its storytellers; the tab says which of your troupes do it.
 
-Where a troupe's Discord gives your character a channel of their own, **Downtime results** has a switch for it: *Troupe: post to Agnes's own Discord channel*. It's on to begin with. Turn it off and Horatio posts nothing more to that channel, neither results nor quest news, while they still come to you here, in the bell or by email as you chose. The troupe's own channels, for its news and announcements, are the troupe's to choose and aren't affected. Its staff can see that you turned your channel off.
+Where a troupe's Discord gives your character a channel of their own, **Downtime results** has a switch for it: *Troupe: post to Agnes's own Discord channel*. It's on to begin with. Turn it off and Horatio posts nothing more to that channel, neither results nor quest news, while they still come to you here, in the bell or by email as you chose. Anything already waiting to go there is cancelled, not sent. The troupe's own channels, for its news and announcements, are the troupe's to choose and aren't affected. Its staff can see that you turned your channel off.
 
 If email is set up, **Send emails** under **Emails** chooses **At once** or **Once a day**, which gathers them into one email at 8 am in your time zone. Every email has a link to stop that kind by email, which unticks it here. If the server can't send email, the tab says so, and notifications come only to the bell.
 
