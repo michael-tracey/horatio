@@ -13954,7 +13954,8 @@ export interface paths {
         /**
          * Passkey Options
          * @description What the browser needs to make a passkey for Horatio: WebAuthn's
-         *     PublicKeyCredentialCreationOptions, as JSON. Its challenge works once.
+         *     PublicKeyCredentialCreationOptions, as JSON, giving their password first. Its
+         *     challenge works once, so the passkey it makes is kept only after the password.
          */
         post: operations["passkey_options_api_two_step_passkeys_options_post"];
         delete?: never;
@@ -13977,6 +13978,53 @@ export interface paths {
          * @description Remove one of their passkeys, giving their password.
          */
         post: operations["remove_passkey_api_two_step_passkeys__passkey_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/{passkey_id}/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Passkey
+         * @description Replace one of their passkeys that may not sign in alone with the one the browser
+         *     made, which does (#1110), under the same name. The new one is kept and the old one
+         *     removed together, only once the new one checks out, so a cancelled or failed try
+         *     leaves the old one as it was, and someone who must have two-step sign-in is never
+         *     left without a second step. The password was given for its challenge, at
+         *     POST .../replace/options.
+         */
+        post: operations["replace_passkey_api_two_step_passkeys__passkey_id__replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/two-step/passkeys/{passkey_id}/replace/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Options
+         * @description What the browser needs to make a passkey in place of one that may not sign in
+         *     alone (#1110), giving their password first: as for adding one, but the device must
+         *     make it so it can.
+         */
+        post: operations["replace_options_api_two_step_passkeys__passkey_id__replace_options_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -32216,6 +32264,13 @@ export interface components {
         RemovedOut: {
             /** Note */
             note: string | null;
+        };
+        /** Replacement */
+        Replacement: {
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            };
         };
         /** ReportCharacterOut */
         ReportCharacterOut: {
@@ -66167,7 +66222,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -66178,6 +66237,15 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -66203,6 +66271,78 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_passkey_api_two_step_passkeys__passkey_id__replace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Replacement"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_options_api_two_step_passkeys__passkey_id__replace_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Password"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
             };
             /** @description Validation Error */
             422: {

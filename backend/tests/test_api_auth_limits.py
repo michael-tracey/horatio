@@ -696,7 +696,7 @@ def test_password_changes_held_back_show_the_account_and_can_be_unblocked(
         "per_login": True,
         "anywhere": True,
         "login": "@agnes",
-        "limit": "10 password changes tried at one account in 15 minutes",
+        "limit": "10 password tries at one account in 15 minutes",
     }
     assert unblock(custodian, held) == 204
     assert custodian.client.get("/throttled").json() == []
@@ -706,6 +706,6 @@ def test_password_changes_held_back_show_the_account_and_can_be_unblocked(
     ).all()
     assert lifted.level == "notice"
     assert message(lifted.action, "custodian", None, lifted.data) == (
-        "custodian unblocked password changes at @agnes: over the limit of 10 password"
-        " changes tried at one account in 15 minutes."
+        "custodian unblocked password tries at @agnes: over the limit of 10 password"
+        " tries at one account in 15 minutes."
     )
