@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSearchShortcut, LIMIT, manualSource, searchHere, troupeOf, type LocalSource } from "./search";
+import { characterOf, currentTroupe, isSearchShortcut, LIMIT, manualSource, searchHere, troupeOf, type LocalSource } from "./search";
 
 const key = (key: string, more: Partial<KeyboardEvent> = {}, tagName = "BODY") =>
   ({ key, ctrlKey: false, metaKey: false, altKey: false, target: { tagName, isContentEditable: false }, ...more }) as unknown as KeyboardEvent;
@@ -24,6 +24,28 @@ describe("the troupe a page is of", () => {
     expect(troupeOf(`/play/troupes/${id}/scenes`)).toBe(id);
     expect(troupeOf("/troupes")).toBeNull();
     expect(troupeOf(`/characters/${id}`)).toBeNull();
+  });
+});
+
+describe("the troupe searched first", () => {
+  const troupe = "01a1f972-9b2f-78ce-ad90-4eb19b104d1c";
+  const home = "01a1f972-0000-78ce-ad90-4eb19b104d1c";
+  const character = "01a1f972-1111-78ce-ad90-4eb19b104d1c";
+  it("finds the character a page is of", () => {
+    expect(characterOf(`/characters/${character}`)).toBe(character);
+    expect(characterOf(`/characters/${character}/sheet`)).toBe(character);
+    expect(characterOf(`/play/characters/${character}/ledger`)).toBe(character);
+    expect(characterOf("/characters/import")).toBeNull();
+    expect(characterOf(`/troupes/${troupe}`)).toBeNull();
+  });
+
+  it("is the troupe whose page it is, or on a character's page its home troupe (#1147)", () => {
+    expect(currentTroupe(`/troupes/${troupe}/boons`, home)).toBe(troupe);
+    expect(currentTroupe(`/characters/${character}/sheet`, home)).toBe(home);
+    expect(currentTroupe(`/characters/${character}`, null)).toBeNull();
+    expect(currentTroupe(`/characters/${character}`, undefined)).toBeNull();
+    // Only a character's page has one.
+    expect(currentTroupe("/characters", home)).toBeNull();
   });
 });
 

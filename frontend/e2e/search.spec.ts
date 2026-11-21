@@ -64,7 +64,11 @@ test("the top bar finds a character and a boon, each opening its page (#1046)", 
   await expect(l).toHaveURL(new RegExp(`/characters/${npc.id}$`));
   await expect(search).toBeHidden();
 
-  await (await open()).getByRole("region", { name: "Boons" }).getByRole("link").first().click();
+  // On the character's page its home troupe is the current one (#1147): its hits needn't name it.
+  const boons = (await open()).getByRole("region", { name: "Boons" });
+  await expect(boons.getByRole("link").first()).toContainText("Passage past the docks");
+  await expect(boons.getByRole("link").first()).not.toContainText(`Court of Searching ${run}`);
+  await boons.getByRole("link").first().click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/boons\\?boon=${boon.id}`));
   const panel = onPhone() ? l.getByRole("dialog", { name: `${word} Marsh owes The Harbourmaster` }) : l.getByRole("complementary", { name: `${word} Marsh owes The Harbourmaster` });
   await expect(panel).toBeVisible();

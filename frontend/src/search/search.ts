@@ -92,6 +92,19 @@ export function troupeOf(pathname: string): string | null {
   return /^\/(?:play\/)?troupes\/([0-9a-f-]{36})(?:\/|$)/.exec(pathname)?.[1] ?? null;
 }
 
+/** The character whose pages these are: `/characters/:id/...` and the Play View's `/play/characters/:id/...`. */
+export function characterOf(pathname: string): string | null {
+  return /^\/(?:play\/)?characters\/([0-9a-f-]{36})(?:\/|$)/.exec(pathname)?.[1] ?? null;
+}
+
+/**
+ * The troupe searched first, as the current troupe: the one whose pages these are, or on a
+ * character's pages its home troupe (`home`, as the page knows it), if it has one (#1147).
+ */
+export function currentTroupe(pathname: string, home: string | null | undefined): string | null {
+  return troupeOf(pathname) ?? (characterOf(pathname) ? (home ?? null) : null);
+}
+
 /** Whether a key press is the shortcut that opens the search: `/` outside a text box, or Ctrl+K (⌘K on a Mac). */
 export function isSearchShortcut(e: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "target">): boolean {
   if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "k") return true;
