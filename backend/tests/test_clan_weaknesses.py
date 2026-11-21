@@ -50,7 +50,7 @@ def logged(session: Session) -> list[str]:
     events = session.scalars(
         select(AuditEvent)
         .where(AuditEvent.action == "house.clan_weaknesses")
-        .order_by(AuditEvent.created_at)
+        .order_by(AuditEvent.created_at, AuditEvent.id)
     )
     return [e.data["setting"] for e in events]
 
