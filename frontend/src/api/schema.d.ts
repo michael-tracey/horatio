@@ -27767,14 +27767,20 @@ export interface components {
         NextStepOut: {
             /** At */
             at: string | null;
+            /** Game Id */
+            game_id: string | null;
             /** Kind */
             kind: string;
             /** Label */
             label: string;
             /** Link */
             link: string;
+            /** My Answer */
+            my_answer: ("coming" | "maybe" | "not_coming") | null;
             /** Since */
             since: string | null;
+            /** Troupe Id */
+            troupe_id: string | null;
             /**
              * Who
              * @enum {string}
