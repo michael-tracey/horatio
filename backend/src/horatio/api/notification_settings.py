@@ -307,11 +307,15 @@ def choose_own_channel(
 ) -> NotificationSettingsOut:
     """Turn on or off what a troupe's Discord connector posts to your character's own
     channel: its downtime results and quest news. They still come in Horatio, and the
-    troupe's shared channels are unchanged."""
+    troupe's shared channels are unchanged. Turned off, what is waiting to go there is
+    cancelled."""
     character = db.get(Character, body.character_id)
     if character is None or character.player_id != user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character of yours.")
     notification_choices.choose_own_channel(user, character.id, body.on)
+    if not body.on:
+        # What was already waiting to go there is cancelled, not sent (#1134).
+        delivery.cancel_own_channel(db, user, character)
     db.commit()
     return settings_out(db, user)
 

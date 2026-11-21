@@ -155,7 +155,7 @@ Untick them all and that kind doesn't come at all. Some always come, and show **
 
 Downtime results and quest news may also go out through your troupe's own connectors, to its Discord or by its own email. That's the troupe's choice, set by its storytellers; the tab says which of your troupes do it.
 
-Where a troupe's Discord gives your character a channel of their own, **Downtime results** has a switch for it: *Troupe: post to Agnes's own Discord channel*. It's on to begin with. Turn it off and Horatio posts nothing more to that channel, neither results nor quest news, while they still come to you here, in the bell or by email as you chose. The troupe's own channels, for its news and announcements, are the troupe's to choose and aren't affected. Its staff can see that you turned your channel off.
+Where a troupe's Discord gives your character a channel of their own, **Downtime results** has a switch for it: *Troupe: post to Agnes's own Discord channel*. It's on to begin with. Turn it off and Horatio posts nothing more to that channel, neither results nor quest news, while they still come to you here, in the bell or by email as you chose. Anything already waiting to go there is cancelled, not sent. The troupe's own channels, for its news and announcements, are the troupe's to choose and aren't affected. Its staff can see that you turned your channel off.
 
 If email is set up, **Send emails** under **Emails** chooses **At once** or **Once a day**, which gathers them into one email at 8 am in your time zone. Every email has a link to stop that kind by email, which unticks it here. If the server can't send email, the tab says so, and notifications come only to the bell.
 

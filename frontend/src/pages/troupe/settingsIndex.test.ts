@@ -145,11 +145,15 @@ describe("finding a setting", () => {
 });
 
 describe("the top bar's settings", () => {
-  it("are the troupe's the person is on, for its running staff alone", async () => {
+  it("are the troupe's the person is on, for its storytellers alone", async () => {
     const hits = await settingsSource.find("sects", { troupeId: "t1", troupe: TROUPE, custodian: false });
     expect(hits[0]).toMatchObject({ title: "Sects", to: "/troupes/t1/settings/joining#settings-sects", troupe_id: "t1" });
     expect(hits[0]?.detail).toMatch(/^Settings › Who may join · Which sects/);
     expect(await settingsSource.find("sects", { troupeId: null })).toEqual([]);
+    expect(await settingsSource.find("sects", { troupeId: "t1", troupe: { ...TROUPE, my_role: "lead_storyteller" } })).not.toEqual([]);
+    // An assistant storyteller finds them on Setting up, but not from the top bar (#1133).
+    expect(await settingsSource.find("sects", { troupeId: "t1", troupe: { ...TROUPE, my_role: "assistant_storyteller" } })).toEqual([]);
+    expect(findSettings(settingsIndex(TROUPE, abilities("assistant_storyteller", false)), "sects")).not.toEqual([]);
     expect(await settingsSource.find("sects", { troupeId: "t1", troupe: { ...TROUPE, my_role: "narrator" } })).toEqual([]);
     expect(await settingsSource.find("sects", { troupeId: "t1", troupe: { ...TROUPE, my_role: null } })).toEqual([]);
     expect(await settingsSource.find("sects", { troupeId: "t1", troupe: { ...TROUPE, my_role: null }, custodian: true })).not.toEqual([]);

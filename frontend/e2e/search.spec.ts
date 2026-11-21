@@ -70,15 +70,17 @@ test("the top bar finds a character and a boon, each opening its page (#1046)", 
   await expect(panel).toBeVisible();
 });
 
-test("Find a setting on Setting up, and the top bar, open a setting where it is (#1047)", async ({ browser }) => {
+test("Find a setting on Setting up, and the top bar, open a setting where it is (#1047, #1133)", async ({ browser }) => {
   const custodian = await person(browser, "findset-custodian");
   makeCustodian(custodian.email);
   await custodian.page.reload();
   const viewport = onPhone() ? { width: 375, height: 800 } : { width: 1280, height: 720 };
   const lead = await person(browser, "findset-lead", { viewport });
   const narrator = await person(browser, "findset-narrator", { viewport });
+  const assistant = await person(browser, "findset-assistant", { viewport });
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Court of Finding ${run}`, lead_handle: lead.handle });
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: narrator.handle, role: "narrator" });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: assistant.handle, role: "assistant_storyteller" });
   const l = lead.page;
   const base = `/troupes/${troupe.id}`;
   const width = l.viewportSize()!.width;
@@ -123,6 +125,22 @@ test("Find a setting on Setting up, and the top bar, open a setting where it is 
   await settings.getByRole("link", { name: /^Throw pictures/ }).click();
   await expect(l).toHaveURL(new RegExp(`${base}/at-game#settings-throw-pictures$`));
   await expect(l.getByRole("dialog", { name: "At game settings" }).getByRole("region", { name: "Throw pictures" })).toBeVisible();
+
+  // An assistant storyteller finds a setting on Setting up, but not from the top bar (#1133).
+  const a = assistant.page;
+  await a.goto(`${base}/settings/getting-ready`);
+  await a.getByRole("searchbox", { name: "Find a setting" }).fill("ceiling");
+  await expect(a.getByRole("list", { name: "Settings found" }).getByRole("link", { name: /^XP floor and ceiling/ })).toBeVisible();
+  await a.goto(base);
+  if (onPhone()) await a.getByRole("banner").getByRole("button", { name: "Search everything" }).click();
+  else {
+    await expect(a.getByRole("banner").getByRole("button", { name: "Search everything" })).toBeVisible();
+    await a.keyboard.press("/");
+  }
+  await a.getByRole("searchbox", { name: "Search for" }).fill("throw pictures");
+  const assistantSearch = a.getByRole("dialog", { name: "Search" });
+  await expect(assistantSearch.getByRole("region", { name: "Help" })).toBeVisible();
+  await expect(assistantSearch.getByRole("region", { name: "Settings" })).toHaveCount(0);
 
   // A narrator has no Setting up, and finds no settings.
   const n = narrator.page;
