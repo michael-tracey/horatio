@@ -44,11 +44,15 @@ export function Layout() {
           </Link>
           {/* Signed out: the manual, which is for anyone, and the ways in (#907). */}
           {!me.data && <SignedOutLinks link={link} />}
-          {/* Until they set up two-step sign-in, only a way out (#1057). */}
+          {/* Until they set up two-step sign-in, only a way out (#1057), and their bell, which
+              may say why: their troupe asking it of its staff (#1111). */}
           {me.data?.two_step_needed && (
-            <button className="text-sm text-mist hover:text-parchment" onClick={signOut.signOut}>
-              Sign out
-            </button>
+            <div className="flex items-center gap-1 sm:gap-4">
+              <NotificationBell settings={false} />
+              <button className="text-sm text-mist hover:text-parchment" onClick={signOut.signOut}>
+                Sign out
+              </button>
+            </div>
           )}
           {me.data && !me.data.two_step_needed && (
             <div className="flex min-w-0 items-center gap-1 lg:gap-4">

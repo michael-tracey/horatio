@@ -61,6 +61,21 @@ PAGE = re.compile(r"(?:Vol\. 2(?: Issue 1)?, pp?\. )?\d+(?:(?:-|, )\d+)?")
 PLACEHOLDERS = {"clan flaw for a second caste", "tbd", "todo", "description"}
 
 
+def test_every_clan_and_bloodline_gives_its_write_ups_page() -> None:
+    """The wizard's clan choices show where the book describes each one (issue #1113)."""
+    rules = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+
+    unplaced = sorted(
+        name
+        for (category, name), trait in rules.traits.items()
+        if category == "clan" and not PAGE.fullmatch(trait.page_reference or "")
+    )
+    assert unplaced == []
+    # The core book's write-up, not Volume 2's page that changes only the weakness.
+    assert rules.traits["clan", "Tremere"].page_reference == "61"
+    assert rules.traits["clan", "Gangrel: Anda"].page_reference == "Vol. 2, p. 31"
+
+
 def merits_and_flaws() -> list[dict[str, Any]]:
     """As the file has them: the loader keeps no `unsourced`."""
     with TRAITS_FILE.open("rb") as f:

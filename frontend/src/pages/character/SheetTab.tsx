@@ -73,6 +73,7 @@ import { DomitorCard } from "./Domitor";
 import { BuiltTo } from "./BuiltTo";
 import { EmbraceCard } from "./Embrace";
 import { useHasDomitor } from "./splats";
+import { useChanging } from "./sheetMode";
 import { pointsText, xpText } from "./creation/logic";
 import { xpTotal } from "./xpTotals";
 import { useCatalogue } from "../../catalogue";
@@ -214,13 +215,14 @@ export function SheetTab({
   // The cart is kept on this device, so going to another page in the app loses nothing.
   useLeaveWarning(shopping && cart.lines.length > 0);
   // Below lg the sheet opens for reading: its −, +, Add and × wait behind Make changes
-  // (#1055). Changes in the cart bring them out, and they stay out until Spend XP or
-  // Clear empties it, or the player says Done.
-  const [changing, setChanging] = useState(false);
+  // (#1055). This device remembers the choice for each character (#1115). Changes in
+  // the cart bring them out, and they stay out until Spend XP applies the cart, or the
+  // player says Done. Clear leaves them out.
+  const [changing, setChanging] = useChanging(character.id);
   const holding = shopping && cart.lines.length > 0;
   useEffect(() => {
     if (holding) setChanging(true);
-  }, [holding]);
+  }, [holding, setChanging]);
   const hasDomitor = useHasDomitor(character.splat);
   const retainerList = useRetainers(character.id);
 
@@ -409,7 +411,7 @@ export function SheetTab({
         {character.kind === "pc" && (
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 lg:hidden">
             <XpLine available={available} afterCart={lines.length > 0 && left != null} mine={mine} sheet={s} />
-            {/* With changes in the cart there is nothing to switch: Spend XP or Clear ends them. */}
+            {/* With changes in the cart there is nothing to switch: Spend XP or Clear ends them first. */}
             {mine && !locked && lines.length === 0 && (
               <Button variant="secondary" onClick={() => (changing ? stopChanging() : setChanging(true))}>
                 {changing ? "Done" : "Make changes"}
@@ -760,7 +762,7 @@ export function SheetTab({
             balance={s.xp.balance}
             creating={!character.creation_complete}
             houseLabels={houseLabels(catalogue.data)}
-            onEmptied={() => setChanging(false)}
+            onSpent={() => setChanging(false)}
           />
         )}
         {!mine && <HouseTraitsCard characterId={character.id} sheet={s} />}
