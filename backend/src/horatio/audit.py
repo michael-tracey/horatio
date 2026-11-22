@@ -131,6 +131,8 @@ NOTICE: frozenset[str] = frozenset(
         "account.view_as",
         "account.view_as_ended",
         # --- the custodian's work, and what stays with a troupe for good ---
+        # Clearing a blog author's bio, links or picture (#1159).
+        "account.blog_author_cleared",
         "character.deleted",
         "npc.deleted",
         "character.moved",

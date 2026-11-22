@@ -341,6 +341,72 @@ test("the profile asks before going to another page with changes not saved: Canc
   await expect(bio).toHaveValue("");
 });
 
+test("a blog author profile: set up in Account with a live preview and a picture, shown to anyone signed out, and cleared by the custodian (#1159)", async ({ browser }) => {
+  const custodian = await person(browser, "blogpen-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "blogpen-lead");
+  // On a troupe's staff, so the page is public: the blog is written by staff.
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Blog Pen Court ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+
+  const l = lead.page;
+  await l.goto("/account");
+  await l.locator("main").getByRole("link", { name: "Blog author", exact: true }).click();
+  await expect(l).toHaveURL(/\/account\/blog$/);
+  // It starts from their name and handle alone, and the preview follows what is typed.
+  await expect(l.getByLabel("Display name")).toHaveValue("blogpen-lead");
+  await expect(l.getByLabel("Author handle")).toHaveValue(lead.handle);
+  await expect(l.getByLabel("Bio")).toHaveValue("");
+  const handle = `pen_${run.slice(-10)}`;
+  await l.getByLabel("Display name").fill("Penelope Quill");
+  await l.getByLabel("Author handle").fill(handle);
+  await l.getByLabel("Bio").fill("Tips on **running** a court.");
+  await l.getByRole("button", { name: "Add a link" }).click();
+  await l.getByLabel("Label").fill("Bluesky");
+  await l.getByLabel("Address").fill("https://bsky.app/profile/penquill");
+  const preview = l.getByRole("region", { name: "About Penelope Quill" });
+  await expect(preview.getByText(`@${handle}`)).toBeVisible();
+  await expect(preview.locator("strong", { hasText: "running" })).toBeVisible();
+  await expect(preview.getByRole("link", { name: "Bluesky" })).toHaveAttribute("rel", /nofollow/);
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(l.getByText("Author profile saved.")).toBeVisible();
+
+  // A picture, once it is saved.
+  const picture = l.locator("section", { has: l.getByRole("heading", { name: "Picture", exact: true }) });
+  await picture.getByLabel("Choose a picture").setInputFiles("e2e/portrait.jpg");
+  await expect(picture.getByRole("slider", { name: /Where the portrait is/ })).toBeVisible();
+  await picture.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(picture.getByRole("button", { name: "Move the crop" })).toBeVisible();
+  await expect(preview.locator("img")).toHaveAttribute("src", /\/api\/blog\/author-pictures\/.+\/96\.webp$/);
+
+  await l.getByRole("link", { name: "See your author page" }).click();
+  await expect(l).toHaveURL(new RegExp(`/blog/authors/${handle}$`));
+  await expect(l.getByRole("link", { name: "Edit your author profile" })).toBeVisible();
+
+  // Anyone signed out sees the page, picture and all, and nothing of their account.
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto(`/blog/authors/${handle}`);
+  await expect(visitor.getByRole("heading", { name: "Penelope Quill" })).toBeVisible();
+  const card = visitor.getByRole("region", { name: "About Penelope Quill" });
+  await expect(card.getByText("Tips on running a court.")).toBeVisible();
+  await expect(card.locator("img")).toHaveJSProperty("complete", true);
+  await expect(card.locator("img")).not.toHaveJSProperty("naturalWidth", 0);
+  await expect(visitor.getByText(lead.handle)).toHaveCount(0);
+  await expect(visitor.getByRole("link", { name: "Edit your author profile" })).toHaveCount(0);
+
+  // The custodian clears the bio, with a reason, and the rest stays.
+  const c = custodian.page;
+  await c.goto(`/blog/authors/${handle}`);
+  await c.getByRole("checkbox", { name: "Bio" }).check();
+  await c.getByLabel("Reason").fill("An advert");
+  await c.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(c.getByText("Cleared, and noted in the audit log.")).toBeVisible();
+  await visitor.reload();
+  await expect(visitor.getByRole("heading", { name: "Penelope Quill" })).toBeVisible();
+  await expect(visitor.getByText("Tips on running a court.")).toHaveCount(0);
+  await expect(visitor.getByRole("link", { name: "Bluesky" })).toBeVisible();
+});
+
 test("a signed-in person changes their password, and signs in with the new one", async ({ browser }) => {
   const { page, email } = await person(browser, "pwchange-player");
   // Signed in on another device too, which the change signs out.
