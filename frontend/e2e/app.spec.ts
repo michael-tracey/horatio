@@ -136,7 +136,10 @@ test("signed out, / is the landing page, with an article and a public troupe; si
   await expect(page).toHaveTitle("Welcome · Horatio");
   await expect(page.getByRole("heading", { name: "What Horatio is" })).toBeVisible();
   // The article, among the blog's featured and newest.
-  await expect(page.getByRole("list", { name: "Articles" }).getByRole("link", { name: title })).toBeVisible();
+  const card = page.getByRole("list", { name: "Articles" }).getByRole("listitem", { name: title });
+  await expect(card.getByRole("link", { name: title })).toBeVisible();
+  // Its troupe, public, is a link to its profile (#1160).
+  await expect(card.getByRole("link", { name: troupeName })).toHaveAttribute("href", `/t/${troupeId}`);
   await expect(page.getByRole("link", { name: "Read the blog" })).toHaveAttribute("href", "/blog");
   // The troupe, by name among every public troupe: a page at a time until it shows.
   const ours = page.getByRole("list", { name: "Troupes" }).getByRole("link", { name: new RegExp(troupeName) });

@@ -27,8 +27,21 @@ function AuthorName({ author }: { author: BlogPublicAuthorOut }) {
   );
 }
 
-/** An article in a list: its picture, title, summary, author, date and tags. */
-export function ArticleCard({ article: a, wide = false }: { article: BlogPublicSummaryOut; wide?: boolean }) {
+/** The troupe an article names (#1160): a link to its public profile while it has a card, else its name only. */
+function TroupeName({ troupe }: { troupe: NonNullable<BlogPublicSummaryOut["troupe"]> }) {
+  if (!troupe.card) return <>{troupe.name}</>;
+  return (
+    <Link to={`/t/${troupe.card.id}`} className="text-gold hover:underline">
+      {troupe.name}
+    </Link>
+  );
+}
+
+/**
+ * An article in a list: its picture, title, summary, author, date and tags. With
+ * `withTroupe`, the byline names its troupe too, as the landing page's does (#1164).
+ */
+export function ArticleCard({ article: a, wide = false, withTroupe = false }: { article: BlogPublicSummaryOut; wide?: boolean; withTroupe?: boolean }) {
   const dates = useDates();
   return (
     <li aria-label={a.title} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-ash bg-night">
@@ -46,7 +59,14 @@ export function ArticleCard({ article: a, wide = false }: { article: BlogPublicS
         </h3>
         {a.summary && <p className="text-sm">{a.summary}</p>}
         <p className="text-xs text-mist">
-          By <AuthorName author={a.author} />, <time dateTime={a.published_at}>{dates.date(a.published_at)}</time>
+          By <AuthorName author={a.author} />
+          {withTroupe && a.troupe && (
+            <>
+              {" "}
+              of <TroupeName troupe={a.troupe} />
+            </>
+          )}
+          , <time dateTime={a.published_at}>{dates.date(a.published_at)}</time>
         </p>
         {a.tags.length > 0 && (
           <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs">

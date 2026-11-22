@@ -31,7 +31,14 @@ function article(over: Partial<BlogPublicSummaryOut>): BlogPublicSummaryOut {
 }
 
 const ELYSIUM = article({});
-const BOONS = article({ slug: "boons-101", title: "Boons 101", featured: true });
+const BOONS = article({
+  slug: "boons-101",
+  title: "Boons 101",
+  featured: true,
+  troupe: { name: "Lords of the Night", card: { id: "lords", name: "Lords of the Night", abbreviation: "LotN", portrait: null, description: "" } },
+});
+// A private troupe's article: its name only, no link (#1160).
+const ELYSIUM_PRIVATE = { ...ELYSIUM, troupe: { name: "Hidden Court", card: null } };
 
 function troupe(over: Partial<PublicTroupeOut>): PublicTroupeOut {
   return {
@@ -69,7 +76,7 @@ function answering(me: Answer, answers: Record<string, (query: Record<string, un
 }
 
 function blog(over: Partial<BlogPublicPageOut> = {}): BlogPublicPageOut {
-  return { articles: [ELYSIUM, BOONS], page: 1, pages: 1, total: 2, featured: [BOONS], ...over };
+  return { articles: [ELYSIUM_PRIVATE, BOONS], page: 1, pages: 1, total: 2, featured: [BOONS], ...over };
 }
 
 function troupes(over: Partial<PublicTroupePageOut> = {}): PublicTroupePageOut {
@@ -114,6 +121,12 @@ describe("the front door, / (#1164)", () => {
     expect(within(articles).getAllByRole("listitem").map((li) => li.getAttribute("aria-label"))).toEqual(["Boons 101", "Running your first Elysium"]);
     expect(within(articles).getByRole("link", { name: "Boons 101" }).getAttribute("href")).toBe("/blog/boons-101");
     expect(screen.getByRole("link", { name: "Read the blog" }).getAttribute("href")).toBe("/blog");
+    // Each names its troupe: linked to its profile while public and running, else its name only.
+    const boons = within(articles).getByRole("listitem", { name: "Boons 101" });
+    expect(within(boons).getByRole("link", { name: "Lords of the Night" }).getAttribute("href")).toBe("/t/lords");
+    const elysium = within(articles).getByRole("listitem", { name: "Running your first Elysium" });
+    expect(elysium.textContent).toContain("of Hidden Court");
+    expect(within(elysium).queryByRole("link", { name: "Hidden Court" })).toBeNull();
 
     // A public troupe, to its public profile: its name read once, its pill for the eye.
     const list = await screen.findByRole("list", { name: "Troupes" });

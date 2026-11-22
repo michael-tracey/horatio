@@ -57,7 +57,7 @@ function WhatItIs() {
   );
 }
 
-/** A few of the blog's articles: its featured ones first, then the newest (#1158). */
+/** A few of the blog's articles: its featured ones first, then the newest (#1158), each with its troupe. */
 function FromTheBlog() {
   // The blog's own first page, which it then has at once (BlogPage's key).
   const found = useQuery({
@@ -81,7 +81,7 @@ function FromTheBlog() {
           return shown.length ? (
             <ul aria-label="Articles" className="grid gap-4 sm:grid-cols-2">
               {shown.map((a) => (
-                <ArticleCard key={a.slug} article={a} />
+                <ArticleCard key={a.slug} article={a} withTroupe />
               ))}
             </ul>
           ) : (
