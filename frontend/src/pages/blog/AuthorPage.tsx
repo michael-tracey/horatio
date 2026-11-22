@@ -1,35 +1,48 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { api, ApiError, unwrap } from "../../api/client";
 import type { AuthorPage as Author } from "../../api/types";
 import { AuthorCard } from "../../components/AuthorCard";
+import { BackLink } from "../../components/BackLink";
 import { Checkbox } from "../../components/Checkbox";
 import { useToast } from "../../components/Toast";
 import { Button, Card, ErrorText, Field, Input, Loading, PageTitle } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { useTitle } from "../../title";
+import { ArticleList, pageFrom } from "./BlogPage";
 
 /**
  * An author's page on the blog, /blog/authors/<handle> (#1159): for anyone at all, signed in
- * or not, while they write for the blog. Their card, as they set it in Account › Blog author;
- * the custodian can clear its bio, links or picture here.
+ * or not, while they write for the blog or have an article published. Their card, as they set
+ * it in Account › Blog author, and the articles they have published, newest first (#1158); the
+ * custodian can clear its bio, links or picture here.
  */
 export function AuthorPage() {
   const { handle = "" } = useParams();
+  useTitle("Blog");
   const author = useQuery({
     queryKey: ["blog-authors", handle],
     queryFn: () => unwrap(api.GET("/api/blog/authors/{handle}", { params: { path: { handle } } })),
     retry: false,
   });
 
+  const back = <BackLink to="/blog" label="Blog" className="mb-2 self-start" />;
   if (author.isPending) return <Loading />;
   if (author.error) {
     const missing = author.error instanceof ApiError && author.error.status === 404;
-    return <p className="text-mist">{missing ? "There is no such author on the blog." : author.error.message}</p>;
+    return (
+      <div className="flex flex-col">
+        {back}
+        <PageTitle>No such author</PageTitle>
+        <p className="text-mist">{missing ? "There is no such author on the blog." : author.error.message}</p>
+      </div>
+    );
   }
   const a = author.data;
   return (
-    <>
+    <div className="flex flex-col">
+      {back}
       <PageTitle
         subtitle="Writes for Horatio's blog"
         actions={
@@ -44,10 +57,34 @@ export function AuthorPage() {
       </PageTitle>
       <div className="flex flex-col gap-6">
         <AuthorCard author={a} size="lg" />
-        {/* The articles they have published go here, with the blog's reading pages (#1158). */}
+        <AuthorArticles handle={a.handle} name={a.display_name} />
         {a.can_clear && <ClearCard author={a} />}
       </div>
-    </>
+    </div>
+  );
+}
+
+/** The articles an author has published, newest first, a page at a time (?page=2). */
+function AuthorArticles({ handle, name }: { handle: string; name: string }) {
+  const [params, setParams] = useSearchParams();
+  const page = pageFrom(params);
+  const found = useQuery({
+    queryKey: ["blog-public", "author", handle, page],
+    queryFn: () => unwrap(api.GET("/api/blog/public/authors/{handle}/articles", { params: { path: { handle }, query: { page } } })),
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+  const onPage = (n: number) => {
+    setParams(n === 1 ? {} : { page: String(n) });
+    window.scrollTo({ top: 0 });
+  };
+  return (
+    <section aria-labelledby="author-articles">
+      <h2 id="author-articles" className="mb-3 text-lg text-gold">
+        Articles
+      </h2>
+      {found.isPending ? <Loading /> : found.error ? <ErrorText error={found.error} /> : <ArticleList found={found.data} none={`${name} has no articles published yet.`} onPage={onPage} />}
+    </section>
   );
 }
 

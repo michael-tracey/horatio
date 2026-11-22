@@ -3,9 +3,8 @@ an article is and how it moves along is in horatio.blog.
 
 Staff of any troupe that is running write articles, and see only their own; the
 custodian sees every one, and publishes, returns, unpublishes, features and tags
-them. Nothing here is public yet: the blog's reading pages are #1158, and until
-then a published article, and its hero picture, are shown only to its author and
-the custodian.
+them. The blog's reading pages, for anyone, are api/blog_public.py (#1158); of
+what is here, only a published article's hero picture is anyone's to see.
 """
 
 import uuid
@@ -21,7 +20,7 @@ from sqlalchemy.orm import Session
 from horatio import blog, pictures
 from horatio.api.pictures import uploads
 from horatio.api.troupe_profiles import read_upload
-from horatio.auth.deps import CurrentUser, DbSession
+from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
 from horatio.models import BlogPost, Troupe, User
 from horatio.permissions import require_custodian
 
@@ -416,27 +415,30 @@ def remove_picture(article_id: uuid.UUID, db: DbSession, user: CurrentUser) -> B
 
 @router.get("/articles/{article_id}/pictures/{picture_id}/{name}", response_class=FileResponse)
 def article_picture(
-    article_id: uuid.UUID, picture_id: uuid.UUID, name: str, db: DbSession, user: CurrentUser
+    article_id: uuid.UUID, picture_id: uuid.UUID, name: str, db: DbSession, user: MaybeUser
 ) -> FileResponse:
-    """An article's hero picture, or its changes', for its author and the custodian
-    until the blog's pages are public (#1158). Its files never change (a new one has
-    a new id), so browsers may keep them, privately."""
-    article = seen_article(db, user, article_id)
-    revision = blog.revision_words(article)
-    shown = {article.picture_id, revision.picture_id if revision else None} - {None}
-    root = pictures.upload_dir()
-    path = (
-        pictures.blog_picture_file(root, picture_id, name)
-        if root is not None and picture_id in shown
-        else None
+    """An article's hero picture. A published article's is anyone's to see, signed in
+    or not, and shared caches may keep it a while (#1158). Any other, a draft's or a
+    published article's changes', is for its author and the custodian alone. Its
+    files never change (a new one has a new id)."""
+    article = db.get(BlogPost, article_id)
+    public = (
+        article is not None and article.status == "published" and article.picture_id == picture_id
     )
+    if not public:
+        if user is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "No such picture.")
+        article = seen_article(db, user, article_id)
+        revision = blog.revision_words(article)
+        if picture_id not in {article.picture_id, revision.picture_id if revision else None}:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "No such picture.")
+    root = pictures.upload_dir()
+    path = pictures.blog_picture_file(root, picture_id, name) if root is not None else None
     if path is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such picture.")
-    return FileResponse(
-        path,
-        media_type="image/webp",
-        headers={"Cache-Control": "private, max-age=31536000, immutable"},
-    )
+    # An hour in shared caches, so one unpublished soon drops out of them.
+    cache = "public, max-age=3600" if public else "private, max-age=31536000, immutable"
+    return FileResponse(path, media_type="image/webp", headers={"Cache-Control": cache})
 
 
 # --- the custodian's -------------------------------------------------------------------

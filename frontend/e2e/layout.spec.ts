@@ -183,9 +183,17 @@ test("no screen is wider than a phone", async ({ browser }) => {
   await send(p, "POST", `/api/characters/${pc}/downtime/submit`);
   const scene = await send(l, "POST", `/api${base}/scenes`, { name: "Elysium" });
 
+  // A blog article with a long title and every tag, which the lead, the custodian too, publishes (#1158).
+  const tagIds = ((await send(l, "GET", "/api/blog/tags")) as { id: string }[]).map((t) => t.id);
+  const article = await send(l, "POST", "/api/blog/articles", { title: `Keeping a long-running chronicle of court intrigue fresh ${run}`, summary: story.slice(0, 300), body: `## Why\n\n${story}`, troupe_id: troupeId });
+  await send(l, "PUT", `/api/blog/articles/${article.id}/tags`, { tag_ids: tagIds });
+  await send(l, "POST", `/api/blog/articles/${article.id}/submit`);
+  await send(l, "POST", `/api/blog/articles/${article.id}/publish`);
+  await send(l, "PUT", `/api/blog/articles/${article.id}/featured`, { featured: true });
+
   // Signed out.
   const anon = await (await browser.newContext({ viewport })).newPage();
-  for (const url of ["/sign-in", "/sign-up", "/forgot-password", "/about", "/help", "/help/getting-started", `/t/${troupeId}`]) {
+  for (const url of ["/sign-in", "/sign-up", "/forgot-password", "/about", "/help", "/help/getting-started", `/t/${troupeId}`, "/blog", `/blog/${article.slug}`, "/blog/tags/storytelling"]) {
     seen.push(`anon ${screen(url)}`);
     await visit(anon, "anon", url, wide);
   }

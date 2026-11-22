@@ -30,6 +30,8 @@ const TwoStepSetupPage = lazy(() => import("./pages/TwoStepSetupPage").then((m) 
 const AccountPage = lazy(() => import("./pages/AccountPage").then((m) => ({ default: m.AccountPage })));
 const CheckInPage = lazy(() => import("./pages/CheckInPage").then((m) => ({ default: m.CheckInPage })));
 const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then((m) => ({ default: m.CharacterPage })));
+const BlogPage = lazy(() => import("./pages/blog/BlogPage").then((m) => ({ default: m.BlogPage })));
+const ArticlePage = lazy(() => import("./pages/blog/ArticlePage").then((m) => ({ default: m.ArticlePage })));
 const WritePage = lazy(() => import("./pages/blog/WritePage").then((m) => ({ default: m.WritePage })));
 const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then((m) => ({ default: m.CustodianPage })));
 const OldCycleLink = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.OldCycleLink })));
@@ -140,6 +142,33 @@ export const routes = createRoutesFromElements(
         element={
           <LazyPages>
             <BlogAuthorPage />
+          </LazyPages>
+        }
+      />
+      {/* The game developer blog (#1158): for anyone, signed in or not. Writing for
+          it, /blog/write, is for people signed in, below; it outranks /blog/:slug, and
+          no article's slug is "write" (blog.RESERVED_SLUGS). */}
+      <Route
+        path="/blog"
+        element={
+          <LazyPages>
+            <BlogPage />
+          </LazyPages>
+        }
+      />
+      <Route
+        path="/blog/tags/:tag"
+        element={
+          <LazyPages>
+            <BlogPage />
+          </LazyPages>
+        }
+      />
+      <Route
+        path="/blog/:slug"
+        element={
+          <LazyPages>
+            <ArticlePage />
           </LazyPages>
         }
       />
