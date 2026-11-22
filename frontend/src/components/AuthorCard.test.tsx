@@ -60,4 +60,12 @@ describe("AuthorCard", () => {
     expect(screen.queryByRole("list")).toBeNull();
     expect(authorPath("a b")).toBe("/blog/authors/a%20b");
   });
+
+  it("is their name alone, leading nowhere, while their page is hidden (#1182)", () => {
+    show({ handle: null, display_name: "Sam Ashdown", bio: "", links: [], picture: null }, true);
+    const card = screen.getByRole("region", { name: "About Sam Ashdown" });
+    expect(within(card).getByText("Sam Ashdown")).toBeTruthy();
+    expect(within(card).queryByRole("link")).toBeNull();
+    expect(within(card).queryByText(/^@/)).toBeNull();
+  });
 });

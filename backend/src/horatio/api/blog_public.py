@@ -21,7 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
-from horatio import blog, pictures
+from horatio import blog, pictures, suspensions
 from horatio.api import blog_authors
 from horatio.api.blog import BlogTagOut, BlogTroupeCardOut, troupe_cards
 from horatio.api.blog_authors import AuthorCard
@@ -50,7 +50,8 @@ class BlogPublicAuthorOut(BaseModel):
 
     name: str
     # Their author page's handle (/blog/authors/<handle>), once they have saved an
-    # author profile; None until then, or for an account merged into another.
+    # author profile; None until then, for an account merged into another, and while
+    # their account is suspended (#1182).
     handle: str | None
 
 
@@ -87,7 +88,8 @@ class BlogPublicArticleOut(BlogPublicSummaryOut):
 
     # Markdown.
     body: str
-    # Its author's card, to go under it (#1159), once they have a profile.
+    # Its author's card, to go under it (#1159), once they have a profile: their name
+    # alone while their account is suspended (#1182).
     author_card: AuthorCard | None
     # Where the viewer changes it, when they wrote it; None for anyone else.
     edit: str | None
@@ -127,25 +129,31 @@ def newest(query: Select[BlogPost]) -> Select[BlogPost]:
 
 def authors_of(
     db: Session, user_ids: set[uuid.UUID]
-) -> dict[uuid.UUID, tuple[BlogPublicAuthorOut, BlogAuthor | None]]:
-    """Each author as the blog names them, and their author profile if they have one
-    that is shown: an author with an article published is, unless their account was
-    merged into another (blog_authors.shown)."""
+) -> dict[uuid.UUID, tuple[BlogPublicAuthorOut, AuthorCard | None]]:
+    """Each author as the blog names them, and their card if they have an author
+    profile: an author with an article published has their page shown, unless their
+    account was merged into another or is suspended (blog_authors.shown). While it is
+    suspended they keep their name, but nothing leads to their page (#1182)."""
     profiles = {
         p.user_id: p for p in db.scalars(select(BlogAuthor).where(BlogAuthor.user_id.in_(user_ids)))
     }
-    found: dict[uuid.UUID, tuple[BlogPublicAuthorOut, BlogAuthor | None]] = {}
+    suspended = suspensions.suspended_ids(db, profiles)
+    found: dict[uuid.UUID, tuple[BlogPublicAuthorOut, AuthorCard | None]] = {}
     for user_id, name, merged in db.execute(
         select(User.id, User.display_name, User.merged_into_id).where(User.id.in_(user_ids))
     ):
         profile = profiles.get(user_id) if merged is None else None
-        found[user_id] = (
-            BlogPublicAuthorOut(
-                name=profile.display_name if profile else name,
-                handle=profile.handle if profile else None,
-            ),
-            profile,
-        )
+        if profile is None:
+            found[user_id] = (BlogPublicAuthorOut(name=name, handle=None), None)
+        elif user_id in suspended:
+            hidden = blog_authors.name_only(profile)
+            found[user_id] = (BlogPublicAuthorOut(name=profile.display_name, handle=None), hidden)
+        else:
+            shown = blog_authors.card(profile)
+            found[user_id] = (
+                BlogPublicAuthorOut(name=shown.display_name, handle=shown.handle),
+                shown,
+            )
     return found
 
 
@@ -228,12 +236,12 @@ def read_article(slug: str, db: DbSession, user: MaybeUser) -> BlogPublicArticle
     if article is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such article.")
     [shown] = summaries(db, [article])
-    profile = authors_of(db, {article.author_id})[article.author_id][1]
+    author_card = authors_of(db, {article.author_id})[article.author_id][1]
     yours = user is not None and user.id == article.author_id
     return BlogPublicArticleOut(
         **shown.model_dump(),
         body=article.body,
-        author_card=blog_authors.card(profile) if profile else None,
+        author_card=author_card,
         edit=blog.link(article) if yours else None,
     )
 
