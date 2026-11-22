@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { NotificationSettingsOut, NotificationTopicOut, Preferences } from "../../api/types";
 import { Checkbox } from "../../components/Checkbox";
@@ -421,12 +421,35 @@ function QuietHours({ exempt }: { exempt: string[] }) {
   );
 }
 
-/** A time of day, saved once it's left with a whole time in it. */
+/** A time of day, saved once it's left with a whole time in it, or after a moment's pause:
+ * a phone's time picker may never leave the field. */
 function TimeField({ label, value, onSave }: { label: string; value: string; onSave: (at: string) => void }) {
   const [text, setText] = useState(value);
   useEffect(() => setText(value), [value]);
-  const done = () => (/^\d\d:\d\d$/.test(text) && text !== value ? onSave(text) : setText(value));
-  return <Input type="time" aria-label={label} value={text} onChange={(e) => setText(e.target.value)} onBlur={done} onKeyDown={(e) => e.key === "Enter" && done()} className="text-sm" />;
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const save = useRef(onSave);
+  save.current = onSave;
+  const done = () => {
+    clearTimeout(timer.current);
+    if (/^\d\d:\d\d$/.test(text) && text !== value) onSave(text);
+    else setText(value);
+  };
+  useEffect(() => {
+    if (text === value || !/^\d\d:\d\d$/.test(text)) return;
+    timer.current = setTimeout(() => save.current(text), 1500);
+    return () => clearTimeout(timer.current);
+  }, [text, value]);
+  return (
+    <Input
+      type="time"
+      aria-label={label}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={done}
+      onKeyDown={(e) => e.key === "Enter" && done()}
+      className="text-sm"
+    />
+  );
 }
 
 /** "A", "A and B", "A, B and C". */
