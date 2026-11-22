@@ -752,48 +752,46 @@ MESSAGES: dict[str, str] = {
     "account.reset_sent": "{actor} emailed {member} their reset link.",
     "account.reset_sent.self": "Horatio emailed {member} the reset link they asked for.",
     "account.reset_email_failed": "Horatio could not email {member} a reset link: {error}",
-    "account.reset_requested": "{actor} asked for a password reset link{from_ip}.",
-    "account.reset_requested.unknown": "Someone asked for a reset link for {email}{from_ip}; "
+    "account.reset_requested": "{actor} asked for a password reset link.",
+    "account.reset_requested.unknown": "Someone asked for a reset link for {email}; "
     "no account uses it.",
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
     "account.password_changed": "{actor} changed their password.",
     "account.password_change_throttled": "{actor} was turned away from changing their"
-    " password{from_ip}: too many tries at the account.",
+    " password: too many tries at the account.",
     "account.password_change_throttled_again": "{actor} was turned away again from changing"
-    " their password{from_ip}: too many tries at the account.",
+    " their password: too many tries at the account.",
     "account.password_change_throttled.two_step": "{actor} was turned away from giving their"
-    " password for two-step sign-in{from_ip}: too many tries at the account.",
+    " password for two-step sign-in: too many tries at the account.",
     "account.password_change_throttled_again.two_step": "{actor} was turned away again from"
-    " giving their password for two-step sign-in{from_ip}: too many tries at the account.",
+    " giving their password for two-step sign-in: too many tries at the account.",
     "account.password_change_throttled.discord_confirm": "{actor} was turned away from"
-    " confirming it's them with Discord{from_ip}: too many tries at the account.",
+    " confirming it's them with Discord: too many tries at the account.",
     "account.password_change_throttled_again.discord_confirm": "{actor} was turned away again"
-    " from confirming it's them with Discord{from_ip}: too many tries at the account.",
-    "account.signed_up": "{actor} signed up{from_ip}.",
-    "account.signed_up.discord": "{actor} signed up with Discord{from_ip}.",
-    "account.signed_in": "{actor} signed in{from_ip}.",
-    "account.signed_in.app": "{actor} signed in{from_ip}, with their authenticator app.",
-    "account.signed_in.recovery_code": "{actor} signed in{from_ip}, with a recovery code.",
-    "account.signed_in.passkey": "{actor} signed in{from_ip}, with a passkey.",
-    "account.signed_in.passkey_alone": "{actor} signed in{from_ip} with a passkey alone, no"
-    " password.",
-    "account.signed_in.discord": "{actor} signed in with Discord{from_ip}.",
-    "account.second_step_asked": "{actor} gave their password{from_ip}, and was asked for their"
+    " from confirming it's them with Discord: too many tries at the account.",
+    "account.signed_up": "{actor} signed up.",
+    "account.signed_up.discord": "{actor} signed up with Discord.",
+    "account.signed_in": "{actor} signed in.",
+    "account.signed_in.app": "{actor} signed in, with their authenticator app.",
+    "account.signed_in.recovery_code": "{actor} signed in, with a recovery code.",
+    "account.signed_in.passkey": "{actor} signed in, with a passkey.",
+    "account.signed_in.passkey_alone": "{actor} signed in with a passkey alone, no password.",
+    "account.signed_in.discord": "{actor} signed in with Discord.",
+    "account.second_step_asked": "{actor} gave their password, and was asked for their"
     " second step.",
-    "account.second_step_asked.discord": "{actor} signed in with Discord{from_ip}, and was asked"
+    "account.second_step_asked.discord": "{actor} signed in with Discord, and was asked"
     " for their second step.",
-    "account.second_step_failed": "Someone signing in as {member}{from_ip} gave a wrong second"
-    " step.",
-    "account.second_step_failed.app": "Someone signing in as {member}{from_ip} gave a wrong code"
+    "account.second_step_failed": "Someone signing in as {member} gave a wrong second step.",
+    "account.second_step_failed.app": "Someone signing in as {member} gave a wrong code"
     " from an authenticator app.",
-    "account.second_step_failed.recovery_code": "Someone signing in as {member}{from_ip} gave a"
+    "account.second_step_failed.recovery_code": "Someone signing in as {member} gave a"
     " recovery code that was wrong or used.",
-    "account.second_step_failed.passkey": "Someone signing in as {member}{from_ip} gave a passkey"
+    "account.second_step_failed.passkey": "Someone signing in as {member} gave a passkey"
     " that isn't theirs.",
-    "account.second_step_throttled": "Someone signing in as {member}{from_ip} was turned away:"
+    "account.second_step_throttled": "Someone signing in as {member} was turned away:"
     " {too_many_codes}.",
-    "account.second_step_throttled_again": "Someone signing in as {member}{from_ip} was turned"
+    "account.second_step_throttled_again": "Someone signing in as {member} was turned"
     " away again: {too_many_codes}.",
     "account.two_step_added.app": "{actor} set up an authenticator app for two-step sign-in.",
     "account.two_step_added.passkey": "{actor} added a passkey, {name}, for two-step sign-in.",
@@ -802,7 +800,7 @@ MESSAGES: dict[str, str] = {
     "account.two_step_replaced.passkey": "{actor} replaced their passkey {name} with a new one"
     " that signs in alone, with no password.",
     "account.recovery_codes_made": "{actor} made new recovery codes.",
-    "account.recovery_code_used": "{actor} signed in with a recovery code{from_ip}: {left} left.",
+    "account.recovery_code_used": "{actor} signed in with a recovery code: {left} left.",
     "troupe.staff_two_step": "{actor} set two-step sign-in for the troupe's staff: {setting}.",
     "account.two_step_reset": "{actor} reset {member}'s two-step sign-in{because}.",
     "account.two_step_reset.server": "{member}'s two-step sign-in was reset on the server.",
@@ -810,61 +808,59 @@ MESSAGES: dict[str, str] = {
     " two-step sign-in was reset: {error}",
     "account.two_step_email_failed.recovery_code": "Horatio could not email {member} that a"
     " recovery code was used to sign in as them: {error}",
-    "account.signed_out": "{actor} signed out{from_ip}.",
-    "account.session_ended": "{actor} signed out their sign-in on {device}{from_ip}.",
-    "account.other_sessions_ended": "{actor} signed out everywhere else{from_ip}, ending {ended}.",
-    "account.sign_in_failed": "Someone failed to sign in as {member}{from_ip}: wrong password.",
-    "account.sign_in_failed.unknown": "Someone failed to sign in{from_ip} to an account that"
-    " doesn't exist.",
-    "account.sign_in_failed.passkey": "Someone failed to sign in as {member}{from_ip} with a"
+    "account.signed_out": "{actor} signed out.",
+    "account.session_ended": "{actor} signed out their sign-in on {device}.",
+    "account.other_sessions_ended": "{actor} signed out everywhere else, ending {ended}.",
+    "account.sign_in_failed": "Someone failed to sign in as {member}: wrong password.",
+    "account.sign_in_failed.unknown": "Someone failed to sign in to an account that doesn't exist.",
+    "account.sign_in_failed.passkey": "Someone failed to sign in as {member} with a"
     " passkey: it didn't check out.",
-    "account.sign_in_failed.passkey_unknown": "Someone failed to sign in{from_ip} with a passkey"
+    "account.sign_in_failed.passkey_unknown": "Someone failed to sign in with a passkey"
     " no account here has.",
-    "account.sign_in_failed.discord": "Someone failed to sign in with Discord{from_ip}: Discord"
+    "account.sign_in_failed.discord": "Someone failed to sign in with Discord: Discord"
     " didn't say who they are.",
-    "account.sign_in_failed.discord_no_email": "Someone failed to sign in with Discord{from_ip}:"
+    "account.sign_in_failed.discord_no_email": "Someone failed to sign in with Discord:"
     " Discord has no verified email for them, so no account was made.",
-    "account.sign_in_failed.discord_email": "Someone failed to sign in as {member}{from_ip} with a"
+    "account.sign_in_failed.discord_email": "Someone failed to sign in as {member} with a"
     " Discord account not linked to theirs, though it has their email. Nothing was linked.",
-    "account.sign_in_failed.discord_merged": "Someone failed to sign in{from_ip} with the Discord"
+    "account.sign_in_failed.discord_merged": "Someone failed to sign in with the Discord"
     " account of {member}, which is merged into another account.",
     "account.sign_in_failed.discord_suspended": "{member} was turned away from signing in with"
-    " Discord{from_ip}: they are suspended.",
-    "account.sign_in_throttled": "Someone was turned away from signing in as {member}{from_ip}:"
+    " Discord: they are suspended.",
+    "account.sign_in_throttled": "Someone was turned away from signing in as {member}:"
     " {too_many} from where they were.",
-    "account.sign_in_throttled.unknown": "Someone was turned away from signing in{from_ip} to an"
+    "account.sign_in_throttled.unknown": "Someone was turned away from signing in to an"
     " account that doesn't exist: {too_many} from where they were.",
     "account.sign_in_throttled_again": "Someone was turned away again from signing in as"
-    " {member}{from_ip}: {too_many} from where they were.",
+    " {member}: {too_many} from where they were.",
     "account.sign_in_throttled_again.unknown": "Someone was turned away again from signing"
-    " in{from_ip} to an account that doesn't exist: {too_many} from where they were.",
+    " in to an account that doesn't exist: {too_many} from where they were.",
     "account.sign_in_throttled.passkey": "Someone was turned away from signing in with a"
-    " passkey{from_ip}: {too_many} from where they were.",
+    " passkey: {too_many} from where they were.",
     "account.sign_in_throttled_again.passkey": "Someone was turned away again from signing in"
-    " with a passkey{from_ip}: {too_many} from where they were.",
+    " with a passkey: {too_many} from where they were.",
     "account.sign_in_throttled.discord": "Someone was turned away from signing in with"
-    " Discord{from_ip}: {too_many} from where they were.",
+    " Discord: {too_many} from where they were.",
     "account.sign_in_throttled_again.discord": "Someone was turned away again from signing in"
-    " with Discord{from_ip}: {too_many} from where they were.",
-    "account.sign_up_throttled": "Someone was turned away from signing up{from_ip}: too many"
+    " with Discord: {too_many} from where they were.",
+    "account.sign_up_throttled": "Someone was turned away from signing up: too many"
     " sign-ups from where they were.",
-    "account.sign_up_throttled_again": "Someone was turned away again from signing up{from_ip}:"
+    "account.sign_up_throttled_again": "Someone was turned away again from signing up:"
     " too many sign-ups from where they were.",
     "account.sign_up_throttled.discord": "Someone was turned away from signing up with"
-    " Discord{from_ip}: too many sign-ups from where they were.",
+    " Discord: too many sign-ups from where they were.",
     "account.sign_up_throttled_again.discord": "Someone was turned away again from signing up"
-    " with Discord{from_ip}: too many sign-ups from where they were.",
-    "account.throttle_lifted": "{actor} unblocked sign-ins{from_ip}: over the limit of {rule}.",
-    "account.throttle_lifted.login": "{actor} unblocked sign-ins at {login}{from_ip}: over the"
+    " with Discord: too many sign-ups from where they were.",
+    "account.throttle_lifted": "{actor} unblocked sign-ins: over the limit of {rule}.",
+    "account.throttle_lifted.login": "{actor} unblocked sign-ins at {login}: over the"
     " limit of {rule}.",
-    "account.throttle_lifted.second_step": "{actor} unblocked second steps{from_ip}: over the"
+    "account.throttle_lifted.second_step": "{actor} unblocked second steps: over the"
     " limit of {rule}.",
     "account.throttle_lifted.second_step_account": "{actor} unblocked second steps at {login}:"
     " over the limit of {rule}.",
     "account.throttle_lifted.password_change": "{actor} unblocked password tries at {login}:"
     " over the limit of {rule}.",
-    "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups{from_ip}: over the limit of"
-    " {rule}.",
+    "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups: over the limit of {rule}.",
     "account.blog_author_cleared": "{actor} cleared the {cleared} of {member}'s author profile"
     " on the blog, @{handle}{because}.",
     "account.suspended": "{actor} suspended {member}{because}.",
@@ -882,12 +878,12 @@ MESSAGES: dict[str, str] = {
     "account.discord_unlinked": "{actor} unlinked their Discord account.",
     "account.discord_link_refused": "{actor} tried to link a Discord account already linked to"
     " another Horatio account.",
-    "account.discord_confirmed": "{actor} confirmed it's them with Discord{from_ip}, as they"
+    "account.discord_confirmed": "{actor} confirmed it's them with Discord, as they"
     " have no password.",
     "account.discord_confirm_failed": "{actor} failed to confirm it's them with"
-    " Discord{from_ip}: Discord didn't say who they are.",
+    " Discord: Discord didn't say who they are.",
     "account.discord_confirm_failed.other_account": "{actor} failed to confirm it's them with"
-    " Discord{from_ip}: it was a Discord account not linked to theirs.",
+    " Discord: it was a Discord account not linked to theirs.",
     "account.view_as": "{actor} viewed Horatio as {member}, read-only{because}.",
     "account.view_as_ended": "{actor} stopped viewing as {member}.",
     "account.view_as_ended.signed_out": "{actor} signed out, which ended viewing as {member}.",
@@ -1267,9 +1263,6 @@ def message(
     values.setdefault("troupe", "this troupe")
     # Entries from before the character it was done as was kept with them (#987).
     values.setdefault("acting", "")
-    # Where a sign-in came from, while the custodian keeps it, or a reset request (#1066):
-    # " from 203.0.113.7".
-    values["from_ip"] = f" from {data['ip']}" if data.get("ip") else ""
     # Which limit turned a sign-in away (#1074); before it was kept, a limit on failed ones.
     values["too_many"] = (
         "too many sign-ins" if data.get("limit") == "sign_ins" else "too many failed sign-ins"

@@ -19,6 +19,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 import horatio
 from horatio import audit, audit_retention, locations
 from horatio.app import app
+from horatio.auth import resets
 from horatio.models import AuditEvent
 from tests.api_helpers import PASSWORD, Person, Troupe, new_character, sign_up
 
@@ -63,7 +64,7 @@ FILTERS = {
     ("horatio.api.audit", "in_"),  # actions whose wording has the words searched
     ("horatio.api.character_log", "not_in"),  # what a player isn't told
     ("horatio.audit_retention", "not_in"),  # keeps every notice action from the purge
-    ("horatio.api.account_security", "in_"),  # sign-in events, says when some aren't kept
+    ("horatio.api.account_security", "in_"),  # an account's sign-in events, as kept
     ("horatio.bonds", "startswith"),
     ("horatio.boons", "startswith"),
 }
@@ -186,7 +187,10 @@ def test_each_level_names_real_actions() -> None:
                 continue
     read = {action for _, action in reads()}
     assert not (audit.DEBUG | audit.NOTICE) - recorded - read
-    assert audit.level("account.signed_in") == "debug"
+    # Signing in and failing to are kept, so Recent sign-ins is full (#1205), however
+    # it was done; signing out and up are routine.
+    assert audit.level("account.signed_in") == audit.level("account.sign_in_failed") == "info"
+    assert audit.level("account.signed_out") == audit.level("account.signed_up") == "debug"
     # Started visiting a troupe: in its log, as stopping is (#1066).
     assert audit.level("troupe.join") == audit.level("troupe.leave") == "info"
     assert audit.level("sheet.purchase") == "info"
@@ -222,7 +226,7 @@ def set_log(custodian: Person, **settings: Any) -> dict[str, Any]:
         "record": "info",
         "keep_debug": 30,
         "keep_info": 365,
-        "sign_in_ips": True,
+        "show_ips": True,
         **settings,
     }
     response = custodian.client.put("/audit/settings", json=body)
@@ -236,12 +240,10 @@ def sign_in(client_for: Callable[[], TestClient], login: str, password: str) -> 
     return client
 
 
-DEBUG_SIGNING = (
-    "account.signed_up",
-    "account.signed_in",
-    "account.sign_in_failed",
-    "account.signed_out",
-)
+DEBUG_SIGNING = ("account.signed_up", "account.signed_out")
+# Always recorded, at info (#1205).
+INFO_SIGNING = ("account.signed_in", "account.sign_in_failed")
+SIGNING = (*DEBUG_SIGNING, *INFO_SIGNING)
 
 
 def sign_in_and_out(client_for: Callable[[], TestClient], name: str) -> None:
@@ -260,7 +262,9 @@ def test_debug_events_are_not_recorded_unless_the_custodian_asks(
     troupe.player.client.post(f"/characters/{agnes}/troupes", json={"troupe_id": troupe.id})
     for action in DEBUG_SIGNING:
         assert events(session, action) == [], action
-    # Info and notice are, as ever.
+    # Info and notice are, as ever: signing in, and failing to, among them.
+    assert [e.level for e in events(session, "account.signed_in")] == ["info"]
+    assert [e.level for e in events(session, "account.sign_in_failed")] == ["info"] * 2
     assert [e.level for e in events(session, "troupe.join")] == ["info"]
     assert [e.level for e in events(session, "staff.assigned")] == ["notice"] * 3
     assert {e.level for e in events(session, "sheet.purchase")} <= {"info"}
@@ -274,17 +278,19 @@ def test_debug_events_are_not_recorded_unless_the_custodian_asks(
     assert [(e.actor_id is None, e.data.get("kind")) for e in failed] == [
         (False, None),
         (True, "unknown"),
-    ]
+    ] * 2
     # Never a password, nor what was typed to sign in with.
-    for event in session.scalars(select(AuditEvent).where(AuditEvent.level == "debug")):
+    for event in session.scalars(select(AuditEvent).where(AuditEvent.action.in_(SIGNING))):
         assert PASSWORD not in str(event.data)
         assert "not my password" not in str(event.data)
         assert "nobody_here" not in str(event.data)
 
     # Switched off again: at once.
     set_log(troupe.custodian, record="info")
-    sign_in(client_for, "chatty@example.com", PASSWORD)
-    assert len(events(session, "account.signed_in")) == 1
+    signed_in = sign_in(client_for, "chatty@example.com", PASSWORD)
+    assert signed_in.post("/auth/logout").status_code == 204
+    assert len(events(session, "account.signed_out")) == 1
+    assert len(events(session, "account.signed_in")) == 3
 
 
 # Where nginx says a request came from, and the docker network's gateway it reaches the
@@ -306,10 +312,12 @@ def behind_nginx(forwarded_for: str = CLIENT) -> TestClient:
     )
 
 
-def test_sign_in_events_keep_the_clients_ip_address_while_the_custodian_says(
+def test_sign_in_events_keep_the_clients_ip_address_shown_only_while_the_custodian_says(
     troupe: Troupe, client_for: Callable[[], TestClient], session: Session
 ) -> None:
-    set_log(troupe.custodian, record="debug")
+    """Kept always, in the event's own column, never in its data or what it says; the
+    custodian's "Show IP addresses" only says whether the search shows it (#1205)."""
+    set_log(troupe.custodian, record="debug", show_ips=False)
     with behind_nginx() as client:
         assert client.post("/auth/login", json={"login": "x", "password": "y"}).status_code == 401
         body = {"email": "traced@example.com", "password": PASSWORD, "display_name": "traced"}
@@ -319,21 +327,40 @@ def test_sign_in_events_keep_the_clients_ip_address_while_the_custodian_says(
         assert client.post("/auth/login", json=body).status_code == 401
         body = {"login": "traced@example.com", "password": PASSWORD}
         assert client.post("/auth/login", json=body).status_code == 200
-    for action in DEBUG_SIGNING:
-        # The client's own address, not the proxy's.
-        assert {e.data.get("ip") for e in events(session, action)} == {CLIENT}, action
+    for action in SIGNING:
+        # The client's own address, not the proxy's, though not shown.
+        found = events(session, action)
+        assert {e.ip_address for e in found} == {CLIENT}, action
+        assert not any("ip" in e.data or CLIENT in str(e.data) for e in found), action
 
-    found = troupe.custodian.client.get("/audit", params={"person": "traced"}).json()
-    assert [e["message"] for e in found["entries"]] == [
-        f"traced signed in from {CLIENT}.",
-        f"Someone failed to sign in as traced from {CLIENT}: wrong password.",
-        f"traced signed out from {CLIENT}.",
-        f"traced signed up from {CLIENT}.",
+    def search(**params: str) -> list[tuple[str, str | None]]:
+        found = troupe.custodian.client.get("/audit", params=params).json()
+        return [(e["message"], e["ip_address"]) for e in found["entries"]]
+
+    messages = [
+        "traced signed in.",
+        "Someone failed to sign in as traced: wrong password.",
+        "traced signed out.",
+        "traced signed up.",
     ]
-    unknown = troupe.custodian.client.get("/audit", params={"q": "doesn't exist"}).json()
-    assert [e["message"] for e in unknown["entries"]] == [
-        f"Someone failed to sign in from {CLIENT} to an account that doesn't exist."
-    ]
+    assert search(person="traced") == [(m, None) for m in messages]
+    unknown = "Someone failed to sign in to an account that doesn't exist."
+    assert search(q="doesn't exist") == [(unknown, None)]
+    # Hidden, an address finds nothing.
+    assert search(q=CLIENT) == []
+    export = troupe.custodian.client.get("/audit/export", params={"person": "traced"}).text
+    assert "IP address" not in export.splitlines()[0]
+    assert CLIENT not in export
+
+    # Shown: in full, apart from the message, and found by the words searched.
+    set_log(troupe.custodian, record="debug", show_ips=True)
+    assert search(person="traced") == [(m, CLIENT) for m in messages]
+    assert search(q=CLIENT, person="traced") == [(m, CLIENT) for m in messages]
+    assert search(q="203.0.113") == [(m, CLIENT) for m in messages] + [(unknown, CLIENT)]
+    export = troupe.custodian.client.get("/audit/export", params={"person": "traced"}).text
+    header, first = export.splitlines()[:2]
+    assert header.endswith(",What,IP address")
+    assert first.endswith(f",traced signed in.,{CLIENT}")
 
     # Were nginx to add its address to one the client made up, the made-up one would
     # still not be taken: only the gateway is believed, and the client is the last
@@ -341,17 +368,25 @@ def test_sign_in_events_keep_the_clients_ip_address_while_the_custodian_says(
     with behind_nginx(f"192.0.2.66, {CLIENT}") as client:
         body = {"login": "traced@example.com", "password": PASSWORD}
         assert client.post("/auth/login", json=body).status_code == 200
-    assert events(session, "account.signed_in")[-1].data["ip"] == CLIENT
+    assert events(session, "account.signed_in")[-1].ip_address == CLIENT
 
-    # Off: at once, and only sign-in events go without; a reset request keeps its own.
-    set_log(troupe.custodian, record="debug", sign_in_ips=False)
-    with behind_nginx() as client:
-        body = {"login": "traced@example.com", "password": PASSWORD}
-        assert client.post("/auth/login", json=body).status_code == 200
-    newest = events(session, "account.signed_in")[-1]
-    assert "ip" not in newest.data
-    found = troupe.custodian.client.get("/audit", params={"person": "traced"}).json()
-    assert found["entries"][0]["message"] == "traced signed in."
+
+def test_a_reset_request_keeps_its_address_in_its_own_column(
+    troupe: Troupe, session: Session
+) -> None:
+    """The limits on asking for links count by it, shown or not (#1205)."""
+    set_log(troupe.custodian, show_ips=False)
+    for _ in range(2):
+        resets.request_reset(session, troupe.player.email, CLIENT)
+    resets.request_reset(session, "nobody@example.com", "192.0.2.5")
+    asked = events(session, "account.reset_requested")
+    assert [e.ip_address for e in asked] == [CLIENT, CLIENT, "192.0.2.5"]
+    assert not any("ip" in e.data for e in asked)
+    assert resets.requests_since(session, "ip", CLIENT, timedelta(hours=1)) == 2
+    found = troupe.custodian.client.get("/audit", params={"q": "reset link"}).json()
+    assert [e["message"] for e in found["entries"]][:1] == [
+        "Someone asked for a reset link for nobody@example.com; no account uses it."
+    ]
 
 
 def test_nginx_tells_the_app_who_the_client_is() -> None:
@@ -410,22 +445,22 @@ def test_debug_events_never_reach_a_troupes_log(
 def test_only_the_custodian_sees_or_changes_the_settings(troupe: Troupe) -> None:
     for person in (troupe.lead, troupe.player):
         assert person.client.get("/audit/settings").status_code == 403
-        body = {"record": "debug", "keep_debug": 30, "keep_info": 365, "sign_in_ips": False}
+        body = {"record": "debug", "keep_debug": 30, "keep_info": 365, "show_ips": False}
         assert person.client.put("/audit/settings", json=body).status_code == 403
     found = troupe.custodian.client.get("/audit/settings").json()
     assert found == {
         "record": "info",
         "keep_debug": 30,
         "keep_info": 365,
-        # On until the custodian says otherwise (#1066).
-        "sign_in_ips": True,
+        # On until the custodian says otherwise (#1066, #1205).
+        "show_ips": True,
         "last_purge": None,
     }
 
 
 def test_changing_the_settings_is_itself_recorded(troupe: Troupe, session: Session) -> None:
     for wrong in ({"keep_debug": 0}, {"keep_info": 4000}, {"record": "notice"}):
-        body = {"record": "info", "keep_debug": 30, "keep_info": 365, "sign_in_ips": True, **wrong}
+        body = {"record": "info", "keep_debug": 30, "keep_info": 365, "show_ips": True, **wrong}
         assert troupe.custodian.client.put("/audit/settings", json=body).status_code == 422
 
     # The same again changes nothing, and records nothing.
@@ -446,18 +481,17 @@ def test_changing_the_settings_is_itself_recorded(troupe: Troupe, session: Sessi
         record="debug", keep_debug=7, keep_info=None
     )
 
-    # IP addresses with sign-in events, off and on again (#1066).
-    off = set_log(troupe.custodian, record="debug", keep_debug=7, keep_info=None, sign_in_ips=False)
-    assert off["sign_in_ips"] is False
-    assert not audit.settings(session).sign_in_ips
+    # Showing IP addresses, off and on again (#1066, #1205).
+    off = set_log(troupe.custodian, record="debug", keep_debug=7, keep_info=None, show_ips=False)
+    assert off["show_ips"] is False
+    assert not audit.settings(session).show_ips
     set_log(troupe.custodian, record="debug", keep_debug=7, keep_info=None)
     changed = events(session, "audit.settings_changed")
     assert [e.level for e in changed] == ["notice"] * 3
     found = troupe.custodian.client.get("/audit", params={"level": "notice"}).json()
     assert [e["message"] for e in found["entries"][:2]] == [
-        "custodian changed the audit log's settings: IP addresses recorded with sign-in events.",
-        "custodian changed the audit log's settings: IP addresses not recorded with sign-in"
-        " events.",
+        "custodian changed the audit log's settings: IP addresses shown.",
+        "custodian changed the audit log's settings: IP addresses hidden.",
     ]
 
 
@@ -466,11 +500,14 @@ def test_changing_the_settings_is_itself_recorded(troupe: Troupe, session: Sessi
 NOW = datetime(2026, 11, 19, 3, 0, tzinfo=UTC)
 
 
-def old(session: Session, action: str, days: int, level: str | None = None) -> uuid.UUID:
+def old(
+    session: Session, action: str, days: int, level: str | None = None, ip: str | None = None
+) -> uuid.UUID:
     event = AuditEvent(
         action=action,
         level=level or audit.level(action),
         created_at=NOW - timedelta(days=days),
+        ip_address=ip,
         data={},
     )
     session.add(event)
@@ -486,12 +523,12 @@ def kept(session: Session, ids: list[uuid.UUID]) -> list[uuid.UUID]:
 
 def test_the_purge_keeps_each_level_as_long_as_the_custodian_says(session: Session) -> None:
     gone = [
-        old(session, "account.signed_in", 31),
+        old(session, "account.signed_out", 31),
         old(session, "account.signed_up", 400),
         old(session, "sheet.purchase", 366),
     ]
     stay = [
-        old(session, "account.signed_in", 29),
+        old(session, "account.signed_out", 29),
         old(session, "sheet.purchase", 364),
         old(session, "character.deleted", 5000),
         # Recorded before its action was notice: a feature reads it, so it stays.
@@ -509,13 +546,26 @@ def test_the_purge_keeps_each_level_as_long_as_the_custodian_says(session: Sessi
     assert kept(session, stay) == stay[1:]
 
 
+def test_sign_ins_and_their_addresses_go_after_a_year(session: Session) -> None:
+    """Signing in is info now, kept as long as info events are; an address goes with
+    its event (#1205)."""
+    gone = old(session, "account.signed_in", 366, ip=CLIENT)
+    stay = old(session, "account.sign_in_failed", 364, ip="192.0.2.9")
+    assert audit_retention.purge(session, NOW).deleted == {"info": 1}
+    assert kept(session, [gone, stay]) == [stay]
+    addresses = set(
+        session.scalars(select(AuditEvent.ip_address).where(AuditEvent.ip_address.is_not(None)))
+    )
+    assert addresses == {"192.0.2.9"}
+
+
 def test_the_purge_runs_daily_a_batch_at_a_time(
     troupe: Troupe, session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(audit_retention, "BATCH", 2)
     monkeypatch.setattr(audit_retention, "MOST", 3)
     for days in (40, 41, 42, 43):
-        old(session, "account.signed_in", days)
+        old(session, "account.signed_out", days)
     old(session, "sheet.purchase", 500)
 
     first = audit_retention.purge_due(session, NOW)

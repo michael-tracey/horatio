@@ -1,9 +1,9 @@
 """Server-side sign-in sessions. The cookie holds a random token; the database
 holds only its hash, so a leaked database cannot be used to sign in.
 
-Each keeps the browser it was started from, the address while the custodian records
-them with sign-in events, and when it was last used (#1193), so the person can see
-where they're signed in (horatio.api.account_security) and sign out there."""
+Each keeps the browser it was started from, its address (shown only while the
+custodian shows IP addresses, #1205), and when it was last used (#1193), so the
+person can see where they're signed in (horatio.api.account_security) and sign out there."""
 
 import hashlib
 import secrets
@@ -14,7 +14,7 @@ from sqlalchemy import ColumnElement, select, update
 from sqlalchemy.orm import Session
 
 from horatio import suspensions
-from horatio.audit import sign_in_ip
+from horatio.audit import client_ip
 from horatio.config import get_settings
 from horatio.models import Session as SignInSession
 from horatio.models import User
@@ -34,8 +34,7 @@ USER_AGENT_LENGTH = 512
 def start_session(db: Session, user: User, request: Request) -> str:
     """Start a session for `user` and return the token for the cookie. Refused,
     saying why, while they are suspended, however they signed in. It keeps the
-    browser `request` came from, and its address only while the custodian records
-    addresses with sign-in events."""
+    browser and the address `request` came from."""
     suspensions.refuse(db, user)
     token = secrets.token_urlsafe(32)
     now = datetime.now(UTC)
@@ -45,7 +44,7 @@ def start_session(db: Session, user: User, request: Request) -> str:
             token_hash=hash_token(token),
             expires_at=now + timedelta(days=get_settings().session_days),
             user_agent=(request.headers.get("user-agent") or "")[:USER_AGENT_LENGTH] or None,
-            ip_address=sign_in_ip(db, request).get("ip"),
+            ip_address=client_ip(request),
             last_active_at=now,
         )
     )

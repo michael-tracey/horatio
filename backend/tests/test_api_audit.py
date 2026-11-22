@@ -237,8 +237,11 @@ def test_export_is_a_csv_of_what_the_filters_find(troupe: Troupe, session: Sessi
         "Action",
         "Level",
         "What",
+        # While the custodian shows IP addresses, as they do unless they say otherwise
+        # (#1205); a troupe's renaming came from none Horatio kept.
+        "IP address",
     ]
-    assert [r[1:] for r in rows[1:]] == [
+    assert [r[1:-1] for r in rows[1:]] == [
         [
             "lead",
             "Court of Cinders",
@@ -259,6 +262,7 @@ def test_export_is_a_csv_of_what_the_filters_find(troupe: Troupe, session: Sessi
             "lead renamed the troupe to Lords of the Long Night.",
         ],
     ]
+    assert {r[-1] for r in rows[1:]} == {""}
     assert datetime.fromisoformat(rows[1][0]).tzinfo is not None
 
     # The export is logged; searching leaves the log as it was.

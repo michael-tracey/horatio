@@ -548,7 +548,10 @@ herd, patrol, discipline), owned by a troupe. Placeholders such as
 ## 6. Cross-cutting
 
 **`audit_events`**: `actor_id`, `troupe_id` (nullable), `entity_type`,
-`entity_id`, `action`, `level`, `data` (JSONB), `at`. Never changed once written.
+`entity_id`, `action`, `level`, `ip_address` (nullable), `data` (JSONB), `at`.
+Never changed once written. `ip_address` is where a sign-in, a reset request or the
+like came from, or the address a custodian unblocked: kept always, never in `data`
+nor the message, and shown only while the custodian's "Show IP addresses" is on.
 Every permission-relevant change writes one, in the same transaction as the
 change. `level` is the action's level when recorded (`debug` | `info` | `notice`,
 set per action in `horatio.audit`); debug events are recorded only while the

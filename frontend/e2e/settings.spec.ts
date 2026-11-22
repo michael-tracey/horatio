@@ -500,7 +500,10 @@ test("where you're signed in: both devices listed, the other signed out from her
   await expect(rows.filter({ hasText: "This device" })).toHaveCount(1);
   const phone = rows.filter({ hasText: "Safari on iPhone" });
   await expect(phone).toContainText(/Signed in .*, active in the last few minutes/);
-  await expect(page.getByRole("heading", { name: "Recent sign-ins", exact: true })).toBeVisible();
+  // Every sign-in is kept, debug events or not, so the phone's is among the recent ones (#1205).
+  const recent = page.locator("section", { has: page.getByRole("heading", { name: "Recent sign-ins", exact: true }) });
+  await expect(recent.getByRole("listitem").filter({ hasText: "Password" }).filter({ hasText: "Signed in" }).first()).toBeVisible();
+  await expect(recent.getByText(/only while the custodian/)).toHaveCount(0);
   await page.screenshot(shots("settings-where-signed-in"));
 
   // Signing the phone out needs no password, and it's signed out at once.

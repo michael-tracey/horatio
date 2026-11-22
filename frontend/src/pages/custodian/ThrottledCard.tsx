@@ -15,8 +15,8 @@ const REFRESH = 30_000;
 /**
  * Who the limits on sign-ins and sign-ups hold back now (#1074): each address (and
  * login, for the limit at one login), the limit it is over and when that clears, with
- * Unblock to let it try again at once. An address shows in full only while sign-in
- * events keep IP addresses; otherwise only its start, and Unblock still works.
+ * Unblock to let it try again at once. An address shows in full only while the
+ * custodian shows IP addresses (#1205); otherwise only its start, and Unblock still works.
  * Wrong second-step codes and password tries are limited at an account, from
  * anywhere: those name the account.
  *
@@ -71,8 +71,7 @@ export function ThrottledCard() {
               </ul>
               {found.some((t) => t.masked) && (
                 <p className="text-mist">
-                  Addresses show in full only while Record IP addresses with
-                  sign-in events is ticked, on the Audit log card.
+                  Addresses show in full only while Show IP addresses is ticked, on the Audit log card.
                 </p>
               )}
             </div>

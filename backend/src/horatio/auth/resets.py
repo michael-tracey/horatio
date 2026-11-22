@@ -125,13 +125,16 @@ def use_reset(db: Session, user: User) -> None:
 
 
 def requests_since(db: Session, key: str, value: str, window: timedelta) -> int:
+    """Requests for links in `window` to an address (`key` "email") or from one ("ip",
+    kept in the event's own column, #1205)."""
+    kept = AuditEvent.ip_address if key == "ip" else AuditEvent.data[key].astext
     return (
         db.scalar(
             select(func.count())
             .select_from(AuditEvent)
             .where(
                 AuditEvent.action == REQUESTED,
-                AuditEvent.data[key].astext == value,
+                kept == value,
                 AuditEvent.created_at > func.now() - window,
             )
         )
@@ -165,9 +168,11 @@ def request_reset(
         select(User).where(func.lower(User.email) == address, User.merged_into_id.is_(None))
     )
     if user is None:
-        record(db, None, REQUESTED, kind="unknown", email=address, ip=ip)
+        record(db, None, REQUESTED, kind="unknown", email=address, ip_address=ip)
         return None
-    record(db, user, REQUESTED, email=address, ip=ip, member=user.display_name, user_id=user.id)
+    record(
+        db, user, REQUESTED, email=address, ip_address=ip, member=user.display_name, user_id=user.id
+    )
     if suspensions.current(db, user.id) is not None:
         # The link would not work; the answer is the same as ever.
         return None

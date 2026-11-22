@@ -441,8 +441,9 @@ export interface paths {
         };
         /**
          * Export Log
-         * @description For the custodian: everything the same filters find, newest first, as a CSV.
-         *     The export itself goes in the log.
+         * @description For the custodian: everything the same filters find, newest first, as a CSV,
+         *     with each one's IP address while the custodian shows them. The export itself goes
+         *     in the log.
          */
         get: operations["export_log_api_audit_export_get"];
         put?: never;
@@ -483,7 +484,7 @@ export interface paths {
         /**
          * Log Settings
          * @description For the custodian: what the log records, how long it keeps each level, whether
-         *     sign-in events keep IP addresses, and what the last purge deleted.
+         *     IP addresses are shown, and what the last purge deleted.
          */
         get: operations["log_settings_api_audit_settings_get"];
         /**
@@ -16387,6 +16388,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Ip Address */
+            ip_address?: string | null;
             level: components["schemas"]["AuditLevel"];
             /** Message */
             message: string;
@@ -16454,8 +16457,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
-            /** Sign In Ips */
-            sign_in_ips: boolean;
+            /** Show Ips */
+            show_ips: boolean;
         };
         /** AuditSettingsOut */
         AuditSettingsOut: {
@@ -16469,8 +16472,8 @@ export interface components {
              * @enum {string}
              */
             record: "debug" | "info";
-            /** Sign In Ips */
-            sign_in_ips: boolean;
+            /** Show Ips */
+            show_ips: boolean;
         };
         /** AuditTroupe */
         AuditTroupe: {
@@ -33737,8 +33740,6 @@ export interface components {
         };
         /** RecentSignIns */
         RecentSignIns: {
-            /** All Kept */
-            all_kept: boolean;
             /** Sign Ins */
             sign_ins: components["schemas"]["RecentSignIn"][];
         };

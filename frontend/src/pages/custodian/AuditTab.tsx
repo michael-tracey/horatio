@@ -144,7 +144,7 @@ function SearchForm({ applied, onSearch }: { applied: AuditFilters; onSearch: (f
 }
 
 /** One change: when, who, in which troupe, and what, each leading to its own page. */
-function Entry({ entry }: { entry: AuditEntry }) {
+export function Entry({ entry }: { entry: AuditEntry }) {
   const dates = useDates();
   // On touch each link is a finger tall (#911); the row keeps a little padding of its own for the lines without one.
   const tap = "hover:text-gold pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center";
@@ -177,6 +177,8 @@ function Entry({ entry }: { entry: AuditEntry }) {
         ) : (
           entry.message
         )}
+        {/* Sent only while the custodian shows IP addresses (#1205). */}
+        {entry.ip_address && <span className="block text-xs text-mist">From {entry.ip_address}</span>}
       </span>
     </li>
   );

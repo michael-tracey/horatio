@@ -196,7 +196,7 @@ def check_password(request: Request, db: DbSession, user: User, password: str) -
             limit=held.limit.key,
             member=user.display_name,
             user_id=user.id,
-            **sign_in_ip(db, request),
+            **sign_in_ip(request),
         )
         db.commit()
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, PASSWORD_WAIT)

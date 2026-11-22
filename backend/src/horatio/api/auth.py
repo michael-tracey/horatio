@@ -154,7 +154,7 @@ def ask_second_step(
         "account.second_step_asked",
         member=user.display_name,
         user_id=user.id,
-        **sign_in_ip(db, request),
+        **sign_in_ip(request),
     )
     response.status_code = status.HTTP_202_ACCEPTED
     return SecondStep(second_step=two_step.methods(db, user))
@@ -202,7 +202,7 @@ def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -
             None,
             "account.sign_up_throttled" if held.first else "account.sign_up_throttled_again",
             limit=held.limit.key,
-            **sign_in_ip(db, request),
+            **sign_in_ip(request),
         )
         db.commit()
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, held.wait)
@@ -227,7 +227,7 @@ def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -
         "account.signed_up",
         member=user.display_name,
         user_id=user.id,
-        **sign_in_ip(db, request),
+        **sign_in_ip(request),
     )
     set_session_cookie(response, start_session(db, user, request))
     db.commit()
@@ -242,7 +242,7 @@ def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -
     ip = attempts.source(request)
     held = attempts.sign_in_held_back(db, body.login, ip)
     user = user_by_login(db, body.login)
-    from_ip = sign_in_ip(db, request)
+    from_ip = sign_in_ip(request)
     if held is not None:
         # Turned away before the password is checked, whether an account uses the
         # login or not. Never what was typed, as for a failed sign-in. The first a
@@ -324,7 +324,7 @@ def sign_in_with_passkey(
     is both steps at once: no second step is asked for, even of someone who must have
     one. Limited and logged as a password is, at a login of its own."""
     ip = attempts.source(request)
-    from_ip = sign_in_ip(db, request)
+    from_ip = sign_in_ip(request)
     if (held := attempts.passkey_held_back(db, ip)) is not None:
         record(
             db,
@@ -487,7 +487,7 @@ def give_second_step(
         raise HTTPException(status.HTTP_410_GONE, AGAIN)
     user = db.get_one(User, waiting.user_id)
     ip = attempts.source(request)
-    from_ip = sign_in_ip(db, request)
+    from_ip = sign_in_ip(request)
     whose = {"member": user.display_name, "user_id": user.id}
     if (held := attempts.second_step_held_back(db, user.id, ip)) is not None:
         record(
@@ -528,7 +528,7 @@ def signed_in_by_second_step(
     """The second step was right: sign them in, here only. A recovery code used is in
     their bell, and emailed to them after the answer."""
     ip = attempts.source(request)
-    from_ip = sign_in_ip(db, request)
+    from_ip = sign_in_ip(request)
     attempts.second_step_passed(db, user.id, ip)
     if waiting.login_hash is not None:
         attempts.signed_in_at(db, waiting.login_hash, ip)
@@ -589,7 +589,7 @@ def sign_out(request: Request, db: DbSession, response: Response) -> None:
                 "account.signed_out",
                 member=user.display_name,
                 user_id=user.id,
-                **sign_in_ip(db, request),
+                **sign_in_ip(request),
             )
         end_session(db, token)
         db.commit()
@@ -623,7 +623,7 @@ def change_password(
             else "account.password_change_throttled_again",
             limit=held.limit.key,
             **whose,
-            **sign_in_ip(db, request),
+            **sign_in_ip(request),
         )
         db.commit()
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, held.wait)

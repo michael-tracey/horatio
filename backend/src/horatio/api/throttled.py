@@ -3,8 +3,8 @@ unblocking them (#1074): the Throttled now card on Custodian › Audit. Wrong
 second-step codes (#1057) are limited at an account from anywhere too, and password
 changes (#1095) only there.
 
-An address is shown only while the custodian records IP addresses with sign-in
-events (#1066); otherwise only its start, as 198.51.x.x. Unblocking works either
+An address is shown only while the custodian shows IP addresses (#1066, #1205);
+otherwise only its start, as 198.51.x.x. Unblocking works either
 way: each entry is named by its limit and the newest try it counts, never by its
 address."""
 
@@ -32,7 +32,7 @@ class ThrottledOut(BaseModel):
     # Names it to unblock.
     id: str
     held: Kind
-    # The IP address (an IPv6 /64), or its start while sign-in events keep no IP
+    # The IP address (an IPv6 /64), or its start while the custodian doesn't show IP
     # addresses; None for requests that came with none.
     address: str | None
     masked: bool
@@ -97,7 +97,7 @@ def logins(db: DbSession, hashed: set[str]) -> dict[str, str]:
 def held_now(db: DbSession, user: User) -> tuple[list[attempts.Throttle], bool, dict[str, str]]:
     require_custodian(user)
     throttles = attempts.throttled(db)
-    shown = audit.settings(db).sign_in_ips
+    shown = audit.settings(db).show_ips
     whose = logins(db, {t.identity for t in throttles if t.identity is not None})
     return throttles, shown, whose
 
@@ -127,7 +127,7 @@ def throttled(db: DbSession, user: CurrentUser) -> list[ThrottledOut]:
 def unblock(body: Unblock, db: DbSession, user: CurrentUser) -> None:
     """For the custodian: forget the tries that hold an address back (at a login, for
     a limit at one login), so it may try again at once. Recorded as a notice."""
-    throttles, shown, whose = held_now(db, user)
+    throttles, _, whose = held_now(db, user)
     throttle = next((t for t in throttles if t.id == body.id), None)
     if throttle is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "That address isn't held back any more.")
@@ -147,7 +147,7 @@ def unblock(body: Unblock, db: DbSession, user: CurrentUser) -> None:
     elif limit.per_login:
         data["kind"] = "login"
         data["login"] = whose.get(throttle.identity or "", "a login no account uses")
-    if throttle.ip and shown:
-        data["ip"] = throttle.ip
-    audit.record(db, user, "account.throttle_lifted", **data)
+    # The address unblocked is kept with the event, as every address is, and shown
+    # with it only while the custodian shows IP addresses (#1205).
+    audit.record(db, user, "account.throttle_lifted", ip_address=throttle.ip, **data)
     db.commit()

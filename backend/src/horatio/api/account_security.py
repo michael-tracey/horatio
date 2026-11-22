@@ -1,9 +1,8 @@
 """Account › Sign-in's view of an account's safety (#1193): where it is signed in,
 with a way to sign out there, and its recent sign-ins from the audit log.
 
-Addresses follow the custodian's "Record IP addresses with sign-in events" setting
-(horatio.audit.sign_in_ip): kept only while it is on, shown only while it still is,
-and then only coarsely (horatio.auth.devices.place).
+Addresses are always kept, and shown only while the custodian's "Show IP addresses"
+is on, and then only coarsely (horatio.auth.devices.place, #1205).
 
 Signing out elsewhere asks for no password: it only ever takes access away, and
 someone with no password (an account made with Discord) must be able to do it too."""
@@ -38,7 +37,7 @@ class SignedInAt(BaseModel):
     # When it was last used, to within a few minutes; None for one from before it was kept.
     last_active_at: datetime | None
     # Roughly where it was started from, "203.0.113.…": only while the custodian
-    # records addresses with sign-in events, and None for one started while they didn't.
+    # shows IP addresses.
     place: str | None
     # It's the one this request comes with.
     this_device: bool
@@ -55,11 +54,8 @@ class RecentSignIn(BaseModel):
 
 
 class RecentSignIns(BaseModel):
+    # Every sign-in and failed one is an info event, so the log keeps them all (#1205).
     sign_ins: list[RecentSignIn]
-    # Whether the log keeps every sign-in now. Signing in and wrong passwords are
-    # routine (debug) events, kept only while the custodian records those; wrong
-    # second steps and being turned away are always kept.
-    all_kept: bool
 
 
 class SignedOutElsewhere(BaseModel):
@@ -124,8 +120,8 @@ def how(action: str, data: dict[str, Any]) -> str:
 
 
 def places_shown(db: DbSession) -> bool:
-    """Whether addresses are shown now: only while the custodian records them."""
-    return audit.settings(db).sign_in_ips
+    """Whether addresses are shown now: only while the custodian shows them."""
+    return audit.settings(db).show_ips
 
 
 def this_token_hash(request: Request) -> str | None:
@@ -189,7 +185,7 @@ def sign_out_there(
         member=user.display_name,
         user_id=user.id,
         device=devices.device(session.user_agent),
-        **sign_in_ip(db, request),
+        **sign_in_ip(request),
     )
     db.commit()
 
@@ -217,7 +213,7 @@ def sign_out_everywhere_else(
         member=user.display_name,
         user_id=user.id,
         ended=f"{ended} sign-in" if ended == 1 else f"{ended} sign-ins",
-        **sign_in_ip(db, request),
+        **sign_in_ip(request),
     )
     db.commit()
     return SignedOutElsewhere(ended=ended)
@@ -240,9 +236,8 @@ def recent_sign_ins(db: DbSession, user: CurrentUser) -> RecentSignIns:
                 at=e.created_at,
                 outcome=OUTCOMES[e.action],
                 how=how(e.action, e.data),
-                place=devices.place(e.data.get("ip")) if shown else None,
+                place=devices.place(e.ip_address) if shown else None,
             )
             for e in events
         ],
-        all_kept=audit.recorded(db, "debug"),
     )

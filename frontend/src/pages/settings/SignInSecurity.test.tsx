@@ -79,20 +79,21 @@ describe("recent sign-ins (#1193)", () => {
   ];
 
   it("lists each with how and where, and what failed", async () => {
-    answering({ "/api/account/sign-ins": { sign_ins: signIns, all_kept: true } });
+    answering({ "/api/account/sign-ins": { sign_ins: signIns } });
     show(<RecentSignInsCard />);
     const [first, second] = (await screen.findAllByRole("listitem")) as [HTMLElement, HTMLElement];
     expect(first.textContent).toContain("Password, then authenticator app");
     expect(first.textContent).toMatch(/2026, .+, from 203\.0\.113\.…/);
     expect(within(first).getByText("Signed in")).toBeTruthy();
     expect(within(second).getByText("Failed")).toBeTruthy();
-    expect(screen.queryByText(/keeps every sign-in only while/)).toBeNull();
+    // Where only when the custodian shows IP addresses: the server sends none otherwise (#1205).
+    expect(second.textContent).not.toContain(", from");
   });
 
-  it("says when the log doesn't keep every sign-in", async () => {
-    answering({ "/api/account/sign-ins": { sign_ins: [], all_kept: false } });
+  it("says nothing of what the log keeps, as it keeps every sign-in (#1205)", async () => {
+    answering({ "/api/account/sign-ins": { sign_ins: [] } });
     show(<RecentSignInsCard />);
     expect(await screen.findByText("None that Horatio's log keeps.")).toBeTruthy();
-    expect(screen.getByText(/keeps every sign-in only while the custodian asks it to/)).toBeTruthy();
+    expect(screen.queryByText(/only while the custodian/)).toBeNull();
   });
 });

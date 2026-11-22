@@ -1087,3 +1087,83 @@ def test_the_troupe_join_migration_makes_visiting_info_again(
                 text("delete from audit_events where id in (:j, :s)"),
                 {"j": joined, "s": signed_in},
             )
+
+
+def test_the_ip_address_migration_moves_addresses_out_of_data_and_back(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0287 (#1205): an address kept in an event's data moves to its own
+    column, the rest of the data stays, and the setting keeps its value as "Show IP
+    addresses"; downgrading puts both back."""
+    command.downgrade(alembic_config, "0286")
+    signed_in, requested, plain = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    ids = {"s": signed_in, "r": requested, "p": plain}
+
+    def found(connection: Connection) -> dict[uuid.UUID, tuple[object, ...]]:
+        return {
+            row[0]: tuple(row[1:])
+            for row in connection.execute(
+                text("select id, ip_address, data from audit_events where id in (:s, :r, :p)"),
+                ids,
+            )
+        }
+
+    def setting(connection: Connection) -> object:
+        return connection.execute(
+            text("select value from server_settings where key = 'audit_log'")
+        ).scalar_one()
+
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into audit_events (id, action, level, data) values"
+                    " (:s, 'account.signed_in', 'debug', :sd),"
+                    " (:r, 'account.reset_requested', 'notice', :rd),"
+                    " (:p, 'troupe.renamed', 'info', :pd)"
+                ),
+                {
+                    **ids,
+                    "sd": json.dumps({"ip": "203.0.113.7", "kind": "app"}),
+                    "rd": json.dumps({"ip": "2001:db8::1", "email": "a@example.com"}),
+                    "pd": json.dumps({"name": "Court of Ashes"}),
+                },
+            )
+            connection.execute(
+                text(
+                    "insert into server_settings (key, value) values ('audit_log', :v)"
+                    " on conflict (key) do update set value = excluded.value"
+                ),
+                {"v": json.dumps({"record": "debug", "sign_in_ips": False})},
+            )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            assert found(connection) == {
+                signed_in: ("203.0.113.7", {"kind": "app"}),
+                requested: ("2001:db8::1", {"email": "a@example.com"}),
+                plain: (None, {"name": "Court of Ashes"}),
+            }
+            assert setting(connection) == {"record": "debug", "show_ips": False}
+
+        command.downgrade(alembic_config, "0286")
+
+        with engine.connect() as connection:
+            rows = {
+                row[0]: row[1]
+                for row in connection.execute(
+                    text("select id, data from audit_events where id in (:s, :r, :p)"), ids
+                )
+            }
+            assert rows == {
+                signed_in: {"ip": "203.0.113.7", "kind": "app"},
+                requested: {"ip": "2001:db8::1", "email": "a@example.com"},
+                plain: {"name": "Court of Ashes"},
+            }
+            assert setting(connection) == {"record": "debug", "sign_in_ips": False}
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            connection.execute(text("delete from audit_events where id in (:s, :r, :p)"), ids)
+            connection.execute(text("delete from server_settings where key = 'audit_log'"))
