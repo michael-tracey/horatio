@@ -1,9 +1,10 @@
 """Blog authors (#1159): a public profile for writing on the blog, apart from the
-player profile. Who sees it, what it never shows, its handle, its picture, and the
-custodian clearing it."""
+player profile. Who sees it, what it never shows, its handle, its picture, hiding it
+while its author is suspended (#1182), and the custodian clearing it."""
 
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -11,11 +12,11 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from horatio.config import get_settings
-from horatio.models import AuditEvent, BlogAuthor
+from horatio.models import AuditEvent, BlogAuthor, Suspension
 from tests.api_helpers import Person, Troupe, sign_up
 from tests.test_api_blog import bell, published
 from tests.test_api_pictures import photo
@@ -269,6 +270,70 @@ def test_the_picture_is_only_shown_while_the_page_is(
     picture = url.rsplit("/", 1)[1]
     assert visitor.get(f"/blog/author-pictures/{other.id}/{picture}/96.webp").status_code == 404
     assert visitor.get(f"/blog/author-pictures/{uuid.uuid4()}/{picture}/96.webp").status_code == 404
+
+
+def test_a_suspended_authors_page_is_hidden_until_the_suspension_ends(
+    troupe: Troupe, visitor: TestClient, kept: Path, session: Session
+) -> None:
+    person = troupe.storyteller
+    save(person)
+    picture = upload(person, photo()).json()["picture"].removeprefix("/api")
+    article = published(troupe, person)
+    reading = f"/blog/public/articles/{article['slug']}"
+    full = visitor.get(reading).json()["author_card"]
+    assert full["handle"] == "sam_writes" and full["bio"] == AUTHOR["bio"]
+
+    suspended = troupe.custodian.client.post(
+        f"/players/{person.id}/suspension", json={"reason": "Harassing other players"}
+    )
+    assert suspended.status_code == 201, suspended.text
+
+    # The page, its articles and its picture are gone for anyone else, as if never there.
+    assert visitor.get("/blog/authors/sam_writes").status_code == 404
+    assert troupe.stranger.client.get("/blog/authors/sam_writes").status_code == 404
+    assert visitor.get("/blog/public/authors/sam_writes/articles").status_code == 404
+    assert visitor.get(f"{picture}/96.webp").status_code == 404
+    # The custodian still sees it, to clear it if need be.
+    assert troupe.custodian.client.get("/blog/authors/sam_writes").status_code == 200
+    # The article stays up, under their name alone: no link, picture, bio or links.
+    shown = visitor.get(reading)
+    assert shown.status_code == 200
+    assert shown.json()["author"] == {"name": "Sam the Storyteller", "handle": None}
+    assert shown.json()["author_card"] == {
+        "handle": None,
+        "display_name": "Sam the Storyteller",
+        "bio": "",
+        "links": [],
+        "picture": None,
+    }
+    for hidden in ("sam_writes", "since 2019", "sam.example.org", "author-pictures"):
+        assert hidden not in shown.text
+    listed = visitor.get("/blog/public/articles").json()["articles"][0]["author"]
+    assert listed == {"name": "Sam the Storyteller", "handle": None}
+
+    # Lifted, it all comes back.
+    lifted = troupe.custodian.client.post(
+        f"/players/{person.id}/suspension/lift", json={"reason": "Talked it through"}
+    )
+    assert lifted.status_code == 200, lifted.text
+    assert visitor.get("/blog/authors/sam_writes").status_code == 200
+    assert visitor.get(f"{picture}/96.webp").status_code == 200
+    assert visitor.get(reading).json()["author_card"] == full
+
+    # And so it does when a suspension's end date passes, before it is recorded as lifted.
+    ends_at = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+    again = troupe.custodian.client.post(
+        f"/players/{person.id}/suspension", json={"reason": "Again", "ends_at": ends_at}
+    )
+    assert again.status_code == 201, again.text
+    assert visitor.get("/blog/authors/sam_writes").status_code == 404
+    session.execute(
+        update(Suspension)
+        .where(Suspension.lifted_at.is_(None))
+        .values(ends_at=datetime.now(UTC) - timedelta(minutes=1))
+    )
+    assert visitor.get("/blog/authors/sam_writes").status_code == 200
+    assert visitor.get(reading).json()["author_card"] == full
 
 
 def test_the_custodian_clears_a_bio_or_picture_and_it_is_logged(

@@ -2507,7 +2507,7 @@
         "type": "object"
       },
       "AuthorCard": {
-        "description": "An author as anyone may see them, under each of their articles and on their\npage. Never their email or anything else from their player profile.",
+        "description": "An author as anyone may see them, under each of their articles.",
         "properties": {
           "bio": {
             "title": "Bio",
@@ -2518,8 +2518,15 @@
             "type": "string"
           },
           "handle": {
-            "title": "Handle",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
           },
           "links": {
             "items": {
@@ -2541,11 +2548,11 @@
           }
         },
         "required": [
-          "handle",
           "display_name",
           "bio",
           "links",
-          "picture"
+          "picture",
+          "handle"
         ],
         "title": "AuthorCard",
         "type": "object"
@@ -2593,11 +2600,11 @@
           }
         },
         "required": [
-          "handle",
           "display_name",
           "bio",
           "links",
           "picture",
+          "handle",
           "yours",
           "can_clear"
         ],

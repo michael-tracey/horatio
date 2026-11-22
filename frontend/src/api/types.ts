@@ -188,8 +188,9 @@ export type TroupeProfileOut = Schemas["TroupeProfileOut"];
 export type PublicTroupeOut = Schemas["PublicTroupeOut"];
 export type PublicTroupePageOut = Schemas["PublicTroupePageOut"];
 // The blog's authors (#1159).
-// The card each article shows (AuthorCard on the server), a part of an author's page.
-export type AuthorCard = Pick<Schemas["AuthorPage"], "handle" | "display_name" | "bio" | "links" | "picture">;
+// The card each article shows, and a part of an author's page. Its handle is null while the
+// author's page is hidden, their account suspended (#1182): then it has their name alone.
+export type AuthorCard = Schemas["AuthorCard"];
 export type AuthorPage = Schemas["AuthorPage"];
 export type MyAuthor = Schemas["MyAuthor"];
 export type ThrowImagesOut = Schemas["ThrowImagesOut"];

@@ -215,8 +215,8 @@ def tag_feed(slug: str, request: Request, db: DbSession) -> Response:
 
 
 def shown_authors(db: Session) -> list[BlogAuthor]:
-    """The authors whose pages anyone may see (blog_authors.shown), but for anyone
-    suspended now, whose page no search engine needs sending to."""
+    """The authors whose pages anyone may see (blog_authors.shown): no one merged into
+    another account or suspended now (#1182), who are passed over first."""
     found = db.scalars(
         select(BlogAuthor)
         .join(User, User.id == BlogAuthor.user_id)

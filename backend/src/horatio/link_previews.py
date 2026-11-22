@@ -215,7 +215,8 @@ def tag(db: Session, slug: str) -> LinkPreview | None:
 
 
 def author(db: Session, handle: str) -> LinkPreview | None:
-    """An author's page, while anyone may see it (blog_authors.shown)."""
+    """An author's page, while anyone may see it (blog_authors.shown): none while
+    their account is merged into another or suspended (#1182)."""
     found = blog_authors.by_handle(db, handle)
     if found is None or not blog_authors.shown(db, found):
         return None
