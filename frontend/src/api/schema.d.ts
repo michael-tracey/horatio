@@ -17644,7 +17644,7 @@ export interface components {
             tags: components["schemas"]["BlogTagOut"][];
             /** Title */
             title: string;
-            troupe: components["schemas"]["BlogTroupeOut"] | null;
+            troupe: components["schemas"]["BlogPublicTroupeOut"] | null;
         };
         /**
          * BlogPublicAuthorOut
@@ -17716,7 +17716,7 @@ export interface components {
             tags: components["schemas"]["BlogTagOut"][];
             /** Title */
             title: string;
-            troupe: components["schemas"]["BlogTroupeOut"] | null;
+            troupe: components["schemas"]["BlogPublicTroupeOut"] | null;
         };
         /** BlogPublicTagCountOut */
         BlogPublicTagCountOut: {
@@ -17745,6 +17745,16 @@ export interface components {
             tag: components["schemas"]["BlogTagOut"];
             /** Total */
             total: number;
+        };
+        /**
+         * BlogPublicTroupeOut
+         * @description The troupe an article names, as the blog shows it (#1160): its name, and its card
+         *     while it is public and running. Of a private or archived troupe, only its name.
+         */
+        BlogPublicTroupeOut: {
+            card: components["schemas"]["BlogTroupeCardOut"] | null;
+            /** Name */
+            name: string;
         };
         /**
          * BlogQueueOut
@@ -17847,12 +17857,33 @@ export interface components {
             tag_ids: string[];
         };
         /**
+         * BlogTroupeCardOut
+         * @description A troupe's card on an article (#1160): what its public profile shows anyone, for a
+         *     troupe that is public and running. The blog links it to /t/<id>.
+         */
+        BlogTroupeCardOut: {
+            /** Abbreviation */
+            abbreviation: string;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Portrait */
+            portrait: string | null;
+        };
+        /**
          * BlogTroupeOut
-         * @description The troupe an article names.
+         * @description The troupe an article names, for its author and the custodian.
          */
         BlogTroupeOut: {
             /** Archived */
             archived: boolean;
+            card: components["schemas"]["BlogTroupeCardOut"] | null;
             /**
              * Id
              * Format: uuid

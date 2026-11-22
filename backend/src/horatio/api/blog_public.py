@@ -23,7 +23,7 @@ from sqlalchemy.sql import Select
 
 from horatio import blog, pictures
 from horatio.api import blog_authors
-from horatio.api.blog import BlogTagOut, BlogTroupeOut, troupe_out
+from horatio.api.blog import BlogTagOut, BlogTroupeCardOut, troupe_cards
 from horatio.api.blog_authors import AuthorCard
 from horatio.auth.deps import DbSession, MaybeUser
 from horatio.models import BlogAuthor, BlogPost, BlogPostTag, BlogTag, Troupe, User
@@ -54,6 +54,14 @@ class BlogPublicAuthorOut(BaseModel):
     handle: str | None
 
 
+class BlogPublicTroupeOut(BaseModel):
+    """The troupe an article names, as the blog shows it (#1160): its name, and its card
+    while it is public and running. Of a private or archived troupe, only its name."""
+
+    name: str
+    card: BlogTroupeCardOut | None
+
+
 class BlogPublicSummaryOut(BaseModel):
     """An article in a list of them."""
 
@@ -63,9 +71,9 @@ class BlogPublicSummaryOut(BaseModel):
     # Its hero picture (add "/1200.webp" or "/600.webp"), or None.
     picture: str | None
     author: BlogPublicAuthorOut
-    # The troupe it names: the writing page's shape, so the blog and its preview draw
-    # it alike. The blog links it only while it is public and not archived.
-    troupe: BlogTroupeOut | None
+    # The troupe it names. The writing page's troupe has the same name and card, so the
+    # blog and its preview draw it alike.
+    troupe: BlogPublicTroupeOut | None
     tags: list[BlogTagOut]
     featured: bool
     # When it was first published: its date on the blog.
@@ -144,9 +152,9 @@ def authors_of(
 def summaries(db: Session, found: list[BlogPost]) -> list[BlogPublicSummaryOut]:
     """The articles as the blog lists them, asking the database a few times in all."""
     troupe_ids = {a.troupe_id for a in found if a.troupe_id is not None}
-    troupes = {
-        t.id: troupe_out(t) for t in db.scalars(select(Troupe).where(Troupe.id.in_(troupe_ids)))
-    }
+    found_troupes = list(db.scalars(select(Troupe).where(Troupe.id.in_(troupe_ids))))
+    cards = troupe_cards(db, found_troupes)
+    troupes = {t.id: BlogPublicTroupeOut(name=t.name, card=cards.get(t.id)) for t in found_troupes}
     authors = authors_of(db, {a.author_id for a in found})
     tags = blog.tags_of(db, [a.id for a in found])
     out: list[BlogPublicSummaryOut] = []

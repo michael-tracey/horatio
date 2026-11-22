@@ -239,7 +239,7 @@ Horatio's blog, at **/blog**, has articles on playing and running a game, writte
 
 - The newest articles come first, a page at a time, with any featured ones across the top. **Previous** and **Next** at the foot move between pages.
 - The tags above the articles, such as **Storytelling** or **Safety and consent**, show only the articles with that tag. **All** shows every one again. Each article's own tags lead to the same lists.
-- An article shows who wrote it and when, and the troupe it comes from. A troupe whose profile is public is a link to that profile.
+- An article shows who wrote it and when, and the troupe it comes from. A troupe whose profile is public, and that isn't archived, is a link to that profile, with a card about the troupe under the article. Any other troupe is its name only.
 - Under the article is its author's card, as they set it in [their blog author profile](#your-blog-author-profile). Their name leads to their author page, which lists every article of theirs on the blog, newest first.
 
 Readers can't comment on articles. If you wrote an article, its page has **Change it**, which opens it for writing. For writing one, see [Writing for the blog](blog.md).

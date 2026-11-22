@@ -16,7 +16,7 @@ const TAGS: BlogTagOut[] = [
   { id: "t1", name: "How to play", slug: "how-to-play" },
   { id: "t2", name: "Storytelling", slug: "storytelling" },
 ];
-const TROUPE = { id: "lords", name: "Lords of the Night", archived: false, public: false };
+const TROUPE = { id: "lords", name: "Lords of the Night", archived: false, public: false, card: null };
 
 function article(over: Partial<BlogArticleOut>): BlogArticleOut {
   return {
@@ -110,6 +110,15 @@ describe("Custodian › Blog (#1156)", () => {
     const down = item(section("Unpublished"), "Old news");
     expect(within(down).getByText(/Why it was unpublished:/)).toBeTruthy();
     expect(within(down).queryByRole("button", { name: /Publish|Unpublish/ })).toBeNull();
+  });
+
+  it("shows a public troupe's card when reading an article, and none for a private one (#1160)", () => {
+    const lords = { ...TROUPE, public: true, card: { id: "lords", name: "Lords of the Night", abbreviation: "LotN", portrait: "/api/troupes/lords/portraits/p9", description: "A Camarilla game in Leeds." } };
+    show({ waiting: [article({ troupe: lords })], published: [PUBLISHED], unpublished: [] });
+    const first = item(section("Waiting"), "Running your first Elysium");
+    const troupe = within(first).getByRole("region", { name: "About Lords of the Night" });
+    expect(within(troupe).getByRole("link", { name: "Lords of the Night" }).getAttribute("href")).toBe("/t/lords");
+    expect(within(item(section("Published"), "Boons 101")).queryByRole("region", { name: "About Lords of the Night" })).toBeNull();
   });
 
   it("says when nothing waits or is published, and leaves Unpublished out when empty", () => {

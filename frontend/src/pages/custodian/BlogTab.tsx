@@ -9,6 +9,7 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { toggled, working } from "../blog/blog";
 import { TagChips } from "../blog/TagChips";
+import { TroupeCard } from "../blog/TroupeCard";
 
 export function useBlogQueue(enabled = true) {
   return useQuery({ queryKey: ["blog-queue"], queryFn: () => unwrap(api.GET("/api/blog/queue")), enabled });
@@ -136,6 +137,7 @@ function Article({ article: a, tags, waiting = false, children }: { article: Blo
         <div className="mt-2 flex flex-col gap-3">
           {words.picture && <img src={`${words.picture}/600.webp`} alt="" className="max-h-64 w-fit rounded-md" />}
           <Markdown text={words.body} pictures />
+          {words.troupe?.card && <TroupeCard troupe={words.troupe.card} />}
         </div>
       </details>
       <Address article={a} />

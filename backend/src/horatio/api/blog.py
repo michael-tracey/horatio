@@ -9,6 +9,7 @@ published words name (#1163), are anyone's to see.
 """
 
 import uuid
+from collections.abc import Iterable
 from datetime import datetime
 from typing import Annotated, Literal
 
@@ -18,7 +19,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import blog, pictures
+from horatio import blog, pictures, troupe_abbreviations
 from horatio.api.pictures import uploads
 from horatio.api.troupe_profiles import read_upload
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
@@ -39,8 +40,21 @@ class BlogTagOut(BaseModel):
     slug: str
 
 
+class BlogTroupeCardOut(BaseModel):
+    """A troupe's card on an article (#1160): what its public profile shows anyone, for a
+    troupe that is public and running. The blog links it to /t/<id>."""
+
+    id: uuid.UUID
+    name: str
+    # What it goes by (horatio.troupe_abbreviations), for its pill.
+    abbreviation: str
+    # Where its portrait is (add "/48.webp", "/128.webp" or "/512.webp"), or None.
+    portrait: str | None
+    description: str
+
+
 class BlogTroupeOut(BaseModel):
-    """The troupe an article names."""
+    """The troupe an article names, for its author and the custodian."""
 
     id: uuid.UUID
     name: str
@@ -48,6 +62,8 @@ class BlogTroupeOut(BaseModel):
     archived: bool
     # Its profile is public; one that isn't is named but not linked (#1157).
     public: bool
+    # Its card, as the blog shows it, while it is public and running; else None.
+    card: BlogTroupeCardOut | None
 
 
 class BlogRevisionOut(BaseModel):
@@ -175,13 +191,43 @@ def custodian_article(db: Session, user: User, article_id: uuid.UUID) -> BlogPos
 # --- shaping ---------------------------------------------------------------------------
 
 
-def troupe_out(troupe: Troupe) -> BlogTroupeOut:
-    return BlogTroupeOut(
-        id=troupe.id,
-        name=troupe.name,
-        archived=troupe.archived_at is not None,
-        public=troupe.public,
-    )
+def troupe_cards(db: Session, troupes: Iterable[Troupe]) -> dict[uuid.UUID, BlogTroupeCardOut]:
+    """The card of each troupe that is public and running, as it is now: a troupe that
+    goes private or is archived drops its card from every article at once."""
+    shown = [t for t in troupes if t.public and t.archived_at is None]
+    if not shown:
+        return {}
+    goes_by = troupe_abbreviations.effective(db)
+    return {
+        t.id: BlogTroupeCardOut(
+            id=t.id,
+            name=t.name,
+            abbreviation=goes_by[t.id].abbreviation,
+            portrait=pictures.troupe_portrait_url(t.id, t.portrait_id),
+            description=t.description,
+        )
+        for t in shown
+    }
+
+
+def troupes_out(db: Session, troupes: Iterable[Troupe]) -> list[BlogTroupeOut]:
+    found = list(troupes)
+    cards = troupe_cards(db, found)
+    return [
+        BlogTroupeOut(
+            id=t.id,
+            name=t.name,
+            archived=t.archived_at is not None,
+            public=t.public,
+            card=cards.get(t.id),
+        )
+        for t in found
+    ]
+
+
+def troupes_by_id(db: Session, ids: set[uuid.UUID | None]) -> dict[uuid.UUID, BlogTroupeOut]:
+    found = db.scalars(select(Troupe).where(Troupe.id.in_(ids - {None})))
+    return {t.id: t for t in troupes_out(db, found)}
 
 
 def articles_out(db: Session, user: User, found: list[BlogPost]) -> list[BlogArticleOut]:
@@ -190,10 +236,7 @@ def articles_out(db: Session, user: User, found: list[BlogPost]) -> list[BlogArt
     troupe_ids = {a.troupe_id for a in found} | {
         r.troupe_id for r in revisions.values() if r is not None
     }
-    troupes = {
-        t.id: troupe_out(t)
-        for t in db.scalars(select(Troupe).where(Troupe.id.in_(troupe_ids - {None})))
-    }
+    troupes = troupes_by_id(db, troupe_ids)
     names: dict[uuid.UUID, str] = {
         i: n
         for i, n in db.execute(
@@ -285,7 +328,7 @@ def list_tags(db: DbSession, user: CurrentUser) -> list[BlogTagOut]:
 def writer(db: DbSession, user: CurrentUser) -> BlogWriterOut:
     troupes = blog.writing_troupes(db, user)
     return BlogWriterOut(
-        can_write=user.is_custodian or bool(troupes), troupes=[troupe_out(t) for t in troupes]
+        can_write=user.is_custodian or bool(troupes), troupes=troupes_out(db, troupes)
     )
 
 

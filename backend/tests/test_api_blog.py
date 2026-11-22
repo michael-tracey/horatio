@@ -119,6 +119,14 @@ def test_the_writer_hears_whether_each_troupe_is_public(troupe: Troupe) -> None:
         "name": "Lords of the Night",
         "archived": False,
         "public": True,
+        # Its card on the blog, for the preview (#1160).
+        "card": {
+            "id": troupe.id,
+            "name": "Lords of the Night",
+            "abbreviation": "LotN",
+            "portrait": None,
+            "description": "",
+        },
     }
     assert draft(troupe.narrator, troupe.id)["troupe"]["public"] is True
 
@@ -215,6 +223,7 @@ def test_submitting_checks_the_troupe_again_and_publishing_keeps_it(troupe: Trou
         "name": "Court of Ash",
         "archived": True,
         "public": False,
+        "card": None,
     }
     assert done["status"] == again["status"] == "published"
 

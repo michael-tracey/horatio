@@ -6,15 +6,15 @@ import { closeContextsAfterEach, isNarrow, makeCustodian, person, run, shots } f
 
 closeContextsAfterEach();
 
-async function send(page: Page, method: "POST" | "PUT", url: string, data: object) {
+async function send(page: Page, method: "POST" | "PUT" | "PATCH", url: string, data: object) {
   const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
   expect(response.status(), await response.text()).toBeLessThan(300);
   return response.json();
 }
 
-/** The custodian writes an article, naming no troupe, and publishes it with `tags`. */
-async function publishedArticle(c: Page, title: string, body: string, tags: string[], picture = false): Promise<{ id: string; slug: string }> {
-  const article = await send(c, "POST", "/api/blog/articles", { title, summary: `A summary of ${title}.`, body, troupe_id: null });
+/** The custodian writes an article, naming `troupeId` or no troupe, and publishes it with `tags`. */
+async function publishedArticle(c: Page, title: string, body: string, tags: string[], picture = false, troupeId: string | null = null): Promise<{ id: string; slug: string }> {
+  const article = await send(c, "POST", "/api/blog/articles", { title, summary: `A summary of ${title}.`, body, troupe_id: troupeId });
   if (picture) {
     const upload = await c.request.post(`/api/blog/articles/${article.id}/picture`, {
       headers: { "X-Horatio": "1" },
@@ -323,13 +323,19 @@ test("the custodian adds, renames, retires and merges a tag in Custodian › Blo
   expect(merged.tags.map((t: { name: string }) => t.name)).toEqual(["Community"]);
 });
 
-test("signed out, someone opens the blog, filters it by a tag, reads an article and its author's page, but never a draft (#1158)", async ({ browser }) => {
+test("signed out, someone opens the blog, filters it by a tag, reads an article, its author's page and its troupe's, but never a draft (#1158, #1160)", async ({ browser }) => {
   const custodian = await person(browser, "blogread-cust");
   makeCustodian(custodian.email);
   const c = custodian.page;
+  // A public troupe the custodian runs, for the article's troupe card (#1160).
+  const troupeName = `Lantern Court of the Blog ${run}`;
+  const abbreviation = `LC${run.slice(-8)}`;
+  const troupe = await send(c, "POST", "/api/troupes", { name: troupeName, lead_handle: custodian.handle });
+  await send(c, "PATCH", `/api/troupes/${troupe.id}`, { description: "A Camarilla game by the harbour.", abbreviation });
+  await send(c, "PUT", `/api/troupes/${troupe.id}/profile/public`, { public: true });
   const combat = `Fair fights at the table ${run}`;
   const other = `Lore for new players ${run}`;
-  const tagged = await publishedArticle(c, combat, "Call the **challenge** out loud, then wait for the answer.", ["Combat and challenges"], true);
+  const tagged = await publishedArticle(c, combat, "Call the **challenge** out loud, then wait for the answer.", ["Combat and challenges"], true, troupe.id);
   await publishedArticle(c, other, "Start with the city.", ["Setting and lore"]);
   const unready = `Not ready yet ${run}`;
   const draft = await send(c, "POST", "/api/blog/articles", { title: unready, summary: "", body: "Secret.", troupe_id: null });
@@ -371,7 +377,17 @@ test("signed out, someone opens the blog, filters it by a tag, reads an article 
   await expect(visitor.getByRole("link", { name: "Change it" })).toHaveCount(0);
   const card = visitor.getByRole("region", { name: "About Odile Brandt" });
   await expect(card.getByText("Lisbon")).toBeVisible();
+  // Its troupe is public, so it has a card beside the author's (#1160).
+  const troupeCard = visitor.getByRole("region", { name: `About ${troupeName}` });
+  await expect(troupeCard.getByText("A Camarilla game by the harbour.")).toBeVisible();
+  await expect(troupeCard.getByTitle(troupeName)).toContainText(abbreviation);
   await visitor.screenshot(shots("blog-article"));
+  // The card leads to the troupe's public profile, and back.
+  await troupeCard.getByRole("link", { name: troupeName }).click();
+  await expect(visitor).toHaveURL(`/t/${troupe.id}`);
+  await expect(visitor.getByRole("heading", { name: troupeName, level: 1 })).toBeVisible();
+  await visitor.goBack();
+  await expect(visitor.getByRole("heading", { name: combat, level: 1 })).toBeVisible();
 
   // The card leads to the author's page, with what they have published.
   await card.getByRole("link", { name: "Odile Brandt" }).click();

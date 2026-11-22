@@ -16,7 +16,7 @@ function article(over: Partial<BlogArticleOut> = {}): BlogArticleOut {
     picture: null,
     author_id: "u1",
     author_name: "Mara Quinn",
-    troupe: { id: "lords", name: "Lords of the Night", archived: false, public: true },
+    troupe: { id: "lords", name: "Lords of the Night", archived: false, public: true, card: null },
     featured: false,
     note: "",
     tags: [],
@@ -103,8 +103,8 @@ describe("what its author may do", () => {
 
 describe("the troupe an article names", () => {
   it("is linked only when public and running", () => {
-    expect(troupeLinked({ id: "t", name: "T", archived: false, public: true })).toBe(true);
-    expect(troupeLinked({ id: "t", name: "T", archived: false, public: false })).toBe(false);
-    expect(troupeLinked({ id: "t", name: "T", archived: true, public: true })).toBe(false);
+    expect(troupeLinked({ id: "t", name: "T", archived: false, public: true, card: null })).toBe(true);
+    expect(troupeLinked({ id: "t", name: "T", archived: false, public: false, card: null })).toBe(false);
+    expect(troupeLinked({ id: "t", name: "T", archived: true, public: true, card: null })).toBe(false);
   });
 });

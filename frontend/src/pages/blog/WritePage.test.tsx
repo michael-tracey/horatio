@@ -29,8 +29,8 @@ beforeAll(() => {
   };
 });
 
-const LORDS = { id: "lords", name: "Lords of the Night", archived: false, public: true };
-const ASH = { id: "ash", name: "Court of Ash", archived: false, public: false };
+const LORDS = { id: "lords", name: "Lords of the Night", archived: false, public: true, card: { id: "lords", name: "Lords of the Night", abbreviation: "LotN", portrait: "/api/troupes/lords/portraits/p9", description: "A Camarilla game in Leeds." } };
+const ASH = { id: "ash", name: "Court of Ash", archived: false, public: false, card: null };
 const TAGS: BlogTagOut[] = [
   { id: "t1", name: "How to play", slug: "how-to-play" },
   { id: "t2", name: "Storytelling", slug: "storytelling" },
@@ -209,7 +209,18 @@ describe("Write for the blog: one article (#1157)", () => {
     expect(within(shown).getByRole("heading", { name: "Your first Elysium", level: 2 })).toBeTruthy();
     expect(within(shown).getByText("How to play")).toBeTruthy();
     expect(within(shown).getByText(/Not published yet/)).toBeTruthy();
-    expect(within(shown).getByRole("link", { name: "Lords of the Night" }).getAttribute("href")).toBe("/t/lords");
+    expect(within(shown).getAllByRole("link", { name: "Lords of the Night" })[0]!.getAttribute("href")).toBe("/t/lords");
+    // A public troupe's card is beside the author's, as on the blog (#1160).
+    const troupe = within(shown).getByRole("region", { name: "About Lords of the Night" });
+    expect(within(troupe).getByText("A Camarilla game in Leeds.")).toBeTruthy();
+  });
+
+  it("shows no troupe card for a private troupe in the preview", () => {
+    show("/blog/write/a1", [article({ troupe: ASH })]);
+    fireEvent.click(screen.getByRole("radio", { name: "Preview" }));
+    const shown = screen.getByRole("article", { name: "Running your first Elysium" });
+    expect(within(shown).getByText("Court of Ash")).toBeTruthy();
+    expect(within(shown).queryByRole("region", { name: "About Court of Ash" })).toBeNull();
   });
 
   it("puts their author card under the preview, once they have one", () => {
