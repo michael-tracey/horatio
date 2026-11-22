@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { useMe } from "../hooks";
+import { useWriter } from "../pages/blog/writer";
 import { useAppearance } from "../loaders/useMotif";
 import { useNext, withNext } from "../next";
 import { NeedsConnection } from "../offline/NeedsConnection";
@@ -199,6 +200,7 @@ export function SiteMenu({ name, isCustodian, onSignOut }: { name: string; isCus
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
+  const writer = useWriter(open);
 
   // Moving to another page closes it, however the move came about.
   useEffect(() => setOpen(false), [pathname]);
@@ -248,6 +250,12 @@ export function SiteMenu({ name, isCustodian, onSignOut }: { name: string; isCus
           <nav aria-label="Main" className="mx-auto flex max-w-5xl flex-col divide-y divide-ash/60 py-1">
             <SiteLinks isCustodian={isCustodian} link={(state) => `block ${item(state)}`} onPick={close} />
             <AccountLink name={name} isCustodian={isCustodian} className={(state) => `flex items-center gap-2 ${item(state)}`} onPick={close} />
+            {/* For staff and the custodian (#1157); asked only once the menu is open. */}
+            {writer.data?.can_write && (
+              <NavLink to="/blog/write" className={(state) => `block ${item(state)}`} onClick={close}>
+                Write for the blog
+              </NavLink>
+            )}
             <button
               className="block px-4 py-3 text-left text-base text-mist hover:bg-ash/40 hover:text-parchment"
               onClick={() => {

@@ -138,6 +138,8 @@ The troupe's **Overview** is the troupe at a glance, and where it opens. For a n
 - **Influence entries that need details** and **Influence effects ending this week**;
 - **Characters with old status to resolve**.
 
+Beside its title, **Write for the blog** starts an article for Horatio's blog that names the troupe (see [Writing for the blog](blog.md)).
+
 Members see any pinned announcements first, as banners (see [Announcements](#announcements)). Below it are the **Latest news** headline, once there is news (see [News](#news)), the **Games** to come (see [Game nights](#game-nights)), the troupe's **Profile**, the same for staff as for players (see [The troupe profile and public page](#the-troupe-profile-and-public-page)), **Who may join**, the **XP floor and ceiling**, and for storytellers and assistant storytellers the **Latest in the log**, with **See the whole log** (see [The troupe log](#the-troupe-log)).
 
 ### My work

@@ -16,7 +16,7 @@ const TAGS: BlogTagOut[] = [
   { id: "t1", name: "How to play", slug: "how-to-play" },
   { id: "t2", name: "Storytelling", slug: "storytelling" },
 ];
-const TROUPE = { id: "lords", name: "Lords of the Night", archived: false };
+const TROUPE = { id: "lords", name: "Lords of the Night", archived: false, public: false };
 
 function article(over: Partial<BlogArticleOut>): BlogArticleOut {
   return {
@@ -197,7 +197,8 @@ describe("where an article stands, for its author", () => {
     expect(statusText(article({}))).toBe("Waiting for the custodian");
     expect(statusText(PUBLISHED)).toBe("Published");
     expect(statusText(CHANGED)).toBe("Published, with changes waiting for the custodian");
-    expect(statusText({ ...CHANGED, waiting: null })).toBe("Published, with changes not yet sent");
+    expect(statusText({ ...CHANGED, waiting: null })).toBe("Published, with changes not yet proposed");
+    expect(statusText({ ...CHANGED, waiting: null, note: "Too long." })).toBe("Published, with changes returned to you");
     expect(statusText(DOWN)).toBe("Unpublished");
   });
 });
