@@ -60,6 +60,9 @@ class BlogPost(Record):
     revision: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     # When those changes were sent to the custodian; None while still being written.
     revision_submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # When everyone was told of it on the bell, once, after it was first published
+    # (horatio.blog_bell); None until then.
+    everyone_told_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class BlogTag(Record):

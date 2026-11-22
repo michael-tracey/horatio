@@ -380,6 +380,21 @@ GROUPS = (
         ),
     ),
     Group(
+        "blog",
+        "The blog",
+        "everyone",
+        (
+            Topic(
+                "blog_new",
+                "New blog articles",
+                "Each new article the custodian publishes on Horatio's blog, once. Only in the"
+                " bell.",
+                ("blog.new",),
+                {"bell": ON},
+            ),
+        ),
+    ),
+    Group(
         "staff",
         "Staff work",
         "staff",

@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     custodian_contact: str | None = None
     # How often the API sends deliveries waiting on connectors, in seconds; 0 stops it.
     delivery_interval: float = 15
+    # Whether everyone hears of a new blog article on the bell (horatio.blog_bell). The
+    # e2e suite turns it off: a notice to every account would change the bell's count
+    # in whatever other test is running at the time.
+    blog_bell: bool = True
 
     # The Horatio Discord app (horatio.connectors.discord): one bot that troupes
     # invite to their servers. All three are needed for the Discord connector.

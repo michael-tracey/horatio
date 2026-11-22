@@ -168,7 +168,7 @@ test("Account › Notifications: where each kind comes, the ones that always com
   await expect(page.getByRole("checkbox", { name: "Downtime results: email" })).toHaveCount(0);
   // Every group a player gets; staff work only for staff.
   const groups = page.locator("main section > header h2");
-  await expect(groups).toHaveText(["Your account", "Your characters", "Downtimes", "Boons", "Troupe news"]);
+  await expect(groups).toHaveText(["Your account", "Your characters", "Downtimes", "Boons", "Troupe news", "The blog"]);
   // Word about your account always comes, with nothing to turn off.
   const account = page.getByRole("region", { name: "Your account" });
   await expect(account.getByText("Bell, always").first()).toBeVisible();

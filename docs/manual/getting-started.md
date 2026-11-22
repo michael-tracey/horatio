@@ -154,13 +154,15 @@ Choose any line to go straight to the page it's about. **Notification settings**
 
 ### Choosing your notifications
 
-The **Notifications** tab of your account lists every kind of notification Horatio sends, in groups: **Your account**, **Your characters**, **Downtimes**, **Boons** and **Troupe news**, and, if you're on a troupe's staff, **Staff work** (the custodian also sees **Custodian**). Each kind has a tick for each way it can come:
+The **Notifications** tab of your account lists every kind of notification Horatio sends, in groups: **Your account**, **Your characters**, **Downtimes**, **Boons**, **Troupe news** and **The blog**, and, if you're on a troupe's staff, **Staff work** (the custodian also sees **Custodian**). Each kind has a tick for each way it can come:
 
 - **Bell**: in the bell. Every kind comes to the bell until you untick it.
 - **Email**: by email as well. Every kind is off until you tick it, but troupe announcements, which are on because they're often practical. One the staff mark **Important** is emailed to everyone in the troupe even so.
 - **Phone**: as a notification on your phone, on each device where you turn them on (see [Notifications on your phone](#notifications-on-your-phone)). Downtime results, your boons (one you reported accepted or not), powers used on your character, blood bonds and troupe announcements are ticked to begin with; the rest are off until you tick them. Tick it for **Teaching to confirm** to hear on your phone, as it's asked, when another player asks your character to teach theirs: it says who would learn what, and the Willpower it costs, and a tap opens your character's Play View to confirm or refuse.
 
 Untick them all and that kind doesn't come at all. Some always come, and show **Bell, always** or **Email, always** with a lock instead of a tick: work waiting on you, such as an approval to decide or teaching to confirm, stays in the bell until it's done; word that the custodian viewed Horatio as you, merged your accounts, moved a character to or from you or reset your two-step sign-in, that a recovery code signed you in, or that a troupe you run now asks its staff for two-step sign-in, always comes to the bell; and emails to set a new password, confirm a new email, say your account is suspended or let back in, or say your two-step sign-in was reset or a recovery code used, always come, at once.
+
+**New blog articles**, under **The blog**, tells you in the bell of each article the custodian publishes on Horatio's blog, once, when it first goes up; choose it to read the article. It comes only to the bell, never by email or to your phone, and not for an article you wrote: you hear that yours is published instead.
 
 **Boons players report** goes with a role: staff, the Harpy and Lesser Harpies who approve reported boons choose whether they're told at all, for each troupe. The tab lists your choice in each troupe where you have one, the same switch as in the troupe's Boons settings or on your ledger's **To review** tab, so changing it in either place changes both.
 

@@ -28,7 +28,8 @@ published the slug never changes, so links to it never break.
 The custodian publishes, returns with a note, unpublishes with a reason, features
 and tags. The author hears of each of the first three on the bell, and every step
 goes in the audit log, outside any troupe's log (no troupe_id): the blog is the
-whole site's.
+whole site's. Everyone else hears of an article once, when it is first published
+(horatio.blog_bell).
 """
 
 import re
