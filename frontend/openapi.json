@@ -5508,6 +5508,26 @@
         "title": "BlogArticleOut",
         "type": "object"
       },
+      "BlogBodyPictureOut": {
+        "description": "A picture uploaded for an article's words, to put in them as\n`![what it shows](blog-picture:<id> \"its caption\")`.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url"
+        ],
+        "title": "BlogBodyPictureOut",
+        "type": "object"
+      },
       "BlogFeaturedIn": {
         "properties": {
           "featured": {
@@ -6001,6 +6021,21 @@
           "file"
         ],
         "title": "Body_upload_banner_api_troupes__troupe_id__banner_post",
+        "type": "object"
+      },
+      "Body_upload_body_picture_api_blog_articles__article_id__body_pictures_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_body_picture_api_blog_articles__article_id__body_pictures_post",
         "type": "object"
       },
       "Body_upload_crypt_templates_api_tools_crypt_templates_post": {
@@ -66894,6 +66929,60 @@
         ]
       }
     },
+    "/api/blog/articles/{article_id}/body-pictures": {
+      "post": {
+        "description": "A picture for the article's words (#1163), kept as a post's is (1200 and 600 px\nwide, its whole shape). Its author puts it in the words, and it stays once they\nare saved naming it; up to blog.PICTURE_LIMIT at once.",
+        "operationId": "upload_body_picture_api_blog_articles__article_id__body_pictures_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Article Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_body_picture_api_blog_articles__article_id__body_pictures_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlogBodyPictureOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Body Picture",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
     "/api/blog/articles/{article_id}/featured": {
       "put": {
         "operationId": "feature_article_api_blog_articles__article_id__featured_put",
@@ -67804,6 +67893,52 @@
         "summary": "Clear Author",
         "tags": [
           "blog authors"
+        ]
+      }
+    },
+    "/api/blog/body-pictures/{picture_id}/{name}": {
+      "get": {
+        "description": "A picture in an article's words. Once the published article's words name it,\nit is anyone's, signed in or not, and shared caches may keep it for an hour, so\none taken down soon drops out of them. Before that, a draft's or a published\narticle's changes', it is for the article's author and the custodian alone.",
+        "operationId": "body_picture_api_blog_body_pictures__picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Body Picture",
+        "tags": [
+          "blog"
         ]
       }
     },

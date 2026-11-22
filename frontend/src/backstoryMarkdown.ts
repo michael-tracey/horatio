@@ -8,7 +8,7 @@
  * sections built from the troupe's questions, is kept exactly as written.
  */
 import type { JSONContent } from "@tiptap/core";
-import { COMMENT, parseBlocks, RULE, SAFE_LINK, type Block, type Inline } from "./markdown";
+import { COMMENT, figureMarkdown, parseBlocks, RULE, SAFE_LINK, type Block, type Inline, type ParseOptions } from "./markdown";
 
 type Mark = { type: string; attrs?: Record<string, unknown> };
 
@@ -26,11 +26,12 @@ export const isQuestionsMark = (line: string) => QUESTIONS.test(line);
 
 // --- Markdown to the editor's document -------------------------------------------------------
 
-export function toDoc(markdown: string): JSONContent {
+/** `pictures` for a blog article's words, whose pictures the editor holds (#1163). */
+export function toDoc(markdown: string, options: ParseOptions = {}): JSONContent {
   // A comment can't hold the cursor, so there is always a paragraph to write in
   // before and after one; left empty, it writes back as nothing.
   const content: JSONContent[] = [];
-  for (const node of blocks(parseBlocks(markdown, true))) {
+  for (const node of blocks(parseBlocks(markdown, true, options))) {
     if (node.type === "comment" && (!content.length || content[content.length - 1]!.type === "comment")) content.push({ type: "paragraph" });
     content.push(node);
   }
@@ -60,6 +61,8 @@ function block(b: Block): JSONContent[] {
       return [{ type: "horizontalRule" }];
     case "comment":
       return [{ type: "comment", attrs: { line: b.v } }];
+    case "figure":
+      return [{ type: "blogPicture", attrs: { id: b.id, alt: b.alt, caption: b.caption } }];
     case "table":
       return []; // the manual's only: a backstory never has one
   }
@@ -160,6 +163,8 @@ function blockOut(node: JSONContent): string | null {
       return "---";
     case "comment":
       return String(node.attrs?.line ?? "") || null;
+    case "blogPicture":
+      return node.attrs?.id ? figureMarkdown({ id: String(node.attrs.id), alt: String(node.attrs.alt ?? ""), caption: String(node.attrs.caption ?? "") }) : null;
     default:
       return content.length ? blocksOut(content).join("\n\n") || null : null;
   }

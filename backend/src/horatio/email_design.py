@@ -407,6 +407,51 @@ MD_QUOTE = re.compile(r"^ {0,3}>\s?(.*)$")
 MD_FENCE = re.compile(r"^ {0,3}(```|~~~)")
 # A heading's size by its level, all below an announcement's own title.
 MD_HEADING_SIZES = {1: 20, 2: 18, 3: 17}
+# A picture in a blog article's words (#1163), on a line of its own, as
+# frontend/src/markdown.ts reads it: ![what it shows](blog-picture:<id> "its caption").
+MD_FIGURE = re.compile(
+    r"^ {0,3}!\[((?:\\.|[^\]\\])+)\]\(blog-picture:"
+    r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"
+    r'(?:\s+"((?:\\.|[^"\\])*)")?\)\s*$'
+)
+
+
+def _unescaped(text: str) -> str:
+    return re.sub(r"\\(.)", r"\1", text).strip()
+
+
+def figure_html(line: str) -> str | None:
+    """A blog article's picture as HTML for an email or a feed: the 600 px copy at its
+    address on the site, its description as the alt text and any caption under it.
+    None for any other line."""
+    found = MD_FIGURE.match(line)
+    if found is None:
+        return None
+    alt = html.escape(_unescaped(found.group(1)), quote=True)
+    src = html.escape(
+        f"{site()}{pictures.body_picture_url(uuid.UUID(found.group(2)))}/600.webp", quote=True
+    )
+    caption = _unescaped(found.group(3) or "")
+    shown = (
+        f'<img src="{src}" alt="{alt}" width="600" '
+        'style="display: block; width: 100%; max-width: 600px; height: auto; border: 0">'
+    )
+    under = (
+        f'<p style="margin: 6px 0 0 0; font-size: 13px; color: {MUTED}">{html.escape(caption)}</p>'
+        if caption
+        else ""
+    )
+    return f'<div style="margin: 0 0 16px 0">{shown}{under}</div>'
+
+
+def figure_text(line: str) -> str | None:
+    """A blog article's picture in a plain-text email: what it shows, and its caption."""
+    found = MD_FIGURE.match(line)
+    if found is None:
+        return None
+    caption = _unescaped(found.group(3) or "")
+    alt = _unescaped(found.group(1))
+    return f"[Picture: {alt}]" + (f" {caption}" if caption else "")
 
 
 def _md_starts_block(line: str) -> bool:
@@ -415,11 +460,14 @@ def _md_starts_block(line: str) -> bool:
     )
 
 
-def markdown_html(text: str, link_colour: str | None = None) -> str:
+def markdown_html(text: str, link_colour: str | None = None, *, pictures: bool = False) -> str:
     """Markdown as an announcement is written (headings, paragraphs, **bold**,
     *italic*, lists, quotes, code, rules and links, as the app reads them), as HTML
     for an email (#831). It is built from the text, so raw HTML in it only ever shows
-    as text; a line that is only an HTML comment is left out, as in the app."""
+    as text; a line that is only an HTML comment is left out, as in the app.
+
+    A blog article's words give `pictures`, and their pictures (#1163) show; any
+    other Markdown shows such a line as the text it is, as the app does."""
     lines = text.replace("\r\n", "\n").split("\n")
     out: list[str] = []
     gap = "margin: 0 0 16px 0"
@@ -430,6 +478,9 @@ def markdown_html(text: str, link_colour: str | None = None) -> str:
         heading = MD_HEADING.match(line)
         numbered = MD_NUMBER.match(line)
         if not line.strip() or MD_COMMENT.match(line):
+            i += 1
+        elif pictures and (figure := figure_html(line)) is not None:
+            out.append(figure)
             i += 1
         elif fence is not None:
             code: list[str] = []
@@ -488,6 +539,7 @@ def markdown_html(text: str, link_colour: str | None = None) -> str:
                 and lines[i].strip()
                 and not MD_COMMENT.match(lines[i])
                 and not _md_starts_block(lines[i])
+                and not (pictures and MD_FIGURE.match(lines[i]))
             ):
                 para.append(lines[i].strip())
                 i += 1
@@ -496,13 +548,17 @@ def markdown_html(text: str, link_colour: str | None = None) -> str:
     return "\n".join(out)
 
 
-def markdown_text(text: str) -> str:
+def markdown_text(text: str, *, pictures: bool = False) -> str:
     """Markdown as plain text for an email: headings without their marks, emphasis
     dropped, [words](link) as "words (link)", comment lines left out, and the rest
-    as written, which reads well as it is."""
+    as written, which reads well as it is. With `pictures`, a blog article's picture
+    is what it shows and its caption."""
     kept: list[str] = []
     for line in text.replace("\r\n", "\n").split("\n"):
         if MD_COMMENT.match(line):
+            continue
+        if pictures and (figure := figure_text(line)) is not None:
+            kept.append(figure)
             continue
         heading = MD_HEADING.match(line)
         kept.append(inline_text(heading.group(2) or "") if heading else inline_text(line))

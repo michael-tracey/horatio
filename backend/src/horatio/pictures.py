@@ -26,6 +26,8 @@ Horatio shows, all WebP, in `HORATIO_UPLOAD_DIR`:
 - a blog article's hero picture (issue #1156): as a post's, 1200 and 600 px wide.
   Kept apart from any troupe, under `blog/`, so the blog's public pages can show
   them (#1158).
+- a picture in a blog article's words (issue #1163): as a post's, 1200 and 600 px
+  wide, under `blog-pictures/<article id>/`.
 
 Each upload (and each new crop) is kept in a directory of its own, named by a new
 id, so its address changes and no cache ever shows the one it replaced.
@@ -372,6 +374,21 @@ def blog_picture_file(root: Path, picture_id: uuid.UUID, name: str) -> Path | No
     return path if path.is_file() else None
 
 
+def body_picture_dir(root: Path, post_id: uuid.UUID, picture_id: uuid.UUID | None = None) -> Path:
+    """A blog article's pictures in its words, or one of them."""
+    directory = root / "blog-pictures" / str(post_id)
+    return directory if picture_id is None else directory / str(picture_id)
+
+
+def body_picture_file(
+    root: Path, post_id: uuid.UUID, picture_id: uuid.UUID, name: str
+) -> Path | None:
+    if name not in POST_FILES:
+        return None
+    path = body_picture_dir(root, post_id, picture_id) / name
+    return path if path.is_file() else None
+
+
 def agency_portrait_dir(root: Path, troupe_id: uuid.UUID, portrait_id: uuid.UUID) -> Path:
     return troupe_dir(root, troupe_id) / "agency-portraits" / str(portrait_id)
 
@@ -499,6 +516,12 @@ def blog_picture_url(article_id: uuid.UUID, picture_id: uuid.UUID | None) -> str
     if picture_id is None:
         return None
     return f"/api/blog/articles/{article_id}/pictures/{picture_id}"
+
+
+def body_picture_url(picture_id: uuid.UUID) -> str:
+    """Where the app finds a picture in a blog article's words, which its Markdown names
+    as `blog-picture:<id>`: add "/1200.webp" or "/600.webp"."""
+    return f"/api/blog/body-pictures/{picture_id}"
 
 
 def agency_portrait_url(agency_id: uuid.UUID, portrait_id: uuid.UUID | None) -> str | None:

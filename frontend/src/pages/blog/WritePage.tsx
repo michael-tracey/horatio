@@ -14,6 +14,7 @@ import { useDates, type Dates } from "../../dates";
 import { useAction, useLeaveWarning, useMe } from "../../hooks";
 import { manualLink } from "../../manualLink";
 import { BlogArticleView } from "./BlogArticleView";
+import { BodyPictureForm, pictureTool, type Placing } from "./BodyPicture";
 import { deletable, standing, statusText, taggable, toggled, troupeLinked, working } from "./blog";
 import { HeroPicture } from "./HeroPicture";
 import { TagChips } from "./TagChips";
@@ -164,6 +165,8 @@ function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticl
   // The editor starts again from the words when they are put back (changes thrown away).
   const [editorKey, setEditorKey] = useState(0);
   const [mode, setMode] = useState<"write" | "preview">("write");
+  // Adding a picture to the words, or changing what one says (#1163).
+  const [placing, setPlacing] = useState<Placing | null>(null);
   const [goTo, setGoTo] = useState<string | null>(null);
   const [confirmed, confirming] = useConfirm();
   const client = useQueryClient();
@@ -361,8 +364,16 @@ function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticl
           <fieldset disabled={waiting || busy} className="min-w-0">
             <legend className="sr-only">Its words</legend>
             <Suspense fallback={<Loading />}>
-              {/* Pictures in the words (#1163) are to come in through the editor's moreTools. */}
-              <RichEditor key={editorKey} initial={form.body} onChange={(b) => set({ body: b })} label="Article" placeholder="Write your article here…" />
+              <RichEditor
+                key={editorKey}
+                initial={form.body}
+                onChange={(b) => set({ body: b })}
+                label="Article"
+                placeholder="Write your article here…"
+                pictures
+                moreTools={(editor) => [pictureTool(editor, placing !== null, setPlacing)]}
+                panel={placing && <BodyPictureForm key={placing.chosen ? "change" : "add"} articleId={article?.id} placing={placing} onDone={() => setPlacing(null)} />}
+              />
             </Suspense>
           </fieldset>
         </div>
@@ -396,6 +407,7 @@ function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticl
                     setSaved(back);
                     setForm(back);
                     setEditorKey((k) => k + 1);
+                    setPlacing(null);
                   },
                 });
               }}

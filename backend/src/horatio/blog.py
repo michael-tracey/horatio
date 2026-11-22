@@ -25,6 +25,14 @@ Its slug, its address on the blog, is made from the title, unique, and follows t
 title until its author or the custodian sets one by hand. Once it is first
 published the slug never changes, so links to it never break.
 
+Pictures in its words (#1163) are uploaded for the article and named in its Markdown
+as `blog-picture:<id>`, never by an outside address. Anyone sees one once the
+published article's words name it; until then, only its author and the custodian,
+so a published article's changes show nobody their new pictures before the
+custodian publishes them. One that no version of the article names any more is
+deleted whenever its words change hands: saved, published, thrown away or
+unpublished.
+
 The custodian publishes, returns with a note, unpublishes with a reason, features
 and tags. The author hears of each of the first three on the bell, and every step
 goes in the audit log, outside any troupe's log (no troupe_id): the blog is the
@@ -39,17 +47,31 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from horatio import audit
-from horatio.models import BlogPost, BlogPostTag, BlogTag, Troupe, TroupeStaff, User
+from horatio.models import (
+    BlogPost,
+    BlogPostPicture,
+    BlogPostTag,
+    BlogTag,
+    Troupe,
+    TroupeStaff,
+    User,
+)
 from horatio.notifications import notify
 from horatio.permissions import TROUPE_POLICY, TroupeAction
 
 STATUSES = ("draft", "submitted", "published", "unpublished")
 # The longest slug made from a title, before any "-2" that keeps it unique.
 SLUG_LENGTH = 80
+# The most pictures an article's words keep at once (#1163).
+PICTURE_LIMIT = 20
+# A picture in an article's words, as its Markdown names it.
+BODY_PICTURE = re.compile(
+    r"blog-picture:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"
+)
 
 
 def now() -> datetime:
@@ -476,6 +498,81 @@ def feature(db: Session, user: User, article: BlogPost, featured: bool) -> None:
         return
     article.featured = featured
     audit.record(db, user, "blog.featured" if featured else "blog.unfeatured", **described(article))
+
+
+# --- pictures in its words ----------------------------------------------------------------
+
+
+def pictures_in(body: str) -> set[uuid.UUID]:
+    """The pictures the words name."""
+    return {uuid.UUID(found) for found in BODY_PICTURE.findall(body)}
+
+
+def check_pictures(db: Session, article_id: uuid.UUID | None, body: str) -> None:
+    """Words name only pictures uploaded for their own article."""
+    named = pictures_in(body)
+    if not named:
+        return
+    kept = (
+        set(
+            db.scalars(
+                select(BlogPostPicture.id).where(
+                    BlogPostPicture.post_id == article_id, BlogPostPicture.id.in_(named)
+                )
+            )
+        )
+        if article_id is not None
+        else set()
+    )
+    if named - kept:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "A picture in it isn't one of this article's, or was taken out when it was saved:"
+            " take it out and add it again.",
+        )
+
+
+def add_picture(db: Session, article: BlogPost) -> BlogPostPicture:
+    """A new picture for the article's words, while its author may change them."""
+    changeable(article)
+    count = db.scalar(
+        select(func.count())
+        .select_from(BlogPostPicture)
+        .where(BlogPostPicture.post_id == article.id)
+    )
+    if (count or 0) >= PICTURE_LIMIT:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"An article can have up to {PICTURE_LIMIT} pictures. Take out one you don't"
+            " need and save it, then add another.",
+        )
+    picture = BlogPostPicture(post_id=article.id)
+    db.add(picture)
+    db.flush()
+    return picture
+
+
+def picture_public(article: BlogPost, picture_id: uuid.UUID) -> bool:
+    """Anyone's to see: in the words of the article as published. Not a published
+    article's changes', until the custodian publishes them."""
+    return article.status == "published" and picture_id in pictures_in(article.body)
+
+
+def unused_pictures(db: Session, article: BlogPost) -> list[uuid.UUID]:
+    """Forget the article's pictures that neither its words nor its changes' name.
+    Returns them, whose files can go once this is saved."""
+    named = pictures_in(article.body)
+    revision = revision_words(article)
+    if revision is not None:
+        named |= pictures_in(revision.body)
+    gone = [
+        p
+        for p in db.scalars(select(BlogPostPicture).where(BlogPostPicture.post_id == article.id))
+        if p.id not in named
+    ]
+    for picture in gone:
+        db.delete(picture)
+    return [p.id for p in gone]
 
 
 # --- tags ---------------------------------------------------------------------------------

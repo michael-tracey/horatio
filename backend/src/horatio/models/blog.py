@@ -85,3 +85,17 @@ class BlogPostTag(Record):
     tag_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("blog_tags.id", ondelete="CASCADE"), index=True
     )
+
+
+class BlogPostPicture(Record):
+    """A picture in a blog article's words (#1163), as against its hero picture. Its id
+    is the picture's: the article's Markdown names it as `blog-picture:<id>`, and its
+    files are under `blog-pictures/<post_id>/<id>` (horatio.pictures). Shown to
+    anyone once the published article's words name it, and to its author and the
+    custodian before; gone once no version of the article names it."""
+
+    __tablename__ = "blog_post_pictures"
+
+    post_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("blog_posts.id", ondelete="CASCADE"), index=True
+    )
