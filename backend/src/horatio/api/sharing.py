@@ -35,7 +35,7 @@ from horatio.auth.deps import DbSession
 from horatio.blog import pictures_in, tags_of
 from horatio.config import get_settings
 from horatio.email_design import markdown_html
-from horatio.link_previews import BLOG_DESCRIPTION, BLOG_TITLE
+from horatio.link_previews import BLOG_DESCRIPTION, BLOG_TITLE, DIRECTORY_PATH
 from horatio.models import BlogAuthor, BlogPost, BlogPostTag, BlogTag, Troupe, User
 
 router = APIRouter(include_in_schema=False)
@@ -55,8 +55,9 @@ SITE_CACHE = "public, max-age=3600"
 NOT_XML = re.compile("[^\t\n\r -퟿-�\U00010000-\U0010ffff]")
 
 # The app's pages that are only for people signed in, or for one person (an email's
-# link), which search engines have no business in. The rest are the public ones:
-# the blog, troupes' public profiles (/t/), the manual (/help), About, and signing in.
+# link), which search engines have no business in. The rest are the public ones: the
+# blog, the troupe directory, troupes' public profiles (/t/), the manual (/help), About,
+# and signing in.
 # The API isn't here: the public pages are drawn from it, and link previews' pictures
 # are in it; anything else in it is only for people signed in.
 PRIVATE = (
@@ -83,7 +84,7 @@ PRIVATE = (
     "/blog/write$",
     "/blog/write/",
 )
-PUBLIC = ("/blog", "/t/", "/help", "/about")
+PUBLIC = ("/blog", "/find-a-troupe", "/t/", "/help", "/about")
 
 
 def site() -> str:
@@ -232,8 +233,9 @@ def shown_authors(db: Session) -> list[BlogAuthor]:
 @router.api_route("/sitemap.xml", methods=["GET", "HEAD"])
 def sitemap(request: Request, db: DbSession) -> Response:
     """Every public page worth a search engine's visit: the landing page (#1164), the
-    blog, its published articles, the tags they have, the authors whose pages are
-    shown, and the troupes whose profiles are public and running."""
+    troupe directory (#1192), the blog, its published articles, the tags they have, the
+    authors whose pages are shown, and the troupes whose profiles are public and
+    running."""
     base = site()
     root = ET.Element("urlset", xmlns=SITEMAP)
 
@@ -245,6 +247,7 @@ def sitemap(request: Request, db: DbSession) -> Response:
 
     articles = list(db.scalars(newest(published())))
     url("/")
+    url(DIRECTORY_PATH)
     url("/blog", max((updated(a) for a in articles), default=None))
     for article in articles:
         url(f"/blog/{quote(article.slug)}", updated(article))

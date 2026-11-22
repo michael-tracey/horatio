@@ -49,6 +49,10 @@ function troupe(over: Partial<PublicTroupeOut>): PublicTroupeOut {
     portrait: null,
     description: "A Camarilla court in **Leeds**, where the old Prince's grip is slipping.\n\nGames monthly.",
     place: "Leeds",
+    schedule: "Second Saturday of the month",
+    new_players: "welcoming",
+    min_age: 18,
+    content_notes: "Violence.",
     ...over,
   };
 }
@@ -137,6 +141,9 @@ describe("the front door, / (#1164)", () => {
     expect(within(row).getByText("LotN").closest("[aria-hidden='true']")).toBeTruthy();
     expect(row.textContent).toContain("A Camarilla court in Leeds");
     expect(row.textContent).not.toContain("**");
+    // Compact: the directory's details are for the directory.
+    expect(row.textContent).not.toContain("Second Saturday");
+    expect(screen.getByRole("link", { name: "Search the troupe directory" }).getAttribute("href")).toBe("/find-a-troupe");
     expect(document.title).toBe("Welcome · Horatio");
   });
 

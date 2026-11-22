@@ -61,7 +61,8 @@ export function Layout() {
               {/* Search everything (#1046), on every screen, before the bar's links. */}
               <SiteSearch />
               {/* The whole bar from lg up; below it, the bell and a menu, so the bar stays one line (#746).
-                  Where even that is too wide, as with Large text at 1024px, the name gives way (#1190). */}
+                  Where even that is too wide, as with Large text at 1024px, the name gives way (#1190),
+                  and a custodian's "(custodian)" leaves it room (#1198). */}
               <nav aria-label="Main" className="hidden min-w-0 items-center gap-x-4 text-sm whitespace-nowrap lg:flex">
                 <SiteLinks isCustodian={me.data.is_custodian} link={link} />
                 <NotificationBell />
@@ -202,15 +203,30 @@ function SiteLinks({ isCustodian, link, onPick, blog = false }: { isCustodian: b
  * to keep the bar to one line; its tooltip has it whole.
  */
 function AccountLink({ name, isCustodian, className, short = false, onPick }: { name: string; isCustodian: boolean; className: LinkClass; short?: boolean; onPick?: () => void }) {
+  const label = isCustodian ? " (custodian)" : "";
   return (
-    <NavLink to="/account" className={className} onClick={onPick} title={short ? name : undefined}>
+    <NavLink to="/account" className={className} onClick={onPick} title={short ? name + label : undefined}>
       <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
         <circle cx="12" cy="8" r="4" />
         <path d="M4 21a8 8 0 0 1 16 0" strokeLinecap="round" />
       </svg>
       <span className="sr-only">Your account: </span>
-      <span className={short ? "min-w-0 max-w-48 truncate" : "min-w-0 break-words"}>{name}</span>
-      {isCustodian && <span className="shrink-0"> (custodian)</span>}
+      {short ? (
+        // One line, clipped. Where the name would get less than 10ch beside "(custodian)", the
+        // label wraps onto a second line, out of sight, and the name has its room (#1198). The
+        // label stays in the link's name and tooltip. Pure CSS, so it follows Large text.
+        <span className="flex h-lh min-w-0 flex-wrap content-start gap-x-1.5 overflow-hidden">
+          <span className="flex max-w-max min-w-0 grow basis-[10ch]">
+            <span className="min-w-0 max-w-48 truncate">{name}</span>
+          </span>
+          {isCustodian && <span>{label}</span>}
+        </span>
+      ) : (
+        <>
+          <span className="min-w-0 break-words">{name}</span>
+          {isCustodian && <span className="shrink-0">{label}</span>}
+        </>
+      )}
     </NavLink>
   );
 }
