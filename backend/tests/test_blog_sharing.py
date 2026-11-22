@@ -135,6 +135,21 @@ def test_the_landing_page_previews_as_horatio_and_names_the_blogs_feed(
     assert meta(page, "og:image:width") == ["1200"]
 
 
+def test_the_troupe_directory_previews_as_itself_whatever_it_searched_for(
+    pages: TestClient,
+) -> None:
+    for path in ("/find-a-troupe", "/find-a-troupe/", "/find-a-troupe?place=Leeds&day=friday"):
+        page = pages.get(path).text
+
+        assert "<title>Find a troupe · Horatio</title>" in page, path
+        assert meta(page, "og:title") == ["Find a troupe"]
+        assert meta(page, "og:description")[0].startswith("Mind&#x27;s Eye Theatre LARP troupes")
+        assert meta(page, "description") == meta(page, "og:description")
+        assert meta(page, "og:url") == [f"{SITE}/find-a-troupe"]
+        # The site's own picture.
+        assert meta(page, "og:image") == [f"{SITE}/preview.jpg"]
+
+
 def test_the_blog_previews_as_itself_and_names_its_feed(pages: TestClient) -> None:
     page = pages.get("/blog").text
 
@@ -512,6 +527,7 @@ def test_the_sitemap_lists_the_public_pages_and_nothing_private(
     published_at = article["published_at"][:19] + "Z"
     assert found == {
         f"{SITE}/": None,
+        f"{SITE}/find-a-troupe": None,
         f"{SITE}/blog": published_at,
         f"{SITE}/blog/{article['slug']}": published_at,
         f"{SITE}/blog/tags/storytelling": published_at,
@@ -522,8 +538,14 @@ def test_the_sitemap_lists_the_public_pages_and_nothing_private(
     assert hidden["id"] not in str(found) and gone["id"] not in str(found)
 
 
-def test_an_empty_sitemap_has_the_landing_page_and_the_blog(top: TestClient) -> None:
-    assert addresses(top) == {f"{SITE}/": None, f"{SITE}/blog": None}
+def test_an_empty_sitemap_has_the_landing_page_the_directory_and_the_blog(
+    top: TestClient,
+) -> None:
+    assert addresses(top) == {
+        f"{SITE}/": None,
+        f"{SITE}/find-a-troupe": None,
+        f"{SITE}/blog": None,
+    }
 
 
 def test_robots_keeps_search_engines_to_the_public_pages(top: TestClient) -> None:
@@ -533,14 +555,22 @@ def test_robots_keeps_search_engines_to_the_public_pages(top: TestClient) -> Non
     assert response.headers["content-type"].startswith("text/plain")
     lines = response.text.splitlines()
     assert lines[0] == "User-agent: *"
-    for path in ("/blog", "/t/", "/help", "/about"):
+    for path in ("/blog", "/find-a-troupe", "/t/", "/help", "/about"):
         assert f"Allow: {path}" in lines
     for path in ("/characters", "/troupes", "/account", "/custodian", "/blog/write/"):
         assert f"Disallow: {path}" in lines
     assert f"Sitemap: {SITE}/sitemap.xml" in lines
     # Nothing public is kept from them: a disallowed path is never the start of one.
     disallowed = [line.removeprefix("Disallow: ") for line in lines if "Disallow" in line]
-    for public in ("/blog", "/blog/write-2", "/t/abc", "/help/players", "/about", "/sign-in"):
+    for public in (
+        "/blog",
+        "/blog/write-2",
+        "/find-a-troupe",
+        "/t/abc",
+        "/help/players",
+        "/about",
+        "/sign-in",
+    ):
         assert not any(public.startswith(d) or public == d.removesuffix("$") for d in disallowed), (
             public
         )

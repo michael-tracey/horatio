@@ -29,7 +29,7 @@ import { NominationsTab } from "../nominations/NominationsTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlayersTab } from "./PlayersTab";
 import { QuestsTab } from "./QuestsTab";
-import { PlayHere } from "./PlayHere";
+import { JoinTroupe, PlayHere } from "./PlayHere";
 import { PlayTab } from "./PlayTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
@@ -131,6 +131,8 @@ export function TroupePage() {
       {!can.staff && !t.archived && <PlayHere troupe={t} />}
       <Routes>
         <Route index element={<OverviewTab troupe={t} can={can} />} />
+        {/* Request to join, from the troupe's public profile (#1192), through signing up if need be. */}
+        <Route path="join" element={<JoinTroupe troupe={t} />} />
         {/* The profile is on the Overview now (#781). */}
         <Route path="profile" element={<Navigate to={base} replace />} />
         {/* One House rules tab (#782): players read it; running staff also find each kind of rule in its own part. */}

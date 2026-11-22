@@ -57,7 +57,10 @@ handles are unique.
 (`provider`, `subject`).
 
 **`sessions`**: server-side sessions behind an HTTP-only cookie.
-`user_id`, `token_hash`, `expires_at`, `revoked_at`.
+`user_id`, `token_hash`, `expires_at`, `revoked_at`, and for Account › Sign-in
+(#1193) `user_agent` (the browser it was started from, up to 512 characters),
+`ip_address` (only while the custodian keeps addresses with sign-in events) and
+`last_active_at` (written at most every 5 minutes).
 
 **`auth_attempts`**: sign-ins and sign-ups tried, counted against the limits on
 them (`horatio.auth.attempts`). `action` (`sign_in` | `signed_in` | `sign_up` |

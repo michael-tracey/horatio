@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from horatio import delivery, link_previews, secret_links
 from horatio.api import (
     account_merges,
+    account_security,
     appearance,
     approvals,
     audit,
@@ -354,6 +355,7 @@ for module in (
     tools,
     throttled,
     two_step,
+    account_security,
     vtes_symbols,
     jyhad_card,
     search,

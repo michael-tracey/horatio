@@ -2,18 +2,15 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../api/client";
-import type { BlogPublicSummaryOut, PublicTroupeOut } from "../api/types";
-import { Avatar } from "../components/Avatar";
+import type { BlogPublicSummaryOut } from "../api/types";
 import { LinkButton } from "../components/LinkButton";
 import { Pager } from "../components/Pager";
-import { TroupePill } from "../components/TroupePill";
+import { PublicTroupeRow } from "../components/PublicTroupeRow";
 import { Card, Empty, Loaded, PageTitle } from "../components/ui";
 import { manualLink } from "../manualLink";
 import { ArticleCard } from "./blog/BlogPage";
-import { excerpt } from "./troupeList";
+import { DIRECTORY, TROUPES_PAGE_SIZE } from "./directory";
 
-// As many as the API puts on a page (public_troupes.PAGE_SIZE).
-export const TROUPES_PAGE_SIZE = 12;
 // The articles shown: at most two featured, then the newest.
 const ARTICLES = 4;
 const FEATURED = 2;
@@ -93,29 +90,6 @@ function FromTheBlog() {
   );
 }
 
-/** A troupe in the list: its portrait, name, abbreviation, where it plays and the start of its description. */
-function TroupeRow({ troupe: t }: { troupe: PublicTroupeOut }) {
-  const about = excerpt(t.description);
-  return (
-    <Link to={`/t/${t.id}`} className="group flex items-start gap-3 py-3">
-      <Avatar name={t.name} picture={t.portrait} size="sm" />
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="min-w-0 font-medium break-words text-parchment group-hover:text-gold">{t.name}</span>
-          {/* The name is just before it: only the eye needs it again. */}
-          {t.abbreviation !== t.name && (
-            <span aria-hidden="true" className="contents">
-              <TroupePill name={t.name} abbreviation={t.abbreviation} />
-            </span>
-          )}
-          {t.place && <span className="text-xs text-mist">{t.place}</span>}
-        </span>
-        {about && <span className="line-clamp-2 text-sm text-mist">{about}</span>}
-      </span>
-    </Link>
-  );
-}
-
 /** The troupes whose profiles are public and still running, by name, a page at a time. */
 function FindATroupe() {
   const [page, setPage] = useState(1);
@@ -125,8 +99,17 @@ function FindATroupe() {
     placeholderData: keepPreviousData,
   });
   return (
-    <Card title="Find a troupe">
-      <p className="mb-2 text-sm text-mist">Troupes that show their profile to anyone. Open one to see where and when it plays, and how to join it.</p>
+    <Card
+      title="Find a troupe"
+      actions={
+        <Link to={DIRECTORY} className="text-sm text-gold underline hover:text-parchment">
+          Search the troupe directory
+        </Link>
+      }
+    >
+      <p className="mb-2 text-sm text-mist">
+        Troupes that show their profile to anyone. Open one to see where and when it plays, and how to join it, or search them all by place, day and more.
+      </p>
       <Loaded query={found}>
         {(found) =>
           found.total === 0 ? (
@@ -137,7 +120,7 @@ function FindATroupe() {
                 <ul aria-label="Troupes" className="divide-y divide-ash">
                   {found.troupes.map((t) => (
                     <li key={t.id}>
-                      <TroupeRow troupe={t} />
+                      <PublicTroupeRow troupe={t} />
                     </li>
                   ))}
                 </ul>

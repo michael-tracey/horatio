@@ -21,7 +21,8 @@ def optional_user(request: Request, db: DbSession) -> User | None:
     if viewing is not None:
         return db.get_one(User, viewing.user_id)
     token = request.cookies.get(get_settings().session_cookie_name)
-    return user_for_token(db, token) if token else None
+    # Marks the sign-in as used now, now and then, for Account › Sign-in (#1193).
+    return user_for_token(db, token, touch=True) if token else None
 
 
 def current_user(user: Annotated[User | None, Depends(optional_user)]) -> User:
