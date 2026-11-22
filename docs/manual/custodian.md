@@ -269,7 +269,7 @@ Under the table, three cards show what's going on with accounts:
 
 Horatio has a blog of its own: articles on playing and running a game, for everyone who uses Horatio, written by the staff of any troupe that isn't archived, narrators included. Nothing is on it until you publish it, and readers can't comment. Its reading pages aren't open yet: for now an article, published or not, is seen only by its author and you.
 
-**Custodian › Blog** holds the articles sent to you, and the tab shows how many are waiting. It has three lists:
+**Custodian › Blog** has two parts: **Articles**, and the blog's **Tags** (below). **Articles** holds the articles sent to you, and the tab shows how many are waiting. It has three lists:
 
 - **Waiting**: the articles their authors have sent you, and the changes to published articles, the longest waiting first. A published article's changes are marked **Changes**.
 - **Published**: what is on the blog, the latest first.
@@ -287,13 +287,24 @@ Either way the author is told on their bell, with your note.
 
 ### Featuring, tagging and unpublishing
 
-Under **Published**, **Feature it** marks an article as featured, and **Stop featuring** undoes it. Tag any article with the chips under it: choosing a tag adds it at once, and choosing it again takes it off. The tags are a list Horatio starts with, such as Storytelling and Safety and consent.
+Under **Published**, **Feature it** marks an article as featured, and **Stop featuring** undoes it. Tag any article with the chips under it: choosing a tag adds it at once, and choosing it again takes it off. The tags are the list you keep under **Tags** (below). A retired tag an article still has shows after the others, marked **(retired)**: you can take it off, but not put it back.
 
 To take an article down, choose **Unpublish…**, say why under **Why unpublish it?**, and choose **Unpublish**. Its author is told why on their bell. They can change it and send it to you again; publishing it then puts it back with its first date.
 
 ### An article's address
 
 Each article has an address on the blog, made from its title, such as /blog/running-your-first-elysium. Until it is first published its author can change it, and so can you: choose **Change** beside **Address**. Once it has been published the address stays as it is, even if the title changes, so links to it keep working.
+
+### The blog's tags
+
+**Custodian › Blog › Tags** holds the tags articles are tagged with, in the order authors and you are offered them. Horatio starts with a dozen, such as Storytelling and Safety and consent. Each shows how many articles have it, and how many of those are published. Open a tag's **Actions** menu to:
+
+- **Rename…** it. No two tags share a name, whatever the case. Each tag has an address on the blog, made from its name: it follows a rename until a published article has the tag, then stays as it is, so links to the tag keep working. The rename box says which.
+- **Move up** or **Move down**, to change the order.
+- **Retire** it. A retired tag stays on the articles that have it, and still shows on them, but isn't offered for any more. **Offer it again** brings it back.
+- **Merge into…** another tag, for two that mean the same. Every article with it gets the other tag instead, and the tag is removed, with its address on the blog. You can't merge into a retired tag.
+
+Choose **Add a tag** to add one at the end of the list.
 
 Each step goes in the audit log, under **Blog**.
 

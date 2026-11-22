@@ -574,5 +574,5 @@ One piece written for the blog: a title, a summary, the text and a hero picture,
 _Avoid_: Post, blog post, story (those are a troupe's news)
 
 **Blog Tag**:
-One of the subjects the custodian keeps for the blog, such as Storytelling or Safety and consent, that they tag articles with.
+One of the subjects the custodian keeps for the blog, such as Storytelling or Safety and consent, that articles are tagged with. Its name is unique whatever the case. A **retired** tag stays on the articles that have it but is no longer offered; one **merged** into another is moved onto it on every article, then removed.
 _Avoid_: Category, label

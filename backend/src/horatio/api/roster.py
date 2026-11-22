@@ -522,6 +522,13 @@ MESSAGES: dict[str, str] = {
     "blog.unfeatured": "{actor} stopped featuring {what} “{title}”.",
     "blog.tagged": "{actor} tagged {what} “{title}”: {tags}.",
     "blog.slug_changed": "{actor} changed the address of {what} “{title}” from {was} to {slug}.",
+    "blog.tag_added": "{actor} added the blog tag {name}.",
+    "blog.tag_renamed": "{actor} renamed the blog tag {was} to {name}.",
+    "blog.tag_retired": "{actor} retired the blog tag {name}. It stays on the articles that"
+    " have it.",
+    "blog.tag_restored": "{actor} brought back the blog tag {name}.",
+    "blog.tag_merged": "{actor} merged the blog tag {name} into {into}, on {articles}.",
+    "blog.tags_reordered": "{actor} put the blog's tags in a new order: {names}.",
     "agency.created": "{actor} made the news agency {name}.",
     "agency.changed": "{actor} changed the news agency {name}.",
     "agency.retired": "{actor} retired the news agency {name}.",

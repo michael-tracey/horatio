@@ -4,7 +4,8 @@ import { BackLink } from "../../components/BackLink";
 import { useMe } from "../../hooks";
 import { AuditTab } from "./AuditTab";
 import { BackupsTab } from "./BackupsTab";
-import { BlogTab, useBlogQueue } from "./BlogTab";
+import { BlogPages } from "./BlogPages";
+import { useBlogQueue } from "./BlogTab";
 import { BoonImportTab } from "./BoonImportTab";
 import { ClanLogosTab } from "./ClanLogosTab";
 import { PeopleTab } from "./PeopleTab";
@@ -44,7 +45,7 @@ export function CustodianPage() {
         {/* Their own tabs until #759; old links land on their sections. */}
         <Route path="troupe-requests" element={<Navigate to="/custodian/troupe-management#requests" replace />} />
         <Route path="archived-troupes" element={<Navigate to="/custodian/troupe-management#archived" replace />} />
-        <Route path="blog" element={<BlogTab />} />
+        <Route path="blog/*" element={<BlogPages />} />
         <Route path="clan-logos" element={<ClanLogosTab />} />
         {/* Moved under Tools (#758); old links, with their ?troupe=, still land there. */}
         <Route path="yorick-import" element={<ToYorickImport />} />

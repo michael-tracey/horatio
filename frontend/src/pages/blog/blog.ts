@@ -19,3 +19,11 @@ export function statusText(article: BlogArticleOut): string {
 export function toggled(ids: string[], id: string): string[] {
   return ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id];
 }
+
+/** How many articles carry a tag, and how many of those are published, for Custodian › Blog › Tags. */
+export function tagArticles({ articles, published }: { articles: number; published: number }): string {
+  if (articles === 0) return "No articles";
+  const many = articles === 1 ? "1 article" : `${articles} articles`;
+  if (published === articles) return articles === 1 ? "1 article, published" : `${many}, all published`;
+  return `${many}, ${published === 0 ? "none" : published} published`;
+}

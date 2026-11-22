@@ -171,26 +171,33 @@ function Address({ article: a }: { article: BlogArticleOut }) {
   );
 }
 
-/** Its tags, as chips: choosing one tags it at once, and again untags it. */
+/**
+ * Its tags, as chips: choosing one tags it at once, and again untags it. A retired tag
+ * it has shows too, after the rest (#1161): it can be taken off, but not put back.
+ */
 function Tags({ article: a, tags }: { article: BlogArticleOut; tags: BlogTagOut[] }) {
   const on = a.tags.map((t) => t.id);
   const save = useAction((ids: string[]) => unwrap(api.PUT("/api/blog/articles/{article_id}/tags", { params: { path: { article_id: a.id } }, body: { tag_ids: ids } })), [["blog-queue"]]);
-  if (tags.length === 0) return null;
+  const retired = a.tags.filter((t) => !tags.some((c) => c.id === t.id));
+  if (tags.length === 0 && retired.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
       <ul aria-label="Tags" className="flex flex-wrap gap-2">
-        {tags.map((t) => {
+        {[...tags, ...retired].map((t) => {
           const chosen = on.includes(t.id);
+          const old = retired.includes(t);
           return (
             <li key={t.id}>
               <button
                 type="button"
                 aria-pressed={chosen}
                 disabled={save.isPending}
+                title={old ? "Retired: taking it off is for good." : undefined}
                 onClick={() => save.mutate(toggled(on, t.id))}
                 className={`min-h-8 rounded-full border px-3 text-sm ${chosen ? "border-gold bg-gold/10 text-gold" : "border-ash text-parchment hover:border-mist"}`}
               >
                 {t.name}
+                {old && <span className="ml-1 text-xs text-mist">(retired)</span>}
               </button>
             </li>
           );
