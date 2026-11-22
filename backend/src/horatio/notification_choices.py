@@ -459,8 +459,9 @@ GROUPS = (
                 "blog",
                 "Your blog articles",
                 "The custodian publishing an article you wrote for the blog, or your changes to"
-                " it, returning one to you with a note, or unpublishing one.",
-                ("blog.published", "blog.returned", "blog.unpublished"),
+                " it, returning one to you with a note, unpublishing one, or clearing part of"
+                " your author profile.",
+                ("blog.published", "blog.returned", "blog.unpublished", "blog.author_cleared"),
             ),
             Topic(
                 "merges",

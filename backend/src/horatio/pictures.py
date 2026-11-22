@@ -21,6 +21,8 @@ Horatio shows, all WebP, in `HORATIO_UPLOAD_DIR`:
   squares as a character's, and the whole picture for moving the crop.
 - a troupe's rock, paper or scissors for the Throws tab (issue #670): the whole
   picture, centred on a transparent square of 128 and 512 px, as a clan logo is.
+- a blog author's picture (#1159): squares of 96 px (under each article), 256 px
+  (their page) and 512 px (link previews), and the whole picture for moving the crop.
 - a blog article's hero picture (issue #1156): as a post's, 1200 and 600 px wide.
   Kept apart from any troupe, under `blog/`, so the blog's public pages can show
   them (#1158).
@@ -74,6 +76,9 @@ BANNER_FILES = {f"{w}.webp" for w in BANNERS}
 # A troupe's rock, paper or scissors: 512 px for the Throws tab, 128 px to preview.
 THROWS = (128, 512)
 THROW_FILES = {f"{s}.webp" for s in THROWS}
+# A blog author's picture: under each article, on their page, and in link previews.
+AUTHOR_SQUARES = (96, 256, 512)
+AUTHOR_FILES = {*(f"{s}.webp" for s in AUTHOR_SQUARES), "full.webp"}
 # A post's picture or a masthead, at these widths, keeping its shape.
 POST_WIDTHS = (1200, 600)
 POST_FILES = {f"{w}.webp" for w in POST_WIDTHS}
@@ -200,7 +205,9 @@ def _shrunk(image: Image.Image, longest: int) -> Image.Image:
     return copy
 
 
-def _squares(directory: Path, image: Image.Image, crop: Crop | None) -> Box:
+def _squares(
+    directory: Path, image: Image.Image, crop: Crop | None, sizes: tuple[int, ...] = SQUARES
+) -> Box:
     """Write the whole picture, to crop again later, and its squares into
     `directory`, which must be new. The square's box, in the picture's pixels."""
     directory.mkdir(parents=True)
@@ -209,7 +216,7 @@ def _squares(directory: Path, image: Image.Image, crop: Crop | None) -> Box:
     # Cut from the picture as uploaded, not the kept copy, for the sharpest print.
     square = square_box(image.width, image.height, crop)
     face = image.crop(square)
-    for size in SQUARES:
+    for size in sizes:
         _webp(face.resize((size, size), Image.Resampling.LANCZOS), directory / f"{size}.webp")
     return square
 
@@ -231,6 +238,11 @@ def write_troupe_portrait(directory: Path, image: Image.Image, crop: Crop | None
 def write_agency_portrait(directory: Path, image: Image.Image, crop: Crop | None) -> None:
     """Write a news agency's portrait's files into `directory`, which must be new."""
     _squares(directory, image, crop)
+
+
+def write_author_picture(directory: Path, image: Image.Image, crop: Crop | None) -> None:
+    """Write a blog author's picture's files into `directory`, which must be new."""
+    _squares(directory, image, crop, AUTHOR_SQUARES)
 
 
 def write_banner(directory: Path, image: Image.Image) -> None:
@@ -373,6 +385,19 @@ def agency_portrait_file(
     return path if path.is_file() else None
 
 
+def author_picture_dir(root: Path, author_id: uuid.UUID, picture_id: uuid.UUID) -> Path:
+    return root / "blog-authors" / str(author_id) / str(picture_id)
+
+
+def author_picture_file(
+    root: Path, author_id: uuid.UUID, picture_id: uuid.UUID, name: str
+) -> Path | None:
+    if name not in AUTHOR_FILES:
+        return None
+    path = author_picture_dir(root, author_id, picture_id) / name
+    return path if path.is_file() else None
+
+
 def throw_image_dir(root: Path, troupe_id: uuid.UUID, image_id: uuid.UUID) -> Path:
     return troupe_dir(root, troupe_id) / "throws" / str(image_id)
 
@@ -488,3 +513,10 @@ def throw_image_url(troupe_id: uuid.UUID, image_id: uuid.UUID | None) -> str | N
     if image_id is None:
         return None
     return f"/api/troupes/{troupe_id}/throw-images/{image_id}"
+
+
+def author_picture_url(author_id: uuid.UUID, picture_id: uuid.UUID | None) -> str | None:
+    """Where anyone finds a blog author's picture: add "/96.webp", "/256.webp" and so on."""
+    if picture_id is None:
+        return None
+    return f"/api/blog/author-pictures/{author_id}/{picture_id}"
