@@ -3,8 +3,8 @@ chat, on social media or in a search result. The app draws its pages in the brow
 so the API puts each page's own title, description and picture into index.html for
 the sites that only read the page's head (horatio.app.serve_frontend).
 
-Public pages have their own: the landing page (/, #1164), a troupe's public profile
-(/t/<troupe>), the blog
+Public pages have their own: the landing page (/, #1164), the troupe directory
+(/find-a-troupe, #1192), a troupe's public profile (/t/<troupe>), the blog
 (/blog), an article (/blog/<slug>), a tag's page (/blog/tags/<tag>) and an author's
 page (/blog/authors/<handle>). Only what anyone may read goes in: an article that is
 not published, a tag that has gone, or an author whose page is not shown, keeps the
@@ -34,6 +34,14 @@ HOME_TITLE = "Horatio"
 HOME_DESCRIPTION = (
     "Character sheets, downtimes and game nights for Mind's Eye Theatre LARP troupes."
     " Read the blog, and find a troupe to play in."
+)
+
+# What the troupe directory says it is (frontend/src/pages/DirectoryPage.tsx).
+DIRECTORY_PATH = "/find-a-troupe"
+DIRECTORY_TITLE = "Find a troupe"
+DIRECTORY_DESCRIPTION = (
+    "Mind's Eye Theatre LARP troupes on Horatio: search by name and place, when they play,"
+    " whether they welcome new players, and age. Then ask to join one."
 )
 
 # What the blog says it is: as its page's subtitle (frontend/src/pages/blog/BlogPage.tsx).
@@ -142,6 +150,8 @@ def for_path(db: Session, path: str) -> LinkPreview | None:
     site's own."""
     if path == "":
         return home()
+    if path.rstrip("/") == DIRECTORY_PATH.lstrip("/"):
+        return directory()
     if found := PUBLIC_PROFILE.fullmatch(path):
         return troupe(db, found.group(1))
     if path.rstrip("/") == "blog":
@@ -188,6 +198,17 @@ def home() -> LinkPreview:
         page_title="Welcome · Horatio",
         path="/",
         feeds=(blog_feed(),),
+    )
+
+
+def directory() -> LinkPreview:
+    """The troupe directory, whatever it has searched for: its search is in the address's
+    query, which a preview doesn't look at."""
+    return LinkPreview(
+        title=DIRECTORY_TITLE,
+        description=DIRECTORY_DESCRIPTION,
+        page_title="Find a troupe · Horatio",
+        path=DIRECTORY_PATH,
     )
 
 

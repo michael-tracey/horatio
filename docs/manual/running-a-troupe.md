@@ -71,6 +71,8 @@ The **Public** switch, at the top of **Edit profile**, decides who can see it:
 - **Signed-in only**, the default: only people signed in to Horatio.
 - **Public**: anyone with the link, even people not signed in. Use **Copy the link** to share it when recruiting. The venue's street address still shows only to people signed in.
 
+A public profile is also in the troupe directory, **Find a troupe**, where anyone can search for it and choose **Request to join** (see [Finding a troupe](getting-started.md#finding-a-troupe)). The directory searches the profile itself: its name, the venue's city or region and name (or the setting's city, if you give no city or region), whether you're taking new players, and the minimum age. Its **Day** and **How often** come from what **When it plays** says, so name the day and how often there, such as "Every other Friday, 7 pm till late" or "Second Saturday of the month". It never searches or shows the street address.
+
 The profile never shows emails, characters, or anything only members see.
 
 ### Adding staff

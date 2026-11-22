@@ -1,16 +1,39 @@
 # Getting started
 
-This part is for everyone: players, troupe staff and the custodian. It covers Horatio's front page, making an account, signing in, your account and preferences, notifications, and the calendar link. To build your first character, go on to [Players](players.md) next.
+This part is for everyone: players, troupe staff and the custodian. It covers Horatio's front page, finding a troupe to play in, making an account, signing in, your account and preferences, notifications, and the calendar link. To build your first character, go on to [Players](players.md) next.
 
 ## The front page
 
 Signed out, Horatio's address on its own opens its front page. It says briefly what Horatio is, and has:
 
 - A few articles from [the blog](#reading-the-blog), the featured ones first, and **Read the blog** for the rest.
-- **Find a troupe**: every troupe that shows its profile to anyone, by name, with its picture, where it plays and the start of its description. **Previous** and **Next** at the foot move between pages. Choose a troupe to open its profile, which says where and when it plays and how to join.
+- **Find a troupe**: every troupe that shows its profile to anyone, by name, with its picture, where it plays and the start of its description. **Previous** and **Next** at the foot move between pages. Choose a troupe to open its profile, which says where and when it plays and how to join. **Search the troupe directory** opens [the troupe directory](#finding-a-troupe), to search them all.
 - **Create an account** and **Sign in**, which take you on to **Characters**.
 
 Signed in, the same address goes straight to **Characters**.
+
+## Finding a troupe
+
+The troupe directory, at /find-a-troupe, lists every troupe that shows its profile to anyone and isn't archived, signed in or not. Open it from **Search the troupe directory** on the front page, or **Find another troupe** at the foot of a troupe's public profile. Search by:
+
+- **Name**: any part of the troupe's name, or the abbreviation its lead storyteller set.
+- **Place**: a town, city or region, or the venue's name, as the troupe's profile gives them; where it gives no city or region, the city its chronicle is set in. Never the venue's street address, which only people signed in see.
+- **Day** and **How often**: from what the profile says under **When it plays**, such as "Every other Friday" (Friday, fortnightly) or "Second Saturday of the month" (Saturday, monthly). A troupe whose schedule doesn't say isn't found by them.
+- **Your age**: only troupes whose minimum age you meet, or that give none.
+- **Only troupes welcoming new players**.
+
+Type a name or place and choose **Search**; a day, how often or new players search as soon as you choose them. **Clear the search** starts again. The search is in the page's address, so you can bookmark it or send it to someone.
+
+Each troupe is a row with its picture, name and abbreviation, where it plays, when it plays, **Welcoming new players** and its minimum age where it says them, the start of its description and its content notes. Choose one to open its public profile.
+
+### Asking to join a troupe
+
+A troupe's public profile has **Request to join** at the top:
+
+- Signed out, it opens **Create an account**, with **Sign in** beside it on the profile if you have one. Once you're signed in, you go straight on to asking that troupe.
+- Signed in, it goes on to asking at once. With no character to bring, you go to **Characters** to build a new one, with the troupe already chosen under **Which troupe will you play in?**; its house rules apply while you build. With a character you could bring, you go to the troupe's page, where **Play here** lists them, each with **Ask to join**, beside **Build a new character for** the troupe.
+
+It isn't there for the troupe's own staff, or once you have a character at home in it: **Open the troupe** opens its page. A character asking to join waits for the troupe's storytellers to accept it; see [Players](players.md).
 
 ## Creating an account
 
@@ -27,7 +50,7 @@ If the server has Discord set up, the page also offers **Sign up with Discord**.
 - If Discord hasn't verified an email for you, no account is made. Verify it on Discord, then try again.
 - If an account here already uses that email, nothing is made or linked. Sign in to it with your password, then link Discord on its Sign-in and email tab.
 
-You're signed in straight away, and land on **Characters**. While you have no characters, a welcome card there shows the three steps to your first game: find your troupe, build a character for it, and ask the troupe to accept it.
+You're signed in straight away, and land on **Characters**, or, from **Request to join** on a troupe's profile, go on to asking that troupe (see [Asking to join a troupe](#asking-to-join-a-troupe)). While you have no characters, a welcome card there shows the three steps to your first game: find your troupe, build a character for it, and ask the troupe to accept it.
 
 ![The sign-up form, with boxes for your name, handle, email and password](images/getting-started/sign-up.png)
 

@@ -309,10 +309,10 @@ Each article has an address on the blog, made from its title, such as /blog/runn
 
 What other sites see of Horatio is only what anyone may read: published articles, the tags they have, the pages of authors who write for the blog, and troupes' public profiles. A draft, an article waiting or unpublished, and changes not yet published are never in any of it.
 
-- **Link previews.** A link to the blog, an article, a tag's page, an author's page or a troupe's public profile, shared in a chat or on social media, shows that page's title and description: for an article, its title, its summary (or the start of its words) and its picture. A link to anything else, or to an article that isn't published, shows Horatio's own preview, which says nothing about it.
+- **Link previews.** A link to the blog, an article, a tag's page, an author's page, the troupe directory (/find-a-troupe) or a troupe's public profile, shared in a chat or on social media, shows that page's title and description: for an article, its title, its summary (or the start of its words) and its picture. A link to anything else, or to an article that isn't published, shows Horatio's own preview, which says nothing about it.
 - **Feeds.** The blog has a feed at /blog/feed.xml, and each tag one of its own, such as /blog/tags/storytelling/feed.xml, for feed readers. Each holds the 20 newest published articles, in full, with their pictures. An article you unpublish leaves the feeds within a quarter of an hour, though a reader that has already fetched it keeps its copy.
-- **The sitemap**, at /sitemap.xml, lists the blog, its published articles, the tags they have, the authors' pages, and the troupes whose profile is public and not archived. An author whose account is suspended or merged into another isn't in it.
-- **robots.txt** asks search engines to keep to the public pages: the blog, troupes' public profiles (/t/), the manual (/help) and About. Everything signed in, such as characters, troupes and Custodian, is closed to them, and needs signing in anyway.
+- **The sitemap**, at /sitemap.xml, lists the front page, the troupe directory, the blog, its published articles, the tags they have, the authors' pages, and the troupes whose profile is public and not archived. An author whose account is suspended or merged into another isn't in it.
+- **robots.txt** asks search engines to keep to the public pages: the blog, the troupe directory, troupes' public profiles (/t/), the manual (/help) and About. Everything signed in, such as characters, troupes and Custodian, is closed to them, and needs signing in anyway.
 
 All the addresses in them start with the site's address, HORATIO_PUBLIC_URL, so set that to the address people use.
 

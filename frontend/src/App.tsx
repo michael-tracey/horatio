@@ -44,6 +44,7 @@ const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ defaul
 const RulesPage = lazy(() => import("./pages/rules/RulesPage").then((m) => ({ default: m.RulesPage })));
 const HelpPage = lazy(() => import("./pages/help/HelpPage").then((m) => ({ default: m.HelpPage })));
 const BlogAuthorPage = lazy(() => import("./pages/blog/AuthorPage").then((m) => ({ default: m.AuthorPage })));
+const DirectoryPage = lazy(() => import("./pages/DirectoryPage").then((m) => ({ default: m.DirectoryPage })));
 const PublicTroupePage = lazy(() => import("./pages/PublicTroupePage").then((m) => ({ default: m.PublicTroupePage })));
 const PrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.PrintPage })));
 const TroupePage = lazy(() => import("./pages/troupe/TroupePage").then((m) => ({ default: m.TroupePage })));
@@ -130,6 +131,15 @@ export const routes = createRoutesFromElements(
       <Route path="/confirm-email/:token" element={<ConfirmEmailPage />} />
       {/* A claim link for a character a troupe is giving its player (#481): signed in or not. */}
       <Route path="/claim/:token" element={<ClaimPage />} />
+      {/* The troupe directory (#1192), for anyone: /troupes is the signed-in Troupes page. */}
+      <Route
+        path="/find-a-troupe"
+        element={
+          <LazyPages>
+            <DirectoryPage />
+          </LazyPages>
+        }
+      />
       {/* A troupe's profile, for anyone if the troupe has made it public. */}
       <Route
         path="/t/:troupeId"

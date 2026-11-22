@@ -1,26 +1,49 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { api, ApiError, unwrap } from "../api/client";
+import { LinkButton } from "../components/LinkButton";
 import { Loading, PageTitle, SessionCheckFailed } from "../components/ui";
 import { useMe } from "../hooks";
 import { withNext } from "../next";
+import { DIRECTORY, requestToJoin } from "./directory";
 import { TroupeProfileView } from "./troupe/TroupeProfile";
 
-const primary = "inline-flex min-h-10 items-center justify-center rounded-md bg-blood px-4 text-sm font-medium text-parchment hover:bg-blood-bright";
-
 /**
- * For someone signed out: make an account, the main way on, or sign in. Either
- * goes on to the troupe's own page, which tells them how to play there.
+ * For someone signed out: Request to join makes an account, the main way on, or they
+ * sign in. Either goes on into asking the troupe to take a character (#1192).
  */
 function JoinOrSignIn({ troupeId }: { troupeId: string }) {
-  const next = `/troupes/${troupeId}`;
+  const next = requestToJoin(troupeId);
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-      <Link to={withNext("/sign-up", next)} className={primary}>
-        Create an account to play here
-      </Link>
+      <LinkButton to={withNext("/sign-up", next)}>Request to join</LinkButton>
       <Link to={withNext("/sign-in", next)} className="text-sm text-gold underline">
         Sign in
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * For someone signed in: Request to join, into the ask-to-join flow with this troupe
+ * chosen, unless they're on its staff or have a character at home in it already; and
+ * the troupe's own page.
+ */
+function JoinOrOpen({ troupeId }: { troupeId: string }) {
+  const troupe = useQuery({
+    queryKey: ["troupe", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
+  });
+  const characters = useQuery({ queryKey: ["characters"], queryFn: () => unwrap(api.GET("/api/characters")) });
+  const inIt =
+    !!troupe.data?.my_role ||
+    !!troupe.data?.archived ||
+    !!characters.data?.some((c) => c.status === "active" && c.home_troupe_id === troupeId);
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      {!inIt && <LinkButton to={requestToJoin(troupeId)}>Request to join</LinkButton>}
+      <Link to={`/troupes/${troupeId}`} className="text-sm text-gold underline">
+        Open the troupe
       </Link>
     </div>
   );
@@ -70,9 +93,7 @@ export function PublicTroupePage() {
       <PageTitle
         actions={
           signedIn ? (
-            <Link to={`/troupes/${p.id}`} className="text-sm text-gold underline">
-              Open the troupe
-            </Link>
+            <JoinOrOpen troupeId={p.id} />
           ) : unknown ? (
             <SessionCheckFailed />
           ) : (
@@ -83,6 +104,13 @@ export function PublicTroupePage() {
         {p.name}
       </PageTitle>
       <TroupeProfileView profile={p} signedIn={signedIn} />
+      {p.public && (
+        <p className="mt-6 text-sm">
+          <Link to={DIRECTORY} className="text-gold underline hover:text-parchment">
+            Find another troupe
+          </Link>
+        </p>
+      )}
     </>
   );
 }
