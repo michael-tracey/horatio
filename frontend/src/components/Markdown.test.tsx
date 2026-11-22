@@ -1,6 +1,6 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { headings, parseBlocks, parseInline } from "../markdown";
+import { figureMarkdown, headings, parseBlocks, parseInline } from "../markdown";
 import { Markdown } from "./Markdown";
 
 afterEach(cleanup);
@@ -54,5 +54,62 @@ describe("Markdown", () => {
     const link = container.querySelector("a")!;
     expect(link.getAttribute("href")).toBe("https://example.com/map");
     expect(link.getAttribute("rel")).toContain("noopener");
+  });
+});
+
+describe("a blog article's pictures (#1163)", () => {
+  const ID = "0196f2a4-3333-7000-8000-000000000003";
+  const LINE = `![Candles on a long table](blog-picture:${ID} "The Elysium at midnight")`;
+
+  it("are read only when asked for, each on a line of its own", () => {
+    expect(parseBlocks(`Before\n${LINE}\nAfter`, false, { pictures: true })).toEqual([
+      { t: "p", c: [{ t: "text", v: "Before" }] },
+      { t: "figure", id: ID, alt: "Candles on a long table", caption: "The Elysium at midnight" },
+      { t: "p", c: [{ t: "text", v: "After" }] },
+    ]);
+    expect(parseBlocks(`![Alone](blog-picture:${ID})`, false, { pictures: true })).toEqual([{ t: "figure", id: ID, alt: "Alone", caption: "" }]);
+    // Troupe news, backstories and the rest: the same line is text.
+    expect(parseBlocks(LINE).map((b) => b.t)).toEqual(["p"]);
+    expect(parseBlocks(`> ${LINE}`, false, { pictures: true })[0]).toMatchObject({ t: "quote", c: [{ t: "p" }] });
+    expect(parseBlocks(`Text ${LINE}`, false, { pictures: true }).map((b) => b.t)).toEqual(["p"]);
+  });
+
+  it("are only the blog's own, never an outside address or one without what it shows", () => {
+    for (const line of [
+      "![A logo](https://example.com/logo.png)",
+      `![A logo](/api/blog/body-pictures/${ID}/600.webp)`,
+      "![A logo](blog-picture:javascript:alert(1))",
+      `![A logo](blog-picture:${ID.toUpperCase()})`,
+      `![](blog-picture:${ID})`,
+    ]) {
+      expect(parseBlocks(line, false, { pictures: true }).map((b) => b.t), line).toEqual(["p"]);
+    }
+  });
+
+  it("write back as the same picture, whatever is in what they say", () => {
+    const line = figureMarkdown({ id: ID, alt: "A ]tricky[ \\ one\nover two lines", caption: 'Say "cheese"' });
+    expect(line).toBe(`![A \\]tricky[ \\\\ one over two lines](blog-picture:${ID} "Say \\"cheese\\"")`);
+    expect(parseBlocks(line, false, { pictures: true })).toEqual([{ t: "figure", id: ID, alt: "A ]tricky[ \\ one over two lines", caption: 'Say "cheese"' }]);
+    expect(figureMarkdown({ id: ID, alt: "  " })).toBe(`![Picture](blog-picture:${ID})`);
+  });
+
+  it("show at the two sizes, loaded as they come near, with the caption under them", () => {
+    const { container } = render(<Markdown text={`Before\n\n${LINE}`} pictures />);
+    const figure = container.querySelector("figure")!;
+    const img = figure.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe(`/api/blog/body-pictures/${ID}/1200.webp`);
+    expect(img.getAttribute("srcset")).toBe(`/api/blog/body-pictures/${ID}/600.webp 600w, /api/blog/body-pictures/${ID}/1200.webp 1200w`);
+    expect(img.getAttribute("sizes")).toBeTruthy();
+    expect(img.getAttribute("alt")).toBe("Candles on a long table");
+    expect(img.getAttribute("loading")).toBe("lazy");
+    expect(img.className).toContain("w-full");
+    expect(figure.querySelector("figcaption")!.textContent).toBe("The Elysium at midnight");
+    expect(render(<Markdown text={`![Alone](blog-picture:${ID})`} pictures />).container.querySelector("figcaption")).toBeNull();
+  });
+
+  it("are text anywhere else", () => {
+    const { container } = render(<Markdown text={LINE} />);
+    expect(container.querySelector("img, figure")).toBeNull();
+    expect(container.textContent).toContain("blog-picture:");
   });
 });

@@ -25,7 +25,8 @@ export type ArticleShown = {
  * page (#1158) is meant to as well, so the two can't drift apart. The troupe it names
  * is a link to the troupe's public page only when that is public and running (#1155);
  * otherwise its name alone. `author` is the room under the words for the author's
- * card (#1159); `tagLink` makes each tag a link to its page.
+ * card (#1159); `tagLink` makes each tag a link to its page. The words show their
+ * pictures (#1163).
  */
 export function BlogArticleView({
   article: a,
@@ -90,7 +91,7 @@ export function BlogArticleView({
           {a.revised_at && <>, changed {dates.date(a.revised_at)}</>}
         </p>
       </header>
-      <Markdown text={a.body} />
+      <Markdown text={a.body} pictures />
       {author}
     </article>
   );
