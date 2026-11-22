@@ -1528,7 +1528,8 @@ test("kept on the phone, a player's character opens with no signal: the sheet, t
   const leaving = p.getByRole("dialog", { name: "Sign out?" });
   await expect(leaving).toContainText("1 tap hasn't been sent yet. Sign out anyway?");
   await leaving.getByRole("button", { name: "Sign out anyway" }).click();
-  await expect(p.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(p).toHaveURL((url) => url.pathname === "/" && url.search === "");
+  await expect(p.getByRole("heading", { name: "Welcome to Horatio", level: 1 })).toBeVisible();
   expect(await p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("horatio.play.") || k === "horatio.offline.who"))).toEqual([]);
   const left = await p.evaluate(
     (key) =>

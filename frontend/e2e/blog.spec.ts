@@ -61,7 +61,7 @@ test("a narrator sends an article to the custodian, who follows the bell to Cust
   const task = c.getByRole("dialog", { name: "Notifications" }).getByRole("button", { name: new RegExp(`blogdesk-narr asks you to publish the blog article “${title}”`) });
   await task.click();
   await expect(c).toHaveURL(/\/custodian\/blog#article-[0-9a-f-]{36}$/);
-  await expect(c.getByRole("link", { name: /^Blog/ })).toHaveText(/^Blog\d+$/);
+  await expect(c.getByRole("main").getByRole("link", { name: /^Blog/ })).toHaveText(/^Blog\d+$/);
   const waiting = c.getByRole("heading", { name: "Waiting", level: 2 }).locator("xpath=ancestor::section[1]");
   const item = waiting.getByRole("listitem", { name: title });
   await expect(item.getByText("blogdesk-narr")).toBeVisible();
@@ -384,6 +384,7 @@ test("signed out, someone opens the blog, filters it by a tag, reads an article,
   await expect(visitor.locator("article strong", { hasText: "challenge" })).toBeVisible();
   const hero = visitor.locator("article img").first();
   await expect(hero).toBeVisible();
+  // Asked until it has loaded: visible comes first, and a slow runner may not have it yet.
   await expect.poll(() => hero.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
   await expect(visitor.getByRole("list", { name: "Tags" }).getByRole("link", { name: "Combat and challenges" })).toHaveAttribute("href", "/blog/tags/combat-and-challenges");
   // Nothing to change for a visitor.
@@ -462,4 +463,30 @@ test("signed out, someone finds the blog from the sign-in page; its feeds, the s
   const drafts = await (await visitor.request.get(`/blog/${draft.slug}`)).text();
   expect(drafts).toContain('<meta property="og:title" content="Horatio" />');
   expect(drafts).not.toContain(unready);
+});
+
+test("signed in, the blog is in the site menu and the footer, and the top bar stays one line (#1181)", async ({ browser }) => {
+  const { page } = await person(browser, "blogmenu-player");
+  const bar = page.getByRole("banner");
+  if ((page.viewportSize()?.width ?? 1280) >= 1024) {
+    // On a computer the bar has no room for it at its narrowest, so the footer has it.
+    await expect(bar.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Blog", exact: true })).toHaveCount(0);
+    await page.getByRole("contentinfo").getByRole("link", { name: "Blog", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Blog", level: 1 })).toBeVisible();
+    // The menu is the bar's below lg, on a narrow window.
+    await page.setViewportSize({ width: 900, height: 800 });
+    await page.goto("/characters");
+  }
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  const menu = bar.getByRole("navigation", { name: "Main" });
+  await expect(menu.getByRole("link").allTextContents()).resolves.toEqual(expect.arrayContaining(["Help", "Blog"]));
+  await menu.getByRole("link", { name: "Blog", exact: true }).click();
+  await expect(page).toHaveURL(/\/blog$/);
+  await expect(page.getByRole("heading", { name: "Blog", level: 1 })).toBeVisible();
+  await expect(menu).toHaveCount(0);
+  // One line: no taller than its padding and its tallest control.
+  expect((await bar.boundingBox())!.height).toBeLessThan(70);
+  // The footer has it on a phone too, beside About.
+  const footer = page.getByRole("contentinfo");
+  await expect(footer.getByRole("link")).toHaveText(["About Horatio", "Blog"]);
 });

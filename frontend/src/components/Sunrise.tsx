@@ -7,7 +7,7 @@ import { useToast } from "./Toast";
  * white, and the person at it crumbles to ash and blows away, signed out.
  *
  * It runs at the root of the app, over everything, so it carries on while the
- * page under it changes to the sign-in page.
+ * page under it changes to the landing page.
  */
 
 let running = false;
