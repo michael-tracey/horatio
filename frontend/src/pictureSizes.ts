@@ -17,9 +17,11 @@ export function sizesById(pictures: readonly BlogBodyPictureOut[] | undefined): 
 export function sizedPicture(url: string, sizes: readonly PictureSizeOut[] | undefined, file = "1200.webp"): { src: string; srcSet: string; width?: number; height?: number } {
   const src = `${url}/${file}`;
   if (!sizes?.length) return { src, srcSet: `${url}/600.webp 600w, ${url}/1200.webp 1200w` };
-  // A small picture's copies are the same size: one of them is enough.
+  // A small picture's copies are the same size: one of them is enough, the 600 px one,
+  // which a list's card has shown already, so it comes from the cache.
   const widths = new Map<number, string>();
-  for (const s of [...sizes].sort((a, b) => a.width - b.width)) if (!widths.has(s.width)) widths.set(s.width, s.file);
+  const named = (file: string) => parseInt(file, 10) || 0;
+  for (const s of [...sizes].sort((a, b) => a.width - b.width || named(a.file) - named(b.file))) if (!widths.has(s.width)) widths.set(s.width, s.file);
   const srcSet = [...widths].map(([w, f]) => `${url}/${f} ${w}w`).join(", ");
   const shown = sizes.find((s) => s.file === file) ?? sizes[0]!;
   return { src, srcSet, width: shown.width, height: shown.height };

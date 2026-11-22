@@ -18,7 +18,7 @@ describe("a blog picture's sizes (#1183)", () => {
       { file: "1200.webp", width: 400, height: 300 },
       { file: "600.webp", width: 400, height: 300 },
     ];
-    expect(sizedPicture(URL, small)).toEqual({ src: `${URL}/1200.webp`, srcSet: `${URL}/1200.webp 400w`, width: 400, height: 300 });
+    expect(sizedPicture(URL, small)).toEqual({ src: `${URL}/1200.webp`, srcSet: `${URL}/600.webp 400w`, width: 400, height: 300 });
   });
 
   it("fall back to the usual widths and no size when they aren't known", () => {

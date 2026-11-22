@@ -384,7 +384,7 @@ test("signed out, someone opens the blog, filters it by a tag, reads an article,
   await expect(visitor.locator("article strong", { hasText: "challenge" })).toBeVisible();
   const hero = visitor.locator("article img").first();
   await expect(hero).toBeVisible();
-  expect(await hero.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect.poll(() => hero.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
   await expect(visitor.getByRole("list", { name: "Tags" }).getByRole("link", { name: "Combat and challenges" })).toHaveAttribute("href", "/blog/tags/combat-and-challenges");
   // Nothing to change for a visitor.
   await expect(visitor.getByRole("link", { name: "Change it" })).toHaveCount(0);
