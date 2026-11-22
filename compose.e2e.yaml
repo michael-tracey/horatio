@@ -1,0 +1,15 @@
+# One isolated e2e database, for `./e2e-local.sh --parallel`. Each run starts it
+# under a compose project of its own (`horatio-e2e-<slot>`) on its slot's port, and
+# removes it with its volume when the run ends. The dev stack is compose.yaml.
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: horatio
+      POSTGRES_PASSWORD: horatio
+      POSTGRES_DB: horatio_e2e
+    # A throwaway database: nothing in it needs to survive a crash, so skip the
+    # disk syncs that only protect against one.
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+    ports:
+      - "127.0.0.1:${HORATIO_E2E_DB_PORT:?set by e2e-local.sh}:5432"

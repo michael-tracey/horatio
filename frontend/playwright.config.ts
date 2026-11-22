@@ -13,6 +13,10 @@ export default defineConfig({
   workers: 2,
   // Each test a unit of its own, so CI's --shard can split a file between runners.
   fullyParallel: true,
+  // On CI a failed test runs once more. One that passes then is "flaky": the run
+  // stays green, and the test goes in the flaky-test report (scripts/flaky-tests.mjs),
+  // as it may be a race in the app. Locally a failure is a failure.
+  retries: process.env.CI ? 1 : 0,
   use: {
     baseURL,
     screenshot: "only-on-failure",

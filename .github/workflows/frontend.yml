@@ -96,9 +96,30 @@ jobs:
             uv run uvicorn horatio.app:app --port 8766 --timeout-keep-alive 300 > "$RUNNER_TEMP/horatio.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/horatio.pid"
           for i in $(seq 1 30); do curl -sf localhost:8766/api/health && break; sleep 1; done
-      # The list reporter puts each test's time in the log, to weigh the shards by.
-      - run: npx playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }} --reporter=list
+      # The list reporter puts each test's time in the log, to weigh the shards by;
+      # the JSON one says which tests passed only on their retry, for the report below.
+      - run: npx playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }} --reporter=list,json
         working-directory: frontend
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/e2e-report.json
+      # Tests that failed, then passed on the retry, go in the job summary with a
+      # warning each, and in an artifact that flaky-tests.yml gathers every week.
+      # Only a report: it never fails the job.
+      - name: Report flaky tests
+        if: always()
+        continue-on-error: true
+        working-directory: frontend
+        env:
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: node scripts/flaky-tests.mjs shard "$RUNNER_TEMP/e2e-report.json" "$RUNNER_TEMP/flaky.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: e2e-flaky-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/flaky.json
+          if-no-files-found: ignore
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -71,6 +71,41 @@ npm run build
 npx playwright test
 ```
 
+`./e2e-local.sh` does all that from the repo root, against a fresh `horatio_e2e`
+database in the dev Postgres, on port 8766 (`--help` for its options). It's one
+run at a time, so several worktrees share it through a lock.
+
+#### Parallel e2e runs
+
+`./e2e-local.sh --parallel` runs in a stack of its own instead, so runs from
+several worktrees (or two from one) can go side by side:
+
+```bash
+./e2e-local.sh --parallel                          # build, wait for a free slot, run everything
+./e2e-local.sh --parallel -- -g "Scene view"       # a subset
+HORATIO_E2E_SLOT=2 ./e2e-local.sh --parallel       # slot 2 only, waiting for it if it's busy
+```
+
+- There are `HORATIO_E2E_SLOTS` slots (2 unless set). A run takes the first free
+  one, or waits for one to come free; the slot is held by a `flock` on
+  `.e2e-slot-<n>.lock` in `HORATIO_E2E_LOCK_DIR` (`$XDG_RUNTIME_DIR/horatio-e2e`
+  unless set), shared by every worktree on the machine.
+- Slot N is compose project `horatio-e2e-N`, a Postgres of its own from
+  `compose.e2e.yaml` on port `18032+100*N`, and the API on `18066+100*N`: slot 1
+  is 18132 and 18166, slot 2 is 18232 and 18266. The dev stack (`horatio`, port
+  54329) isn't touched.
+- When the run ends, however it ends, the API stops and the slot's containers,
+  network and volume are removed. Whatever a killed run left behind is removed by
+  the next run in that slot. To remove one by hand:
+  `HORATIO_E2E_DB_PORT=18132 docker compose -p horatio-e2e-1 -f compose.e2e.yaml down -v`.
+- The app is built before a slot is taken. Two runs from one worktree share
+  `frontend/dist`, so give the second `--no-build`. Each slot's results go in
+  `frontend/test-results-slot-N/`, its API log in `.local/logs/e2e-api-slot-N.log`.
+
+Each run is a Postgres, an API and two browsers, about 2 GB and two to three
+cores while it runs. Two slots suit a 12-core, 16 GB machine that also runs other
+work; raise `HORATIO_E2E_SLOTS` on a bigger one.
+
 #### e2e in CI
 
 CI runs the e2e suite in Microsoft's Playwright image
@@ -82,6 +117,20 @@ the image's version must be the `@playwright/test` version in
 `frontend/package-lock.json`; a step at the start of each shard fails the run if
 they differ. To upgrade Playwright, update it in `frontend/` and change the image
 tag to the version now in the lock file, in the same PR.
+
+#### Flaky tests
+
+On CI a failed e2e test runs once more (`retries` in `playwright.config.ts`; none
+locally). A test that passes the second time is *flaky*: the run stays green, but
+each shard lists its flaky tests in its job summary, marks each with a warning on
+the run, and keeps them, with the tests that failed outright, in an `e2e-flaky-*`
+artifact for 30 days. Every Monday the `flaky-tests` workflow gathers the last two
+weeks of those into one list, in its run's summary and a `flaky-tests` artifact:
+each test that failed and then passed, on the retry or when its job was re-run,
+with how many runs it happened in and links to them. Run it by hand from the
+Actions tab at any time. A flaky test may be a race in the app, not the test
+(#1168), so look at one that repeats. None of this can fail a build:
+`frontend/scripts/flaky-tests.mjs` only reports.
 
 In production the backend serves the built frontend itself
 (`HORATIO_FRONTEND_DIST`), so the app and API share one origin. The live site,
