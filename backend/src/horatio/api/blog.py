@@ -256,7 +256,8 @@ def drop_picture(picture_id: uuid.UUID | None) -> None:
 
 @router.get("/tags")
 def list_tags(db: DbSession, user: CurrentUser) -> list[BlogTagOut]:
-    """The blog's tags, in the custodian's order."""
+    """The tags an article can be tagged with, in the custodian's order: not the
+    retired ones, which stay only on the articles that have them (#1161)."""
     return [BlogTagOut(id=t.id, name=t.name, slug=t.slug) for t in blog.all_tags(db)]
 
 

@@ -179,6 +179,17 @@ describe("Custodian › Blog (#1156)", () => {
     await waitFor(() => expect(put).toHaveBeenCalledWith("/api/blog/articles/{article_id}/tags", { params: { path: { article_id: "a2" } }, body: { tag_ids: ["t2", "t1"] } }));
   });
 
+  it("shows a retired tag an article has, to take off but not put back (#1161)", async () => {
+    const put = answering("PUT");
+    // The list offered leaves the retired tag out; the article still has it.
+    show({ published: [{ ...PUBLISHED, tags: [TAGS[1]!, { id: "t9", name: "Old ways", slug: "old-ways" }] }], waiting: [article({})] });
+    const tags = within(item(section("Published"), "Boons 101")).getByRole("list", { name: "Tags" });
+    expect(within(tags).getAllByRole("button").map((b) => b.textContent)).toEqual(["How to play", "Storytelling", "Old ways(retired)"]);
+    expect(within(item(section("Waiting"), "Running your first Elysium")).queryByText("Old ways")).toBeNull();
+    fireEvent.click(within(tags).getByRole("button", { name: /Old ways/ }));
+    await waitFor(() => expect(put).toHaveBeenCalledWith("/api/blog/articles/{article_id}/tags", { params: { path: { article_id: "a2" } }, body: { tag_ids: ["t2"] } }));
+  });
+
   it("changes an address before it is published", async () => {
     const put = answering("PUT");
     show();

@@ -183,14 +183,17 @@ function Address({ article: a }: { article: BlogArticleOut }) {
   );
 }
 
-/** Its tags, as chips: choosing one tags it at once, and again untags it. */
+/**
+ * Its tags, as chips: choosing one tags it at once, and again untags it. A retired tag
+ * it has shows too, after the rest (#1161): it can be taken off, but not put back.
+ */
 function Tags({ article: a, tags }: { article: BlogArticleOut; tags: BlogTagOut[] }) {
   const on = a.tags.map((t) => t.id);
   const save = useAction((ids: string[]) => unwrap(api.PUT("/api/blog/articles/{article_id}/tags", { params: { path: { article_id: a.id } }, body: { tag_ids: ids } })), [["blog-queue"]]);
-  if (tags.length === 0) return null;
+  if (tags.length === 0 && a.tags.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
-      <TagChips tags={tags} chosen={on} disabled={save.isPending} onToggle={(id) => save.mutate(toggled(on, id))} />
+      <TagChips tags={tags} had={a.tags} chosen={on} disabled={save.isPending} onToggle={(id) => save.mutate(toggled(on, id))} />
       <ErrorText error={save.error} />
     </div>
   );
