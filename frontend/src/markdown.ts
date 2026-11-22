@@ -9,6 +9,11 @@
  * The user manual (`parseManual`) reads a little more: images, simple pipe tables,
  * and links without a scheme, such as `players.md#downtimes`, which the manual
  * turns into its own pages. Nothing else reads those.
+ *
+ * A blog article's words (`{ pictures: true }`, #1163) read pictures too, each on a
+ * line of its own: `![what it shows](blog-picture:<id> "its caption")`. Only the
+ * blog's own pictures, uploaded for the article, can be named, never an outside
+ * address, and everything else (troupe news, backstories) reads that line as text.
  */
 
 export type Inline =
@@ -36,10 +41,33 @@ export type Block =
   /** A line that is only an HTML comment, as written: kept only when asked for (the editor keeps them). */
   | { t: "comment"; v: string }
   /** The manual's only: a simple pipe table. */
-  | { t: "table"; align: Align[]; head: Inline[][]; rows: Inline[][][] };
+  | { t: "table"; align: Align[]; head: Inline[][]; rows: Inline[][][] }
+  /** A blog article's only: one of its pictures, by its id, with what it shows and any caption. */
+  | { t: "figure"; id: string; alt: string; caption: string };
 
-/** What the manual reads beyond a backstory's Markdown. */
-type Options = { keepComments: boolean; manual: boolean };
+/** What the manual, and a blog article, read beyond a backstory's Markdown. */
+type Options = { keepComments: boolean; manual: boolean; pictures: boolean };
+
+/** What else to read: a blog article's pictures. */
+export type ParseOptions = { pictures?: boolean };
+
+/** A blog article's picture, on a line of its own: `![what it shows](blog-picture:<id> "its caption")`. */
+const FIGURE = /^ {0,3}!\[((?:\\.|[^\]\\])+)\]\(blog-picture:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\s+"((?:\\.|[^"\\])*)")?\)\s*$/;
+
+const unescaped = (text: string) => text.replace(/\\(.)/g, "$1").trim();
+
+/** Where a blog article's picture is: add "/1200.webp" or "/600.webp". */
+export function blogPictureUrl(id: string): string {
+  return `/api/blog/body-pictures/${id}`;
+}
+
+/** A blog article's picture as its Markdown line, reading back as the same picture. */
+export function figureMarkdown({ id, alt, caption }: { id: string; alt: string; caption?: string }): string {
+  const flat = (text: string) => text.replace(/\s+/g, " ").trim();
+  const said = flat(alt).replace(/[\\\]]/g, (ch) => `\\${ch}`) || "Picture";
+  const under = flat(caption ?? "").replace(/[\\"]/g, (ch) => `\\${ch}`);
+  return `![${said}](blog-picture:${id}${under ? ` "${under}"` : ""})`;
+}
 
 export const COMMENT = /^\s*<!--.*-->\s*$/;
 const HEADING = /^ {0,3}(#{1,6})(?:\s+(.*?))?\s*#*\s*$/;
@@ -69,17 +97,17 @@ export function headings(text: string): string[] {
     .filter((h) => h.length > 0);
 }
 
-export function parseBlocks(text: string, keepComments = false): Block[] {
-  return blocksOf(text, { keepComments, manual: false });
+export function parseBlocks(text: string, keepComments = false, { pictures = false }: ParseOptions = {}): Block[] {
+  return blocksOf(text, { keepComments, manual: false, pictures });
 }
 
 /** A page of the user manual: images, tables and relative links too. Headings have no ids yet. */
 export function parseManual(text: string): Block[] {
-  return blocksOf(text, { keepComments: false, manual: true });
+  return blocksOf(text, { keepComments: false, manual: true, pictures: false });
 }
 
 function blocksOf(text: string, options: Options): Block[] {
-  const { keepComments, manual } = options;
+  const { keepComments, manual, pictures } = options;
   const parseInline = (s: string) => inlineOf(s, manual);
   const inlineLines = (lines: string[]) => linesOf(lines, manual);
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
@@ -101,6 +129,13 @@ function blocksOf(text: string, options: Options): Block[] {
     if (COMMENT.test(line)) {
       endParagraph();
       if (keepComments) blocks.push({ t: "comment", v: line });
+      i++;
+      continue;
+    }
+    const figure = pictures ? line.match(FIGURE) : null;
+    if (figure) {
+      endParagraph();
+      blocks.push({ t: "figure", id: figure[2]!, alt: unescaped(figure[1]!), caption: unescaped(figure[3] ?? "") });
       i++;
       continue;
     }
@@ -133,7 +168,8 @@ function blocksOf(text: string, options: Options): Block[] {
       endParagraph();
       const inner: string[] = [];
       while (i < lines.length && QUOTE.test(lines[i]!)) inner.push(lines[i++]!.match(QUOTE)![1]!);
-      blocks.push({ t: "quote", c: blocksOf(inner.join("\n"), options) });
+      // A picture stands on its own, never in a quote.
+      blocks.push({ t: "quote", c: blocksOf(inner.join("\n"), { ...options, pictures: false }) });
       continue;
     }
     if (manual && line.includes("|") && i + 1 < lines.length && TABLE_DELIMITER.test(lines[i + 1]!)) {

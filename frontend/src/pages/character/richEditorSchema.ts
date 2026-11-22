@@ -15,7 +15,7 @@ import { Gapcursor, Placeholder, TrailingNode, UndoRedo } from "@tiptap/extensio
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { commentLabel, isQuestionsMark } from "../../backstoryMarkdown";
-import { SAFE_LINK } from "../../markdown";
+import { blogPictureUrl, SAFE_LINK } from "../../markdown";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -114,12 +114,54 @@ export const Comment = Node.create<{ onRefused: () => void }>({
   },
 });
 
+const PICTURE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * A picture in a blog article's words (#1163), uploaded for the article: shown as it
+ * will be, a block of its own, chosen as a whole and deleted with Backspace. Only
+ * the blog's own pictures, by their id, can be one; a picture pasted from anywhere
+ * else is left out.
+ */
+export const BlogPicture = Node.create({
+  name: "blogPicture",
+  group: "block",
+  atom: true,
+  selectable: true,
+  draggable: false,
+  addAttributes() {
+    return { id: { default: "" }, alt: { default: "" }, caption: { default: "" } };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "figure[data-blog-picture]",
+        getAttrs: (el) => {
+          const id = el.getAttribute("data-blog-picture") ?? "";
+          if (!PICTURE_ID.test(id)) return false;
+          return { id, alt: el.querySelector("img")?.getAttribute("alt") ?? "", caption: el.querySelector("figcaption")?.textContent ?? "" };
+        },
+      },
+    ];
+  },
+  renderHTML({ node }) {
+    const id = String(node.attrs.id);
+    const caption = String(node.attrs.caption);
+    return [
+      "figure",
+      { "data-blog-picture": id, contenteditable: "false" },
+      ["img", { src: `${blogPictureUrl(id)}/600.webp`, alt: String(node.attrs.alt) }],
+      ...(caption ? [["figcaption", {}, caption]] : []),
+    ];
+  },
+});
+
 /**
  * What the editor can hold: exactly what a backstory's Markdown says (see
  * markdown.ts), so nothing is lost on the way back. A list item holds one
- * paragraph, as the reader has no nested lists.
+ * paragraph, as the reader has no nested lists. A blog article's words hold its
+ * `pictures` too.
  */
-export function editorExtensions({ placeholder = "", onRefused = () => {} }: { placeholder?: string; onRefused?: () => void } = {}): Extensions {
+export function editorExtensions({ placeholder = "", onRefused = () => {}, pictures = false }: { placeholder?: string; onRefused?: () => void; pictures?: boolean } = {}): Extensions {
   return [
     Document,
     Paragraph,
@@ -142,5 +184,6 @@ export function editorExtensions({ placeholder = "", onRefused = () => {} }: { p
     Gapcursor,
     Placeholder.configure({ placeholder }),
     Comment.configure({ onRefused }),
+    ...(pictures ? [BlogPicture] : []),
   ];
 }

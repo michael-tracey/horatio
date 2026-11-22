@@ -19,7 +19,8 @@ function Where() {
 }
 
 function setup(at = `/troupes/${HERE}/boons`, client = new QueryClient()) {
-  const asked = vi.spyOn(api, "GET").mockResolvedValue({
+  // Seen as a plain function: the typed client's GET, over every path, is too deep for TypeScript to spy on.
+  const asked = vi.spyOn(api as unknown as { GET: (...args: unknown[]) => Promise<unknown> }, "GET").mockResolvedValue({
     data: {
       groups: [
         {

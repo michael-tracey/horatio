@@ -32,16 +32,33 @@ A short quote is fine where the exact words matter: a sentence or two, in quotat
 
 ## Pictures
 
-An article can have one picture across its top. Use only a picture you made yourself or have the right to share. Never scan or photograph art from the books, and don't use a photo of someone without asking them.
+An article can have one picture across its top, and pictures in its words. Use only a picture you made yourself or have the right to share. Never scan or photograph art from the books, and don't use a photo of someone without asking them.
+
+### The picture across the top
 
 Save the article as a draft first, then choose **Add a picture** under **Picture**. A JPEG, PNG, WebP or HEIC picture up to 10 MB works. Horatio asks you to place a frame twice as wide as it is high: drag it, or use the arrow keys, and size it with **Size**. What is outside the frame is cut off. Choose **Save the picture**. **Change the picture** places a new one, and **Remove the picture** takes it off. Where a photo was taken and other details phones add are removed.
+
+### Pictures in the words
+
+You can put up to 20 pictures in the words themselves, such as a photo of your game's room or a map you drew. Only pictures you upload to the article can go in: a picture from another website can't be shown.
+
+1. Save the article as a draft first.
+2. In the editor, put the cursor where the picture goes, and choose **Picture** in the editor's buttons.
+3. Under **Picture to add**, choose the picture: a JPEG, PNG, WebP or HEIC picture up to 10 MB. It is kept whole, not cut.
+4. Under **What it shows**, say in a sentence what is in the picture. Readers who can't see it, such as those using a screen reader, hear this instead, so Horatio asks for it every time.
+5. Give it a **Caption** if you like. It shows under the picture.
+6. Choose **Add the picture**, then save the article.
+
+To change what a picture says, choose it in the editor, then **Picture**, and choose **Save**. To take one out, choose it and press Backspace. A picture you take out is deleted once you save the article.
+
+Readers see the pictures at the width of the words, on a phone too. Until the article is published, only you and the custodian can see them. When you change a published article, readers don't see your new pictures until the custodian publishes your changes.
 
 ## Writing an article
 
 1. Open **Write for the blog** and choose **Write an article**.
 2. Give it a **Title** and a **Summary**: a line or two, shown under the title and wherever the article is listed.
 3. Under **Troupe**, choose the troupe you're on the staff of that the article names, or **None**. If you're on the staff of several, choose one. Readers can follow its name to the troupe's public profile. A troupe whose profile isn't public, or that is archived, shows its name only, with no link.
-4. Write the article in the editor, with headings, lists, quotes and links from its buttons.
+4. Write the article in the editor, with headings, lists, quotes, links and pictures from its buttons.
 5. Under **Tags**, choose what it's about from the custodian's list, such as **Storytelling** or **Safety and consent**. The custodian may change them before it goes up.
 6. Choose **Save draft**. Only you and the custodian can see a draft.
 

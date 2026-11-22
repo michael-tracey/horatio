@@ -135,7 +135,7 @@ function Article({ article: a, tags, waiting = false, children }: { article: Blo
         <summary className="cursor-pointer text-mist hover:text-parchment">Read it</summary>
         <div className="mt-2 flex flex-col gap-3">
           {words.picture && <img src={`${words.picture}/600.webp`} alt="" className="max-h-64 w-fit rounded-md" />}
-          <Markdown text={words.body} />
+          <Markdown text={words.body} pictures />
         </div>
       </details>
       <Address article={a} />
