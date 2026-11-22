@@ -1186,6 +1186,133 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blog/author": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Mine
+         * @description The signed-in person's own author profile.
+         */
+        get: operations["read_mine_api_blog_author_get"];
+        /**
+         * Save Mine
+         * @description Save the signed-in person's author profile, making it the first time.
+         */
+        put: operations["save_mine_api_blog_author_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/author-pictures/{author_id}/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Picture File
+         * @description One of an author's picture's files, for whoever may see their page.
+         */
+        get: operations["picture_file_api_blog_author_pictures__author_id___picture_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/author/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Mine
+         * @description A new picture, cut square. Without a crop, the biggest square in the middle.
+         */
+        post: operations["upload_mine_api_blog_author_picture_post"];
+        /** Remove Mine */
+        delete: operations["remove_mine_api_blog_author_picture_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/author/picture/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Crop Mine
+         * @description Move the picture's crop, cutting it again from the picture as kept.
+         */
+        put: operations["crop_mine_api_blog_author_picture_crop_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/authors/{handle}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Author
+         * @description An author's page, for anyone at all while they write for the blog or have an
+         *     article published.
+         */
+        get: operations["read_author_api_blog_authors__handle__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/authors/{handle}/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clear Author
+         * @description For the custodian: clear an author's bio, links or picture, such as one that
+         *     breaks the site's rules. Logged; the rest of their profile stays.
+         */
+        post: operations["clear_author_api_blog_authors__handle__clear_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blog/public/articles": {
         parameters: {
             query?: never;
@@ -1220,6 +1347,27 @@ export interface paths {
          *     nobody learns what is being written.
          */
         get: operations["read_article_api_blog_public_articles__slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/public/authors/{handle}/articles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Author Articles
+         * @description An author's published articles, newest first, a page at a time: for their page,
+         *     to whoever may see it (blog_authors.viewable).
+         */
+        get: operations["author_articles_api_blog_public_authors__handle__articles_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -16079,6 +16227,44 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * AuthorCard
+         * @description An author as anyone may see them, under each of their articles and on their
+         *     page. Never their email or anything else from their player profile.
+         */
+        AuthorCard: {
+            /** Bio */
+            bio: string;
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /** Links */
+            links: components["schemas"]["Link"][];
+            /** Picture */
+            picture: string | null;
+        };
+        /**
+         * AuthorPage
+         * @description An author's page. The articles they have published join it with the blog's
+         *     reading pages (#1158).
+         */
+        AuthorPage: {
+            /** Bio */
+            bio: string;
+            /** Can Clear */
+            can_clear: boolean;
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /** Links */
+            links: components["schemas"]["Link"][];
+            /** Picture */
+            picture: string | null;
+            /** Yours */
+            yours: boolean;
+        };
         /** AutoAcceptIn */
         AutoAcceptIn: {
             /** Kinds */
@@ -17248,6 +17434,7 @@ export interface components {
          */
         BlogPublicArticleOut: {
             author: components["schemas"]["BlogPublicAuthorOut"];
+            author_card: components["schemas"]["AuthorCard"] | null;
             /** Body */
             body: string;
             /** Edit */
@@ -17275,13 +17462,31 @@ export interface components {
         };
         /**
          * BlogPublicAuthorOut
-         * @description Who wrote it, as the blog shows them.
+         * @description Who wrote it, as the blog shows them: their author profile's name (#1159), or
+         *     their own display name until they save one.
          */
         BlogPublicAuthorOut: {
             /** Handle */
             handle: string | null;
             /** Name */
             name: string;
+        };
+        /**
+         * BlogPublicAuthorPageOut
+         * @description An author's published articles, for their page (/blog/authors/<handle>).
+         */
+        BlogPublicAuthorPageOut: {
+            /** Articles */
+            articles: components["schemas"]["BlogPublicSummaryOut"][];
+            author: components["schemas"]["BlogPublicAuthorOut"];
+            /** Featured */
+            featured: components["schemas"]["BlogPublicSummaryOut"][];
+            /** Page */
+            page: number;
+            /** Pages */
+            pages: number;
+            /** Total */
+            total: number;
         };
         /**
          * BlogPublicPageOut
@@ -17606,6 +17811,20 @@ export interface components {
         };
         /** Body_upload_masthead_api_agencies__agency_id__picture_post */
         Body_upload_masthead_api_agencies__agency_id__picture_post: {
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
+        /** Body_upload_mine_api_blog_author_picture_post */
+        Body_upload_mine_api_blog_author_picture_post: {
+            /** Crop Size */
+            crop_size?: number | null;
+            /** Crop X */
+            crop_x?: number | null;
+            /** Crop Y */
+            crop_y?: number | null;
             /**
              * File
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
@@ -20767,14 +20986,6 @@ export interface components {
         ClanWeaknessesOut: {
             /** Clans */
             clans: components["schemas"]["ClanWeaknessRow"][];
-        };
-        /** ClearIn */
-        ClearIn: {
-            /**
-             * Note
-             * @default
-             */
-            note: string;
         };
         /** Cleared */
         Cleared: {
@@ -28232,6 +28443,47 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /**
+         * MyAuthor
+         * @description The signed-in person's own author profile, as Account › Blog author edits it.
+         *     Before they first save it, what it would start as.
+         */
+        MyAuthor: {
+            /** Bio */
+            bio: string;
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /** Links */
+            links: components["schemas"]["Link"][];
+            /** Picture */
+            picture: string | null;
+            picture_crop: components["schemas"]["CropIn"] | null;
+            /** Pictures Available */
+            pictures_available: boolean;
+            /** Public */
+            public: boolean;
+            /** Saved */
+            saved: boolean;
+        };
+        /** MyAuthorIn */
+        MyAuthorIn: {
+            /**
+             * Bio
+             * @default
+             */
+            bio: string;
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /**
+             * Links
+             * @default []
+             */
+            links: components["schemas"]["Link"][];
         };
         /** MyDowntime */
         MyDowntime: {
@@ -39933,6 +40185,32 @@ export interface components {
             willpower: number;
         };
         /**
+         * ClearIn
+         * @description What the custodian clears; at least one.
+         */
+        horatio__api__blog_authors__ClearIn: {
+            /**
+             * Bio
+             * @default false
+             */
+            bio: boolean;
+            /**
+             * Links
+             * @default false
+             */
+            links: boolean;
+            /**
+             * Picture
+             * @default false
+             */
+            picture: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /**
          * ChangeOut
          * @description What time does next to a bond (#665): it drops a stage, or ends, on a day.
          */
@@ -39956,6 +40234,14 @@ export interface components {
              * @default false
              */
             tremere: boolean;
+        };
+        /** ClearIn */
+        horatio__api__boon_reviews__ClearIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
         };
         /**
          * MatchOut
@@ -42278,6 +42564,242 @@ export interface operations {
             };
         };
     };
+    read_mine_api_blog_author_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAuthor"];
+                };
+            };
+        };
+    };
+    save_mine_api_blog_author_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MyAuthorIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAuthor"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    picture_file_api_blog_author_pictures__author_id___picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                author_id: string;
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_mine_api_blog_author_picture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_mine_api_blog_author_picture_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAuthor"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_mine_api_blog_author_picture_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAuthor"];
+                };
+            };
+        };
+    };
+    crop_mine_api_blog_author_picture_crop_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CropIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAuthor"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_author_api_blog_authors__handle__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handle: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_author_api_blog_authors__handle__clear_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handle: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__blog_authors__ClearIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_articles_api_blog_public_articles_get: {
         parameters: {
             query?: {
@@ -42329,6 +42851,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlogPublicArticleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    author_articles_api_blog_public_authors__handle__articles_get: {
+        parameters: {
+            query?: {
+                /** @description Counting from 1. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                handle: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogPublicAuthorPageOut"];
                 };
             };
             /** @description Validation Error */
@@ -58408,7 +58964,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ClearIn"];
+                "application/json": components["schemas"]["horatio__api__boon_reviews__ClearIn"];
             };
         };
         responses: {

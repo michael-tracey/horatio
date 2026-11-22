@@ -76,9 +76,9 @@ function TagFilter({ open }: { open?: string }) {
   );
 }
 
-/** A page of articles, newest first, with Previous and Next. */
-function Articles({ found, onPage }: { found: BlogPublicPageOut; onPage: (page: number) => void }) {
-  if (found.total === 0) return <Empty>No articles yet.</Empty>;
+/** A page of articles, newest first, with Previous and Next. `none` says there are none at all. */
+export function ArticleList({ found, onPage, none = "No articles yet." }: { found: BlogPublicPageOut; onPage: (page: number) => void; none?: string }) {
+  if (found.total === 0) return <Empty>{none}</Empty>;
   if (found.articles.length === 0) return <Empty>There are no more articles. Go back a page.</Empty>;
   return (
     <div className="flex flex-col gap-4">
@@ -158,7 +158,7 @@ export function BlogPage() {
             <h2 id="latest" className={featured.length > 0 ? "mb-3 text-lg text-gold" : "sr-only"}>
               {tag ? `Tagged ${tagName ?? ""}` : "Latest"}
             </h2>
-            <Articles found={found.data} onPage={onPage} />
+            <ArticleList found={found.data} onPage={onPage} />
           </section>
         </>
       )}

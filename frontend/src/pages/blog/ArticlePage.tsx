@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { api, ApiError, unwrap } from "../../api/client";
+import { AuthorCard } from "../../components/AuthorCard";
 import { BackLink } from "../../components/BackLink";
 import { ErrorText, Loading, PageTitle } from "../../components/ui";
 import { useTitle } from "../../title";
@@ -45,8 +46,7 @@ export function ArticlePage() {
             </Link>
           )
         }
-        // The author's card (#1159) goes here.
-        authorCard={undefined}
+        authorCard={a.author_card && <AuthorCard author={a.author_card} linked />}
       />
     </div>
   );

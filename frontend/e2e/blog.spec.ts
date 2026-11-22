@@ -82,7 +82,7 @@ test("a narrator sends an article to the custodian, who tags and publishes it fr
   await expect(n.getByText(/^Published\. Its address:/)).toBeVisible();
 });
 
-test("signed out, someone opens the blog, filters it by a tag and reads an article, but never a draft (#1158)", async ({ browser }) => {
+test("signed out, someone opens the blog, filters it by a tag, reads an article and its author's page, but never a draft (#1158)", async ({ browser }) => {
   const custodian = await person(browser, "blogread-cust");
   makeCustodian(custodian.email);
   const c = custodian.page;
@@ -90,7 +90,10 @@ test("signed out, someone opens the blog, filters it by a tag and reads an artic
   const other = `Lore for new players ${run}`;
   const tagged = await publishedArticle(c, combat, "Call the **challenge** out loud, then wait for the answer.", ["Combat and challenges"], true);
   await publishedArticle(c, other, "Start with the city.", ["Setting and lore"]);
-  const draft = await send(c, "POST", "/api/blog/articles", { title: `Not ready yet ${run}`, summary: "", body: "Secret.", troupe_id: null });
+  const unready = `Not ready yet ${run}`;
+  const draft = await send(c, "POST", "/api/blog/articles", { title: unready, summary: "", body: "Secret.", troupe_id: null });
+  // Their author profile (#1159), for the card under each article and their page.
+  await send(c, "PUT", "/api/blog/author", { display_name: "Odile Brandt", handle: custodian.handle, bio: "Runs games in *Lisbon*.", links: [] });
 
   const visitor = await (await browser.newContext()).newPage();
   await visitor.goto("/blog");
@@ -117,7 +120,7 @@ test("signed out, someone opens the blog, filters it by a tag and reads an artic
   await expect(visitor.getByRole("heading", { name: combat, level: 1 })).toBeVisible();
   await expect(visitor).toHaveTitle(`${combat} · Blog · Horatio`);
   await expect(visitor.getByText(`A summary of ${combat}.`)).toBeVisible();
-  await expect(visitor.getByText("By blogread-cust")).toBeVisible();
+  await expect(visitor.getByText("By Odile Brandt")).toBeVisible();
   await expect(visitor.locator("article strong", { hasText: "challenge" })).toBeVisible();
   const hero = visitor.locator("article img").first();
   await expect(hero).toBeVisible();
@@ -125,7 +128,17 @@ test("signed out, someone opens the blog, filters it by a tag and reads an artic
   await expect(visitor.getByRole("list", { name: "Tags" }).getByRole("link", { name: "Combat and challenges" })).toHaveAttribute("href", "/blog/tags/combat-and-challenges");
   // Nothing to change for a visitor.
   await expect(visitor.getByRole("link", { name: "Change it" })).toHaveCount(0);
+  const card = visitor.getByRole("region", { name: "About Odile Brandt" });
+  await expect(card.getByText("Lisbon")).toBeVisible();
   await visitor.screenshot(shots("blog-article"));
+
+  // The card leads to the author's page, with what they have published.
+  await card.getByRole("link", { name: "Odile Brandt" }).click();
+  await expect(visitor).toHaveURL(`/blog/authors/${custodian.handle}`);
+  await expect(visitor.getByRole("heading", { name: "Odile Brandt", level: 1 })).toBeVisible();
+  await expect(articles.getByRole("listitem", { name: combat })).toBeVisible();
+  await expect(articles.getByRole("listitem", { name: other })).toBeVisible();
+  await expect(articles.getByRole("listitem", { name: unready })).toHaveCount(0);
 
   // A draft isn't there, signed out or in.
   await visitor.goto(`/blog/${draft.slug}`);

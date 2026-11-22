@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import type { BlogPublicArticleOut, BlogPublicPageOut, BlogPublicSummaryOut, BlogPublicTagCountOut } from "../../api/types";
 import { ArticlePage } from "./ArticlePage";
+import { AuthorPage } from "./AuthorPage";
 import { BlogPage, pageFrom } from "./BlogPage";
 
 afterEach(() => {
@@ -49,6 +50,7 @@ const ARTICLE: BlogPublicArticleOut = {
     { name: "Safety and consent", slug: "safety-and-consent" },
   ],
   picture: "/api/blog/articles/a1/pictures/p1",
+  author_card: null,
   edit: null,
 };
 
@@ -69,6 +71,7 @@ function show(at: string) {
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/tags/:tag" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<ArticlePage />} />
+          <Route path="/blog/authors/:handle" element={<AuthorPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -159,14 +162,19 @@ describe("an article's page (#1158)", () => {
     await waitFor(() => expect(document.title).toBe("Running your first Elysium · Blog · Horatio"));
   });
 
-  it("links a public troupe and the author's page, and offers its author a way to change it", async () => {
+  it("links a public troupe, puts the author's card under it, and offers its author a way to change it", async () => {
+    const card = { handle: "mara", display_name: "Mara Quinn", bio: "I run *Lords*.", links: [], picture: null };
     answering({
-      "/api/blog/public/articles/{slug}": { ...ARTICLE, troupe: { name: "Lords of the Night", id: "lords" }, author: { name: "Mara Quinn", handle: "mara" }, edit: "/blog/write/a1" },
+      "/api/blog/public/articles/{slug}": { ...ARTICLE, troupe: { name: "Lords of the Night", id: "lords" }, author: { name: "Mara Quinn", handle: "mara" }, author_card: card, edit: "/blog/write/a1" },
     });
     show("/blog/running-your-first-elysium");
 
     expect((await screen.findByRole("link", { name: "Lords of the Night" })).getAttribute("href")).toBe("/t/lords");
-    expect(screen.getByRole("link", { name: "Mara Quinn" }).getAttribute("href")).toBe("/blog/authors/mara");
+    const about = screen.getByRole("region", { name: "About Mara Quinn" });
+    expect(within(about).getByRole("link", { name: "Mara Quinn" }).getAttribute("href")).toBe("/blog/authors/mara");
+    expect(within(about).getByText("Lords").tagName).toBe("EM");
+    // The dateline's name leads there too.
+    expect(screen.getAllByRole("link", { name: "Mara Quinn" })).toHaveLength(2);
     expect(screen.getByRole("link", { name: "Change it" }).getAttribute("href")).toBe("/blog/write/a1");
   });
 
@@ -175,5 +183,32 @@ describe("an article's page (#1158)", () => {
     show("/blog/a-draft");
     expect(await screen.findByRole("heading", { level: 1, name: "No such article" })).toBeTruthy();
     expect(screen.getByText(/may have been taken down/)).toBeTruthy();
+  });
+});
+
+describe("an author's page (#1158)", () => {
+  const AUTHOR = { handle: "mara", display_name: "Mara Quinn", bio: "", links: [], picture: null, yours: false, can_clear: false };
+
+  it("lists the articles they have published under their card", async () => {
+    const get = answering({
+      "/api/blog/authors/{handle}": AUTHOR,
+      "/api/blog/public/authors/{handle}/articles": { ...page({ articles: [ELYSIUM], total: 1 }), author: { name: "Mara Quinn", handle: "mara" } },
+    });
+    show("/blog/authors/mara");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Mara Quinn" })).toBeTruthy();
+    const list = await screen.findByRole("list", { name: "Articles" });
+    expect(within(list).getByRole("link", { name: "Running your first Elysium" }).getAttribute("href")).toBe("/blog/running-your-first-elysium");
+    expect(get).toHaveBeenCalledWith("/api/blog/public/authors/{handle}/articles", { params: { path: { handle: "mara" }, query: { page: 1 } } });
+    await waitFor(() => expect(document.title).toBe("Mara Quinn · Blog · Horatio"));
+  });
+
+  it("says when they have none published yet", async () => {
+    answering({
+      "/api/blog/authors/{handle}": { ...AUTHOR, yours: true },
+      "/api/blog/public/authors/{handle}/articles": { ...page({ articles: [], featured: [], total: 0 }), author: { name: "Mara Quinn", handle: "mara" } },
+    });
+    show("/blog/authors/mara");
+    expect(await screen.findByText("Mara Quinn has no articles published yet.")).toBeTruthy();
   });
 });

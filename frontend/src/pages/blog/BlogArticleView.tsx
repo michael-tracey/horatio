@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import type { BlogPublicAuthorOut, BlogPublicTagOut, BlogPublicTroupeOut } from "../../api/types";
+import { authorPath } from "../../components/AuthorCard";
 import { Markdown } from "../../components/Markdown";
 import { PageTitle } from "../../components/ui";
 import { useDates } from "../../dates";
@@ -18,7 +19,7 @@ export function TagChip({ tag }: { tag: BlogPublicTagOut }) {
 export function AuthorName({ author }: { author: BlogPublicAuthorOut }) {
   if (!author.handle) return <>{author.name}</>;
   return (
-    <Link to={`/blog/authors/${author.handle}`} className="text-gold hover:underline">
+    <Link to={authorPath(author.handle)} className="text-gold hover:underline">
       {author.name}
     </Link>
   );
@@ -91,8 +92,8 @@ export type ArticleWords = {
  * An article as the blog shows it (#1158): its title, summary, hero picture, who wrote
  * it and when, its tags, and its words, through the Markdown that renders no HTML. On
  * its own page it is the page's title; elsewhere, a preview say, give `heading={2}`.
- * `authorCard` goes under it (#1159's AuthorCard); without one, its author's name is
- * on the dateline only.
+ * `authorCard` goes under it (#1159's AuthorCard, for an author with a profile); its
+ * author's name is on the dateline either way.
  */
 export function BlogArticleView({ article, heading = 1, actions, authorCard }: { article: ArticleWords; heading?: 1 | 2; actions?: ReactNode; authorCard?: ReactNode }) {
   const title = article.title || "Untitled";
@@ -132,7 +133,7 @@ export function BlogArticleView({ article, heading = 1, actions, authorCard }: {
       <div className="max-w-prose">
         <Markdown text={article.body} />
       </div>
-      {authorCard}
+      {authorCard && <div className="mt-4">{authorCard}</div>}
     </article>
   );
 }

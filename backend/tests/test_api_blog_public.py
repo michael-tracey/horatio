@@ -114,6 +114,7 @@ def test_an_article_shows_its_published_words_and_nothing_private(
         "featured": False,
         "published_at": shown["published_at"],
         "revised_at": None,
+        "author_card": None,
         "edit": None,
     }
     assert "Not yet" not in str(shown) and "New words" not in str(shown)
@@ -190,6 +191,70 @@ def test_the_blogs_own_addresses_arent_slugs(troupe: Troupe) -> None:
     path = f"/blog/articles/{article['id']}/slug"
     refused = troupe.storyteller.client.put(path, json={"slug": "tags"})
     assert refused.status_code == 409
+
+
+# --- authors ------------------------------------------------------------------------------
+
+
+def profile(person: Person, **more: Any) -> None:
+    body = {"display_name": "Mara Quinn", "handle": "maraq", "bio": "I run *Lords*.", "links": []}
+    ok(person.client.put("/blog/author", json={**body, **more}))
+
+
+def test_an_article_shows_its_authors_card_once_they_have_a_profile(
+    troupe: Troupe, anyone: TestClient
+) -> None:
+    published(troupe)
+    path = "/blog/public/articles/running-your-first-elysium"
+    before = ok(anyone.get(path))
+    assert before["author"] == {"name": "storyteller", "handle": None}
+    assert before["author_card"] is None
+
+    profile(troupe.storyteller)
+
+    after = ok(anyone.get(path))
+    assert after["author"] == {"name": "Mara Quinn", "handle": "maraq"}
+    assert after["author_card"] == {
+        "handle": "maraq",
+        "display_name": "Mara Quinn",
+        "bio": "I run *Lords*.",
+        "links": [],
+        "picture": None,
+    }
+    assert ok(anyone.get("/blog/public/articles"))["articles"][0]["author"]["handle"] == "maraq"
+
+
+def test_an_authors_page_lists_only_their_published_articles(
+    troupe: Troupe, anyone: TestClient
+) -> None:
+    profile(troupe.storyteller)
+    published(troupe, title="Mine, published")
+    draft(troupe.storyteller, troupe.id, title="Mine, a draft")
+    draft(troupe.custodian, None, title="The custodian's")
+    other = draft(troupe.custodian, None, title="Not theirs")
+    ok(troupe.custodian.client.post(f"/blog/articles/{other['id']}/submit"))
+    ok(troupe.custodian.client.post(f"/blog/articles/{other['id']}/publish"))
+
+    found = ok(anyone.get("/blog/public/authors/MaraQ/articles"))
+
+    assert titles(found) == ["Mine, published"]
+    assert found["total"] == 1
+    assert found["author"] == {"name": "Mara Quinn", "handle": "maraq"}
+    assert anyone.get("/blog/public/authors/nobody/articles").status_code == 404
+
+
+def test_an_author_no_longer_writing_keeps_a_page_while_an_article_is_published(
+    troupe: Troupe, anyone: TestClient
+) -> None:
+    profile(troupe.storyteller)
+    article = published(troupe)
+    ok(troupe.lead.client.post(f"/troupes/{troupe.id}/archive", json={"reason": "Done"}))
+
+    assert titles(ok(anyone.get("/blog/public/authors/maraq/articles"))) == [article["title"]]
+
+    path = f"/blog/articles/{article['id']}/unpublish"
+    ok(troupe.custodian.client.post(path, json={"reason": "Out of date"}))
+    assert anyone.get("/blog/public/authors/maraq/articles").status_code == 404
 
 
 # --- hero pictures ------------------------------------------------------------------------

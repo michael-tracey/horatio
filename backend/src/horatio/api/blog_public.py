@@ -3,7 +3,7 @@ not. What an article is and how it is published is in horatio.blog.
 
 Only published articles are here, and only what the blog shows of them: never a
 draft, an article waiting or unpublished, a published article's changes, the
-custodian's note, or who wrote it beyond their name. Everything is under
+custodian's note, or anything of who wrote it beyond their author card (#1159). Everything is under
 /blog/public, apart from the routes for writing (/blog/articles, /blog/writer,
 /blog/tags), the custodian's (/blog/queue) and the authors' (/blog/author...).
 
@@ -22,8 +22,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
 from horatio import blog, pictures
+from horatio.api import blog_authors
+from horatio.api.blog_authors import AuthorCard
 from horatio.auth.deps import DbSession, MaybeUser
-from horatio.models import BlogPost, BlogPostTag, BlogTag, Troupe, User
+from horatio.models import BlogAuthor, BlogPost, BlogPostTag, BlogTag, Troupe, User
 
 router = APIRouter(prefix="/blog/public", tags=["blog"])
 
@@ -47,11 +49,12 @@ class BlogPublicTagCountOut(BlogPublicTagOut):
 
 
 class BlogPublicAuthorOut(BaseModel):
-    """Who wrote it, as the blog shows them."""
+    """Who wrote it, as the blog shows them: their author profile's name (#1159), or
+    their own display name until they save one."""
 
     name: str
-    # Their author page's handle (/blog/authors/<handle>), once they have one (#1159);
-    # None until then.
+    # Their author page's handle (/blog/authors/<handle>), once they have saved an
+    # author profile; None until then, or for an account merged into another.
     handle: str | None
 
 
@@ -87,6 +90,8 @@ class BlogPublicArticleOut(BlogPublicSummaryOut):
 
     # Markdown.
     body: str
+    # Its author's card, to go under it (#1159), once they have a profile.
+    author_card: AuthorCard | None
     # Where the viewer changes it, when they wrote it; None for anyone else.
     edit: str | None
 
@@ -107,6 +112,8 @@ class BlogPublicTagPageOut(BlogPublicPageOut):
 
 
 class BlogPublicAuthorPageOut(BlogPublicPageOut):
+    """An author's published articles, for their page (/blog/authors/<handle>)."""
+
     author: BlogPublicAuthorOut
 
 
@@ -126,18 +133,37 @@ def troupe_shown(troupe: Troupe) -> BlogPublicTroupeOut:
     return BlogPublicTroupeOut(name=troupe.name, id=troupe.id if linked else None)
 
 
+def authors_of(
+    db: Session, user_ids: set[uuid.UUID]
+) -> dict[uuid.UUID, tuple[BlogPublicAuthorOut, BlogAuthor | None]]:
+    """Each author as the blog names them, and their author profile if they have one
+    that is shown: an author with an article published is, unless their account was
+    merged into another (blog_authors.shown)."""
+    profiles = {
+        p.user_id: p for p in db.scalars(select(BlogAuthor).where(BlogAuthor.user_id.in_(user_ids)))
+    }
+    found: dict[uuid.UUID, tuple[BlogPublicAuthorOut, BlogAuthor | None]] = {}
+    for user_id, name, merged in db.execute(
+        select(User.id, User.display_name, User.merged_into_id).where(User.id.in_(user_ids))
+    ):
+        profile = profiles.get(user_id) if merged is None else None
+        found[user_id] = (
+            BlogPublicAuthorOut(
+                name=profile.display_name if profile else name,
+                handle=profile.handle if profile else None,
+            ),
+            profile,
+        )
+    return found
+
+
 def summaries(db: Session, found: list[BlogPost]) -> list[BlogPublicSummaryOut]:
     """The articles as the blog lists them, asking the database a few times in all."""
     troupe_ids = {a.troupe_id for a in found if a.troupe_id is not None}
     troupes = {
         t.id: troupe_shown(t) for t in db.scalars(select(Troupe).where(Troupe.id.in_(troupe_ids)))
     }
-    names: dict[uuid.UUID, str] = {
-        i: n
-        for i, n in db.execute(
-            select(User.id, User.display_name).where(User.id.in_({a.author_id for a in found}))
-        )
-    }
+    authors = authors_of(db, {a.author_id for a in found})
     tags = blog.tags_of(db, [a.id for a in found])
     out: list[BlogPublicSummaryOut] = []
     for a in found:
@@ -148,7 +174,7 @@ def summaries(db: Session, found: list[BlogPost]) -> list[BlogPublicSummaryOut]:
                 title=a.title,
                 summary=a.summary,
                 picture=pictures.blog_picture_url(a.id, a.picture_id),
-                author=BlogPublicAuthorOut(name=names.get(a.author_id, ""), handle=None),
+                author=authors[a.author_id][0],
                 troupe=troupes.get(a.troupe_id) if a.troupe_id else None,
                 tags=[BlogPublicTagOut(name=t.name, slug=t.slug) for t in tags[a.id]],
                 featured=a.featured,
@@ -210,9 +236,13 @@ def read_article(slug: str, db: DbSession, user: MaybeUser) -> BlogPublicArticle
     if article is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such article.")
     [shown] = summaries(db, [article])
+    profile = authors_of(db, {article.author_id})[article.author_id][1]
     yours = user is not None and user.id == article.author_id
     return BlogPublicArticleOut(
-        **shown.model_dump(), body=article.body, edit=blog.link(article) if yours else None
+        **shown.model_dump(),
+        body=article.body,
+        author_card=blog_authors.card(profile) if profile else None,
+        edit=blog.link(article) if yours else None,
     )
 
 
@@ -243,3 +273,15 @@ def tag_articles(slug: str, db: DbSession, page: int = Page) -> BlogPublicTagPag
     return BlogPublicTagPageOut(
         **found.model_dump(), tag=BlogPublicTagOut(name=tag.name, slug=tag.slug)
     )
+
+
+@router.get("/authors/{handle}/articles")
+def author_articles(
+    handle: str, db: DbSession, user: MaybeUser, page: int = Page
+) -> BlogPublicAuthorPageOut:
+    """An author's published articles, newest first, a page at a time: for their page,
+    to whoever may see it (blog_authors.viewable)."""
+    profile = blog_authors.viewable(db, user, handle)
+    found = page_of(db, published().where(BlogPost.author_id == profile.user_id), page)
+    author = authors_of(db, {profile.user_id})[profile.user_id][0]
+    return BlogPublicAuthorPageOut(**found.model_dump(), author=author)
