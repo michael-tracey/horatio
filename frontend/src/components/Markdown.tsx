@@ -1,5 +1,7 @@
 import { useMemo, type ReactNode } from "react";
+import type { PictureSizeOut } from "../api/types";
 import { blogPictureUrl, parseBlocks, type Align, type Block, type Inline } from "../markdown";
+import { sizedPicture, type PictureSizes } from "../pictureSizes";
 
 const HEADING_CLASSES = [
   "text-xl text-gold",
@@ -13,12 +15,14 @@ const HEADING_CLASSES = [
 /**
  * Markdown, as a backstory is written: rendered as elements, never as HTML (see
  * markdown.ts). Its headings sit below the page's own: a `#` heading is an h3.
- * A blog article's words give `pictures`, to show the pictures in them (#1163);
- * anything else shows such a line as text.
+ * A blog article's words give `pictures`, to show the pictures in them (#1163),
+ * and their `sizes` by id (from the article's `body_pictures`), so each keeps its
+ * room before it loads (#1183); anything else shows such a line as text.
  */
-export function Markdown({ text, pictures = false }: { text: string; pictures?: boolean }) {
+export function Markdown({ text, pictures = false, sizes }: { text: string; pictures?: boolean; sizes?: PictureSizes }) {
   const blocks = useMemo(() => parseBlocks(text, false, { pictures }), [text, pictures]);
-  return <div className="flex flex-col gap-3 text-sm leading-relaxed break-words">{blocks.map((b, i) => block(b, i, BACKSTORY))}</div>;
+  const render = useMemo(() => (sizes ? { ...BACKSTORY, sizes } : BACKSTORY), [sizes]);
+  return <div className="flex flex-col gap-3 text-sm leading-relaxed break-words">{blocks.map((b, i) => block(b, i, render))}</div>;
 }
 
 /** How the manual draws what only it has: its links, its images, and headings at their own level. */
@@ -27,6 +31,8 @@ export type Render = {
   headingShift: number;
   link: (href: string, children: ReactNode, key: number) => ReactNode;
   image: (src: string, alt: string, key: number) => ReactNode;
+  /** A blog article's pictures' sizes, by id (#1183). */
+  sizes?: PictureSizes;
 };
 
 const BACKSTORY: Render = {
@@ -99,7 +105,7 @@ function block(b: Block, key: number, render: Render): ReactNode {
     case "comment":
       return null;
     case "figure":
-      return <BlogFigure key={key} id={b.id} alt={b.alt} caption={b.caption} />;
+      return <BlogFigure key={key} id={b.id} alt={b.alt} caption={b.caption} sizes={render.sizes?.[b.id]} />;
     case "table":
       return (
         <div key={key} className="overflow-x-auto">
@@ -133,15 +139,18 @@ function block(b: Block, key: number, render: Render): ReactNode {
 /**
  * A blog article's picture: the 600 or 1200 px copy, whichever suits the screen, as
  * wide as the words (so never wider than a phone), loaded only as it comes near,
- * with its caption under it.
+ * with its caption under it. With its `sizes`, its width and height keep its room
+ * while it loads (#1183).
  */
-export function BlogFigure({ id, alt, caption }: { id: string; alt: string; caption: string }) {
-  const url = blogPictureUrl(id);
+export function BlogFigure({ id, alt, caption, sizes }: { id: string; alt: string; caption: string; sizes?: readonly PictureSizeOut[] }) {
+  const { src, srcSet, width, height } = sizedPicture(blogPictureUrl(id), sizes);
   return (
     <figure className="my-2 flex flex-col gap-1.5">
       <img
-        src={`${url}/1200.webp`}
-        srcSet={`${url}/600.webp 600w, ${url}/1200.webp 1200w`}
+        src={src}
+        srcSet={srcSet}
+        width={width}
+        height={height}
         sizes="(min-width: 48rem) 48rem, 100vw"
         alt={alt}
         loading="lazy"

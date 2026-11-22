@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/react";
 import { useEffect, useId, useState } from "react";
 import { api, unwrap } from "../../api/client";
+import type { BlogBodyPictureOut } from "../../api/types";
 import { Button, ErrorText, Field, Input } from "../../components/ui";
 import type { Tool } from "../character/RichEditor";
 import { ACCEPT, MAX_BYTES } from "../news/PostForm";
@@ -28,8 +29,9 @@ export function pictureTool(editor: Editor, open: boolean, onOpen: (placing: Pla
  * for readers who can't see it) and give it a caption if wanted, and it goes in
  * where the cursor was. With a picture chosen in the words, it changes what that
  * one says instead. A new article is saved first, as the picture is kept with it.
+ * `onAdded` hears of each picture uploaded, with its sizes (#1183), for the preview.
  */
-export function BodyPictureForm({ articleId, placing, onDone }: { articleId: string | undefined; placing: Placing; onDone: () => void }) {
+export function BodyPictureForm({ articleId, placing, onDone, onAdded }: { articleId: string | undefined; placing: Placing; onDone: () => void; onAdded?: (picture: BlogBodyPictureOut) => void }) {
   const changing = placing.chosen !== null;
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -75,6 +77,7 @@ export function BodyPictureForm({ articleId, placing, onDone }: { articleId: str
     }
     upload.mutate(file!, {
       onSuccess: (picture) => {
+        onAdded?.(picture);
         placing.editor
           .chain()
           .focus()

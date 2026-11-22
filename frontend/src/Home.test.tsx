@@ -20,6 +20,7 @@ function article(over: Partial<BlogPublicSummaryOut>): BlogPublicSummaryOut {
     title: "Running your first Elysium",
     summary: "What I wish I'd known.",
     picture: null,
+    picture_sizes: [],
     author: { name: "Mara Quinn", handle: null },
     troupe: null,
     tags: [],

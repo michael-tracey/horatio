@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import blog, pictures, troupe_abbreviations
+from horatio import blog, blog_pictures, pictures, troupe_abbreviations
 from horatio.api.pictures import uploads
 from horatio.api.troupe_profiles import read_upload
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
@@ -66,6 +66,26 @@ class BlogTroupeOut(BaseModel):
     card: BlogTroupeCardOut | None
 
 
+class PictureSizeOut(BaseModel):
+    """One copy of a blog article's picture (#1183): its file, to add to the picture's
+    address, and its size in pixels, so a page keeps its room before it loads."""
+
+    file: str
+    width: int
+    height: int
+
+
+class BlogBodyPictureOut(BaseModel):
+    """A picture uploaded for an article's words, to put in them as
+    `![what it shows](blog-picture:<id> "its caption")`."""
+
+    id: uuid.UUID
+    # Where it is shown: add "/1200.webp" or "/600.webp".
+    url: str
+    # Each copy's size, widest first; none where they aren't known.
+    sizes: list[PictureSizeOut]
+
+
 class BlogRevisionOut(BaseModel):
     """Changes to a published article, while the published version stays up."""
 
@@ -75,6 +95,8 @@ class BlogRevisionOut(BaseModel):
     troupe: BlogTroupeOut | None
     # Its hero picture (add "/1200.webp" or "/600.webp"), or None.
     picture: str | None
+    # Its copies' sizes, widest first; none where they aren't known.
+    picture_sizes: list[PictureSizeOut]
     # When they were sent to the custodian; None while still being written.
     submitted_at: datetime | None
 
@@ -90,6 +112,8 @@ class BlogArticleOut(BaseModel):
     body: str
     # Its hero picture (add "/1200.webp" or "/600.webp"), or None.
     picture: str | None
+    # Its copies' sizes, widest first; none where they aren't known.
+    picture_sizes: list[PictureSizeOut]
     author_id: uuid.UUID
     author_name: str
     troupe: BlogTroupeOut | None
@@ -104,6 +128,8 @@ class BlogArticleOut(BaseModel):
     revised_at: datetime | None
     unpublished_at: datetime | None
     revision: BlogRevisionOut | None
+    # The pictures its words name, or its changes' words, with their sizes.
+    body_pictures: list[BlogBodyPictureOut]
     # What waits for the custodian: the article, a published one's changes, or nothing.
     waiting: Literal["article", "changes"] | None
     # Whether the caller wrote it.
@@ -125,15 +151,6 @@ class BlogQueueOut(BaseModel):
     waiting: list[BlogArticleOut]
     published: list[BlogArticleOut]
     unpublished: list[BlogArticleOut]
-
-
-class BlogBodyPictureOut(BaseModel):
-    """A picture uploaded for an article's words, to put in them as
-    `![what it shows](blog-picture:<id> "its caption")`."""
-
-    id: uuid.UUID
-    # Where it is shown: add "/1200.webp" or "/600.webp".
-    url: str
 
 
 class BlogArticleIn(BaseModel):
@@ -191,6 +208,21 @@ def custodian_article(db: Session, user: User, article_id: uuid.UUID) -> BlogPos
 # --- shaping ---------------------------------------------------------------------------
 
 
+def sizes_out(sizes: pictures.Sizes | None) -> list[PictureSizeOut]:
+    """A picture's copies' sizes, widest first."""
+    found = [PictureSizeOut(file=f, width=w, height=h) for f, (w, h) in (sizes or {}).items()]
+    return sorted(found, key=lambda s: (-s.width, s.file))
+
+
+def body_pictures_out(
+    ids: Iterable[uuid.UUID], sizes: dict[uuid.UUID, pictures.Sizes]
+) -> list[BlogBodyPictureOut]:
+    return [
+        BlogBodyPictureOut(id=i, url=pictures.body_picture_url(i), sizes=sizes_out(sizes.get(i)))
+        for i in sorted(ids)
+    ]
+
+
 def troupe_cards(db: Session, troupes: Iterable[Troupe]) -> dict[uuid.UUID, BlogTroupeCardOut]:
     """The card of each troupe that is public and running, as it is now: a troupe that
     goes private or is archived drops its card from every article at once."""
@@ -244,6 +276,20 @@ def articles_out(db: Session, user: User, found: list[BlogPost]) -> list[BlogArt
         )
     }
     tags = blog.tags_of(db, [a.id for a in found])
+    heroes = blog_pictures.hero_sizes(
+        db,
+        [(a.id, a.picture_id) for a in found]
+        + [(a.id, r.picture_id) for a in found if (r := revisions[a.id]) is not None],
+    )
+    named = {
+        a.id: blog.pictures_in(a.body)
+        | (blog.pictures_in(r.body) if (r := revisions[a.id]) is not None else set())
+        for a in found
+    }
+    in_words = blog_pictures.body_sizes(db, [(a, p) for a, ids in named.items() for p in ids])
+
+    def hero(picture_id: uuid.UUID | None) -> list[PictureSizeOut]:
+        return sizes_out(heroes.get(picture_id)) if picture_id is not None else []
 
     def revision_out(article: BlogPost) -> BlogRevisionOut | None:
         words = revisions[article.id]
@@ -255,6 +301,7 @@ def articles_out(db: Session, user: User, found: list[BlogPost]) -> list[BlogArt
             body=words.body,
             troupe=troupes.get(words.troupe_id) if words.troupe_id else None,
             picture=pictures.blog_picture_url(article.id, words.picture_id),
+            picture_sizes=hero(words.picture_id),
             submitted_at=article.revision_submitted_at,
         )
 
@@ -268,6 +315,7 @@ def articles_out(db: Session, user: User, found: list[BlogPost]) -> list[BlogArt
             summary=a.summary,
             body=a.body,
             picture=pictures.blog_picture_url(a.id, a.picture_id),
+            picture_sizes=hero(a.picture_id),
             author_id=a.author_id,
             author_name=names.get(a.author_id, ""),
             troupe=troupes.get(a.troupe_id) if a.troupe_id else None,
@@ -281,6 +329,7 @@ def articles_out(db: Session, user: User, found: list[BlogPost]) -> list[BlogArt
             revised_at=a.revised_at,
             unpublished_at=a.unpublished_at,
             revision=revision_out(a),
+            body_pictures=body_pictures_out(named[a.id], in_words),
             waiting="changes"
             if blog.waiting_changes(a)
             else "article"
@@ -297,10 +346,16 @@ def article_out(db: Session, user: User, article: BlogPost) -> BlogArticleOut:
     return articles_out(db, user, [article])[0]
 
 
-def drop_picture(picture_id: uuid.UUID | None) -> None:
+def drop_picture(db: Session, picture_id: uuid.UUID | None) -> None:
+    """Delete a hero picture's files, once the change that drops it is saved, and its
+    sizes with them."""
+    if picture_id is None:
+        return
     root = pictures.upload_dir()
-    if root is not None and picture_id is not None:
+    if root is not None:
         pictures.remove(pictures.blog_picture_dir(root, picture_id))
+    blog_pictures.forget_hero(db, picture_id)
+    db.commit()
 
 
 def drop_body_pictures(article_id: uuid.UUID, picture_ids: list[uuid.UUID] | None = None) -> None:
@@ -380,7 +435,7 @@ def delete_article(article_id: uuid.UUID, db: DbSession, user: CurrentUser) -> N
     article = own_article(db, user, article_id)
     picture = blog.throw_away(db, user, article)
     db.commit()
-    drop_picture(picture)
+    drop_picture(db, picture)
     drop_body_pictures(article_id)
 
 
@@ -409,7 +464,7 @@ def discard_revision(article_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
     picture = blog.discard_changes(db, user, article)
     gone = blog.unused_pictures(db, article)
     db.commit()
-    drop_picture(picture)
+    drop_picture(db, picture)
     drop_body_pictures(article.id, gone)
     return article_out(db, user, article)
 
@@ -468,10 +523,11 @@ def upload_picture(
             if crop_x is not None and crop_y is not None and crop_size is not None
             else None
         )
-        pictures.write_hero_picture(directory, image, crop)
+        sizes = pictures.write_hero_picture(directory, image, crop)
+        blog_pictures.keep_hero(db, article.id, new, sizes)
         old = blog.change_picture(article, new)
         db.commit()
-    drop_picture(old)
+    drop_picture(db, old)
     return article_out(db, user, article)
 
 
@@ -480,7 +536,7 @@ def remove_picture(article_id: uuid.UUID, db: DbSession, user: CurrentUser) -> B
     article = own_article(db, user, article_id)
     old = blog.change_picture(article, None)
     db.commit()
-    drop_picture(old)
+    drop_picture(db, old)
     return article_out(db, user, article)
 
 
@@ -529,9 +585,10 @@ def upload_body_picture(
     picture = blog.add_picture(db, article)
     directory = pictures.body_picture_dir(root, article.id, picture.id)
     with pictures.writing(directory):
-        pictures.write_post_picture(directory, image)
+        sizes = pictures.write_post_picture(directory, image)
+        picture.sizes = sizes
         db.commit()
-    return BlogBodyPictureOut(id=picture.id, url=pictures.body_picture_url(picture.id))
+    return body_pictures_out([picture.id], {picture.id: sizes})[0]
 
 
 @router.get("/body-pictures/{picture_id}/{name}", response_class=FileResponse)
@@ -618,7 +675,7 @@ def publish_article(article_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
     gone = blog.publish(db, user, article)
     unused = blog.unused_pictures(db, article)
     db.commit()
-    drop_picture(gone)
+    drop_picture(db, gone)
     drop_body_pictures(article.id, unused)
     return article_out(db, user, article)
 
@@ -644,7 +701,7 @@ def unpublish_article(
     gone = blog.unpublish(db, user, article, body.reason)
     unused = blog.unused_pictures(db, article)
     db.commit()
-    drop_picture(gone)
+    drop_picture(db, gone)
     drop_body_pictures(article.id, unused)
     return article_out(db, user, article)
 

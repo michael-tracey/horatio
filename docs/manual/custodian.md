@@ -235,9 +235,11 @@ Suspending keeps someone out for a while without deleting anything (see [the glo
 
 They're signed out everywhere at once, and can't sign in until you lift it or the end date passes. They're emailed to say so, without the reason, and get no other notifications while suspended. Their characters stay in their troupes, but take no new actions: no downtime answers, and no Play View taps. Their staff roles stay, but do nothing while they're away. If they lead a troupe, the Troupes page marks it **Lead suspended**, and you may want to [appoint a new lead](#appointing-a-lead-storyteller).
 
+If they have an author page on the [blog](#the-blog), it's hidden while they're suspended: it shows "No such author", a link to it previews as Horatio's own page, and it leaves the sitemap. Their published articles stay up, but under their author name alone, with no link to the page and no picture, bio or links. You can still open the page yourself, to [clear](#clearing-a-blog-authors-bio-or-picture) something on it.
+
 When they try to sign in, they're told their account is suspended and to contact the custodian. Whoever runs the server can say how, with the `HORATIO_CUSTODIAN_CONTACT` setting (an email address or a web page).
 
-To lift it, choose **⋯ › Lift suspension…**, say **Why lift it** for the log, and choose **Lift suspension**. They're emailed to say they can sign in again.
+To lift it, choose **⋯ › Lift suspension…**, say **Why lift it** for the log, and choose **Lift suspension**. They're emailed to say they can sign in again. Their author page on the blog comes back as it was, whether you lift it or the end date passes.
 
 ### Merging two accounts
 

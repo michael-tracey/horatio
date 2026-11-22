@@ -16402,8 +16402,7 @@ export interface components {
         };
         /**
          * AuthorCard
-         * @description An author as anyone may see them, under each of their articles and on their
-         *     page. Never their email or anything else from their player profile.
+         * @description An author as anyone may see them, under each of their articles.
          */
         AuthorCard: {
             /** Bio */
@@ -16411,7 +16410,7 @@ export interface components {
             /** Display Name */
             display_name: string;
             /** Handle */
-            handle: string;
+            handle: string | null;
             /** Links */
             links: components["schemas"]["Link"][];
             /** Picture */
@@ -17540,6 +17539,8 @@ export interface components {
             author_name: string;
             /** Body */
             body: string;
+            /** Body Pictures */
+            body_pictures: components["schemas"]["BlogBodyPictureOut"][];
             /**
              * Created At
              * Format: date-time
@@ -17558,6 +17559,8 @@ export interface components {
             note: string;
             /** Picture */
             picture: string | null;
+            /** Picture Sizes */
+            picture_sizes: components["schemas"]["PictureSizeOut"][];
             /** Published At */
             published_at: string | null;
             /** Revised At */
@@ -17602,6 +17605,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Sizes */
+            sizes: components["schemas"]["PictureSizeOut"][];
             /** Url */
             url: string;
         };
@@ -17624,12 +17629,16 @@ export interface components {
             author_card: components["schemas"]["AuthorCard"] | null;
             /** Body */
             body: string;
+            /** Body Pictures */
+            body_pictures: components["schemas"]["BlogBodyPictureOut"][];
             /** Edit */
             edit: string | null;
             /** Featured */
             featured: boolean;
             /** Picture */
             picture: string | null;
+            /** Picture Sizes */
+            picture_sizes: components["schemas"]["PictureSizeOut"][];
             /**
              * Published At
              * Format: date-time
@@ -17702,6 +17711,8 @@ export interface components {
             featured: boolean;
             /** Picture */
             picture: string | null;
+            /** Picture Sizes */
+            picture_sizes: components["schemas"]["PictureSizeOut"][];
             /**
              * Published At
              * Format: date-time
@@ -17784,6 +17795,8 @@ export interface components {
             body: string;
             /** Picture */
             picture: string | null;
+            /** Picture Sizes */
+            picture_sizes: components["schemas"]["PictureSizeOut"][];
             /** Submitted At */
             submitted_at: string | null;
             /** Summary */
@@ -30814,6 +30827,19 @@ export interface components {
             uploaded_at: string | null;
             /** Uploaded By */
             uploaded_by: string | null;
+        };
+        /**
+         * PictureSizeOut
+         * @description One copy of a blog article's picture (#1183): its file, to add to the picture's
+         *     address, and its size in pixels, so a page keeps its room before it loads.
+         */
+        PictureSizeOut: {
+            /** File */
+            file: string;
+            /** Height */
+            height: number;
+            /** Width */
+            width: number;
         };
         /** PlacedDots */
         PlacedDots: {

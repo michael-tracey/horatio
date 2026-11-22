@@ -4,6 +4,7 @@ robots.txt. Only what anyone may read is in any of them."""
 import io
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -227,6 +228,42 @@ def test_an_article_not_published_previews_as_the_site_and_says_nothing_of_it(
     assert "Changed" not in page
 
 
+def test_a_suspended_authors_page_previews_as_the_site_and_their_articles_dont_link_it(
+    troupe: Troupe, pages: TestClient, top: TestClient, session: Session
+) -> None:
+    article = published(troupe)
+    author(troupe.storyteller, "Sam the Storyteller", "sam_writes")
+    default = pages.get("/characters").text
+    suspension = Suspension(
+        user_id=uuid.UUID(troupe.storyteller.id),
+        reason="Rude.",
+        suspended_by_id=uuid.UUID(troupe.custodian.id),
+    )
+    session.add(suspension)
+    session.flush()
+
+    assert pages.get("/blog/authors/sam_writes").text == default
+    # Their article still previews, by their name.
+    page = pages.get(f"/blog/{article['slug']}").text
+    assert meta(page, "article:author") == ["Sam the Storyteller"]
+    # The feed names them, with no address for the page.
+    [entry] = entries(top.get("/blog/feed.xml"))
+    assert entry.findtext(f"{ATOM}author/{ATOM}name") == "Sam the Storyteller"
+    assert entry.find(f"{ATOM}author/{ATOM}uri") is None
+    assert f"{SITE}/blog/authors/sam_writes" not in addresses(top)
+
+    # Lifted, the page previews again, and the feed and sitemap have it.
+    suspension.lifted_at = datetime.now(UTC)
+    session.flush()
+    assert (
+        "<title>Sam the Storyteller · Blog · Horatio</title>"
+        in pages.get("/blog/authors/sam_writes").text
+    )
+    [entry] = entries(top.get("/blog/feed.xml"))
+    assert entry.findtext(f"{ATOM}author/{ATOM}uri") == f"{SITE}/blog/authors/sam_writes"
+    assert f"{SITE}/blog/authors/sam_writes" in addresses(top)
+
+
 def test_a_tags_and_an_authors_page_preview_while_they_are_shown(
     client_for: Callable[[], TestClient], troupe: Troupe, pages: TestClient, session: Session
 ) -> None:
@@ -317,7 +354,7 @@ def test_the_feed_is_atom_of_published_articles_only_with_their_words_escaped(
     assert "&lt;script&gt;" in html and "<script>" not in html
     assert 'href="https://example.org/a?b=1&amp;c=2"' in html
     picture = ok(troupe.storyteller.client.get(f"/blog/articles/{second['id']}"))["picture"]
-    assert f'<img src="{SITE}{picture}/1200.webp" alt="" />' in html
+    assert f'<img src="{SITE}{picture}/1200.webp" alt="" width="1200" height="600" />' in html
     # In the document itself, all of it is escaped once more.
     assert b"<script>" not in response.content and b"&lt;script&gt;" not in response.content
     assert "Secret" not in response.text and first["slug"] in response.text

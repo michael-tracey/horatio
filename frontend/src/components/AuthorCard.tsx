@@ -47,7 +47,8 @@ export function AuthorPicture({ name, picture, size = "md" }: { name: string; pi
  * Who wrote an article (#1159): the author's picture, name, bio and links, as they set them
  * in Account › Blog author, and nothing else about them. Shown under each article (#1158),
  * on the author's page, and as the live preview while they edit it. `linked` makes their
- * name a link to their page.
+ * name a link to their page. Without a handle, their page is hidden (their account is
+ * suspended, #1182) and the card is their name alone: nothing leads to it.
  */
 export function AuthorCard({ author, linked = false, size = "md" }: { author: Author; linked?: boolean; size?: keyof typeof SIZES }) {
   const name = author.display_name.trim() || "Your name";
@@ -57,7 +58,7 @@ export function AuthorCard({ author, linked = false, size = "md" }: { author: Au
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div>
           <p className="font-display text-lg text-parchment">
-            {linked ? (
+            {linked && author.handle ? (
               <Link to={authorPath(author.handle)} className="hover:text-gold hover:underline">
                 {name}
               </Link>
@@ -65,7 +66,7 @@ export function AuthorCard({ author, linked = false, size = "md" }: { author: Au
               name
             )}
           </p>
-          <p className="text-xs text-mist">@{author.handle}</p>
+          {author.handle && <p className="text-xs text-mist">@{author.handle}</p>}
         </div>
         {author.bio.trim() && <Markdown text={author.bio} />}
         {author.links.length > 0 && (

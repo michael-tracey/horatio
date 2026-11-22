@@ -30,11 +30,16 @@ export function useMe() {
 /** The forms on screen with changes that going elsewhere in the app would lose. */
 const unsavedForms = new Set<symbol>();
 
+/** The router state of the move to the landing page as someone signs out (#1180). */
+export const SIGNED_OUT = { signedOut: true } as const;
+
 /** Whether going from one page to another in the app asks first (LeaveGuard). Not
  * within a page (only its ?query or #part changes, and the form stays), nor to sign
- * in: the session has ended, and the page can't stay. */
-export function asksBeforeLeaving({ currentLocation, nextLocation }: { currentLocation: { pathname: string }; nextLocation: { pathname: string } }): boolean {
-  return unsavedForms.size > 0 && nextLocation.pathname !== currentLocation.pathname && nextLocation.pathname !== "/sign-in";
+ * in or on to the landing page as they sign out: the session has ended, and the page
+ * can't stay. */
+export function asksBeforeLeaving({ currentLocation, nextLocation }: { currentLocation: { pathname: string }; nextLocation: { pathname: string; state?: unknown } }): boolean {
+  const signedOut = (nextLocation.state as Partial<typeof SIGNED_OUT> | null | undefined)?.signedOut === true;
+  return unsavedForms.size > 0 && nextLocation.pathname !== currentLocation.pathname && nextLocation.pathname !== "/sign-in" && !signedOut;
 }
 
 /** Ask before leaving the page while `active`: there are changes not yet saved.

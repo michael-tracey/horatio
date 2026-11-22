@@ -47,6 +47,7 @@ function article(over: Partial<BlogArticleOut> = {}): BlogArticleOut {
     summary: "What I wish I'd known.",
     body: "Start small.",
     picture: null,
+    picture_sizes: [],
     author_id: "u1",
     author_name: "Mara Quinn",
     troupe: LORDS,
@@ -60,6 +61,7 @@ function article(over: Partial<BlogArticleOut> = {}): BlogArticleOut {
     revised_at: null,
     unpublished_at: null,
     revision: null,
+    body_pictures: [],
     waiting: null,
     mine: true,
     ...over,
@@ -179,7 +181,7 @@ describe("Write for the blog: one article (#1157)", () => {
     expect(button("Delete the draft")).toBeNull();
     cleanup();
 
-    const changed = { ...live, revision: { title: "Your first Elysium", summary: "", body: "Start smaller.", troupe: LORDS, picture: null, submitted_at: null } };
+    const changed = { ...live, revision: { title: "Your first Elysium", summary: "", body: "Start smaller.", troupe: LORDS, picture: null, picture_sizes: [], submitted_at: null } };
     const remove = vi.spyOn(api, "DELETE").mockImplementation((async () => answer(live)) as never);
     show("/blog/write/a1", [changed]);
     expect(where().textContent).toContain("You have changes not yet proposed.");
@@ -193,7 +195,7 @@ describe("Write for the blog: one article (#1157)", () => {
 
   it("withdraws a published article's changes waiting", () => {
     show("/blog/write/a1", [
-      article({ status: "published", published_at: "2026-11-01T12:00:00Z", waiting: "changes", revision: { title: "Again", summary: "", body: "x", troupe: null, picture: null, submitted_at: "2026-11-06T12:00:00Z" } }),
+      article({ status: "published", published_at: "2026-11-01T12:00:00Z", waiting: "changes", revision: { title: "Again", summary: "", body: "x", troupe: null, picture: null, picture_sizes: [], submitted_at: "2026-11-06T12:00:00Z" } }),
     ]);
     expect(where().textContent).toContain("Your changes have waited for the custodian since 6 Nov 2026.");
     expect(button("Withdraw the changes")).toBeTruthy();

@@ -6,7 +6,7 @@ import type { CharacterListOut, Me, TapIn as Tap } from "../api/types";
 import { Dialog } from "../components/Dialog";
 import { Button, ErrorText } from "../components/ui";
 import { useDates } from "../dates";
-import { useMe } from "../hooks";
+import { SIGNED_OUT, useMe } from "../hooks";
 import { isNoAnswer, useOnline } from "./connection";
 import { dropSent, keeping, keepsQuery, markAsked, mineOf, setKeeping, setKeptFor, tapsWaiting, waitingTaps, wasAsked, type Keeping } from "./keep";
 import { stopPushHere } from "./push";
@@ -180,7 +180,8 @@ export function useSendWaiting() {
   }, [signedIn, online]);
 }
 
-/** Signing out clears what is kept here for the person, asking first if taps haven't been sent. */
+/** Signing out clears what is kept here for the person, asking first if taps haven't been
+ * sent, and goes to the landing page. */
 export function useSignOut() {
   const client = useQueryClient();
   const navigate = useNavigate();
@@ -198,7 +199,9 @@ export function useSignOut() {
       await unwrap(api.POST("/api/auth/logout"));
       if (id) await forget(client, id);
       setAsking(0);
-      navigate("/sign-in");
+      // To the landing page (#1180), at once: in the usual transition, the page they
+      // were on would see them signed out first and send them to sign in instead.
+      navigate("/", { state: SIGNED_OUT, flushSync: true });
       return null;
     } catch (e) {
       const said = isNoAnswer(e) ? new Error("Signing out needs a connection.") : e;

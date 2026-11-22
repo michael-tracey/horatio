@@ -108,6 +108,7 @@ def test_an_article_shows_its_published_words_and_nothing_private(
         "summary": "What I wish I'd known.",
         "body": "Start **small**.",
         "picture": None,
+        "picture_sizes": [],
         "author": {"name": "storyteller", "handle": None},
         # The troupe isn't public, so the blog names it, and nothing more (#1160).
         "troupe": {"name": "Lords of the Night", "card": None},
@@ -122,6 +123,7 @@ def test_an_article_shows_its_published_words_and_nothing_private(
         "featured": False,
         "published_at": shown["published_at"],
         "revised_at": None,
+        "body_pictures": [],
         "author_card": None,
         "edit": None,
     }

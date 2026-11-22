@@ -16,6 +16,7 @@ goes as HTML, marked as such, where RSS leaves readers to guess.
 
 import hashlib
 import re
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from urllib.parse import quote
@@ -27,11 +28,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
-from horatio import pictures, suspensions
+from horatio import blog_pictures, pictures, suspensions
 from horatio.api import blog_authors
 from horatio.api.blog_public import authors_of, newest, published, tag_by_slug, tagged
 from horatio.auth.deps import DbSession
-from horatio.blog import tags_of
+from horatio.blog import pictures_in, tags_of
 from horatio.config import get_settings
 from horatio.email_design import markdown_html
 from horatio.link_previews import BLOG_DESCRIPTION, BLOG_TITLE
@@ -124,12 +125,20 @@ def updated(article: BlogPost) -> datetime:
     return article.revised_at or article.published_at
 
 
-def content(article: BlogPost, base: str) -> str:
+def content(
+    article: BlogPost,
+    base: str,
+    heroes: dict[uuid.UUID, pictures.Sizes],
+    in_words: dict[uuid.UUID, pictures.Sizes],
+) -> str:
     """An article's words as HTML for a feed reader, its hero picture first, and the
-    pictures in its words (#1163) at their 600 px copies' addresses."""
+    pictures in its words (#1163) at their 600 px copies' addresses, each with its
+    width and height where they are known (#1183)."""
     picture = pictures.blog_picture_url(article.id, article.picture_id)
-    hero = f'<p><img src="{base}{picture}/1200.webp" alt="" /></p>\n' if picture else ""
-    return hero + markdown_html(article.body, pictures=True)
+    size = heroes.get(article.picture_id, {}).get("1200.webp") if article.picture_id else None
+    measured = f' width="{size[0]}" height="{size[1]}"' if size else ""
+    hero = f'<p><img src="{base}{picture}/1200.webp" alt=""{measured} /></p>\n' if picture else ""
+    return hero + markdown_html(article.body, pictures=True, picture_sizes=in_words)
 
 
 def feed(
@@ -156,6 +165,10 @@ def feed(
 
     authors = authors_of(db, {x.author_id for x in articles})
     tags = tags_of(db, [x.id for x in articles])
+    heroes = blog_pictures.hero_sizes(db, [(x.id, x.picture_id) for x in articles])
+    in_words = blog_pictures.body_sizes(
+        db, [(x.id, p) for x in articles for p in pictures_in(x.body)]
+    )
     for article in articles:
         assert article.published_at is not None
         address = f"{base}/blog/{quote(article.slug)}"
@@ -174,7 +187,7 @@ def feed(
             child(entry, "category", term=t.slug, label=clean(t.name), scheme=f"{base}/blog/tags/")
         if article.summary.strip():
             child(entry, "summary", article.summary.strip(), type="text")
-        child(entry, "content", content(article, base), type="html")
+        child(entry, "content", content(article, base, heroes, in_words), type="html")
     return xml_response(root, "application/atom+xml", FEED_CACHE, request)
 
 
@@ -205,8 +218,8 @@ def tag_feed(slug: str, request: Request, db: DbSession) -> Response:
 
 
 def shown_authors(db: Session) -> list[BlogAuthor]:
-    """The authors whose pages anyone may see (blog_authors.shown), but for anyone
-    suspended now, whose page no search engine needs sending to."""
+    """The authors whose pages anyone may see (blog_authors.shown): no one merged into
+    another account or suspended now (#1182), who are passed over first."""
     found = db.scalars(
         select(BlogAuthor)
         .join(User, User.id == BlogAuthor.user_id)

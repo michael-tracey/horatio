@@ -2,7 +2,7 @@
 address a tag had before a merge is kept, pointing to the tag it now belongs to.
 
 Revision ID: 0283
-Revises: 0281
+Revises: 0282
 Create Date: 2026-11-22 10:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0283"
-down_revision: str | None = "0281"
+down_revision: str | None = "0282"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -107,6 +107,21 @@ describe("a blog article's pictures (#1163)", () => {
     expect(render(<Markdown text={`![Alone](blog-picture:${ID})`} pictures />).container.querySelector("figcaption")).toBeNull();
   });
 
+  it("keep their room before they load, with their width and height (#1183)", () => {
+    const sizes = {
+      [ID]: [
+        { file: "1200.webp", width: 1200, height: 800 },
+        { file: "600.webp", width: 600, height: 400 },
+      ],
+    };
+    const img = render(<Markdown text={LINE} pictures sizes={sizes} />).container.querySelector("figure img")!;
+    expect([img.getAttribute("width"), img.getAttribute("height")]).toEqual(["1200", "800"]);
+    expect(img.className).toContain("h-auto");
+    // Without its sizes it is drawn as before.
+    const unsized = render(<Markdown text={LINE} pictures />).container.querySelector("figure img")!;
+    expect(unsized.hasAttribute("width") || unsized.hasAttribute("height")).toBe(false);
+  });
+
   it("are text anywhere else", () => {
     const { container } = render(<Markdown text={LINE} />);
     expect(container.querySelector("img, figure")).toBeNull();

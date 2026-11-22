@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { BlogArticleOut, BlogTagOut, BlogTroupeOut, BlogWriterOut, MyAuthor } from "../../api/types";
+import type { BlogArticleOut, BlogBodyPictureOut, BlogTagOut, BlogTroupeOut, BlogWriterOut, MyAuthor } from "../../api/types";
 import { AuthorCard } from "../../components/AuthorCard";
 import { BackLink } from "../../components/BackLink";
 import { useConfirm } from "../../components/ConfirmDialog";
@@ -167,6 +167,8 @@ function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticl
   const [mode, setMode] = useState<"write" | "preview">("write");
   // Adding a picture to the words, or changing what one says (#1163).
   const [placing, setPlacing] = useState<Placing | null>(null);
+  // Pictures uploaded since the article was last fetched, with their sizes, for the preview.
+  const [added, setAdded] = useState<BlogBodyPictureOut[]>([]);
   const [goTo, setGoTo] = useState<string | null>(null);
   const [confirmed, confirming] = useConfirm();
   const client = useQueryClient();
@@ -280,6 +282,8 @@ function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticl
                 summary: form.summary,
                 body: form.body,
                 picture: words?.picture ?? null,
+                picture_sizes: words?.picture_sizes,
+                body_pictures: [...(article?.body_pictures ?? []), ...added],
                 author_name: author?.saved ? author.display_name : (article?.author_name ?? me.data?.display_name ?? ""),
                 troupe,
                 tags: withRetired(tags, article?.tags)
@@ -374,7 +378,7 @@ function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticl
                 placeholder="Write your article here…"
                 pictures
                 moreTools={(editor) => [pictureTool(editor, placing !== null, setPlacing)]}
-                panel={placing && <BodyPictureForm key={placing.chosen ? "change" : "add"} articleId={article?.id} placing={placing} onDone={() => setPlacing(null)} />}
+                panel={placing && <BodyPictureForm key={placing.chosen ? "change" : "add"} articleId={article?.id} placing={placing} onDone={() => setPlacing(null)} onAdded={(p) => setAdded((was) => [...was, p])} />}
               />
             </Suspense>
           </fieldset>

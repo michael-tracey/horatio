@@ -6,6 +6,7 @@ import { authorPath } from "../../components/AuthorCard";
 import { Pager } from "../../components/Pager";
 import { Badge, Empty, ErrorText, Loading, PageTitle } from "../../components/ui";
 import { useDates } from "../../dates";
+import { sizedPicture } from "../../pictureSizes";
 import { useTitle } from "../../title";
 
 // As many as the API puts on a page (blog_public.PAGE_SIZE).
@@ -43,9 +44,11 @@ function TroupeName({ troupe }: { troupe: NonNullable<BlogPublicSummaryOut["trou
  */
 export function ArticleCard({ article: a, wide = false, withTroupe = false }: { article: BlogPublicSummaryOut; wide?: boolean; withTroupe?: boolean }) {
   const dates = useDates();
+  // The 600 px copy, with its size, so the card keeps its room while it loads (#1183).
+  const picture = a.picture ? sizedPicture(a.picture, a.picture_sizes, "600.webp") : null;
   return (
     <li aria-label={a.title} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-ash bg-night">
-      {a.picture && <img src={`${a.picture}/600.webp`} alt="" loading="lazy" className="aspect-[2/1] w-full object-cover" />}
+      {picture && <img src={picture.src} width={picture.width} height={picture.height} alt="" loading="lazy" className="aspect-[2/1] w-full object-cover" />}
       <div className="flex flex-col gap-2 p-4">
         <h3 className={wide ? "text-xl" : "text-lg"}>
           <Link to={`/blog/${a.slug}`} className="text-parchment hover:text-gold">
