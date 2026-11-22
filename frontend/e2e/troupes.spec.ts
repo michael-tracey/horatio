@@ -808,10 +808,23 @@ test("a troupe's tabs: a player's one group is the only row, the phone's list st
   await expectTabOpen(p, "Troupe", "House rules");
 
   // The lead opens a few tabs; the list is saved on their account a moment after the last.
+  // Their list comes only once three are open, as from a busy server: none opened before it is lost (#1208).
   const l = lead.page;
+  let answer = () => {};
+  const answered = new Promise<void>((done) => (answer = done));
+  await l.route(`**/api${base}/recent-tabs`, async (route) => {
+    if (route.request().method() === "GET") await answered;
+    await route.continue();
+  });
   await l.goto(base);
-  for (const tab of ["Approvals", "Roster", "Downtimes"]) await troupeTab(l, tab);
-  const saved = l.waitForResponse((r) => r.url().endsWith(`/api${base}/recent-tabs`) && r.request().method() === "PUT");
+  for (const [group, tab] of [["Characters", "Approvals"], ["Characters", "Roster"], ["Between games", "Downtimes"]] as const) {
+    await troupeTab(l, tab);
+    // Open before the next is chosen: on a busy phone, a sheet opened sooner is shut as the tab comes in.
+    await expectTabOpen(l, group, tab);
+  }
+  answer();
+  // The save with Settings first, not one sent before it.
+  const saved = l.waitForResponse((r) => r.url().endsWith(`/api${base}/recent-tabs`) && r.request().method() === "PUT" && r.request().postDataJSON()?.tabs?.[0] === "/settings");
   await troupeTab(l, "Settings");
   expect((await saved).status()).toBe(200);
   // A wide screen has no Recent row.
