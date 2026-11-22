@@ -56,7 +56,7 @@ export async function closeTabSettings(dialog: Locator) {
  * The site's main navigation in the top bar (#746): the bar itself on a wide screen;
  * below 1024px, behind the Menu button, which this opens if it isn't open already.
  * Characters, Troupes, Rulebook, Help, Custodian, the account link and Sign
- * out are all in it.
+ * out are all in it; Blog only in the menu (#1181).
  */
 export async function topBar(page: Page): Promise<Locator> {
   const nav = page.getByRole("navigation", { name: "Main" });
