@@ -22,7 +22,7 @@ Write about how to play and how to run a game, from your own experience: what wo
 
 Write for people who don't know your troupe. Name characters and events only where it helps, and never write about a real person in a way they wouldn't want: a player's lines and veils, what happened between players, or anyone's private details. If you wouldn't say it at a public convention panel, leave it out.
 
-The blog is public: anyone can read a published article, signed in or not. Its reading pages aren't open yet: until they are, a published article is seen only by its author and the custodian.
+The blog is public: anyone can read a published article at **/blog**, signed in or not, with its picture and your author card under it (see [Reading the blog](getting-started.md#reading-the-blog)). Until it is published, only you and the custodian see it.
 
 ## Quoting the books
 
@@ -73,7 +73,7 @@ Choose **Preview** at the top of the article to see it as the blog will show it:
 1. When it's ready, choose **Submit to the custodian**. It saves what you've written and sends it. While it waits, you can't change it: choose **Withdraw** to take it back and make changes, then submit it again.
 2. The custodian reads it, and either publishes it or returns it to you with a note. You're told on your bell either way.
 3. If it comes back, it's a draft again, and the note is at the top of the article and in **Your articles**. Change what the note asks and submit it again.
-4. Once it's published, anyone can read it on the blog.
+4. Once it's published, anyone can read it on the blog, at its own address, such as /blog/running-your-first-elysium. Its page has **Change it** for you, which opens it here.
 
 ### Changing a published article
 

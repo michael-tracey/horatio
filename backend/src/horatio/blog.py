@@ -33,10 +33,13 @@ custodian publishes them. One that no version of the article names any more is
 deleted whenever its words change hands: saved, published, thrown away or
 unpublished.
 
-The custodian publishes, returns with a note, unpublishes with a reason, features
-and tags. The author hears of each of the first three on the bell, and every step
-goes in the audit log, outside any troupe's log (no troupe_id): the blog is the
-whole site's.
+Each article or change waiting is a task on the custodian's bell
+(horatio.notifications), which goes once they publish or return it or its author
+withdraws it. The custodian publishes, returns with a note, unpublishes with a
+reason, features and tags. The author hears of each of the first three on the bell,
+and every step goes in the audit log, outside any troupe's log (no troupe_id): the
+blog is the whole site's. Everyone else hears of an article once, when it is first
+published (horatio.blog_bell).
 """
 
 import re
@@ -60,12 +63,14 @@ from horatio.models import (
     TroupeStaff,
     User,
 )
-from horatio.notifications import notify
+from horatio.notifications import blog_article_waiting, notify
 from horatio.permissions import TROUPE_POLICY, TroupeAction
 
 STATUSES = ("draft", "submitted", "published", "unpublished")
 # The longest slug made from a title, before any "-2" that keeps it unique.
 SLUG_LENGTH = 80
+# Addresses under /blog that are the blog's own pages, not articles (#1158).
+RESERVED_SLUGS = frozenset({"write", "tags", "authors", "feed", "rss"})
 # The most pictures an article's words keep at once (#1163).
 PICTURE_LIMIT = 20
 # A picture in an article's words, as its Markdown names it.
@@ -136,11 +141,13 @@ def check_troupe(
 # --- slugs --------------------------------------------------------------------------------
 
 
-def slugify(text: str) -> str:
-    """A slug from a title: "Running Your First Elysium!" is running-your-first-elysium."""
+def slugify(text: str, fallback: str = "article") -> str:
+    """A slug from a title: "Running Your First Elysium!" is running-your-first-elysium.
+    `fallback` for a title with nothing to make one from. Tags' are made the same way
+    (horatio.blog_tags)."""
     folded = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
     slug = re.sub(r"[^a-z0-9]+", "-", folded).strip("-")
-    return slug[:SLUG_LENGTH].rstrip("-") or "article"
+    return slug[:SLUG_LENGTH].rstrip("-") or fallback
 
 
 def free_slug(db: Session, wanted: str, keeping: uuid.UUID | None = None) -> str:
@@ -150,7 +157,7 @@ def free_slug(db: Session, wanted: str, keeping: uuid.UUID | None = None) -> str
     )
     if keeping is not None:
         query = query.where(BlogPost.id != keeping)
-    taken = set(db.scalars(query))
+    taken = set(db.scalars(query)) | RESERVED_SLUGS
     n = 1
     slug = wanted
     while slug in taken:
@@ -176,6 +183,8 @@ def choose_slug(db: Session, user: User, article: BlogPost, wanted: str) -> None
     clash = db.scalar(
         select(BlogPost.id).where(BlogPost.slug == slug, BlogPost.id != article.id).limit(1)
     )
+    if slug in RESERVED_SLUGS:
+        raise HTTPException(status.HTTP_409_CONFLICT, "That address is one of the blog's own.")
     if clash is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Another article has that address.")
     article.slug_chosen = True
@@ -362,10 +371,11 @@ def submit(db: Session, user: User, article: BlogPost) -> None:
             )
         article.revision_submitted_at = now()
         audit.record(db, user, "blog.submitted", **described(article, changes=True))
-        return
-    article.status = "submitted"
-    article.submitted_at = now()
-    audit.record(db, user, "blog.submitted", **described(article))
+    else:
+        article.status = "submitted"
+        article.submitted_at = now()
+        audit.record(db, user, "blog.submitted", **described(article))
+    blog_article_waiting(db, article, user)
 
 
 def withdraw(db: Session, user: User, article: BlogPost) -> None:
@@ -578,8 +588,14 @@ def unused_pictures(db: Session, article: BlogPost) -> list[uuid.UUID]:
 # --- tags ---------------------------------------------------------------------------------
 
 
-def all_tags(db: Session) -> list[BlogTag]:
-    return list(db.scalars(select(BlogTag).order_by(BlogTag.position, BlogTag.name)))
+def all_tags(db: Session, *, retired: bool = False) -> list[BlogTag]:
+    """The tags, in the list's order: those an article can be tagged with, or with
+    `retired`, the retired ones too, which stay on the articles that have them
+    (horatio.blog_tags)."""
+    query = select(BlogTag).order_by(BlogTag.position, BlogTag.name)
+    if not retired:
+        query = query.where(BlogTag.retired_at.is_(None))
+    return list(db.scalars(query))
 
 
 def tags_of(db: Session, article_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[BlogTag]]:
@@ -599,7 +615,7 @@ def tags_of(db: Session, article_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[B
 
 def set_tags(db: Session, user: User, article: BlogPost, tag_ids: list[uuid.UUID]) -> None:
     """Tag the article: the custodian at any time, its author while it isn't
-    published or waiting."""
+    published or waiting. A retired tag it has may stay, but isn't added."""
     if not user.is_custodian and article.status in ("published", "submitted"):
         raise HTTPException(status.HTTP_409_CONFLICT, "The custodian tags it once it is submitted.")
     wanted = list(dict.fromkeys(tag_ids))
@@ -607,6 +623,13 @@ def set_tags(db: Session, user: User, article: BlogPost, tag_ids: list[uuid.UUID
     if len(tags) != len(wanted):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "No such tag.")
     before = {t.id for t in tags_of(db, [article.id])[article.id]}
+    for t in tags:
+        if t.retired_at is not None and t.id not in before:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                f"{t.name} is retired: it stays on the articles that have it, but isn't chosen"
+                " for any more.",
+            )
     if before == set(wanted):
         return
     db.execute(delete(BlogPostTag).where(BlogPostTag.post_id == article.id))

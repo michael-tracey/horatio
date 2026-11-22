@@ -2,7 +2,7 @@
 hero picture, each kept with the article it was uploaded for.
 
 Revision ID: 0281
-Revises: 0275
+Revises: 0280
 Create Date: 2026-11-21 22:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0281"
-down_revision: str | None = "0275"
+down_revision: str | None = "0280"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

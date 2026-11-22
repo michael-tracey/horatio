@@ -13,6 +13,7 @@ const CHECKED: Record<string, number> = {
   "components/SiteSearch.tsx": 1, // "Searching…" until both have answered
   "pages/CharactersPage.tsx": 2, // shown once the troupes are in
   "pages/TroupesPage.tsx": 1, // isPending first
+  "pages/blog/BlogPage.tsx": 1, // the tags to filter by, none shown until they're in
   "pages/character/AddTraitPanel.tsx": 1, // free choices: the loader, and no adding, until answered (#576)
   "pages/character/Leaving.tsx": 1, // a warning, shown when there are titles
   "pages/character/PowerChoices.tsx": 1, // nothing shown for none

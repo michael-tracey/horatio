@@ -15,7 +15,7 @@ import { useAction, useLeaveWarning, useMe } from "../../hooks";
 import { manualLink } from "../../manualLink";
 import { BlogArticleView } from "./BlogArticleView";
 import { BodyPictureForm, pictureTool, type Placing } from "./BodyPicture";
-import { deletable, standing, statusText, taggable, toggled, troupeLinked, working } from "./blog";
+import { deletable, standing, statusText, taggable, toggled, troupeLinked, withRetired, working } from "./blog";
 import { HeroPicture } from "./HeroPicture";
 import { TagChips } from "./TagChips";
 import { useWriter } from "./writer";
@@ -282,7 +282,9 @@ function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticl
                 picture: words?.picture ?? null,
                 author_name: author?.saved ? author.display_name : (article?.author_name ?? me.data?.display_name ?? ""),
                 troupe,
-                tags: tags.filter((t) => form.tagIds.includes(t.id)),
+                tags: withRetired(tags, article?.tags)
+                  .map(({ tag }) => tag)
+                  .filter((t) => form.tagIds.includes(t.id)),
                 published_at: article?.published_at ?? null,
                 revised_at: article?.revised_at ?? null,
               }}
@@ -343,7 +345,7 @@ function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticl
             {ownTags ? (
               <div className="flex flex-col gap-2">
                 <p className="text-sm text-mist">What it is about, from the custodian's list. They may change them before it goes up.</p>
-                <TagChips tags={tags} chosen={form.tagIds} disabled={waiting || busy} onToggle={(id) => set({ tagIds: toggled(form.tagIds, id) })} />
+                <TagChips tags={tags} had={article?.tags} chosen={form.tagIds} disabled={waiting || busy} onToggle={(id) => set({ tagIds: toggled(form.tagIds, id) })} />
               </div>
             ) : (
               <div className="flex flex-col gap-2 text-sm">

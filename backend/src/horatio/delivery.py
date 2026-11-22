@@ -456,7 +456,8 @@ def mark_sent(delivery: Delivery, user: User) -> None:
 
 def send_due_now() -> int:
     """`send_due` in a session of its own, for the worker, after publishing the
-    posts scheduled for now (horatio.posts); then the notifications
+    posts scheduled for now (horatio.posts) and telling everyone of the blog's new
+    articles on the bell (horatio.blog_bell); then the notifications
     people asked for by email (horatio.notification_emails) and by push
     (horatio.web_push), the suspensions whose
     end date has passed (horatio.suspensions), the free changes by date that have
@@ -468,6 +469,7 @@ def send_due_now() -> int:
     the audit log's events kept long enough (horatio.audit_retention)."""
     from horatio import (
         audit_retention,
+        blog_bell,
         discord_channels,
         discord_emoji,
         free_changes,
@@ -481,6 +483,7 @@ def send_due_now() -> int:
 
     # Scheduled posts first, so their Discord deliveries go in the same round.
     posts.publish_due_now()
+    blog_bell.tell_due_now()
     with get_sessionmaker()() as db:
         sent = send_due(db) + notification_emails.send_due(db) + web_push.send_due(db)
     suspensions.end_due_now()
