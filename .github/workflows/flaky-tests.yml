@@ -1,0 +1,35 @@
+name: flaky-tests
+
+# Every Monday, the e2e tests of the last two weeks that failed and then passed,
+# on Playwright's retry or a re-run of the job, from the e2e-flaky-* artifacts the
+# frontend workflow's shards leave. The list is this run's summary, and an artifact.
+# It reads and posts nothing else, so it pings nobody.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node frontend/scripts/flaky-tests.mjs rollup "$RUNNER_TEMP/flaky-tests"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FLAKY_DAYS: "14"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flaky-tests
+          path: |
+            ${{ runner.temp }}/flaky-tests/flaky-tests.md
+            ${{ runner.temp }}/flaky-tests/flaky-tests.json
+          if-no-files-found: ignore
+          retention-days: 90
