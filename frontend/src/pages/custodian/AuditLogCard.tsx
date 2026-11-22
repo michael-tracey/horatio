@@ -19,8 +19,8 @@ const INFO_DAYS = [90, 180, 365, 730, 1825];
 
 /**
  * The audit log (#1062): whether debug events are recorded, how long debug and info
- * events are kept, and what the daily purge last deleted. Notice events are always
- * kept.
+ * events are kept, whether IP addresses are shown (#1205), and what the daily purge
+ * last deleted. Notice events are always kept.
  */
 export function AuditLogCard() {
   const settings = useQuery({ queryKey: SETTINGS, queryFn: () => unwrap(api.GET("/api/audit/settings")) });
@@ -33,18 +33,18 @@ function AuditLogForm({ settings }: { settings: Settings }) {
   const [debug, setDebug] = useState(settings.record === "debug");
   const [keepDebug, setKeepDebug] = useState(settings.keep_debug);
   const [keepInfo, setKeepInfo] = useState(settings.keep_info);
-  const [ips, setIps] = useState(settings.sign_in_ips);
+  const [ips, setIps] = useState(settings.show_ips);
   useEffect(() => {
     setDebug(settings.record === "debug");
     setKeepDebug(settings.keep_debug);
     setKeepInfo(settings.keep_info);
-    setIps(settings.sign_in_ips);
-  }, [settings.record, settings.keep_debug, settings.keep_info, settings.sign_in_ips]);
+    setIps(settings.show_ips);
+  }, [settings.record, settings.keep_debug, settings.keep_info, settings.show_ips]);
   const save = useAction(
     () =>
       unwrap(
         api.PUT("/api/audit/settings", {
-          body: { record: debug ? "debug" : "info", keep_debug: keepDebug, keep_info: keepInfo, sign_in_ips: ips },
+          body: { record: debug ? "debug" : "info", keep_debug: keepDebug, keep_info: keepInfo, show_ips: ips },
         }),
       ),
     [SETTINGS],
@@ -63,7 +63,7 @@ function AuditLogForm({ settings }: { settings: Settings }) {
       <div className="flex flex-col gap-4 text-sm">
         <p className="text-parchment">
           Keeps debug events {kept(settings.keep_debug)}, info events {kept(settings.keep_info)}, and notice events forever.
-          {recording ? (settings.sign_in_ips ? " Sign-in events keep IP addresses." : " Sign-in events keep no IP addresses.") : ""}{" "}
+          {settings.show_ips ? " IP addresses are shown." : " IP addresses are hidden."}{" "}
           <span className="text-mist">
             {last
               ? `Last cleared ${dates.dateTime(last.at)}: ${last.debug.toLocaleString()} debug and ${last.info.toLocaleString()} info events deleted${last.finished ? "" : ", with more still to delete"}.`
@@ -75,9 +75,9 @@ function AuditLogForm({ settings }: { settings: Settings }) {
             <p className="text-mist">
               Each change in the log has a level. <strong className="text-parchment">Notice</strong> ones, such as suspensions, merges, deletions and what Horatio
               reads back as history, are kept forever. <strong className="text-parchment">Info</strong> ones are most changes, as troupes see them in their logs.{" "}
-              <strong className="text-parchment">Debug</strong> ones are routine: signing in and out, failed sign-ins, signing up, and attempts turned away for too
-              many from one place after the first, which is info. They show only in Custodian › Audit. Once a day Horatio deletes the debug and info events older than you
-              keep them.
+              <strong className="text-parchment">Debug</strong> ones are routine: signing out, signing up, and attempts turned away for too many from one place
+              after the first, which is info. Signing in and failed sign-ins are info, so each person's Recent sign-ins is always full. Debug ones show only in Custodian ›
+              Audit. Once a day Horatio deletes the debug and info events older than you keep them.
             </p>
             <label className="flex items-start gap-2">
               <input type="checkbox" className="mt-1" checked={debug} onChange={(e) => setDebug(e.target.checked)} />
@@ -86,11 +86,12 @@ function AuditLogForm({ settings }: { settings: Settings }) {
             <div>
               <label className="flex items-start gap-2">
                 <input type="checkbox" className="mt-1" checked={ips} onChange={(e) => setIps(e.target.checked)} aria-describedby="audit-ips-hint" />
-                <span>Record IP addresses with sign-in events</span>
+                <span>Show IP addresses</span>
               </label>
               <p id="audit-ips-hint" className="ml-6 text-mist">
-                Where each sign-in, failed sign-in, sign-out, sign-up and attempt turned away came from. Most are debug events, so their addresses are kept only while debug
-                events are recorded, and only as long as debug events are kept. The first attempt a limit turns away is info, so its address is kept as long as info events are.
+                Horatio always keeps where each sign-in, failed sign-in, sign-out, sign-up, reset request and attempt turned away came from, with its event and for as long
+                as the event is kept. This says only who sees it: you, in full, here and on Throttled now; each person, roughly, on their own Account › Sign-in. Unticked,
+                no one does.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">

@@ -131,7 +131,8 @@ def test_known_and_unknown_addresses_get_the_same_answer(
         (True, player.email),
         (False, "nobody@example.com"),
     ]
-    assert requested[0].data["ip"] == "testclient"
+    assert requested[0].ip_address == "testclient"
+    assert "ip" not in requested[0].data
     assert requested[1].data["kind"] == "unknown"
 
 
@@ -156,6 +157,8 @@ def test_an_emailed_link_works_once_and_signs_out_everywhere(
         "account.reset_requested",
         "account.reset_sent",
         "account.password_reset",
+        # The old password, tried after: a failed sign-in is info (#1205).
+        "account.sign_in_failed",
     ]
     assert events(session, "account.reset_sent")[0].data["kind"] == "self"
 
@@ -356,10 +359,9 @@ def test_the_custodian_reads_who_reset_and_when(
     assert [e["message"] for e in resets_now["log"]] == [
         "custodian made a password reset link for stranger.",
         "Horatio emailed player the reset link they asked for.",
-        # Where each asked from (#1066): the test client's address.
-        "player asked for a password reset link from testclient.",
-        "Someone asked for a reset link for nobody@example.com from testclient; no account"
-        " uses it.",
+        # Where each asked from is kept apart, shown in Custodian › Audit (#1205).
+        "player asked for a password reset link.",
+        "Someone asked for a reset link for nobody@example.com; no account uses it.",
         "custodian made a password reset link for player.",
     ]
 

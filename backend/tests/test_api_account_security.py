@@ -202,35 +202,40 @@ def test_last_active_is_written_at_most_once_every_few_minutes(
     assert moved is not None and moved > datetime.now(UTC) - timedelta(minutes=1)
 
 
-def test_addresses_follow_the_custodians_setting(
+def test_addresses_are_kept_always_and_shown_only_while_the_custodian_says(
     client_for: Callable[[], TestClient],
     device_at: Callable[..., TestClient],
     session: Session,
 ) -> None:
-    audit.save_settings(session, audit.LogSettings(record="debug", sign_in_ips=True))
+    """A session and a sign-in event keep their address whatever the setting; "Show IP
+    addresses" says only whether the cards show it, coarsely (#1205)."""
+    audit.save_settings(session, audit.LogSettings(show_ips=False))
     sign_up(client_for, "agnes")
     phone = signed_in(device_at(IPHONE, "198.51.100.23"), "agnes")
 
+    # Off: neither card shows one.
+    assert {s["place"] for s in phone.get("/account/sessions").json()} == {None}
+    assert {s["place"] for s in phone.get("/account/sign-ins").json()["sign_ins"]} == {None}
+    assert "198.51.100" not in phone.get("/account/sessions").text
+    assert "198.51.100" not in phone.get("/account/sign-ins").text
+    # But both are kept.
+    stored = session.scalars(
+        select(SignInSession.ip_address).where(SignInSession.user_agent == IPHONE)
+    ).one()
+    assert stored == "198.51.100.23"
+    [event] = session.scalars(
+        select(AuditEvent).where(
+            AuditEvent.action == "account.signed_in", AuditEvent.ip_address == "198.51.100.23"
+        )
+    ).all()
+    assert "ip" not in event.data
+
+    # On: the one started while it was off shows too, coarsely, in either card.
+    audit.save_settings(session, audit.LogSettings())
     [here, _] = phone.get("/account/sessions").json()
     [latest, *_] = phone.get("/account/sign-ins").json()["sign_ins"]
-    assert here["place"] == "198.51.100.…"
-    assert latest["place"] == "198.51.100.…"
-
-    # Turned off: kept addresses aren't shown, and no new one is kept.
-    audit.save_settings(session, audit.LogSettings(record="debug", sign_in_ips=False))
-    laptop = signed_in(device_at(FIREFOX, "192.0.2.40"), "agnes")
-    assert {s["place"] for s in laptop.get("/account/sessions").json()} == {None}
-    assert {s["place"] for s in laptop.get("/account/sign-ins").json()["sign_ins"]} == {None}
-
-    # On again: the one started while it was off has none.
-    audit.save_settings(session, audit.LogSettings(record="debug", sign_in_ips=True))
-    places = {s["device"]: s["place"] for s in laptop.get("/account/sessions").json()}
-    assert places["Firefox on Windows"] is None
-    assert places["Safari on iPhone"] == "198.51.100.…"
-    stored = session.scalars(
-        select(SignInSession.ip_address).where(SignInSession.user_agent == FIREFOX)
-    ).one()
-    assert stored is None
+    assert here["place"] == latest["place"] == "198.51.100.…"
+    assert "198.51.100.23" not in phone.get("/account/sessions").text
 
 
 def test_recent_sign_ins_come_from_the_log_newest_first(
@@ -238,7 +243,6 @@ def test_recent_sign_ins_come_from_the_log_newest_first(
     device_at: Callable[..., TestClient],
     session: Session,
 ) -> None:
-    audit.save_settings(session, audit.LogSettings(record="debug"))
     sign_up(client_for, "agnes")
     bob = sign_up(client_for, "bob")
     phone = device_at(IPHONE)
@@ -247,9 +251,11 @@ def test_recent_sign_ins_come_from_the_log_newest_first(
     signed_in(phone, "agnes")
     bob.client.post("/auth/login", json={"login": "bob", "password": "not it either"})
 
+    # Signing in, and failing to, are info: kept with the custodian's settings as they
+    # first are (#1205).
     answer = phone.get("/account/sign-ins").json()
 
-    assert answer["all_kept"] is True
+    assert set(answer) == {"sign_ins"}
     assert [(s["outcome"], s["how"]) for s in answer["sign_ins"]] == [
         ("signed_in", "Password"),
         ("failed", "Wrong password"),
@@ -260,24 +266,19 @@ def test_recent_sign_ins_come_from_the_log_newest_first(
     ]
 
 
-def test_recent_sign_ins_say_when_the_log_keeps_only_some(
+def test_recent_sign_ins_say_how_and_roughly_where(
     client_for: Callable[[], TestClient], session: Session
 ) -> None:
     agnes = sign_up(client_for, "agnes")
     user = session.scalars(select(User).where(User.handle == agnes.handle)).one()
-    audit.record(session, user, "account.second_step_failed", kind="app", ip="203.0.113.9")
-    audit.record(session, user, "account.signed_in", kind="app", after="discord", ip="203.0.113.9")
+    ip = "203.0.113.9"
+    audit.record(session, user, "account.second_step_failed", kind="app", ip_address=ip)
+    audit.record(session, user, "account.signed_in", kind="app", after="discord", ip_address=ip)
     session.flush()
 
     answer = agnes.client.get("/account/sign-ins").json()
 
-    # Signing in is a debug event, not recorded while the custodian records from info.
-    assert answer["all_kept"] is False
     assert [(s["outcome"], s["how"], s["place"]) for s in answer["sign_ins"]] == [
-        ("failed", "A wrong code from the authenticator app", "203.0.113.…")
+        ("signed_in", "Discord, then authenticator app", "203.0.113.…"),
+        ("failed", "A wrong code from the authenticator app", "203.0.113.…"),
     ]
-    audit.save_settings(session, audit.LogSettings(record="debug"))
-    audit.record(session, user, "account.signed_in", kind="app", after="discord", ip="203.0.113.9")
-    session.flush()
-    [latest, *_] = agnes.client.get("/account/sign-ins").json()["sign_ins"]
-    assert latest["how"] == "Discord, then authenticator app"

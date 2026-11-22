@@ -173,7 +173,7 @@ def finish_confirm(
     if user.password_hash is not None or user.discord_user_id is None:
         return back("not_needed")
 
-    from_ip = sign_in_ip(db, request)
+    from_ip = sign_in_ip(request)
     whose = {"member": user.display_name, "user_id": user.id}
     if (held := attempts.password_change_held_back(db, user.id)) is not None:
         record(

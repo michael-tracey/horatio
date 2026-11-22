@@ -3,10 +3,11 @@
 Every action has a level, set here and nowhere else: `DEBUG` and `NOTICE` name
 theirs, and every other action is `info`.
 
-- **debug**: routine events, many a day, such as signing in. Recorded only while
+- **debug**: routine events, many a day, such as signing out. Recorded only while
   the custodian asks for them (Custodian › Audit), and never shown in a troupe's,
   a character's or a location's log: only in the custodian's search.
-- **info**: most changes, shown in the logs as ever.
+- **info**: most changes, shown in the logs as ever, and every sign-in and failed
+  sign-in, so an account's Recent sign-ins is always full (#1205).
 - **notice**: kept forever. What features read back from the log as their
   history (title history, the chronicle, a location's log, the People tab's
   cards...), and what accounts, security and the custodian's own work need.
@@ -35,8 +36,6 @@ LEVELS: tuple[Level, ...] = ("debug", "info", "notice")
 # Routine, and many: recorded only while the custodian records debug events.
 DEBUG: frozenset[str] = frozenset(
     {
-        "account.signed_in",
-        "account.sign_in_failed",
         # Turned away by horatio.auth.attempts before the password was checked, after
         # the first in a limit's window: that one is info, so it is always recorded (#1074).
         "account.sign_in_throttled_again",
@@ -197,8 +196,9 @@ class LogSettings:
     # Days debug and info events are kept; None for forever. Notice is kept forever.
     keep_debug: int | None = 30
     keep_info: int | None = 365
-    # Whether sign-in events keep the client's IP address (#1066).
-    sign_in_ips: bool = True
+    # Whether IP addresses are shown: in Custodian › Audit, in full; on Account ›
+    # Sign-in, coarsely. They are kept either way (#1205).
+    show_ips: bool = True
 
     def days(self, of: Level) -> int | None:
         """Days events of this level are kept; None for forever."""
@@ -212,12 +212,12 @@ def settings(db: Session) -> LogSettings:
     value = row.value if row is not None and isinstance(row.value, dict) else {}
     default = LogSettings()
     record = value.get("record")
-    ips = value.get("sign_in_ips")
+    ips = value.get("show_ips")
     return LogSettings(
         record=record if record in RECORDABLE else default.record,
         keep_debug=value.get("keep_debug", default.keep_debug),
         keep_info=value.get("keep_info", default.keep_info),
-        sign_in_ips=ips if isinstance(ips, bool) else default.sign_in_ips,
+        show_ips=ips if isinstance(ips, bool) else default.show_ips,
     )
 
 
@@ -226,7 +226,7 @@ def save_settings(db: Session, chosen: LogSettings) -> None:
         "record": chosen.record,
         "keep_debug": chosen.keep_debug,
         "keep_info": chosen.keep_info,
-        "sign_in_ips": chosen.sign_in_ips,
+        "show_ips": chosen.show_ips,
     }
     row = db.get(ServerSetting, SETTINGS)
     if row is None:
@@ -251,15 +251,15 @@ def client_ip(request: Request) -> str | None:
 
 
 class SignInIp(TypedDict, total=False):
-    ip: str
+    ip_address: str
 
 
-def sign_in_ip(db: Session, request: Request) -> SignInIp:
-    """The client's IP address to keep with a sign-in event, as {"ip": ...}, while the
-    custodian records them (#1066); otherwise nothing. For any event of signing in,
-    `record(..., **sign_in_ip(db, request))`."""
+def sign_in_ip(request: Request) -> SignInIp:
+    """The client's IP address to keep with a sign-in event, as {"ip_address": ...}:
+    always, whatever the custodian shows (#1205). For any event of signing in,
+    `record(..., **sign_in_ip(request))`."""
     ip = client_ip(request)
-    return {"ip": ip} if ip and settings(db).sign_in_ips else {}
+    return {"ip_address": ip} if ip else {}
 
 
 # --- writing -------------------------------------------------------------------------------
@@ -286,7 +286,13 @@ def record(
     **data: Any,
 ) -> None:
     """Record that `actor` (None: Horatio itself) did `action`, unless its level is
-    one the custodian doesn't record."""
+    one the custodian doesn't record.
+
+    `ip_address=...` is where it came from, or the address it is about: kept in the
+    event's own column, never in its `data` (#1205). It is taken from `data`, not
+    named as a parameter, so the dicts some callers spread into `data` needn't be
+    typed to fit it."""
+    ip_address = data.pop("ip_address", None)
     if db.info.get(QUIET):
         return
     of = level(action)
@@ -304,6 +310,7 @@ def record(
             character_id=character_id,
             action=action,
             level=of,
+            ip_address=str(ip_address) if ip_address else None,
             data={k: str(v) if isinstance(v, uuid.UUID) else v for k, v in data.items()},
         )
     )

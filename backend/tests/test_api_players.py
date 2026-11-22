@@ -349,7 +349,13 @@ def test_a_reset_link_sets_a_new_password_and_ends_other_sessions(
             .order_by(AuditEvent.id)
         )
     )
-    assert actions == ["account.reset_link", "account.password_reset"]
+    assert actions == [
+        "account.reset_link",
+        "account.password_reset",
+        # Signing in, and failing to, are info (#1205).
+        "account.sign_in_failed",
+        "account.signed_in",
+    ]
 
 
 def test_only_the_custodian_makes_reset_links(troupe: Troupe) -> None:

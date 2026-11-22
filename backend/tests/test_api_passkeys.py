@@ -220,7 +220,7 @@ def test_a_passkey_answer_works_once_and_a_count_going_back_is_refused(
     failed = events(session, "account.second_step_failed")
     assert [e.data["kind"] for e in failed] == ["passkey", "passkey"]
     assert message(failed[0].action, None, None, failed[0].data) == (
-        "Someone signing in as agnes from testclient gave a passkey that isn't theirs."
+        "Someone signing in as agnes gave a passkey that isn't theirs."
     )
 
 

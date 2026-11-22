@@ -208,7 +208,7 @@ def finish_sign_in(
         return back("cancelled")
 
     ip = attempts.source(request)
-    from_ip = sign_in_ip(db, request)
+    from_ip = sign_in_ip(request)
     if (held := attempts.discord_held_back(db, ip)) is not None:
         record(
             db,
@@ -337,7 +337,7 @@ def sign_up(body: DiscordSignUp, request: Request, db: DbSession, response: Resp
             "account.sign_up_throttled" if held.first else "account.sign_up_throttled_again",
             kind="discord",
             limit=held.limit.key,
-            **sign_in_ip(db, request),
+            **sign_in_ip(request),
         )
         db.commit()
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, held.wait)
@@ -365,7 +365,7 @@ def sign_up(body: DiscordSignUp, request: Request, db: DbSession, response: Resp
     said = discord.Account(id=waiting.discord_user_id, username=waiting.discord_username or "")
     link(db, user, said)
     notifications.signed_up(db, user)
-    from_ip = sign_in_ip(db, request)
+    from_ip = sign_in_ip(request)
     whose = {"member": user.display_name, "user_id": user.id}
     record(db, user, "account.signed_up", kind="discord", **whose, **from_ip)
     record(db, user, "account.discord_linked", discord=user.discord_handle or "")

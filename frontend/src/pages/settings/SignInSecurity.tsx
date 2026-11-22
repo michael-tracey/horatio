@@ -33,8 +33,8 @@ export function sessionDetails(s: SignedInAt, dates: Pick<Dates, "dateTime">, no
 
 /**
  * Where you're signed in (#1193): each sign-in still going, with the browser and system
- * it was started from, when, when it was last used and, while the custodian keeps
- * addresses with sign-ins, roughly where. **Sign out** ends one; **Sign out everywhere
+ * it was started from, when, when it was last used and, while the custodian shows IP
+ * addresses (#1205), roughly where. **Sign out** ends one; **Sign out everywhere
  * else** ends all but this one. Neither asks for the password: they only take access
  * away, and someone who fears another has their sign-in must be able to act at once.
  */
@@ -108,8 +108,7 @@ const OUTCOME: Record<RecentSignIn["outcome"], { label: string; tone: "mist" | "
 /**
  * Recent sign-ins (#1193): the last ten sign-ins at your account, and the tries that
  * failed or were turned away, from the audit log, with roughly where while the
- * custodian keeps addresses. Signing in is a routine event, kept only while the
- * custodian records those; the card says so when they don't.
+ * custodian shows IP addresses. The log keeps every sign-in (#1205).
  */
 export function RecentSignInsCard() {
   const dates = useDates();
@@ -117,7 +116,7 @@ export function RecentSignInsCard() {
   return (
     <Card title="Recent sign-ins">
       <Loaded query={recent}>
-        {({ sign_ins, all_kept }) => (
+        {({ sign_ins }) => (
           <div className="flex flex-col gap-2 text-sm">
             {sign_ins.length > 0 ? (
               <ul className="divide-y divide-ash/50">
@@ -136,11 +135,6 @@ export function RecentSignInsCard() {
               </ul>
             ) : (
               <p className="text-mist">None that Horatio's log keeps.</p>
-            )}
-            {!all_kept && (
-              <p className="text-mist">
-                Horatio's log keeps every sign-in only while the custodian asks it to, so this shows wrong second steps and tries turned away, but not each time you signed in.
-              </p>
             )}
             <p className="text-mist">Something here that wasn't you? Change your password, then sign out everywhere else.</p>
           </div>

@@ -271,7 +271,7 @@ def test_a_secret_sealed_with_another_key_signs_no_one_in(
 def test_a_password_alone_gives_no_session_once_there_is_a_second_step(
     client_for: Callable[[], TestClient], session: Session, clock: Clock
 ) -> None:
-    audit.save_settings(session, audit.LogSettings(record="debug", sign_in_ips=False))
+    audit.save_settings(session, audit.LogSettings(record="debug"))
     agnes = sign_up(client_for, "agnes")
     secret, _ = set_up_app(agnes, clock)
     fresh = client_for()
@@ -339,7 +339,7 @@ def test_five_wrong_codes_end_the_sign_in_and_each_is_logged(
     assert len(failed) == 5
     assert audit.level("account.second_step_failed") == "info"
     assert said(failed[0]) == (
-        "Someone signing in as agnes from testclient gave a wrong code from an authenticator app."
+        "Someone signing in as agnes gave a wrong code from an authenticator app."
     )
     assert password(fresh, "agnes").status_code == 202
     assert second(fresh, code(secret, clock)).status_code == 200
@@ -359,7 +359,7 @@ def test_a_recovery_code_signs_in_once(
     assert signed_in.status_code == 200, signed_in.text
     assert agnes.client.get("/two-step").json()["recovery_codes_left"] == 9
     [used] = events(session, "account.recovery_code_used")
-    assert said(used) == "Someone signed in with a recovery code from testclient: 9 left."
+    assert said(used) == "Someone signed in with a recovery code: 9 left."
     assert audit.level("account.recovery_code_used") == "notice"
     again = client_for()
     password(again, "agnes")

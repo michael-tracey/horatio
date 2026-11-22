@@ -190,8 +190,7 @@ def test_every_sign_in_from_one_place_counts_towards_a_bigger_limit(
     [event] = throttled_events(session)
     assert event.data["limit"] == "sign_ins"
     assert message(event.action, "agnes", None, event.data) == (
-        f"Someone was turned away from signing in as agnes from {HOME}: too many sign-ins"
-        " from where they were."
+        "Someone was turned away from signing in as agnes: too many sign-ins from where they were."
     )
     assert sign_in(at(ELSEWHERE), "agnes", PASSWORD) == 200
 
@@ -259,8 +258,8 @@ def test_being_held_back_is_logged_at_info_once_a_window_and_keeps_nothing_typed
     its window, from one place (and login, for a limit at one login), at info; the
     rest at debug, so a flood can't fill the log (#1074)."""
     agnes = sign_up(client_for, "agnes")
-    # Without the IP addresses the custodian may keep with them (#1066): see below.
-    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
+    # Not shown, but kept all the same, apart from what the event says (#1205).
+    audit.save_settings(session, audit.LogSettings(show_ips=False))
     session.flush()
     home = at(HOME)
     for _ in range(5):
@@ -287,6 +286,7 @@ def test_being_held_back_is_logged_at_info_once_a_window_and_keeps_nothing_typed
         assert "hunter2" not in str(event.data)
         assert "nobody_here" not in str(event.data)
         assert HOME not in str(event.data)
+        assert event.ip_address == HOME
     # The tries themselves keep a hash of the login, never the login.
     kept = set(session.scalars(select(AuthAttempt.identity_hash)))
     tried = {attempts.login_key(f"{name}@example.com") for name in ("agnes", "nobody_here")}
@@ -294,7 +294,7 @@ def test_being_held_back_is_logged_at_info_once_a_window_and_keeps_nothing_typed
     assert kept == {None, *tried}
 
     # Recording debug events, the ones after the first are there too, at debug.
-    audit.save_settings(session, audit.LogSettings(record="debug", sign_in_ips=False))
+    audit.save_settings(session, audit.LogSettings(record="debug"))
     session.flush()
     assert sign_in(home, "agnes@example.com", "hunter2 typed here") == 429
     [again] = throttled_events(session)[2:]
@@ -305,7 +305,7 @@ def test_being_held_back_is_logged_at_info_once_a_window_and_keeps_nothing_typed
     )
 
     # A quarter of an hour on, the limit is a new window: its first is info again.
-    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
+    audit.save_settings(session, audit.LogSettings())
     later(session, QUARTER_HOUR)
     for _ in range(5):
         sign_in(home, "agnes@example.com")
@@ -334,8 +334,8 @@ def test_being_held_back_is_logged_at_info_once_a_window_and_keeps_nothing_typed
         "Someone was turned away from signing up: too many sign-ups from where they were."
     )
 
-    # Keeping IP addresses with sign-in events, as the custodian does unless they say
-    # otherwise (#1066), these keep where they came from too.
+    # Debug ones keep where they came from too, in the event's own column, never in
+    # what it says (#1205).
     audit.save_settings(session, audit.LogSettings(record="debug"))
     session.flush()
     assert sign_in(home, "agnes@example.com", PASSWORD) == 429
@@ -347,8 +347,9 @@ def test_being_held_back_is_logged_at_info_once_a_window_and_keeps_nothing_typed
             .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
         ).first()
         assert newest is not None
-        assert newest.data["ip"] == HOME, action
-        assert f" from {HOME}:" in message(newest.action, "agnes", None, newest.data)
+        assert newest.ip_address == HOME, action
+        assert "ip" not in newest.data
+        assert HOME not in message(newest.action, "agnes", None, newest.data)
 
 
 def test_a_flood_from_one_place_is_logged_once_however_many_logins_it_tries(
@@ -467,8 +468,6 @@ def test_being_held_back_from_changing_a_password_is_logged_at_info_once_a_windo
     client_for: Callable[[], TestClient], session: Session
 ) -> None:
     agnes = sign_up(client_for, "agnes")
-    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
-    session.flush()
     for _ in range(10):
         assert change_password(agnes.client, "hunter2 typed here") == 403
     for _ in range(3):
@@ -495,16 +494,17 @@ def test_being_held_back_from_changing_a_password_is_logged_at_info_once_a_windo
         "agnes was turned away from changing their password: too many tries at the account."
     )
 
-    # Recording debug events, and IP addresses with them, the rest are there at debug.
+    # Recording debug events, the rest are there at debug, where they came from kept
+    # apart from what they say (#1205).
     audit.save_settings(session, audit.LogSettings(record="debug"))
     session.flush()
     assert change_password(agnes.client, "hunter2 typed here") == 429
     [_, again] = held()
     assert (again.action, again.level) == ("account.password_change_throttled_again", "debug")
     assert "hunter2" not in str(again.data)
+    assert again.ip_address == "testclient"
     assert message(again.action, "agnes", None, again.data) == (
-        f"agnes was turned away again from changing their password from {again.data['ip']}:"
-        " too many tries at the account."
+        "agnes was turned away again from changing their password: too many tries at the account."
     )
 
 
@@ -563,8 +563,8 @@ def test_the_custodian_sees_who_is_held_back_and_when_it_clears(
         clears = datetime.fromisoformat(t["clears"])
         assert newest - timedelta(minutes=1) < clears - timedelta(minutes=15) <= newest
 
-    # While sign-in events keep no IP addresses, only the start of each shows.
-    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
+    # While the custodian doesn't show IP addresses, only the start of each shows.
+    audit.save_settings(session, audit.LogSettings(show_ips=False))
     session.flush()
     masked = custodian.client.get("/throttled")
     assert {(t["address"], t["masked"]) for t in masked.json()} == {
@@ -584,7 +584,7 @@ def test_the_custodian_unblocks_an_address_and_it_is_a_notice(
 ) -> None:
     held_back(client_for, at)
     # Unblocking works whether the address shows or not.
-    audit.save_settings(session, audit.LogSettings(sign_in_ips=False))
+    audit.save_settings(session, audit.LogSettings(show_ips=False))
     session.flush()
     found = custodian.client.get("/throttled").json()
     by_login = next(t for t in found if t["per_login"])
@@ -615,9 +615,26 @@ def test_the_custodian_unblocks_an_address_and_it_is_a_notice(
     assert [message(e.action, "custodian", None, e.data) for e in lifted] == [
         "custodian unblocked sign-ins at agnes@example.com: over the limit of 5 failed"
         " sign-ins at one login in 15 minutes.",
-        f"custodian unblocked sign-ins from {ELSEWHERE}: over the limit of 20 failed sign-ins"
-        " in 15 minutes.",
+        "custodian unblocked sign-ins: over the limit of 20 failed sign-ins in 15 minutes.",
     ]
+    # Each keeps the address it unblocked, shown or not then, apart from what it says;
+    # the search shows it only while the custodian shows IP addresses (#1205).
+    assert [(e.ip_address, "ip" in e.data) for e in lifted] == [(HOME, False), (ELSEWHERE, False)]
+
+    def searched() -> list[str | None]:
+        found = custodian.client.get("/audit", params={"q": "unblocked"}).json()
+        return [e["ip_address"] for e in found["entries"]]
+
+    assert searched() == [ELSEWHERE, HOME]
+    # Found by its address, as is everything else from there.
+    by_address = custodian.client.get("/audit", params={"q": ELSEWHERE}).json()["entries"]
+    assert "account.throttle_lifted" in [e["action"] for e in by_address]
+    assert {e["ip_address"] for e in by_address} == {ELSEWHERE}
+    audit.save_settings(session, audit.LogSettings(show_ips=False))
+    session.flush()
+    assert searched() == [None, None]
+    # Nor is anything found by its address.
+    assert custodian.client.get("/audit", params={"q": ELSEWHERE}).json()["entries"] == []
 
 
 def test_each_limit_a_place_is_over_is_unblocked_on_its_own(
@@ -674,7 +691,7 @@ def test_sign_ups_held_back_can_be_unblocked(
         select(AuditEvent).where(AuditEvent.action == "account.throttle_lifted")
     ).all()
     assert message(lifted.action, "custodian", None, lifted.data) == (
-        f"custodian unblocked sign-ups from {HOME}: over the limit of 20 sign-ups in an hour."
+        "custodian unblocked sign-ups: over the limit of 20 sign-ups in an hour."
     )
 
 

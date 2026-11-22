@@ -990,14 +990,14 @@ test("the custodian sets how long the audit log keeps each level, and finds the 
   await expect(card.getByLabel("Record debug events")).toBeHidden();
   await card.getByText("Levels, and what it records and keeps", { exact: true }).click();
   await expect(card.getByLabel("Record debug events")).not.toBeChecked();
-  // Sign-in events keep IP addresses unless the custodian says otherwise (#1066).
-  await expect(card.getByLabel("Record IP addresses with sign-in events")).toBeChecked();
+  // IP addresses are shown unless the custodian says otherwise; they're kept either way (#1066, #1205).
+  await expect(card.getByLabel("Show IP addresses")).toBeChecked();
 
   // The log's settings are the whole site's: only one project's run changes them, and puts them back.
   if (test.info().project.name === "phone") return;
   await card.getByLabel("Keep debug events for").selectOption({ label: "14 days" });
   await card.getByLabel("Keep info events for").selectOption({ label: "2 years" });
-  await card.getByLabel("Record IP addresses with sign-in events").uncheck();
+  await card.getByLabel("Show IP addresses").uncheck();
   await card.getByRole("button", { name: "Save audit log settings" }).click();
   await expect(c.getByText("Saved. The audit log works this way from now on.")).toBeVisible();
   await expect(card.getByText("Keeps debug events for 14 days, info events for 2 years, and notice events forever.")).toBeVisible();
@@ -1008,16 +1008,16 @@ test("the custodian sets how long the audit log keeps each level, and finds the 
   await c.getByRole("button", { name: "Search", exact: true }).click();
   const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem").filter({ hasText: "auditkeep-cust" });
   await expect(found.first()).toContainText("auditkeep-cust changed the audit log's settings: debug events kept 14 days");
-  await expect(found.first()).toContainText("; IP addresses not recorded with sign-in events.");
+  await expect(found.first()).toContainText("; IP addresses hidden.");
   await expect(found.first().getByText("notice", { exact: true })).toBeVisible();
   await expect(c).toHaveURL(/level=notice/);
 
   await card.getByLabel("Keep debug events for").selectOption({ label: "30 days" });
   await card.getByLabel("Keep info events for").selectOption({ label: "1 year" });
-  await card.getByLabel("Record IP addresses with sign-in events").check();
+  await card.getByLabel("Show IP addresses").check();
   await card.getByRole("button", { name: "Save audit log settings" }).click();
   await expect(card.getByText("Keeps debug events for 30 days, info events for 1 year, and notice events forever.")).toBeVisible();
-  await expect(card.getByLabel("Record IP addresses with sign-in events")).toBeChecked();
+  await expect(card.getByLabel("Show IP addresses")).toBeChecked();
 });
 
 /** Holds `login` back at `address` as the limit on failed sign-ins at one login would:
@@ -1061,7 +1061,7 @@ test("the custodian unblocks a login held back for too many failed sign-ins, and
   const c = custodian.page;
   await c.goto("/custodian/audit");
 
-  // The address shows in full, or only its start while sign-in events keep no IP addresses.
+  // The address shows in full, or only its start while the custodian hides IP addresses.
   const card = c.locator("section").filter({ has: c.getByRole("heading", { name: "Throttled now", exact: true }) });
   const row = card.getByRole("listitem").filter({ hasText: `at @${player.handle}` });
   await expect(row).toContainText(/^192\.0\.(2\.\d+|x\.x) at @/);

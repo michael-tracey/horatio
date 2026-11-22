@@ -189,7 +189,7 @@ After you sign in with your password on a phone or computer that can keep a pass
 
 ### Where you're signed in
 
-The **Where you're signed in** card lists each phone, computer or browser signed in to your account now, with this one first, marked **This device**. Each says its browser and system, such as "Safari on iPhone", as the browser told Horatio when you signed in; when it signed in; and when it was last used, to within a few minutes. While the custodian keeps the addresses people sign in from, it also says roughly where: the first part of the address only, such as 203.0.113.…, never the whole.
+The **Where you're signed in** card lists each phone, computer or browser signed in to your account now, with this one first, marked **This device**. Each says its browser and system, such as "Safari on iPhone", as the browser told Horatio when you signed in; when it signed in; and when it was last used, to within a few minutes. While the custodian shows the addresses people sign in from, it also says roughly where: the first part of the address only, such as 203.0.113.…, never the whole. Horatio keeps the address either way, as it does for every sign-in, and only the custodian sees it whole.
 
 **Sign out** beside one signs it out at once: the next thing it does, it's asked to sign in again. **Sign out everywhere else** signs out every one but this. Neither asks for your password, as they only ever take access away, and you may need them in a hurry. If you don't know one, sign it out, then [change your password](#changing-your-password), which signs you out everywhere else too.
 
@@ -197,7 +197,7 @@ The **Where you're signed in** card lists each phone, computer or browser signed
 
 The **Recent sign-ins** card lists the last ten times your account was signed in to, newest first, and how: your password, your password then a second step, a passkey alone, or Discord. Tries that failed are there too, marked **Failed**: a wrong password, or a wrong code or passkey after the right password. So are tries the limits turned away, marked **Turned away**. Where they came from follows the same rule as above.
 
-It comes from Horatio's log, which keeps every sign-in only while the custodian asks it to. When it doesn't, the card says so, and shows only wrong second steps and tries turned away, which are always kept.
+It comes from Horatio's log, which keeps every sign-in for a year.
 
 ### When the custodian viewed as you
 

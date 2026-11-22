@@ -113,7 +113,7 @@ def events(session: Session, action: str) -> list[AuditEvent]:
 
 def record_debug(custodian: Person) -> None:
     """Have the audit log keep debug events, such as signing in, as the custodian can."""
-    body = {"record": "debug", "keep_debug": 30, "keep_info": 365, "sign_in_ips": True}
+    body = {"record": "debug", "keep_debug": 30, "keep_info": 365, "show_ips": True}
     assert custodian.client.put("/audit/settings", json=body).status_code == 200
 
 
@@ -148,7 +148,7 @@ def test_a_passkey_alone_signs_in_as_both_steps_even_where_two_step_is_required(
     [event] = [e for e in events(session, "account.signed_in") if e.data.get("kind")]
     assert event.data["kind"] == "passkey_alone"
     assert message(event.action, "mina", None, event.data) == (
-        "mina signed in from testclient with a passkey alone, no password."
+        "mina signed in with a passkey alone, no password."
     )
     # The password stays, and with it the second step.
     again = client_for().post("/auth/login", json={"login": "mina", "password": PASSWORD})
@@ -226,11 +226,9 @@ def test_only_a_verified_passkey_of_the_account_it_names_signs_in(
     failed = [e for e in events(session, "account.sign_in_failed")]
     assert [e.data["kind"] for e in failed] == ["passkey"] * 3 + ["passkey_unknown"]
     assert said(failed[0]) == (
-        "Someone failed to sign in as agnes from testclient with a passkey: it didn't check out."
+        "Someone failed to sign in as agnes with a passkey: it didn't check out."
     )
-    assert said(failed[-1]) == (
-        "Someone failed to sign in from testclient with a passkey no account here has."
-    )
+    assert said(failed[-1]) == ("Someone failed to sign in with a passkey no account here has.")
     assert sign_in(fresh, device).status_code == 200
 
 
@@ -440,8 +438,8 @@ def test_adding_or_replacing_a_passkey_asks_for_the_password_and_counts_towards_
     [event] = events(session, "account.password_change_throttled")
     assert (event.level, event.data["kind"]) == ("info", "two_step")
     assert message(event.action, "Agnes", None, event.data) == (
-        "Agnes was turned away from giving their password for two-step sign-in from"
-        " testclient: too many tries at the account."
+        "Agnes was turned away from giving their password for two-step sign-in:"
+        " too many tries at the account."
     )
     assert [p["id"] for p in agnes.client.get("/two-step").json()["passkeys"]] == [old["id"]]
 
@@ -469,7 +467,7 @@ def test_passkey_sign_ins_are_limited_from_one_address(
     [event] = events(session, "account.sign_in_throttled")
     assert (event.data["kind"], event.data["limit"]) == ("passkey", "failed_at_login")
     assert said(event) == (
-        "Someone was turned away from signing in with a passkey from 198.51.100.7: too many"
+        "Someone was turned away from signing in with a passkey: too many"
         " failed sign-ins from where they were."
     )
     # Counted at a login of their own: a password from there still signs in, and a passkey

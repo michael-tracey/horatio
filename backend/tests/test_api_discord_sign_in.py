@@ -159,7 +159,7 @@ def said(event: AuditEvent, actor: str | None = None) -> str:
 
 def record_debug(custodian: Person) -> None:
     """Have the audit log keep debug events, such as signing in, as the custodian can."""
-    body = {"record": "debug", "keep_debug": 30, "keep_info": 365, "sign_in_ips": False}
+    body = {"record": "debug", "keep_debug": 30, "keep_info": 365, "show_ips": False}
     assert custodian.client.put("/audit/settings", json=body).status_code == 200
 
 
@@ -468,7 +468,7 @@ def test_discord_tries_count_as_sign_in_tries_from_where_they_come(
     [event] = events(session, "account.sign_in_throttled")
     assert (event.data["kind"], event.data["limit"]) == ("discord", "failed_at_login")
     assert said(event) == (
-        "Someone was turned away from signing in with Discord from 203.0.113.9: too many failed"
+        "Someone was turned away from signing in with Discord: too many failed"
         " sign-ins from where they were."
     )
     # Somewhere else isn't held back.
@@ -494,7 +494,7 @@ def test_a_discord_sign_up_counts_as_a_sign_up(
     assert held.json()["detail"] == attempts.SIGN_UP_WAIT
     [event] = events(session, "account.sign_up_throttled")
     assert said(event) == (
-        "Someone was turned away from signing up with Discord from 203.0.113.9: too many"
+        "Someone was turned away from signing up with Discord: too many"
         " sign-ups from where they were."
     )
     assert session.scalars(select(User).where(User.email == "owl@example.org")).all() == []

@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index
+from sqlalchemy import CheckConstraint, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,7 +18,11 @@ class AuditEvent(Record):
     feature reads back from the log as history (title history, the chronicle, a
     location's log...) must be notice: `tests/test_audit_levels.py` checks the
     readers. A log shown to staff or players (a troupe's, a character's) shows what
-    is still kept, and never debug events."""
+    is still kept, and never debug events.
+
+    An IP address is kept in `ip_address`, never in `data` nor the message, and goes
+    when the event does. The custodian's "Show IP addresses" says only whether it is
+    shown (#1205)."""
 
     __tablename__ = "audit_events"
     __table_args__ = (
@@ -38,4 +42,7 @@ class AuditEvent(Record):
     action: Mapped[str]
     # debug, info or notice: the action's level when it was recorded.
     level: Mapped[str] = mapped_column(server_default="info")
+    # Where a sign-in, a reset request or the like came from, or the address a
+    # custodian unblocked: kept always, shown only while the custodian says (#1205).
+    ip_address: Mapped[str | None] = mapped_column(String(64))
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")

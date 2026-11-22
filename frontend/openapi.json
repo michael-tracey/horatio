@@ -2172,6 +2172,17 @@
             "title": "Id",
             "type": "string"
           },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
           "level": {
             "$ref": "#/components/schemas/AuditLevel"
           },
@@ -2411,8 +2422,8 @@
             "title": "Record",
             "type": "string"
           },
-          "sign_in_ips": {
-            "title": "Sign In Ips",
+          "show_ips": {
+            "title": "Show Ips",
             "type": "boolean"
           }
         },
@@ -2420,7 +2431,7 @@
           "record",
           "keep_debug",
           "keep_info",
-          "sign_in_ips"
+          "show_ips"
         ],
         "title": "AuditSettingsIn",
         "type": "object"
@@ -2467,8 +2478,8 @@
             "title": "Record",
             "type": "string"
           },
-          "sign_in_ips": {
-            "title": "Sign In Ips",
+          "show_ips": {
+            "title": "Show Ips",
             "type": "boolean"
           }
         },
@@ -2476,7 +2487,7 @@
           "record",
           "keep_debug",
           "keep_info",
-          "sign_in_ips",
+          "show_ips",
           "last_purge"
         ],
         "title": "AuditSettingsOut",
@@ -46855,10 +46866,6 @@
       },
       "RecentSignIns": {
         "properties": {
-          "all_kept": {
-            "title": "All Kept",
-            "type": "boolean"
-          },
           "sign_ins": {
             "items": {
               "$ref": "#/components/schemas/RecentSignIn"
@@ -46868,8 +46875,7 @@
           }
         },
         "required": [
-          "sign_ins",
-          "all_kept"
+          "sign_ins"
         ],
         "title": "RecentSignIns",
         "type": "object"
@@ -66552,7 +66558,7 @@
     },
     "/api/audit/export": {
       "get": {
-        "description": "For the custodian: everything the same filters find, newest first, as a CSV.\nThe export itself goes in the log.",
+        "description": "For the custodian: everything the same filters find, newest first, as a CSV,\nwith each one's IP address while the custodian shows them. The export itself goes\nin the log.",
         "operationId": "export_log_api_audit_export_get",
         "parameters": [
           {
@@ -66742,7 +66748,7 @@
     },
     "/api/audit/settings": {
       "get": {
-        "description": "For the custodian: what the log records, how long it keeps each level, whether\nsign-in events keep IP addresses, and what the last purge deleted.",
+        "description": "For the custodian: what the log records, how long it keeps each level, whether\nIP addresses are shown, and what the last purge deleted.",
         "operationId": "log_settings_api_audit_settings_get",
         "responses": {
           "200": {

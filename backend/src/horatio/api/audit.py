@@ -1,7 +1,11 @@
 """The custodian's search of the audit log, across every troupe, and the log's
 settings: whether debug events are recorded, and how long each level is kept
-(horatio.audit, horatio.audit_retention). The search only reads: nothing here
-changes or removes what the log holds."""
+(horatio.audit, horatio.audit_retention), and whether IP addresses are shown. The
+search only reads: nothing here changes or removes what the log holds.
+
+An event's IP address is kept in its own column, always (#1205). It is shown, in the
+search, the export and an entry, and found by the words searched, only while the
+custodian shows IP addresses."""
 
 import csv
 import io
@@ -157,6 +161,8 @@ class AuditEntry(LogEntry):
     troupe_id: uuid.UUID | None
     troupe_name: str | None
     level: AuditLevel
+    # Where it came from, in full: only while the custodian shows IP addresses.
+    ip_address: str | None = None
 
 
 class AuditPage(BaseModel):
@@ -192,10 +198,10 @@ class AuditCharacter(BaseModel):
     retired: bool
 
 
-def words_match(words: list[str]) -> ColumnElement[bool]:
+def words_match(words: list[str], *, ips: bool = False) -> ColumnElement[bool]:
     """Every word is somewhere in the event as it reads: in the wording around the
     names, in what is filled in (names, reasons, ratings), or in who did it or whose
-    character it was."""
+    character it was; with `ips`, in its IP address too."""
     actor = aliased(User)
     player = aliased(User)
     values = func.jsonb_path_query_array(AuditEvent.data, literal_column("'$.*'::jsonpath")).cast(
@@ -211,6 +217,7 @@ def words_match(words: list[str]) -> ColumnElement[bool]:
         conditions.append(
             or_(
                 values.icontains(word, autoescape=True),
+                AuditEvent.ip_address.icontains(word, autoescape=True) if ips else false(),
                 select(actor.id)
                 .where(
                     actor.id == AuditEvent.actor_id,
@@ -281,7 +288,7 @@ def search(
     if until is not None:
         query = query.where(AuditEvent.created_at < until)
     if words := q.split():
-        query = query.where(words_match(words))
+        query = query.where(words_match(words, ips=audit.settings(db).show_ips))
     return query
 
 
@@ -300,12 +307,13 @@ def older_than(query: Select[AuditEvent, str], before: str) -> Select[AuditEvent
     return query.where(row(AuditEvent.created_at, AuditEvent.id) < after)
 
 
-def with_troupes(db: DbSession, entries: list[LogEntry]) -> list[AuditEntry]:
-    """The entries with their troupes, and their levels."""
+def with_troupes(db: DbSession, entries: list[LogEntry], *, ips: bool) -> list[AuditEntry]:
+    """The entries with their troupes and their levels, and with `ips` their IP
+    addresses."""
     found = {
-        event_id: (troupe_id, name, level)
-        for event_id, troupe_id, name, level in db.execute(
-            select(AuditEvent.id, Troupe.id, Troupe.name, AuditEvent.level)
+        event_id: (troupe_id, name, level, ip)
+        for event_id, troupe_id, name, level, ip in db.execute(
+            select(AuditEvent.id, Troupe.id, Troupe.name, AuditEvent.level, AuditEvent.ip_address)
             .outerjoin(Troupe, AuditEvent.troupe_id == Troupe.id)
             .where(AuditEvent.id.in_([e.id for e in entries]))
         )
@@ -316,6 +324,7 @@ def with_troupes(db: DbSession, entries: list[LogEntry]) -> list[AuditEntry]:
             troupe_id=found[entry.id][0],
             troupe_name=found[entry.id][1],
             level=AuditLevel(found[entry.id][2]),
+            ip_address=found[entry.id][3] if ips else None,
         )
         for entry in entries
     ]
@@ -363,7 +372,7 @@ def search_log(
         query = older_than(query, before)
     entries = log_entries(db, query.limit(limit + 1))
     return AuditPage(
-        entries=with_troupes(db, entries[:limit]),
+        entries=with_troupes(db, entries[:limit], ips=audit.settings(db).show_ips),
         next=cursor(entries[limit - 1]) if len(entries) > limit else None,
     )
 
@@ -391,8 +400,9 @@ def export_log(
     until: Until = None,
     q: str = "",
 ) -> Response:
-    """For the custodian: everything the same filters find, newest first, as a CSV.
-    The export itself goes in the log."""
+    """For the custodian: everything the same filters find, newest first, as a CSV,
+    with each one's IP address while the custodian shows them. The export itself goes
+    in the log."""
     require_custodian(user)
     query = search(
         db,
@@ -406,10 +416,12 @@ def export_log(
         q=q,
     )
 
+    ips = audit.settings(db).show_ips
+
     def everything() -> Iterator[AuditEntry]:
         page = query
         while entries := log_entries(db, page.limit(EXPORT_BATCH)):
-            yield from with_troupes(db, entries)
+            yield from with_troupes(db, entries, ips=ips)
             if len(entries) < EXPORT_BATCH:
                 return
             page = older_than(query, cursor(entries[-1]))
@@ -418,24 +430,22 @@ def export_log(
     # The mark tells spreadsheets the file is UTF-8.
     out.write("﻿")
     writer = csv.writer(out)
-    writer.writerow(
-        ["When (UTC)", "Who", "Troupe", "Character", "Player", "Action", "Level", "What"]
-    )
+    header = ["When (UTC)", "Who", "Troupe", "Character", "Player", "Action", "Level", "What"]
+    writer.writerow([*header, "IP address"] if ips else header)
     count = 0
     for e in everything():
         count += 1
-        writer.writerow(
-            [
-                e.at.astimezone(UTC).isoformat(timespec="seconds"),
-                safe(e.actor_name or "Horatio"),
-                safe(e.troupe_name),
-                safe(e.character_name),
-                safe(e.player_name),
-                e.action,
-                e.level.value,
-                safe(e.message),
-            ]
-        )
+        cells = [
+            e.at.astimezone(UTC).isoformat(timespec="seconds"),
+            safe(e.actor_name or "Horatio"),
+            safe(e.troupe_name),
+            safe(e.character_name),
+            safe(e.player_name),
+            e.action,
+            e.level.value,
+            safe(e.message),
+        ]
+        writer.writerow([*cells, safe(e.ip_address)] if ips else cells)
     audit.record(db, user, "audit.exported", count=count)
     db.commit()
     day = datetime.now(UTC).date().isoformat()
@@ -518,8 +528,9 @@ class AuditSettingsOut(BaseModel):
     # Days debug and info events are kept; None for forever. Notice is kept forever.
     keep_debug: int | None
     keep_info: int | None
-    # Whether sign-in events keep the client's IP address (#1066).
-    sign_in_ips: bool
+    # Whether IP addresses are shown: here in full, on Account › Sign-in coarsely, and
+    # in full on the Throttled now card. They are kept either way (#1205).
+    show_ips: bool
     last_purge: AuditPurgeOut | None
 
 
@@ -527,7 +538,7 @@ class AuditSettingsIn(BaseModel):
     record: Literal["debug", "info"]
     keep_debug: KeepDays
     keep_info: KeepDays
-    sign_in_ips: bool
+    show_ips: bool
 
 
 def kept_for(days: int | None) -> str:
@@ -542,7 +553,7 @@ def settings_out(db: DbSession) -> AuditSettingsOut:
         record=record,
         keep_debug=chosen.keep_debug,
         keep_info=chosen.keep_info,
-        sign_in_ips=chosen.sign_in_ips,
+        show_ips=chosen.show_ips,
         last_purge=AuditPurgeOut(
             at=last.at,
             debug=last.deleted.get("debug", 0),
@@ -557,7 +568,7 @@ def settings_out(db: DbSession) -> AuditSettingsOut:
 @router.get("/settings")
 def log_settings(db: DbSession, user: CurrentUser) -> AuditSettingsOut:
     """For the custodian: what the log records, how long it keeps each level, whether
-    sign-in events keep IP addresses, and what the last purge deleted."""
+    IP addresses are shown, and what the last purge deleted."""
     require_custodian(user)
     return settings_out(db)
 
@@ -574,7 +585,7 @@ def change_log_settings(
         record=body.record,
         keep_debug=body.keep_debug,
         keep_info=body.keep_info,
-        sign_in_ips=body.sign_in_ips,
+        show_ips=body.show_ips,
     )
     changes: list[str] = []
     if after.record != before.record:
@@ -586,12 +597,8 @@ def change_log_settings(
             changes.append(
                 f"{of} events kept {kept_for(after.days(of))} (was {kept_for(before.days(of))})"
             )
-    if after.sign_in_ips != before.sign_in_ips:
-        changes.append(
-            "IP addresses recorded with sign-in events"
-            if after.sign_in_ips
-            else "IP addresses not recorded with sign-in events"
-        )
+    if after.show_ips != before.show_ips:
+        changes.append("IP addresses shown" if after.show_ips else "IP addresses hidden")
     if changes:
         audit.save_settings(db, after)
         audit.record(db, user, "audit.settings_changed", changes="; ".join(changes))
