@@ -71,3 +71,37 @@ export function fromCrop(width: number, height: number, crop: Crop | null | unde
   if (!crop) return centred(width, height);
   return square(width, height, crop.x * width, crop.y * height, crop.size * width);
 }
+
+/**
+ * A blog article's hero picture (#1157) is a frame twice as wide as it is high. The
+ * server cuts the same frame (backend/src/horatio/pictures.py: hero_box), taking it
+ * as a `Crop` whose `size` is the frame's width.
+ */
+export const HERO_RATIO = 2;
+
+/** A hero frame `frameWidth` wide at (left, top), kept inside the picture and not too small. */
+export function heroFrame(width: number, height: number, left: number, top: number, frameWidth: number): Box {
+  const widest = Math.min(width, height * HERO_RATIO);
+  const w = Math.min(Math.max(frameWidth, widest * SMALLEST), widest);
+  const h = w / HERO_RATIO;
+  return {
+    left: Math.min(Math.max(left, 0), width - w),
+    top: Math.min(Math.max(top, 0), height - h),
+    width: w,
+    height: h,
+  };
+}
+
+/** The widest hero frame in the middle: where a new picture's crop starts. */
+export function heroCentred(width: number, height: number): Box {
+  const widest = Math.min(width, height * HERO_RATIO);
+  return heroFrame(width, height, (width - widest) / 2, (height - widest / HERO_RATIO) / 2, widest);
+}
+
+/** Resize a hero frame to `frameWidth`, keeping its centre where it was (as far as the picture allows). */
+export function heroResized(width: number, height: number, box: Box, frameWidth: number): Box {
+  const cx = box.left + box.width / 2;
+  const cy = box.top + box.height / 2;
+  const sized = heroFrame(width, height, 0, 0, frameWidth);
+  return heroFrame(width, height, cx - sized.width / 2, cy - sized.height / 2, sized.width);
+}

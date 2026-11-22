@@ -15,6 +15,10 @@ _Avoid_: User (for the person in the game), member
 What anyone signed in can see about a player: their display name, handle, pronouns, when they joined, a bio, social media links and their Discord username. Never their email, which only they and the custodian see.
 _Avoid_: Bio page, user page
 
+**Author Profile**:
+How a person shows on the game developer blog, under each article they write and on their author page: a display name, an author handle for the page's address, a short bio, links and a picture, all of their own choosing. Apart from their profile, and public: anyone at all can see it while they are on a troupe's staff. The custodian can clear its bio, links or picture.
+_Avoid_: Byline, blog profile, writer page
+
 **Handle**:
 The unique name a person is found and shown by, such as @night_owl, in place of their email. They choose it, can sign in with it, and can change it once in 30 days; an old handle stays theirs for 90.
 _Avoid_: Username, login

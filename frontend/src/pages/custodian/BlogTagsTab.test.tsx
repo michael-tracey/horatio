@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
 import type { BlogTagKeptOut } from "../../api/types";
-import { tagArticles } from "../blog/blog";
+import { tagArticles, withRetired } from "../blog/blog";
 import { BlogTagsTab } from "./BlogTagsTab";
 
 beforeAll(() => {
@@ -118,5 +118,17 @@ describe("a tag's articles, in words", () => {
     expect(tagArticles({ articles: 1, published: 1 })).toBe("1 article, published");
     expect(tagArticles({ articles: 4, published: 4 })).toBe("4 articles, all published");
     expect(tagArticles({ articles: 4, published: 1 })).toBe("4 articles, 1 published");
+  });
+});
+
+describe("the chips both pages show (#1161)", () => {
+  it("offers the tags, then any retired one the article has", () => {
+    const offered = [{ id: "t1", name: "How to play", slug: "how-to-play" }];
+    const old = { id: "t9", name: "Old ways", slug: "old-ways" };
+    expect(withRetired(offered, [offered[0]!, old])).toEqual([
+      { tag: offered[0], retired: false },
+      { tag: old, retired: true },
+    ]);
+    expect(withRetired(offered)).toEqual([{ tag: offered[0], retired: false }]);
   });
 });

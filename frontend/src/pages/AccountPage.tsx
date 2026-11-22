@@ -2,19 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useMatch } from "react-router";
 import { api, unwrap } from "../api/client";
-import type { PlayerOut, ProfileLink } from "../api/types";
+import type { PlayerOut } from "../api/types";
 import { SectionLabel } from "../components/Headings";
 import { PronounsInput } from "../components/PronounsInput";
 import { useToast } from "../components/Toast";
+import { LinksEditor } from "../components/LinksEditor";
 import { Button, Card, ErrorText, Field, Input, Loading, PageTitle, Tabs, Textarea } from "../components/ui";
 import { useAction, useLeaveWarning, useMe } from "../hooks";
 import { DevicePanel } from "../offline/DevicePanel";
+import { useWriter } from "./blog/writer";
 import { LinesVeilsForm } from "./LinesVeilsForm";
+import { BlogAuthorPage } from "./settings/BlogAuthorPage";
 import { NotificationsPage } from "./settings/NotificationsPage";
 import { PreferencesPage } from "./settings/PreferencesPage";
 import { SignInPage } from "./settings/SignInPage";
-
-const MAX_LINKS = 6;
 
 /** Where the Discord username's hint sends the player to link or unlink their Discord. */
 const SIGN_IN = (
@@ -26,6 +27,7 @@ const SIGN_IN = (
 const TABS = [
   { to: "/account", label: "Profile", end: true },
   { to: "/account/lines-veils", label: "Lines and veils" },
+  { to: "/account/blog", label: "Blog author" },
   { to: "/account/preferences", label: "Preferences" },
   { to: "/account/notifications", label: "Notifications" },
   { to: "/account/sign-in", label: "Sign-in and email" },
@@ -33,7 +35,8 @@ const TABS = [
 ];
 
 /** The signed-in player's own profile, as others see it on their player page;
- * their lines and veils, which are never public; their preferences; which
+ * their lines and veils, which are never public; how they show on the blog, if they
+ * write for it (#1159); their preferences; which
  * notifications come and how (#1053); how they sign in; and what this device keeps
  * for games with no signal. */
 export function AccountPage() {
@@ -45,13 +48,22 @@ export function AccountPage() {
     enabled: !!id,
   });
   const onDevice = !!useMatch("/account/device");
+  const writer = useWriter();
   const title = (
     <>
       <PageTitle
         actions={
-          <Link to={`/players/${id}`} className="text-sm text-gold underline">
-            See your profile
-          </Link>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link to={`/players/${id}`} className="text-sm text-gold underline">
+              See your profile
+            </Link>
+            {/* For staff and the custodian (#1157). */}
+            {writer.data?.can_write && (
+              <Link to="/blog/write" className="text-sm text-gold underline">
+                Write for the blog
+              </Link>
+            )}
+          </div>
         }
       >
         Your account
@@ -76,6 +88,7 @@ export function AccountPage() {
       <Routes>
         <Route index element={<ProfileForm key={player.data.id} player={player.data} />} />
         <Route path="lines-veils" element={player.data.lines_veils && <LinesVeilsForm key={`${player.data.id}-lines-veils`} value={player.data.lines_veils} />} />
+        <Route path="blog" element={<BlogAuthorPage />} />
         <Route path="preferences" element={<PreferencesPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="sign-in" element={<SignInPage player={player.data} />} />
@@ -123,8 +136,6 @@ function ProfileForm({ player }: { player: PlayerOut }) {
   });
   const unsaved = JSON.stringify(form) !== JSON.stringify(kept);
   useLeaveWarning(unsaved, { inApp: true });
-  const { links } = form;
-  const setLink = (i: number, change: Partial<ProfileLink>) => set({ links: links.map((l, j) => (j === i ? { ...l, ...change } : l)) });
 
   return (
     <form
@@ -167,31 +178,7 @@ function ProfileForm({ player }: { player: PlayerOut }) {
           </div>
           <div className="flex flex-col gap-3">
             <SectionLabel>Social media</SectionLabel>
-            {links.map((link, i) => (
-              <fieldset key={i} className="flex flex-col gap-2 rounded-md border border-ash p-3 sm:flex-row sm:items-end">
-                <legend className="sr-only">Link {i + 1}</legend>
-                <div className="sm:w-32">
-                  <Field label="Label">
-                    <Input placeholder="Bluesky" maxLength={40} value={link.label} onChange={(e) => setLink(i, { label: e.target.value })} />
-                  </Field>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <Field label="Address">
-                    <Input type="url" required placeholder="https://" value={link.url} onChange={(e) => setLink(i, { url: e.target.value })} />
-                  </Field>
-                </div>
-                <Button type="button" variant="ghost" aria-label={`Remove link ${i + 1}`} onClick={() => set({ links: links.filter((_, j) => j !== i) })}>
-                  Remove
-                </Button>
-              </fieldset>
-            ))}
-            {links.length < MAX_LINKS ? (
-              <Button type="button" variant="secondary" className="self-start" onClick={() => set({ links: [...links, { label: "", url: "" }] })}>
-                Add a link
-              </Button>
-            ) : (
-              <p className="text-sm text-mist">That's the most links a profile shows.</p>
-            )}
+            <LinksEditor links={form.links} onChange={(links) => set({ links })} />
           </div>
         </div>
         <div className="mt-6 flex flex-col gap-3 border-t border-ash/60 pt-4">

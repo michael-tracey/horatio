@@ -24,7 +24,7 @@ The custodian can also do anything a lead storyteller can, in any troupe, even o
 What the custodian isn't:
 
 - **Not a player's stand-in.** Like staff, the custodian can read any character's sheet, but only a character's player edits it. To see exactly what a player sees, use [View as](#viewing-as-someone).
-- **Not one of every troupe's staff.** The custodian isn't listed on a troupe's Staff tab, and isn't sent each troupe's approvals and downtimes. Their bell has only the custodian's own work, such as new troupe requests, and a note each time someone signs up, which opens **Custodian › People** with that person found.
+- **Not one of every troupe's staff.** The custodian isn't listed on a troupe's Staff tab, and isn't sent each troupe's approvals and downtimes. Their bell has only the custodian's own work, such as new troupe requests and articles sent for the blog, and a note each time someone signs up, which opens **Custodian › People** with that person found.
 - **Not a role you give in the app.** There's no button to make someone the custodian, or to stop being one. See [Becoming the custodian](#becoming-the-custodian) and [Removing a custodian](#removing-a-custodian).
 
 ## Becoming the custodian
@@ -249,11 +249,15 @@ Someone who signed up twice, say once with Google and once with an email and pas
 4. Give a **Reason**. It's kept in the audit log and in the log of each troupe the merge touches, and told to the person and those troupes' lead storytellers. The person is always told; a lead can turn off theirs, under **Staff work › Accounts merged** on their Account › Notifications.
 5. Choose **Continue**, read what will move, then choose **Merge into @handle**.
 
-What moves: the closed account's characters, its staff roles (where both accounts are on one troupe's staff, the higher role is kept), its ways of signing in, and its settings and profile details where the staying account has none of its own. Its handles still find the person. A suspension it's under carries over.
+What moves: the closed account's characters, its staff roles (where both accounts are on one troupe's staff, the higher role is kept), its ways of signing in, its [blog](#the-blog) articles with any changes waiting on them, and its settings, profile details and blog author profile where the staying account has none of its own. Its handles still find the person. A suspension it's under carries over.
 
 The closed account is signed out everywhere, can't sign in, and isn't listed or found. Its email is freed for use. What it did stays as it was, shown as "*name* (merged into @handle)".
 
 A merge can't be undone. A custodian's account can't be the one closed, and a merge waits while one of the characters is in a game on the Play View.
+
+### Clearing a blog author's bio or picture
+
+Anyone on a troupe's staff can have an author page on the blog, with a bio, links and a picture they choose (see [Your blog author profile](getting-started.md#your-blog-author-profile)). To clear one that breaks the site's rules, open their page at /blog/authors/*handle*. Under **Custodian**, tick **Bio**, **Links** or **Picture**, give a **Reason** if you like, and choose **Clear**. The rest of their author profile stays. They're told in the bell, with your reason, and it's kept in the audit log, under Accounts.
 
 ### The Suspended, Password resets and Email changes cards
 
@@ -269,11 +273,15 @@ Under the table, three cards show what's going on with accounts:
 
 Horatio has a blog of its own: articles on playing and running a game, for everyone who uses Horatio, written by the staff of any troupe that isn't archived, narrators included. Nothing is on it until you publish it, and readers can't comment. Its reading pages aren't open yet: for now an article, published or not, is seen only by its author and you.
 
+How staff write an article, and what the blog asks of them, is in [Writing for the blog](blog.md).
+
 **Custodian › Blog** has two parts: **Articles**, and the blog's **Tags** (below). **Articles** holds the articles sent to you, and the tab shows how many are waiting. It has three lists:
 
 - **Waiting**: the articles their authors have sent you, and the changes to published articles, the longest waiting first. A published article's changes are marked **Changes**.
 - **Published**: what is on the blog, the latest first.
 - **Unpublished**: what you've taken down, with why.
+
+Each article or change waiting is on your bell too, until you publish it or return it, or its author withdraws it. Choosing it opens **Custodian › Blog** with that article open to read. To have it emailed or pushed to you as well, tick it under **Custodian › Blog articles waiting** on your Account › Notifications.
 
 Each article shows its title, author, the troupe it names (an author on staff in several chooses one, or none) and its summary. Choose **Read it** to read the whole article, with its picture.
 

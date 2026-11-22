@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
-import { Link } from "react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, useLocation } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BlogArticleOut, BlogTagOut } from "../../api/types";
 import { Markdown } from "../../components/Markdown";
@@ -8,6 +8,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Textarea 
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { toggled, working } from "../blog/blog";
+import { TagChips } from "../blog/TagChips";
 
 export function useBlogQueue(enabled = true) {
   return useQuery({ queryKey: ["blog-queue"], queryFn: () => unwrap(api.GET("/api/blog/queue")), enabled });
@@ -72,10 +73,21 @@ export function BlogTab() {
   );
 }
 
-/** One article: what it says (under Waiting, a published one's changes), who wrote it, and its tags. */
+/**
+ * One article: what it says (under Waiting, a published one's changes), who wrote it, and its tags.
+ * An address ending #article-<id>, as the custodian's bell task links (#1170), opens it to read,
+ * under Waiting while it waits there.
+ */
 function Article({ article: a, tags, waiting = false, children }: { article: BlogArticleOut; tags: BlogTagOut[]; waiting?: boolean; children?: ReactNode }) {
   const dates = useDates();
   const words = waiting ? working(a) : a;
+  const { hash } = useLocation();
+  const anchor = waiting || !a.waiting ? `article-${a.id}` : undefined;
+  const opened = !!anchor && hash === `#${anchor}`;
+  const here = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (opened) here.current?.scrollIntoView?.({ block: "start" });
+  }, [opened]);
   const when =
     waiting && a.waiting === "changes" && a.revision?.submitted_at
       ? `changes sent ${dates.date(a.revision.submitted_at)}`
@@ -87,7 +99,7 @@ function Article({ article: a, tags, waiting = false, children }: { article: Blo
             ? `published ${dates.date(a.published_at)}`
             : "";
   return (
-    <li className="flex flex-col gap-2 py-3" aria-label={words.title}>
+    <li ref={here} id={anchor} className="flex flex-col gap-2 py-3" aria-label={words.title}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-parchment">
           {words.title}
@@ -119,7 +131,7 @@ function Article({ article: a, tags, waiting = false, children }: { article: Blo
           {a.note}
         </p>
       )}
-      <details className="text-sm">
+      <details className="text-sm" open={opened || undefined}>
         <summary className="cursor-pointer text-mist hover:text-parchment">Read it</summary>
         <div className="mt-2 flex flex-col gap-3">
           {words.picture && <img src={`${words.picture}/600.webp`} alt="" className="max-h-64 w-fit rounded-md" />}
@@ -178,31 +190,10 @@ function Address({ article: a }: { article: BlogArticleOut }) {
 function Tags({ article: a, tags }: { article: BlogArticleOut; tags: BlogTagOut[] }) {
   const on = a.tags.map((t) => t.id);
   const save = useAction((ids: string[]) => unwrap(api.PUT("/api/blog/articles/{article_id}/tags", { params: { path: { article_id: a.id } }, body: { tag_ids: ids } })), [["blog-queue"]]);
-  const retired = a.tags.filter((t) => !tags.some((c) => c.id === t.id));
-  if (tags.length === 0 && retired.length === 0) return null;
+  if (tags.length === 0 && a.tags.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
-      <ul aria-label="Tags" className="flex flex-wrap gap-2">
-        {[...tags, ...retired].map((t) => {
-          const chosen = on.includes(t.id);
-          const old = retired.includes(t);
-          return (
-            <li key={t.id}>
-              <button
-                type="button"
-                aria-pressed={chosen}
-                disabled={save.isPending}
-                title={old ? "Retired: taking it off is for good." : undefined}
-                onClick={() => save.mutate(toggled(on, t.id))}
-                className={`min-h-8 rounded-full border px-3 text-sm ${chosen ? "border-gold bg-gold/10 text-gold" : "border-ash text-parchment hover:border-mist"}`}
-              >
-                {t.name}
-                {old && <span className="ml-1 text-xs text-mist">(retired)</span>}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <TagChips tags={tags} had={a.tags} chosen={on} disabled={save.isPending} onToggle={(id) => save.mutate(toggled(on, id))} />
       <ErrorText error={save.error} />
     </div>
   );
