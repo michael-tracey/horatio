@@ -3,14 +3,18 @@
 with only what their public profile shows, searched by its own fields; and the blog's
 articles the landing page reads are only the published ones."""
 
+import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime, time, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from horatio.api import public_troupes
+from horatio.models import ScheduledGame
 from tests.api_helpers import Troupe
 from tests.test_api_troupe_profiles import PROFILE
 
@@ -75,6 +79,7 @@ def test_only_public_troupes_still_running_are_listed(troupe: Troupe, anyone: Te
         "new_players": "welcoming",
         "min_age": 18,
         "content_notes": "Violence and body horror.",
+        "next_game": None,
     }
     # Nothing its public profile keeps from people signed out, nor anyone's email.
     assert "Mill Lane" not in response.text
@@ -211,6 +216,105 @@ def test_the_directory_filters_by_schedule_new_players_and_age(
     # Only the days and frequencies it knows, and an age a profile can give.
     for wrong in ({"day": "someday"}, {"frequency": "yearly"}, {"age": -1}, {"age": 100}):
         assert anyone.get("/public/troupes", params=wrong).status_code == 422
+
+
+FRIDAY, SATURDAY = 4, 5
+
+
+def weekday(day: int, zone: str, at: time, weeks: int = 0) -> datetime:
+    """The first `day` (Monday is 0) from two days on, `weeks` weeks later still, at
+    `at` in `zone`."""
+    soonest = datetime.now(ZoneInfo(zone)).date() + timedelta(days=2)
+    on = soonest + timedelta(days=(day - soonest.weekday()) % 7, weeks=weeks)
+    return datetime.combine(on, at, ZoneInfo(zone))
+
+
+def game_at(troupe: Troupe, troupe_id: str, starts: datetime) -> str:
+    """A game for the troupe, four hours from `starts`; its id."""
+    ends = starts + timedelta(hours=4)
+    body = {"starts_at": starts.isoformat(), "ends_at": ends.isoformat()}
+    return ok(troupe.lead.client.post(f"/troupes/{troupe_id}/games", json=body), 201)["id"]
+
+
+def zone(troupe: Troupe, chosen: str | None) -> None:
+    """The lead storyteller's time zone, and so their troupes'."""
+    ok(troupe.lead.client.patch("/preferences", json={"time_zone": chosen}))
+
+
+def test_the_directory_finds_a_day_from_the_games_to_come_in_the_leads_time_zone(
+    troupe: Troupe, anyone: TestClient
+) -> None:
+    zone(troupe, "America/New_York")
+    wednesday = weekday(2, "Europe/London", time(19))
+    # Its schedule says nothing, but its next game is on a Wednesday.
+    games_only = another(troupe, "Games only")
+    profiled(troupe, games_only, schedule="")
+    game_at(troupe, games_only, wednesday)
+    # Its schedule names one day and a game falls on another: it is found by both.
+    both = another(troupe, "Sundays and a Wednesday")
+    profiled(troupe, both, schedule="Sundays")
+    game_at(troupe, both, wednesday + timedelta(weeks=1))
+    # Late on a Friday in New York, which is already Saturday in UTC.
+    late = weekday(FRIDAY, "America/New_York", time(21, 30))
+    assert late.astimezone(UTC).weekday() == SATURDAY
+    late_fridays = another(troupe, "Late Fridays")
+    game_at(troupe, late_fridays, late)
+    # Never a troupe that isn't public or is archived, whatever its games.
+    hidden = another(troupe, "Hidden Wednesdays", public=False)
+    game_at(troupe, hidden, wednesday)
+    gone = another(troupe, "Old Wednesdays")
+    game_at(troupe, gone, wednesday)
+    ok(troupe.lead.client.post(f"/troupes/{gone}/archive", json={"reason": "Done"}))
+    another(troupe, "No games")
+
+    assert found(anyone, day="wednesday") == ["Games only", "Sundays and a Wednesday"]
+    assert found(anyone, day="sunday") == ["Sundays and a Wednesday"]
+    assert found(anyone, day="friday") == ["Late Fridays"]
+    assert found(anyone, day="saturday") == []
+    # Each row says when its next game starts, as its profile does.
+    rows = {t["name"]: t for t in ok(anyone.get("/public/troupes"))["troupes"]}
+    assert datetime.fromisoformat(rows["Games only"]["next_game"]) == wednesday
+    assert datetime.fromisoformat(rows["Late Fridays"]["next_game"]) == late
+    assert rows["No games"]["next_game"] is None
+
+    # With no time zone chosen it is UTC's day, as everywhere else.
+    zone(troupe, None)
+    assert found(anyone, day="friday") == []
+    assert found(anyone, day="saturday") == ["Late Fridays"]
+
+
+def test_the_directory_day_leaves_out_games_over_taken_off_or_past_eight_weeks(
+    troupe: Troupe, anyone: TestClient, session: Session
+) -> None:
+    # A Monday game that is over.
+    past = another(troupe, "Past Mondays")
+    ended = weekday(0, "UTC", time(19), weeks=-2)
+    session.add(
+        ScheduledGame(
+            troupe_id=uuid.UUID(past), starts_at=ended, ends_at=ended + timedelta(hours=4)
+        )
+    )
+    session.commit()
+    # A Tuesday game taken off the schedule.
+    removed = another(troupe, "Removed Tuesdays")
+    game_id = game_at(troupe, removed, weekday(1, "UTC", time(19)))
+    response = troupe.lead.client.delete(f"/troupes/{removed}/games/{game_id}")
+    assert response.status_code == 204, response.text
+    # Thursdays within the eight weeks, and beyond them.
+    near = another(troupe, "Near Thursdays")
+    game_at(troupe, near, weekday(3, "UTC", time(19), weeks=6))
+    far = another(troupe, "Far Thursdays")
+    beyond = datetime.now(UTC) + public_troupes.GAMES_AHEAD + timedelta(days=1)
+    game_at(troupe, far, beyond + timedelta(days=(3 - beyond.weekday()) % 7))
+
+    assert found(anyone, day="monday") == []
+    assert found(anyone, day="tuesday") == []
+    assert found(anyone, day="thursday") == ["Near Thursdays"]
+    # What is over or gone isn't its next game either.
+    rows = {t["name"]: t for t in ok(anyone.get("/public/troupes"))["troupes"]}
+    assert rows["Past Mondays"]["next_game"] is None
+    assert rows["Removed Tuesdays"]["next_game"] is None
+    assert rows["Far Thursdays"]["next_game"] is not None
 
 
 def test_the_landing_pages_articles_are_only_published_ones(

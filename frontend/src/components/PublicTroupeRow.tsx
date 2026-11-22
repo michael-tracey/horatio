@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import type { PublicTroupeOut } from "../api/types";
+import { useDates } from "../dates";
 import { excerpt } from "../pages/troupeList";
 import { Avatar } from "./Avatar";
 import { TroupePill } from "./TroupePill";
@@ -8,10 +9,12 @@ import { Badge } from "./ui";
 /**
  * A troupe anyone may find, as a compact row linking to its public profile: its portrait,
  * name, abbreviation, where it plays and the start of its description (#1164). With
- * `details`, as the troupe directory shows it (#1192), also when it plays, whether it
- * welcomes new players, its minimum age and its content notes.
+ * `details`, as the troupe directory shows it (#1192), also when it plays and its next
+ * game (#1206), as its profile shows them, whether it welcomes new players, its minimum
+ * age and its content notes.
  */
 export function PublicTroupeRow({ troupe: t, details = false }: { troupe: PublicTroupeOut; details?: boolean }) {
+  const dates = useDates();
   const about = excerpt(t.description);
   const welcoming = details && t.new_players === "welcoming";
   const aged = details && t.min_age !== null;
@@ -30,6 +33,11 @@ export function PublicTroupeRow({ troupe: t, details = false }: { troupe: Public
           {t.place && <span className="text-xs text-mist">{t.place}</span>}
         </span>
         {details && t.schedule && <span className="text-sm break-words text-parchment">{t.schedule}</span>}
+        {details && t.next_game && (
+          <span className="text-sm">
+            <span className="text-mist">Next game:</span> <span className="text-parchment">{dates.gameStart(t.next_game)}</span>
+          </span>
+        )}
         {(welcoming || aged) && (
           <span className="flex flex-wrap gap-2">
             {welcoming && <Badge tone="gold">Welcoming new players</Badge>}

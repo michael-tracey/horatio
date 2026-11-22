@@ -23,6 +23,7 @@ function troupe(over: Partial<PublicTroupeOut>): PublicTroupeOut {
     new_players: "welcoming",
     min_age: 18,
     content_notes: "Violence and body horror.",
+    next_game: null,
     ...over,
   };
 }
@@ -71,8 +72,8 @@ const page = (troupes: PublicTroupeOut[], over: Partial<PublicTroupePageOut> = {
 const address = () => screen.getByRole("status", { name: "Address" }).textContent;
 
 describe("the troupe directory, /find-a-troupe (#1192)", () => {
-  it("lists public troupes in compact rows, each with when it plays, new players, age and content notes", async () => {
-    answering(() => page([troupe({}), troupe({ id: "york", name: "Court of York", abbreviation: "Court of York", schedule: "", new_players: "closed", min_age: null, content_notes: "" })]));
+  it("lists public troupes in compact rows, each with when it plays, its next game, new players, age and content notes", async () => {
+    answering(() => page([troupe({ next_game: "2026-11-28T12:00:00Z" }), troupe({ id: "york", name: "Court of York", abbreviation: "Court of York", schedule: "", new_players: "closed", min_age: null, content_notes: "" })]));
     show();
 
     expect(await screen.findByRole("heading", { level: 1, name: "Find a troupe" })).toBeTruthy();
@@ -83,11 +84,13 @@ describe("the troupe directory, /find-a-troupe (#1192)", () => {
     // Its pill for the eye, its name read once.
     expect(within(lords!).getByText("LotN").closest("[aria-hidden='true']")).toBeTruthy();
     expect(lords!.textContent).toContain("Second Saturday of the month");
+    expect(lords!.textContent).toMatch(/Next game: Sat 28 Nov/);
     expect(lords!.textContent).toContain("Welcoming new players");
     expect(lords!.textContent).toContain("18+");
     expect(lords!.textContent).toContain("Content notes: Violence and body horror.");
     expect(lords!.textContent).not.toContain("**");
     // What a troupe doesn't say, its row leaves out.
+    expect(york!.textContent).not.toContain("Next game");
     expect(york!.textContent).not.toContain("Welcoming");
     expect(york!.textContent).not.toContain("Content notes");
     expect(york!.textContent).not.toContain("+");

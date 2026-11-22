@@ -44661,6 +44661,18 @@
             ],
             "title": "New Players"
           },
+          "next_game": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Game"
+          },
           "place": {
             "title": "Place",
             "type": "string"
@@ -44691,7 +44703,8 @@
           "schedule",
           "new_players",
           "min_age",
-          "content_notes"
+          "content_notes",
+          "next_game"
         ],
         "title": "PublicTroupeOut",
         "type": "object"
@@ -87226,7 +87239,7 @@
     },
     "/api/public/troupes": {
       "get": {
-        "description": "The troupes whose profiles are public and that aren't archived, by name, a page\nat a time, found by the directory's search: by name or abbreviation, place, the\nday and how often they play, whether they welcome new players, and age. For anyone\nat all.",
+        "description": "The troupes whose profiles are public and that aren't archived, by name, a page\nat a time, found by the directory's search: by name or abbreviation, place, the\nday (from the schedule or the games to come) and how often they play, whether\nthey welcome new players, and age. For anyone at all.",
         "operationId": "list_public_troupes_api_public_troupes_get",
         "parameters": [
           {
@@ -87266,7 +87279,7 @@
             }
           },
           {
-            "description": "A day its schedule names.",
+            "description": "A day its schedule names, or that one of its next games is on.",
             "in": "query",
             "name": "day",
             "required": false,
@@ -87288,7 +87301,7 @@
                   "type": "null"
                 }
               ],
-              "description": "A day its schedule names.",
+              "description": "A day its schedule names, or that one of its next games is on.",
               "title": "Day"
             }
           },
