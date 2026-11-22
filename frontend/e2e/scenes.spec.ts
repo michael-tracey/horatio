@@ -521,7 +521,7 @@ test("staff keep a troupe's scenes on their phones: with no signal both tap the 
   // Signing out clears what the phone kept.
   await l.goto("/characters");
   await (await topBar(l)).getByRole("button", { name: "Sign out" }).click();
-  await expect(l.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(l.getByRole("heading", { name: "Welcome to Horatio", level: 1 })).toBeVisible();
   expect(await l.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("horatio.offline.scenes.")))).toEqual([]);
 });
 

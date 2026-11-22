@@ -131,9 +131,13 @@ test("Show ratings as is kept through signing out and in, a reload and another d
   await expect(p.getByRole("button", { name: "Physical 7" })).toBeVisible();
   await p.screenshot(shots("npc-builder-numbers"));
 
-  // Signed out and in again: numbers straight away, and after a reload.
+  // Signed out and in again: numbers straight away, and after a reload. Signing out
+  // goes to the landing page (#1180), which has Sign in at the top.
   await p.goto("/characters");
   await (await topBar(p)).getByRole("button", { name: "Sign out" }).click();
+  await expect(p).toHaveURL((url) => url.pathname === "/" && url.search === "");
+  await expect(p.getByRole("heading", { name: "Welcome to Horatio", level: 1 })).toBeVisible();
+  await p.getByRole("banner").getByRole("link", { name: "Sign in", exact: true }).click();
   await p.getByLabel("Email or handle").fill(lead.email);
   await p.getByLabel("Password").fill(PASSWORD);
   await p.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -513,6 +517,7 @@ test("two-step sign-in: an authenticator app set up from Account, then asked for
 
   // Signed out, a recovery code stands in for the app, once.
   await (await topBar(other)).getByRole("button", { name: "Sign out" }).click();
+  await other.getByRole("banner").getByRole("link", { name: "Sign in", exact: true }).click();
   await signIn();
   await other.getByRole("button", { name: "Use a recovery code instead" }).click();
   await other.getByLabel("Recovery code").fill(codes[0]!);
@@ -565,17 +570,18 @@ test("two-step sign-in with a passkey: added from Account, then signed in with a
   await expect(card.getByRole("region", { name: "Passkeys" }).getByText("This laptop")).toBeVisible();
   await page.screenshot(shots("settings-two-step-passkey"));
 
-  // Signed out, the password then the passkey: the same device, so the same passkey.
-  // The passkey the login box offers isn't picked.
+  // Signed out (to the landing page, #1180), the password then the passkey: the same
+  // device, so the same passkey. The passkey the login box offers isn't picked.
   await device.present(false);
   await (await topBar(page)).getByRole("button", { name: "Sign out" }).click();
+  await page.goto("/sign-in?next=%2Faccount%2Fsign-in");
   await page.getByLabel("Email or handle").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Two-step sign-in" })).toBeVisible();
   await device.present(true);
   await page.getByRole("button", { name: "Use a passkey" }).click();
-  // Back where they signed out from, with the passkey just used.
+  // On to the page the sign-in was for, with the passkey just used.
   await expect(page).toHaveURL(/\/account\/sign-in$/);
   await expect(card.getByText(/This laptop · added .*, last used/)).toBeVisible();
 });
@@ -593,22 +599,26 @@ test("signing in with a passkey alone: no password, and no second step after it 
   // Made to sign in alone, so nothing says it may not.
   await expect(card.getByText(/May not sign you in alone/)).toHaveCount(0);
 
-  // Signed out, the button: signed in at once, back where they signed out from, with no
-  // password and no second step. The login box offers nothing meanwhile.
+  // Signed out (to the landing page, #1180, and on to sign in from its top bar), the
+  // button: signed in at once, with no password and no second step. The login box
+  // offers nothing meanwhile.
   await loginBoxOffers(page, false);
   await (await topBar(page)).getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("banner").getByRole("link", { name: "Sign in", exact: true }).click();
   await expect(page.getByLabel("Email or handle")).toHaveAttribute("autocomplete", "username webauthn");
   await page.screenshot(shots("sign-in-passkey"));
   const asked = page.waitForRequest((r) => r.url().endsWith("/api/auth/passkey/options"));
   await page.getByRole("button", { name: "Sign in with a passkey" }).click();
   await asked;
-  await expect(page).toHaveURL(/\/account\/sign-in$/);
+  await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  await page.goto("/account/sign-in");
   await expect(card.getByText(/This laptop · added .*, last used/)).toBeVisible();
-  await loginBoxOffers(page, true);
 
   // Signed out again, the passkey the login box offers: picked, and signed in by itself.
   const picked = page.waitForResponse((r) => r.url().endsWith("/api/auth/passkey") && r.status() === 200);
   await (await topBar(page)).getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome to Horatio", level: 1 })).toBeVisible();
+  await page.goto("/sign-in?next=%2Faccount%2Fsign-in");
   await picked;
   await expect(page).toHaveURL(/\/account\/sign-in$/);
   await expect(card.getByRole("region", { name: "Passkeys" }).getByText("This laptop")).toBeVisible();
@@ -655,6 +665,8 @@ test("replacing a passkey that may not sign in alone, in one go: the old one sta
   // It signs in alone: signed out, picked from the login box at once.
   const picked = page.waitForResponse((r) => r.url().endsWith("/api/auth/passkey") && r.status() === 200);
   await (await topBar(page)).getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome to Horatio", level: 1 })).toBeVisible();
+  await page.goto("/sign-in?next=%2Faccount%2Fsign-in");
   await picked;
   await expect(page).toHaveURL(/\/account\/sign-in$/);
   await expect(passkeys.getByText(/Old key · added .*, last used/)).toBeVisible();
@@ -774,15 +786,15 @@ test("light mode lets the sun rise, and the person at the screen goes to ash, si
   await page.screenshot(shot("sunrise-night"));
   await page.waitForTimeout(2500);
   await page.screenshot(shot("sunrise-dawn"));
-  // Signed out as the screen goes white, and the ash blows away to the sign-in page.
-  await expect(page).toHaveURL(/\/sign-in/, { timeout: 15_000 });
+  // Signed out as the screen goes white, and the ash blows away to the landing page (#1180).
+  await expect(page).toHaveURL((url) => url.pathname === "/" && url.search === "", { timeout: 15_000 });
   await page.waitForTimeout(3600);
   await page.screenshot(shot("sunrise-ash"));
   await expect(page.getByRole("status").filter({ hasText: "The sun rises" })).not.toBeAttached({ timeout: 15_000 });
-  await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
-  // Truly signed out: the account is behind sign-in again.
+  await expect(page.getByRole("heading", { name: "Welcome to Horatio", level: 1 })).toBeVisible();
+  // Truly signed out: the account is behind sign-in again, which comes back to it.
   await page.goto("/account/preferences");
-  await expect(page).toHaveURL(/\/sign-in/);
+  await expect(page).toHaveURL(/\/sign-in\?next=%2Faccount%2Fpreferences$/);
 });
 
 test("Ultra goth: velvet curtains close, it is saved behind them, and they open on deep red; Dark switches straight back", async ({ browser }) => {
