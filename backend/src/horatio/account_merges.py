@@ -13,7 +13,8 @@ accounts. The custodian picks which one stays, and merges the other into it:
   pronouns, each only where the staying account has none of its own; so too its
   lines and veils with its choice to share them, and its choice to be named by
   its handle in troupes' Who's Who; and its characters' own Discord channels it
-  turned off (#1077) stay off;
+  turned off (#1077) stay off; and its blog author profile (#1159), if the
+  staying account has none;
 - its bell messages, the scenes it made, the responses assigned to it and not yet
   written, and its troupe requests still waiting;
 - its handle, and the former handles it still holds, become the staying
@@ -57,6 +58,7 @@ from horatio.connectors import SendError, email
 from horatio.email_design import Body, compose
 from horatio.models import (
     AuthIdentity,
+    BlogAuthor,
     Character,
     EmailChange,
     EmailNotice,
@@ -506,6 +508,9 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
             **(keep.preferences or {}),
             off: sorted({*(keep.preferences or {}).get(off, []), *other.preferences[off]}),
         }
+
+    if db.scalar(select(BlogAuthor.id).where(BlogAuthor.user_id == keep.id)) is None:
+        db.execute(update(BlogAuthor).where(BlogAuthor.user_id == other.id).values(user_id=keep.id))
 
     _suspension(db, actor, keep, other, found)
     # Its change of email waiting is cancelled, so its link no longer works; the

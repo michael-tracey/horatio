@@ -249,11 +249,15 @@ Someone who signed up twice, say once with Google and once with an email and pas
 4. Give a **Reason**. It's kept in the audit log and in the log of each troupe the merge touches, and told to the person and those troupes' lead storytellers. The person is always told; a lead can turn off theirs, under **Staff work › Accounts merged** on their Account › Notifications.
 5. Choose **Continue**, read what will move, then choose **Merge into @handle**.
 
-What moves: the closed account's characters, its staff roles (where both accounts are on one troupe's staff, the higher role is kept), its ways of signing in, and its settings and profile details where the staying account has none of its own. Its handles still find the person. A suspension it's under carries over.
+What moves: the closed account's characters, its staff roles (where both accounts are on one troupe's staff, the higher role is kept), its ways of signing in, and its settings, profile details and blog author profile where the staying account has none of its own. Its handles still find the person. A suspension it's under carries over.
 
 The closed account is signed out everywhere, can't sign in, and isn't listed or found. Its email is freed for use. What it did stays as it was, shown as "*name* (merged into @handle)".
 
 A merge can't be undone. A custodian's account can't be the one closed, and a merge waits while one of the characters is in a game on the Play View.
+
+### Clearing a blog author's bio or picture
+
+Anyone on a troupe's staff can have an author page on the blog, with a bio, links and a picture they choose (see [Your blog author profile](getting-started.md#your-blog-author-profile)). To clear one that breaks the site's rules, open their page at /blog/authors/*handle*. Under **Custodian**, tick **Bio**, **Links** or **Picture**, give a **Reason** if you like, and choose **Clear**. The rest of their author profile stays. They're told in the bell, with your reason, and it's kept in the audit log, under Accounts.
 
 ### The Suspended, Password resets and Email changes cards
 
