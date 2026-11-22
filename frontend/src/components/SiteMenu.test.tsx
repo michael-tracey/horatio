@@ -49,7 +49,7 @@ describe("SiteMenu", () => {
     expect(button.getAttribute("aria-expanded")).toBe("true");
     expect(button.getAttribute("aria-controls")).toBe(nav()?.parentElement?.id);
     const names = screen.getAllByRole("link").map((a) => a.getAttribute("aria-label") ?? a.textContent);
-    expect(names).toEqual(["Characters", "Troupes", "Rulebook", "Help", "Your account: Ines Ferreira-Valadares"]);
+    expect(names).toEqual(["Characters", "Troupes", "Rulebook", "Help", "Blog", "Your account: Ines Ferreira-Valadares"]);
     expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByRole("link", { name: "Characters" }));
   });
@@ -61,6 +61,16 @@ describe("SiteMenu", () => {
     expect(write.getAttribute("href")).toBe("/blog/write");
     const names = screen.getAllByRole("link").map((a) => a.getAttribute("aria-label") ?? a.textContent);
     expect(names.slice(-2)).toEqual(["Your account: Ines Ferreira-Valadares", "Write for the blog"]);
+  });
+
+  it("has the blog, which marks itself on an article too (#1181)", () => {
+    const { button } = setup({ at: "/blog/a-night-at-the-elysium" });
+    fireEvent.click(button);
+    const blog = screen.getByRole("link", { name: "Blog" });
+    expect(blog.getAttribute("href")).toBe("/blog");
+    expect(blog.getAttribute("class")).toContain("bg-ash/40 text-parchment");
+    fireEvent.click(blog);
+    expect(screen.getByTestId("where").textContent).toBe("/blog");
   });
 
   it("has Custodian and says so for the custodian", () => {

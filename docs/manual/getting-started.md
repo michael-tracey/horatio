@@ -235,7 +235,7 @@ Keep the link to yourself: anyone with it can see those dates and your answers. 
 
 ## Reading the blog
 
-Horatio's blog, at **/blog**, has articles on playing and running a game, written by the staff of troupes on Horatio and published by the custodian. Anyone can read it, signed in or not, so you can share a link to an article with anyone. Signed out, [the front page](#the-front-page) shows a few of its articles too.
+Horatio's blog, at **/blog**, has articles on playing and running a game, written by the staff of troupes on Horatio and published by the custodian. Anyone can read it, signed in or not, so you can share a link to an article with anyone. **Blog**, at the foot of every page, leads to it, and so does the menu on a phone or a narrow window. Signed out, [the front page](#the-front-page) shows a few of its articles too.
 
 - The newest articles come first, a page at a time, with any featured ones across the top. **Previous** and **Next** at the foot move between pages.
 - The tags above the articles, such as **Storytelling** or **Safety and consent**, show only the articles with that tag. **All** shows every one again. Each article's own tags lead to the same lists.

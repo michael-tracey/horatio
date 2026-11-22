@@ -23,7 +23,10 @@ describe("SiteFooter", () => {
     ]);
   });
 
-  it("signed in, links only to About, as before", () => {
-    expect(links(true)).toEqual([["About Horatio", "/about"]]);
+  it("signed in, links to About and the blog (#1181); Help is in the menu", () => {
+    expect(links(true)).toEqual([
+      ["About Horatio", "/about"],
+      ["Blog", "/blog"],
+    ]);
   });
 });
