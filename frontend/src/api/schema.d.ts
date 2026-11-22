@@ -29526,6 +29526,8 @@ export interface components {
             push: boolean;
             /** Push Key */
             push_key: string | null;
+            /** Quiet Exempt */
+            quiet_exempt: string[];
         };
         /** NotificationTopicOut */
         NotificationTopicOut: {
@@ -32321,11 +32323,22 @@ export interface components {
              */
             date_format: "day_month" | "month_day" | "iso";
             /**
+             * Digest Day
+             * @default monday
+             * @enum {string}
+             */
+            digest_day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+            /**
+             * Digest Hour
+             * @default 8
+             */
+            digest_hour: number;
+            /**
              * Email Digest
              * @default at_once
              * @enum {string}
              */
-            email_digest: "at_once" | "daily";
+            email_digest: "at_once" | "daily" | "weekly";
             /**
              * Keep Awake
              * @default true
@@ -32348,6 +32361,21 @@ export interface components {
              * @default true
              */
             quick_notes: boolean;
+            /**
+             * Quiet End
+             * @default 08:00
+             */
+            quiet_end: string;
+            /**
+             * Quiet Hours
+             * @default false
+             */
+            quiet_hours: boolean;
+            /**
+             * Quiet Start
+             * @default 22:00
+             */
+            quiet_start: string;
             /**
              * Ratings
              * @default numbers

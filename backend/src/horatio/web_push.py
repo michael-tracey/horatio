@@ -20,6 +20,13 @@ does for Discord. A device its push service says is gone (404, 410) is forgotten
 refusal worth trying again is tried later, a few times, and otherwise dropped: the
 bell still has it.
 
+Quiet hours (#1196): a person can choose a time of day, in their time zone, when
+pushes wait. What comes in them is kept for when they end (`PushNotice.held_until`),
+and whatever waited for a device goes then as one push, saying how many and what.
+Word about their account's safety (`Topic.urgent`) and what only matters during a
+game (`Topic.at_game`: a power used on their character, teaching asked of them) come
+anyway: `EXEMPT`. The bell has everything as it happens either way.
+
 The server's key comes from its settings (HORATIO_VAPID_PRIVATE_KEY), never the
 database. Without one, push isn't available: nothing is queued, and the page says
 so. `python -m horatio.web_push` makes a key.
@@ -30,10 +37,11 @@ import json
 import logging
 import uuid
 from collections.abc import Iterable
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 from functools import lru_cache
 from typing import Literal
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
 import http_ece
 import httpx
@@ -43,9 +51,11 @@ from py_vapid import Vapid
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from horatio import delivery, notification_choices, suspensions
+from horatio import delivery, notification_choices, preferences, suspensions
 from horatio.config import get_settings
 from horatio.models import PushDevice, PushNotice, Troupe, User
+from horatio.notification_choices import Topic
+from horatio.preferences import Preferences
 
 log = logging.getLogger(__name__)
 
@@ -225,6 +235,70 @@ def turn_off(db: Session, user: User, device_id: uuid.UUID) -> bool:
     return bool(getattr(gone, "rowcount", 0))
 
 
+# --- quiet hours -----------------------------------------------------------------------
+
+# Settings that change when quiet hours are: changing one re-times what is waiting.
+QUIET_SETTINGS = frozenset({"quiet_hours", "quiet_start", "quiet_end", "time_zone"})
+
+
+def exempt(topic: Topic) -> bool:
+    """Whether `topic` comes through quiet hours: word about the account's safety, and
+    what only matters while a game is on."""
+    return topic.urgent or topic.at_game
+
+
+# The topics that come through quiet hours, for the page to name.
+EXEMPT = tuple(t for t in notification_choices.TOPICS if exempt(t) and "push" in t.routes)
+
+
+def local(day: datetime, at: time, where: ZoneInfo) -> datetime:
+    """`at` o'clock on `day`'s date where the person is, in UTC. A time the clocks skip
+    is read by the offset before the change, so 2:30 am is 3:30 am."""
+    return datetime.combine(day.date(), at, tzinfo=where).astimezone(UTC)
+
+
+def quiet_until(prefs: Preferences, at: datetime) -> datetime | None:
+    """When the person's quiet hours end, if `at` is in them; None if it isn't, or they
+    keep none. Quiet hours that start later in the day than they end run overnight."""
+    start, end = prefs.quiet_times()
+    if not prefs.quiet_hours or start == end:
+        return None
+    where = ZoneInfo(prefs.time_zone or "UTC")
+    now = at.astimezone(where)
+    clock = now.time().replace(tzinfo=None)
+    if start < end:
+        quiet = start <= clock < end
+        ends = local(now, end, where)
+    elif clock >= start:
+        quiet = True
+        ends = local(now + timedelta(days=1), end, where)
+    else:
+        quiet = clock < end
+        ends = local(now, end, where)
+    return ends if quiet and ends > at else None
+
+
+def held_for(user: User, topic: Topic, at: datetime) -> datetime | None:
+    """Until when a push of `topic` to `user` at `at` waits: the end of their quiet
+    hours, unless it comes through them."""
+    return None if exempt(topic) else quiet_until(preferences.read(user), at)
+
+
+def retime(db: Session, user: User) -> None:
+    """Re-time the pushes waiting for the end of `user`'s quiet hours, after they change
+    them: for the new end, or to go now, together, once they're over."""
+    at = delivery.now()
+    ends = quiet_until(preferences.read(user), at)
+    for notice in db.scalars(
+        select(PushNotice)
+        .join(PushDevice, PushDevice.id == PushNotice.device_id)
+        .where(PushDevice.user_id == user.id, PushNotice.held_until.is_not(None))
+    ):
+        notice.held_until = ends or at
+        notice.due_at = ends or at
+    db.flush()
+
+
 # --- sending ---------------------------------------------------------------------------
 
 
@@ -238,7 +312,8 @@ def queue(
     troupe_id: uuid.UUID | None = None,
 ) -> None:
     """Keep the notification to push to each device of each of `user_ids` who has
-    this kind come by push. Nothing is kept while push isn't set up."""
+    this kind come by push: at once, or once their quiet hours end. Nothing is kept
+    while push isn't set up."""
     topic = notification_choices.topic_for(kind)
     ids = list(dict.fromkeys(user_ids))
     if "push" not in topic.routes or not ids or not configured():
@@ -250,12 +325,19 @@ def queue(
             ~suspensions.suspended_user(),
         )
     )
-    wanting = [u.id for u in people if notification_choices.chosen(u, topic, "push")]
+    at = delivery.now()
+    wanting = {
+        u.id: held_for(u, topic, at)
+        for u in people
+        if notification_choices.chosen(u, topic, "push")
+    }
     if not wanting:
         return
     troupe = db.get_one(Troupe, troupe_id).name if troupe_id is not None else None
-    at = delivery.now()
-    for device_id in db.scalars(select(PushDevice.id).where(PushDevice.user_id.in_(wanting))):
+    for device_id, user_id in db.execute(
+        select(PushDevice.id, PushDevice.user_id).where(PushDevice.user_id.in_(wanting))
+    ):
+        held = wanting[user_id]
         db.add(
             PushNotice(
                 device_id=device_id,
@@ -263,21 +345,34 @@ def queue(
                 troupe=troupe,
                 summary=summary,
                 link=link,
-                due_at=at,
+                due_at=held or at,
+                held_until=held,
             )
         )
     db.flush()
 
 
-def payload(notice: PushNotice) -> bytes:
+def cut(line: str) -> str:
+    return line if len(line) <= LONGEST else line[: LONGEST - 1].rstrip() + "…"
+
+
+def payload(notice: PushNotice, *others: PushNotice) -> bytes:
     """What the push carries, as the bell shows it: the troupe, the line, the link.
-    The service worker (frontend/public/push-sw.js) shows it, and opens the link."""
-    summary = notice.summary
-    if len(summary) > LONGEST:
-        summary = summary[: LONGEST - 1].rstrip() + "…"
+    Several that waited out quiet hours go as one, saying how many and each line, and
+    opening the link they share, or Horatio. The service worker
+    (frontend/public/push-sw.js) shows it, and opens the link."""
+    if not others:
+        title, body, link = notice.troupe or "Horatio", notice.summary, notice.link
+    else:
+        every = [notice, *others]
+        troupes = {n.troupe for n in every}
+        links = {n.link for n in every}
+        title = (troupes.pop() if len(troupes) == 1 else None) or "Horatio"
+        lines = "; ".join(n.summary.rstrip(".") for n in every)
+        body = f"{len(every)} notifications in your quiet hours: {lines}."
+        link = links.pop() if len(links) == 1 else "/"
     return json.dumps(
-        {"title": notice.troupe or "Horatio", "body": summary, "link": notice.link},
-        ensure_ascii=False,
+        {"title": title, "body": cut(body), "link": link}, ensure_ascii=False
     ).encode()
 
 
@@ -310,12 +405,15 @@ def headers(endpoint: str) -> dict[str, str]:
 Outcome = Literal["sent", "gone", "again", "refused"]
 
 
-def send_one(http: httpx.Client, device: PushDevice, notice: PushNotice) -> Outcome:
-    """Push one notice to its device, and say how it went."""
+def send_one(
+    http: httpx.Client, device: PushDevice, notice: PushNotice, *others: PushNotice
+) -> Outcome:
+    """Push one notice to its device, with any others gathered with it, and say how it
+    went."""
     try:
         answer = http.post(
             device.endpoint,
-            content=encrypt(device, payload(notice)),
+            content=encrypt(device, payload(notice, *others)),
             headers=headers(device.endpoint),
         )
     except httpx.TransportError as error:
@@ -333,13 +431,14 @@ def send_one(http: httpx.Client, device: PushDevice, notice: PushNotice) -> Outc
 
 def wanted(db: Session, device: PushDevice, notice: PushNotice, at: datetime) -> bool:
     """Whether the notice should still go: the person still has its topic come by
-    push, isn't suspended, and it isn't too old to be news."""
+    push, isn't suspended, and it isn't too old to be news, counting from the end of
+    the quiet hours it waited for."""
     topic = notification_choices.BY_NAME.get(notice.topic)
     user = db.get(User, device.user_id)
     return (
         topic is not None
         and user is not None
-        and notice.created_at > at - KEEP_FOR
+        and (notice.held_until or notice.created_at) > at - KEEP_FOR
         and notification_choices.chosen(user, topic, "push")
         and suspensions.current(db, user.id) is None
     )
@@ -365,20 +464,46 @@ def send_due(db: Session, at: datetime | None = None, limit: int = 100) -> int:
             if found is None:
                 break
             notice, device = found
-            if not wanted(db, device, notice, at):
-                db.delete(notice)
+            # What else waited out quiet hours for this device goes with it.
+            others = (
+                list(
+                    db.scalars(
+                        select(PushNotice)
+                        .where(
+                            PushNotice.device_id == device.id,
+                            PushNotice.id != notice.id,
+                            PushNotice.held_until.is_not(None),
+                            PushNotice.due_at <= at,
+                        )
+                        .order_by(PushNotice.created_at, PushNotice.id)
+                        .with_for_update(skip_locked=True)
+                    )
+                )
+                if notice.held_until is not None
+                else []
+            )
+            going: list[PushNotice] = []
+            for each in [notice, *others]:
+                if wanted(db, device, each, at):
+                    going.append(each)
+                else:
+                    db.delete(each)
+            if not going:
                 db.commit()
                 continue
             tried += 1
-            outcome = send_one(http, device, notice)
+            outcome = send_one(http, device, *going)
+            attempts = max(n.attempts for n in going) + 1
             if outcome == "gone":
                 # The browser unsubscribed, or the person removed the app: forget it.
                 db.execute(delete(PushDevice).where(PushDevice.id == device.id))
-            elif outcome == "again" and notice.attempts + 1 < MAX_ATTEMPTS:
-                notice.attempts += 1
-                notice.due_at = at + delivery.backoff(notice.attempts)
+            elif outcome == "again" and attempts < MAX_ATTEMPTS:
+                for each in going:
+                    each.attempts = attempts
+                    each.due_at = at + delivery.backoff(attempts)
             else:
-                db.delete(notice)
+                for each in going:
+                    db.delete(each)
             db.commit()
     return tried
 

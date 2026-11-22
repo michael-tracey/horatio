@@ -36532,6 +36532,13 @@
               }
             ],
             "title": "Push Key"
+          },
+          "quiet_exempt": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Quiet Exempt",
+            "type": "array"
           }
         },
         "required": [
@@ -36539,7 +36546,8 @@
           "push",
           "push_key",
           "devices",
-          "groups"
+          "groups",
+          "quiet_exempt"
         ],
         "title": "NotificationSettingsOut",
         "type": "object"
@@ -43355,11 +43363,33 @@
             "title": "Date Format",
             "type": "string"
           },
+          "digest_day": {
+            "default": "monday",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "title": "Digest Day",
+            "type": "string"
+          },
+          "digest_hour": {
+            "default": 8,
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Digest Hour",
+            "type": "integer"
+          },
           "email_digest": {
             "default": "at_once",
             "enum": [
               "at_once",
-              "daily"
+              "daily",
+              "weekly"
             ],
             "title": "Email Digest",
             "type": "string"
@@ -43393,6 +43423,21 @@
             "default": true,
             "title": "Quick Notes",
             "type": "boolean"
+          },
+          "quiet_end": {
+            "default": "08:00",
+            "title": "Quiet End",
+            "type": "string"
+          },
+          "quiet_hours": {
+            "default": false,
+            "title": "Quiet Hours",
+            "type": "boolean"
+          },
+          "quiet_start": {
+            "default": "22:00",
+            "title": "Quiet Start",
+            "type": "string"
           },
           "ratings": {
             "default": "numbers",

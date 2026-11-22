@@ -198,14 +198,17 @@ test("Account › Notifications: where each kind comes, the ones that always com
   await downtime.check();
   await expect(page.getByText("Downtime results, email: on. Saved.")).toBeVisible();
   await expect(page.getByText("Email, always")).toBeVisible();
-  await Promise.all([
-    page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok()),
-    page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" }).click(),
-  ]);
-  await expect(page.getByText(/gathers them into one email at 8 am/)).toBeVisible();
+  // A digest a week (#1196), on the day and at the hour chosen.
+  const saved = () => page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
+  await Promise.all([saved(), page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Weekly" }).click()]);
+  await Promise.all([saved(), page.getByRole("combobox", { name: "Digest day" }).selectOption("Friday")]);
+  await Promise.all([saved(), page.getByRole("combobox", { name: "Digest hour" }).selectOption("6 pm")]);
+  await expect(page.getByText(/One email a week, on Friday at 6 pm .+ Word about your account's safety, and announcements marked important, still come at once\./)).toBeVisible();
   await page.reload();
   await expect(downtime).toBeChecked();
-  await expect(page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Weekly" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("combobox", { name: "Digest day" })).toHaveValue("friday");
+  await expect(page.getByRole("combobox", { name: "Digest hour" })).toHaveValue("18");
   await page.screenshot(shots("settings-notifications"), { fullPage: true });
   await page.setViewportSize({ width: 375, height: 800 });
   await page.screenshot(shots("settings-notifications-phone"), { fullPage: true });
@@ -278,9 +281,25 @@ test("phone notifications: turned on on this device, which kinds come, and turne
   expect(turnedOn).toEqual([{ endpoint, p256dh: "BPhone", auth: "secret" }]);
   await renames.check();
   await expect(page.getByText("Character renames, phone: on. Saved.")).toBeVisible();
+
+  // Quiet hours (#1196): phone notifications wait, but for the kinds that matter at a game.
+  const quiet = page.getByRole("region", { name: "Quiet hours" });
+  await expect(quiet.getByText(/Powers used in play and Teaching to confirm still come at once/)).toBeVisible();
+  await quiet.getByRole("switch", { name: "Quiet hours" }).click();
+  await expect(page.getByText("Quiet hours: on. Saved.")).toBeVisible();
+  const start = quiet.getByLabel("Quiet hours start");
+  await expect(start).toHaveValue("22:00");
+  await start.fill("23:30");
+  await start.blur();
+  await expect(page.getByText("Quiet hours from 23:30. Saved.")).toBeVisible();
+  await page.screenshot(shots("settings-quiet-hours"), { fullPage: true });
+
   await page.reload();
   await expect(here).toBeChecked();
   await expect(renames).toBeChecked();
+  await expect(quiet.getByRole("switch", { name: "Quiet hours" })).toBeChecked();
+  await expect(start).toHaveValue("23:30");
+  await expect(quiet.getByLabel("Quiet hours end")).toHaveValue("08:00");
 
   // The app's one service worker, the one keeping it offline, shows the pushes too.
   const worker = await page.evaluate(async () => (await navigator.serviceWorker.ready).active?.scriptURL ?? "");

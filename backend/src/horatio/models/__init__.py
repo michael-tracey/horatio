@@ -71,7 +71,13 @@ from horatio.models.influence_effects import InfluenceEffect
 from horatio.models.locations import Location, TroupeLocationQuality
 from horatio.models.motif_tags import MotifTag
 from horatio.models.nominations import Nomination, Remembrance
-from horatio.models.notifications import EmailNotice, Notification, PushDevice, PushNotice
+from horatio.models.notifications import (
+    EmailDigest,
+    EmailNotice,
+    Notification,
+    PushDevice,
+    PushNotice,
+)
 from horatio.models.npcs import InCharacterMessage, NpcClaim, StockNpc
 from horatio.models.people import (
     AuthIdentity,
@@ -198,6 +204,7 @@ __all__ = [
     "DiscordWebhook",
     "DowntimeCycle",
     "DowntimeKeyword",
+    "EmailDigest",
     "EmailNotice",
     "FeedingAdjustment",
     "FeedingCard",
