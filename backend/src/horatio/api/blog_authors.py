@@ -11,7 +11,10 @@ Anyone at all, signed in or not, can see an author's page (GET
 /blog/authors/<handle>) and picture, while the author writes for the blog (horatio.blog.may_write:
 the custodian, or anyone on the staff of a troupe that isn't archived), or has an
 article published. Until then it is theirs alone to see, so an account made only
-to post links has no public page. The custodian can clear an author's bio, links
+to post links has no public page. While their account is suspended it is hidden
+again, as for an account merged into another (#1182): their articles stay up,
+under a card with their name alone, and it all comes back when the suspension
+ends. The custodian can clear an author's bio, links
 or picture: it is logged, and the author is told in the bell.
 """
 
@@ -25,7 +28,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import handles, pictures
+from horatio import handles, pictures, suspensions
 from horatio.api.pictures import CropIn, as_fractions, uploads
 from horatio.api.players import Link, clean_link
 from horatio.api.troupe_profiles import read_upload
@@ -46,11 +49,10 @@ MAX_BIO = 1000
 CLEARED = "account.blog_author_cleared"
 
 
-class AuthorCard(BaseModel):
-    """An author as anyone may see them, under each of their articles and on their
-    page. Never their email or anything else from their player profile."""
+class AuthorShown(BaseModel):
+    """What anyone may see of an author. Never their email or anything else from
+    their player profile."""
 
-    handle: str
     display_name: str
     # Markdown.
     bio: str
@@ -59,10 +61,19 @@ class AuthorCard(BaseModel):
     picture: str | None
 
 
-class AuthorPage(AuthorCard):
+class AuthorCard(AuthorShown):
+    """An author as anyone may see them, under each of their articles."""
+
+    # Their page's handle. None while their page is hidden as their account is
+    # suspended (#1182): then the card has their name alone (`name_only`).
+    handle: str | None
+
+
+class AuthorPage(AuthorShown):
     """An author's page. The articles they have published join it with the blog's
     reading pages (#1158)."""
 
+    handle: str
     # The viewer's own page.
     yours: bool
     # The viewer is the custodian, who can clear its bio, links or picture.
@@ -106,9 +117,9 @@ class ClearIn(BaseModel):
 def shown(db: Session, author: BlogAuthor) -> bool:
     """Whether anyone at all may see the author's page and picture: while they write
     for the blog, or while an article of theirs is published; never for an account
-    merged into another."""
+    merged into another, nor while their account is suspended (#1182)."""
     user = db.get_one(User, author.user_id)
-    if user.merged_into_id is not None:
+    if user.merged_into_id is not None or suspensions.current(db, user.id) is not None:
         return False
     published = select(BlogPost.id).where(
         BlogPost.author_id == user.id, BlogPost.status == "published"
@@ -125,6 +136,12 @@ def card(author: BlogAuthor) -> AuthorCard:
         links=[Link(**link) for link in author.links],
         picture=pictures.author_picture_url(author.id, author.picture_id),
     )
+
+
+def name_only(author: BlogAuthor) -> AuthorCard:
+    """The card under their articles while their account is suspended: their name
+    and nothing else, so nothing leads to the page that is hidden (#1182)."""
+    return AuthorCard(handle=None, display_name=author.display_name, bio="", links=[], picture=None)
 
 
 def by_handle(db: Session, handle: str) -> BlogAuthor | None:
@@ -167,7 +184,7 @@ def mine_out(db: Session, user: User, author: BlogAuthor | None) -> MyAuthor:
     return MyAuthor(
         saved=True,
         display_name=shows.display_name,
-        handle=shows.handle,
+        handle=author.handle,
         bio=shows.bio,
         links=shows.links,
         picture=shows.picture,

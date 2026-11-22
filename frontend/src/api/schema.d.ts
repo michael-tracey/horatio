@@ -16401,8 +16401,7 @@ export interface components {
         };
         /**
          * AuthorCard
-         * @description An author as anyone may see them, under each of their articles and on their
-         *     page. Never their email or anything else from their player profile.
+         * @description An author as anyone may see them, under each of their articles.
          */
         AuthorCard: {
             /** Bio */
@@ -16410,7 +16409,7 @@ export interface components {
             /** Display Name */
             display_name: string;
             /** Handle */
-            handle: string;
+            handle: string | null;
             /** Links */
             links: components["schemas"]["Link"][];
             /** Picture */
