@@ -49,7 +49,7 @@ At the top, a line says where the article stands and what happens next. Each art
 
 ### Preview
 
-Choose **Preview** at the top of the article to see it as the blog will show it: its picture, tags, title, summary, your name and troupe, and the words. A banner says it is a preview: nobody else sees it until the custodian publishes it. Choose **Write** to carry on.
+Choose **Preview** at the top of the article to see it as the blog will show it: its picture, tags, title, summary, your name and troupe, the words, and under them the card about you from **Account › Blog author**. If you haven't set that up yet, **Set up your author profile** takes you there; the list of your articles has the same link. A banner says it is a preview: nobody else sees it until the custodian publishes it. Choose **Write** to carry on.
 
 ## How approval works
 

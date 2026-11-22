@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { BlogArticleOut, BlogTagOut, BlogTroupeOut, BlogWriterOut } from "../../api/types";
+import type { BlogArticleOut, BlogTagOut, BlogTroupeOut, BlogWriterOut, MyAuthor } from "../../api/types";
+import { AuthorCard } from "../../components/AuthorCard";
 import { BackLink } from "../../components/BackLink";
 import { useConfirm } from "../../components/ConfirmDialog";
 import type { Crop } from "../../components/crop";
@@ -40,9 +41,11 @@ export function WritePage() {
   const writer = useWriter();
   const mine = useQuery({ queryKey: MINE, queryFn: () => unwrap(api.GET("/api/blog/articles/mine")) });
   const tags = useQuery({ queryKey: ["blog-tags"], queryFn: () => unwrap(api.GET("/api/blog/tags")) });
+  // Their author profile (#1159), under the article in the preview; or a way to set it up.
+  const author = useQuery({ queryKey: ["blog-author"], queryFn: () => unwrap(api.GET("/api/blog/author")) });
   if (writer.isPending || mine.isPending) return <Loading />;
   if (!writer.data || !mine.data) return <ErrorText error={writer.error ?? mine.error} />;
-  if (!articleId) return <MyArticles articles={mine.data} canWrite={writer.data.can_write} />;
+  if (!articleId) return <MyArticles articles={mine.data} canWrite={writer.data.can_write} author={author.data} />;
 
   const article = articleId === "new" ? undefined : mine.data.find((a) => a.id === articleId);
   const back = <BackLink to="/blog/write" label="Your articles" className="self-start" />;
@@ -50,13 +53,13 @@ export function WritePage() {
   return (
     <div className="flex flex-col gap-2">
       {back}
-      {missing ? <Empty>{missing}</Empty> : <ArticleEditor key={article?.id ?? "new"} article={article} writer={writer.data} tags={tags.data ?? []} />}
+      {missing ? <Empty>{missing}</Empty> : <ArticleEditor key={article?.id ?? "new"} article={article} writer={writer.data} tags={tags.data ?? []} author={author.data} />}
     </div>
   );
 }
 
 /** The writer's own articles, the latest changed first: each one's title, where it stands, its dates and the custodian's note. */
-function MyArticles({ articles, canWrite }: { articles: BlogArticleOut[]; canWrite: boolean }) {
+function MyArticles({ articles, canWrite, author }: { articles: BlogArticleOut[]; canWrite: boolean; author: MyAuthor | undefined }) {
   const dates = useDates();
   return (
     <>
@@ -66,6 +69,7 @@ function MyArticles({ articles, canWrite }: { articles: BlogArticleOut[]; canWri
       >
         Write for the blog
       </PageTitle>
+      {canWrite && <NoAuthor author={author} className="mb-4" />}
       <Card title="Your articles">
         {articles.length ? (
           <ul className="divide-y divide-ash">
@@ -116,6 +120,20 @@ function ArticleLine({ article: a, dates }: { article: BlogArticleOut; dates: Da
   );
 }
 
+/** Set up your author profile: said once it is known they have none. */
+function NoAuthor({ author, className = "" }: { author: MyAuthor | undefined; className?: string }) {
+  if (!author || author.saved) return null;
+  return (
+    <p className={`text-sm text-mist ${className}`}>
+      Your articles show a card about you under them.{" "}
+      <Link to="/account/blog" className="text-gold underline hover:text-parchment">
+        Set up your author profile
+      </Link>{" "}
+      to give it your picture and a few words about you.
+    </p>
+  );
+}
+
 type Fields = { title: string; summary: string; body: string; troupeId: string; tagIds: string[] };
 
 function fieldsOf(article: BlogArticleOut | undefined, troupeId: string): Fields {
@@ -133,7 +151,7 @@ const sameTags = (a: string[], b: string[]) => a.length === b.length && a.every(
 const same = (a: Fields, b: Fields) => a.title === b.title && a.summary === b.summary && a.body === b.body && a.troupeId === b.troupeId && sameTags(a.tagIds, b.tagIds);
 
 /** One article to write: its fields, or a preview of it as the blog will show it, where it stands, and what its author can do with it now. */
-function ArticleEditor({ article, writer, tags }: { article?: BlogArticleOut; writer: BlogWriterOut; tags: BlogTagOut[] }) {
+function ArticleEditor({ article, writer, tags, author }: { article?: BlogArticleOut; writer: BlogWriterOut; tags: BlogTagOut[]; author: MyAuthor | undefined }) {
   const navigate = useNavigate();
   const me = useMe();
   const dates = useDates();
@@ -259,12 +277,13 @@ function ArticleEditor({ article, writer, tags }: { article?: BlogArticleOut; wr
                 summary: form.summary,
                 body: form.body,
                 picture: words?.picture ?? null,
-                author_name: article?.author_name ?? me.data?.display_name ?? "",
+                author_name: author?.saved ? author.display_name : (article?.author_name ?? me.data?.display_name ?? ""),
                 troupe,
                 tags: tags.filter((t) => form.tagIds.includes(t.id)),
                 published_at: article?.published_at ?? null,
                 revised_at: article?.revised_at ?? null,
               }}
+              author={author?.saved ? <AuthorCard author={author} /> : <NoAuthor author={author} />}
             />
           </div>
         )}

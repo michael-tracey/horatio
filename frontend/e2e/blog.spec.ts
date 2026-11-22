@@ -125,6 +125,8 @@ test("a storyteller writes for the blog from their troupe, previews and submits 
   await expect(shown.getByText("Running a game")).toBeVisible();
   await expect(shown.getByText(troupeName, { exact: true })).toBeVisible();
   await expect(shown.getByRole("link", { name: troupeName })).toHaveCount(0);
+  // With no author profile yet, the place for its card says how to set one up.
+  await expect(shown.getByRole("link", { name: "Set up your author profile" })).toHaveAttribute("href", "/account/blog");
   expect(await l.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), "nothing scrolls sideways").toBe(true);
   await l.screenshot(shots("blog-preview"));
   await l.getByRole("radio", { name: "Write" }).click();

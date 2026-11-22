@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { api } from "../../api/client";
-import type { BlogArticleOut, BlogTagOut, BlogWriterOut } from "../../api/types";
+import type { BlogArticleOut, BlogTagOut, BlogWriterOut, MyAuthor } from "../../api/types";
 import { BlogArticleView } from "./BlogArticleView";
 import { WritePage } from "./WritePage";
 
@@ -66,11 +66,14 @@ function article(over: Partial<BlogArticleOut> = {}): BlogArticleOut {
   };
 }
 
-function show(at: string, mine: BlogArticleOut[] = [], writer: BlogWriterOut = WRITER) {
+const NO_AUTHOR: MyAuthor = { saved: false, display_name: "Mara Quinn", handle: "mara", bio: "", links: [], picture: null, picture_crop: null, public: false, pictures_available: true };
+
+function show(at: string, mine: BlogArticleOut[] = [], writer: BlogWriterOut = WRITER, author: MyAuthor = NO_AUTHOR) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
   client.setQueryData(["blog-writer"], writer);
   client.setQueryData(["blog-mine"], mine);
   client.setQueryData(["blog-tags"], TAGS);
+  client.setQueryData(["blog-author"], author);
   client.setQueryData(["me"], { id: "u1", display_name: "Mara Quinn" });
   render(
     <QueryClientProvider client={client}>
@@ -103,6 +106,7 @@ describe("Write for the blog: your articles (#1157)", () => {
     expect(within(returned).getByText("The custodian's note:")).toBeTruthy();
     expect(within(returned).getByText("Say which book it's from.")).toBeTruthy();
     expect(within(screen.getByRole("listitem", { name: "Boons 101" })).getByText("Started 18 Nov 2026 · published 1 Nov 2026")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Set up your author profile" }).getAttribute("href")).toBe("/account/blog");
     const down = screen.getByRole("listitem", { name: "Old news" });
     expect(within(down).getByText(/unpublished 10 Nov 2026/)).toBeTruthy();
     expect(within(down).getByText("Why the custodian unpublished it:")).toBeTruthy();
@@ -206,6 +210,15 @@ describe("Write for the blog: one article (#1157)", () => {
     expect(within(shown).getByText("How to play")).toBeTruthy();
     expect(within(shown).getByText(/Not published yet/)).toBeTruthy();
     expect(within(shown).getByRole("link", { name: "Lords of the Night" }).getAttribute("href")).toBe("/t/lords");
+  });
+
+  it("puts their author card under the preview, once they have one", () => {
+    show("/blog/write/a1", [article()], WRITER, { ...NO_AUTHOR, saved: true, display_name: "Mara Q.", bio: "Storyteller since 1998." });
+    fireEvent.click(screen.getByRole("radio", { name: "Preview" }));
+    const shown = screen.getByRole("article", { name: "Running your first Elysium" });
+    expect(within(shown).getByRole("region", { name: "About Mara Q." })).toBeTruthy();
+    expect(within(shown).getByText("Storyteller since 1998.")).toBeTruthy();
+    expect(within(shown).queryByRole("link", { name: "Set up your author profile" })).toBeNull();
   });
 
   it("says when the article isn't theirs or doesn't exist", () => {
