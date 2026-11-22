@@ -9,6 +9,7 @@ Every part is open to everyone: players are welcome to read how staff run things
 - [Getting started](getting-started.md): for everyone. Signing up and signing in, your account and settings, notifications, the calendar link, and where to find help.
 - [Players](players.md): for players. Building a character, spending XP, your home troupe, your backstory, downtimes, and playing at a game.
 - [Running a troupe](running-a-troupe.md): for troupe staff, from the lead storyteller to narrators. Setting up a troupe, house rules, approvals, downtime cycles, game nights and the troupe's records.
+- [Writing for the blog](blog.md): for troupe staff. Writing articles for Horatio's blog, what suits it, quoting and pictures, and how the custodian approves them.
 - [Custodian](custodian.md): for the custodian, who looks after the whole site. Troupe requests, people's accounts, backups and the system.
 - [Glossary](glossary.md): for anyone. Horatio's words, such as home troupe, Play View and house rule, in plain English.
 

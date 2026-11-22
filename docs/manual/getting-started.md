@@ -59,7 +59,7 @@ The custodian must have two-step sign-in, and so must the staff of a troupe whos
 
 ## Your account
 
-Choose your name at the right of the menu to open **Your account**. It has six tabs: **Profile**, **Lines and veils**, **Preferences**, **Notifications**, **Sign-in and email** and **This device**, which keeps your characters on your phone for games with no signal (see [Using Horatio at a game with no signal](players.md#using-horatio-at-a-game-with-no-signal)). **See your profile** at the top shows your [profile](glossary.md#profile) the way other people see it.
+Choose your name at the right of the menu to open **Your account**. It has seven tabs: **Profile**, **Lines and veils**, **Blog author**, **Preferences**, **Notifications**, **Sign-in and email** and **This device**, which keeps your characters on your phone for games with no signal (see [Using Horatio at a game with no signal](players.md#using-horatio-at-a-game-with-no-signal)). **See your profile** at the top shows your [profile](glossary.md#profile) the way other people see it.
 
 ### Your profile
 
@@ -83,6 +83,21 @@ The **Lines and veils** tab is where you tell your storytellers what you don't w
 - a **veil** can happen in the story, but off-screen.
 
 Write them in your own words, and choose **Save**. The staff of the troupes you play in always see them. Other players see them, on the troupe's Who's Who, only if you tick **Share my lines and veils with other players in my troupes**. They are never public and never printed, and you never have to explain them.
+
+### Your blog author profile
+
+Horatio's blog is written by the staff of its troupes. The **Blog author** tab sets how you show there, under each article you write and on your author page, for anyone to read, signed in or not. It's apart from your profile: it starts from your display name and handle, and nothing else from your profile shows unless you put it here. You can set:
+
+- **Display name**: your name as readers see it.
+- **Author handle**: the end of your page's address, such as /blog/authors/night_owl. It starts as your Horatio handle. No other author can have it, and you can't take someone else's Horatio handle.
+- **Bio**: a few lines about you and the games you run, up to 1000 characters. Markdown works: `**bold**`, `*italic*` and links.
+- **Links**: up to six, each with a label.
+
+**How it shows**, beside the form, is the card readers will see, and changes as you type. Choose **Save**. Once it's saved you can add a **Picture**: choose one, move the square to where you want it, and choose **Save**. **Move the crop** and **Remove** change it later.
+
+While you're on a troupe's staff, or have an article published, **See your author page** opens your page as everyone sees it. Until then, only you can see it.
+
+The custodian can clear an author's bio, links or picture, for example one that breaks the site's rules. You're told in the bell, with their reason if they gave one. The rest of your author profile stays, and you can fill it in again.
 
 ## Preferences
 

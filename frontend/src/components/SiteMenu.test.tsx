@@ -1,24 +1,35 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { api } from "../api/client";
 import { SiteMenu } from "./Layout";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 function Where() {
   return <p data-testid="where">{useLocation().pathname}</p>;
 }
 
-function setup({ isCustodian = false, at = "/characters" } = {}) {
+function setup({ isCustodian = false, at = "/characters", writes = false } = {}) {
   const onSignOut = vi.fn();
+  // Whether they may write for the blog, asked as the menu opens (#1157).
+  const writer = { can_write: writes, troupes: [] };
+  vi.spyOn(api, "GET").mockImplementation((async () => ({ data: writer, response: new Response(null, { status: 200 }) })) as never);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <MemoryRouter initialEntries={[at]}>
-      <SiteMenu name="Ines Ferreira-Valadares" isCustodian={isCustodian} onSignOut={onSignOut} />
-      <button>Elsewhere</button>
-      <Routes>
-        <Route path="*" element={<Where />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[at]}>
+        <SiteMenu name="Ines Ferreira-Valadares" isCustodian={isCustodian} onSignOut={onSignOut} />
+        <button>Elsewhere</button>
+        <Routes>
+          <Route path="*" element={<Where />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
   const button = screen.getByRole("button", { name: "Menu" });
   const nav = () => screen.queryByRole("navigation", { name: "Main" });
@@ -41,6 +52,15 @@ describe("SiteMenu", () => {
     expect(names).toEqual(["Characters", "Troupes", "Rulebook", "Help", "Your account: Ines Ferreira-Valadares"]);
     expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByRole("link", { name: "Characters" }));
+  });
+
+  it("has Write for the blog, after the account, for those who may write", async () => {
+    const { button } = setup({ writes: true });
+    fireEvent.click(button);
+    const write = await screen.findByRole("link", { name: "Write for the blog" });
+    expect(write.getAttribute("href")).toBe("/blog/write");
+    const names = screen.getAllByRole("link").map((a) => a.getAttribute("aria-label") ?? a.textContent);
+    expect(names.slice(-2)).toEqual(["Your account: Ines Ferreira-Valadares", "Write for the blog"]);
   });
 
   it("has Custodian and says so for the custodian", () => {

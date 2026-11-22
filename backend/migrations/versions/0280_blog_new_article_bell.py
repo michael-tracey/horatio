@@ -2,7 +2,7 @@
 went out. Those already published count as told, so none of them is sent now.
 
 Revision ID: 0280
-Revises: 0274
+Revises: 0279
 Create Date: 2026-11-21 22:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0280"
-down_revision: str | None = "0274"
+down_revision: str | None = "0279"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -185,6 +185,11 @@ export type XpStandingOut = Schemas["XpStandingOut"];
 export type LeavingOut = Schemas["LeavingOut"];
 export type WithdrawnOut = Schemas["WithdrawnOut"];
 export type TroupeProfileOut = Schemas["TroupeProfileOut"];
+// The blog's authors (#1159).
+// The card each article shows (AuthorCard on the server), a part of an author's page.
+export type AuthorCard = Pick<Schemas["AuthorPage"], "handle" | "display_name" | "bio" | "links" | "picture">;
+export type AuthorPage = Schemas["AuthorPage"];
+export type MyAuthor = Schemas["MyAuthor"];
 export type ThrowImagesOut = Schemas["ThrowImagesOut"];
 export type ThrowSetOut = Schemas["ThrowSetOut"];
 export type MyThrowImagesOut = Schemas["MyThrowImagesOut"];
@@ -439,6 +444,7 @@ export type NotificationSettingsOut = Schemas["NotificationSettingsOut"];
 export type NotificationTopicOut = Schemas["NotificationTopicOut"];
 export type BlogArticleOut = Schemas["BlogArticleOut"];
 export type BlogQueueOut = Schemas["BlogQueueOut"];
+export type BlogTagKeptOut = Schemas["BlogTagKeptOut"];
 export type BlogTagOut = Schemas["BlogTagOut"];
 export type BlogTroupeOut = Schemas["BlogTroupeOut"];
 export type BlogWriterOut = Schemas["BlogWriterOut"];

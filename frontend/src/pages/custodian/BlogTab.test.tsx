@@ -16,7 +16,7 @@ const TAGS: BlogTagOut[] = [
   { id: "t1", name: "How to play", slug: "how-to-play" },
   { id: "t2", name: "Storytelling", slug: "storytelling" },
 ];
-const TROUPE = { id: "lords", name: "Lords of the Night", archived: false };
+const TROUPE = { id: "lords", name: "Lords of the Night", archived: false, public: false };
 
 function article(over: Partial<BlogArticleOut>): BlogArticleOut {
   return {
@@ -69,13 +69,13 @@ const CHANGED = article({
 });
 const DOWN = article({ id: "a4", status: "unpublished", title: "Old news", published_at: "2026-09-01T12:00:00Z", unpublished_at: "2026-11-02T12:00:00Z", waiting: null, note: "Out of date." });
 
-function show(queue: Partial<BlogQueueOut> = {}) {
+function show(queue: Partial<BlogQueueOut> = {}, at = "/custodian/blog") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
   client.setQueryData(["blog-queue"], { waiting: [article({}), CHANGED], published: [PUBLISHED, CHANGED], unpublished: [DOWN], ...queue });
   client.setQueryData(["blog-tags"], TAGS);
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[at]}>
         <BlogTab />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -117,6 +117,18 @@ describe("Custodian › Blog (#1156)", () => {
     expect(screen.getByText("Nothing is waiting to be published.")).toBeTruthy();
     expect(screen.getByText("No article is published yet.")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Unpublished" })).toBeNull();
+  });
+
+  it("opens the article the custodian's bell task links to, under Waiting (#1170)", () => {
+    show({}, "/custodian/blog#article-a3");
+    const opened = (li: HTMLElement) => (li.querySelector("details") as HTMLDetailsElement).open;
+    const changes = item(section("Waiting"), "Safety at every table");
+    expect(changes.id).toBe("article-a3");
+    expect(opened(changes)).toBe(true);
+    // Not its entry under Published, nor any other article.
+    expect(opened(item(section("Published"), "Safety at the table"))).toBe(false);
+    expect(opened(item(section("Waiting"), "Running your first Elysium"))).toBe(false);
+    expect(document.querySelectorAll("#article-a3")).toHaveLength(1);
   });
 
   it("publishes what waits", async () => {
@@ -167,6 +179,17 @@ describe("Custodian › Blog (#1156)", () => {
     await waitFor(() => expect(put).toHaveBeenCalledWith("/api/blog/articles/{article_id}/tags", { params: { path: { article_id: "a2" } }, body: { tag_ids: ["t2", "t1"] } }));
   });
 
+  it("shows a retired tag an article has, to take off but not put back (#1161)", async () => {
+    const put = answering("PUT");
+    // The list offered leaves the retired tag out; the article still has it.
+    show({ published: [{ ...PUBLISHED, tags: [TAGS[1]!, { id: "t9", name: "Old ways", slug: "old-ways" }] }], waiting: [article({})] });
+    const tags = within(item(section("Published"), "Boons 101")).getByRole("list", { name: "Tags" });
+    expect(within(tags).getAllByRole("button").map((b) => b.textContent)).toEqual(["How to play", "Storytelling", "Old ways(retired)"]);
+    expect(within(item(section("Waiting"), "Running your first Elysium")).queryByText("Old ways")).toBeNull();
+    fireEvent.click(within(tags).getByRole("button", { name: /Old ways/ }));
+    await waitFor(() => expect(put).toHaveBeenCalledWith("/api/blog/articles/{article_id}/tags", { params: { path: { article_id: "a2" } }, body: { tag_ids: ["t2"] } }));
+  });
+
   it("changes an address before it is published", async () => {
     const put = answering("PUT");
     show();
@@ -185,7 +208,8 @@ describe("where an article stands, for its author", () => {
     expect(statusText(article({}))).toBe("Waiting for the custodian");
     expect(statusText(PUBLISHED)).toBe("Published");
     expect(statusText(CHANGED)).toBe("Published, with changes waiting for the custodian");
-    expect(statusText({ ...CHANGED, waiting: null })).toBe("Published, with changes not yet sent");
+    expect(statusText({ ...CHANGED, waiting: null })).toBe("Published, with changes not yet proposed");
+    expect(statusText({ ...CHANGED, waiting: null, note: "Too long." })).toBe("Published, with changes returned to you");
     expect(statusText(DOWN)).toBe("Unpublished");
   });
 });

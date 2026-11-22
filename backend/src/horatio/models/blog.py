@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -66,14 +66,22 @@ class BlogPost(Record):
 
 
 class BlogTag(Record):
-    """One of the blog's tags, a list the custodian keeps (seeded by its migration)."""
+    """One of the blog's tags, a list the custodian keeps (seeded by its migration, kept
+    in Custodian › Blog › Tags, horatio.blog_tags)."""
 
     __tablename__ = "blog_tags"
+    # No two tags share a name, whatever the case (#1161).
+    __table_args__ = (Index("uq_blog_tags_name_lower", text("lower(name)"), unique=True),)
 
-    name: Mapped[str] = mapped_column(unique=True)
+    name: Mapped[str]
+    # Its address on the blog's tag pages, made from its name. It follows the name
+    # until a published article carries it, then stays (horatio.blog_tags).
     slug: Mapped[str] = mapped_column(unique=True)
     # Where it comes in the list.
     position: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Retired: it stays on the articles that have it, and shows on them, but isn't
+    # chosen for any more.
+    retired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class BlogPostTag(Record):

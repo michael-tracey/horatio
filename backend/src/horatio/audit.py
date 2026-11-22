@@ -131,6 +131,8 @@ NOTICE: frozenset[str] = frozenset(
         "account.view_as",
         "account.view_as_ended",
         # --- the custodian's work, and what stays with a troupe for good ---
+        # Clearing a blog author's bio, links or picture (#1159).
+        "account.blog_author_cleared",
         "character.deleted",
         "npc.deleted",
         "character.moved",
@@ -156,12 +158,13 @@ NOTICE: frozenset[str] = frozenset(
         "clan_logo.removed",
         "crypt_templates.uploaded",
         "crypt_templates.removed",
-        # The blog (horatio.blog): the custodian's decisions on each article, and an author
-        # deleting one never published.
+        # The blog (horatio.blog): the custodian's decisions on each article, an author
+        # deleting one never published, and a tag merged away (horatio.blog_tags).
         "blog.published",
         "blog.returned",
         "blog.unpublished",
         "blog.deleted",
+        "blog.tag_merged",
     }
 )
 

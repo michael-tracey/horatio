@@ -522,6 +522,13 @@ MESSAGES: dict[str, str] = {
     "blog.unfeatured": "{actor} stopped featuring {what} “{title}”.",
     "blog.tagged": "{actor} tagged {what} “{title}”: {tags}.",
     "blog.slug_changed": "{actor} changed the address of {what} “{title}” from {was} to {slug}.",
+    "blog.tag_added": "{actor} added the blog tag {name}.",
+    "blog.tag_renamed": "{actor} renamed the blog tag {was} to {name}.",
+    "blog.tag_retired": "{actor} retired the blog tag {name}. It stays on the articles that"
+    " have it.",
+    "blog.tag_restored": "{actor} brought back the blog tag {name}.",
+    "blog.tag_merged": "{actor} merged the blog tag {name} into {into}, on {articles}.",
+    "blog.tags_reordered": "{actor} put the blog's tags in a new order: {names}.",
     "agency.created": "{actor} made the news agency {name}.",
     "agency.changed": "{actor} changed the news agency {name}.",
     "agency.retired": "{actor} retired the news agency {name}.",
@@ -855,6 +862,8 @@ MESSAGES: dict[str, str] = {
     " over the limit of {rule}.",
     "account.throttle_lifted.sign_up": "{actor} unblocked sign-ups{from_ip}: over the limit of"
     " {rule}.",
+    "account.blog_author_cleared": "{actor} cleared the {cleared} of {member}'s author profile"
+    " on the blog, @{handle}{because}.",
     "account.suspended": "{actor} suspended {member}{because}.",
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
