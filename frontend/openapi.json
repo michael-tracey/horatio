@@ -44573,6 +44573,10 @@
             "title": "Abbreviation",
             "type": "string"
           },
+          "content_notes": {
+            "title": "Content Notes",
+            "type": "string"
+          },
           "description": {
             "title": "Description",
             "type": "string"
@@ -44582,9 +44586,35 @@
             "title": "Id",
             "type": "string"
           },
+          "min_age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Age"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "new_players": {
+            "anyOf": [
+              {
+                "enum": [
+                  "welcoming",
+                  "closed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Players"
           },
           "place": {
             "title": "Place",
@@ -44600,6 +44630,10 @@
               }
             ],
             "title": "Portrait"
+          },
+          "schedule": {
+            "title": "Schedule",
+            "type": "string"
           }
         },
         "required": [
@@ -44608,7 +44642,11 @@
           "abbreviation",
           "portrait",
           "description",
-          "place"
+          "place",
+          "schedule",
+          "new_players",
+          "min_age",
+          "content_notes"
         ],
         "title": "PublicTroupeOut",
         "type": "object"
@@ -86905,7 +86943,7 @@
     },
     "/api/public/troupes": {
       "get": {
-        "description": "The troupes whose profiles are public and that aren't archived, by name, a page\nat a time. For anyone at all.",
+        "description": "The troupes whose profiles are public and that aren't archived, by name, a page\nat a time, found by the directory's search: by name or abbreviation, place, the\nday and how often they play, whether they welcome new players, and age. For anyone\nat all.",
         "operationId": "list_public_troupes_api_public_troupes_get",
         "parameters": [
           {
@@ -86920,6 +86958,110 @@
               "minimum": 1,
               "title": "Page",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "place",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Place",
+              "type": "string"
+            }
+          },
+          {
+            "description": "A day its schedule names.",
+            "in": "query",
+            "name": "day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "monday",
+                    "tuesday",
+                    "wednesday",
+                    "thursday",
+                    "friday",
+                    "saturday",
+                    "sunday"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A day its schedule names.",
+              "title": "Day"
+            }
+          },
+          {
+            "description": "How often its schedule says.",
+            "in": "query",
+            "name": "frequency",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weekly",
+                    "fortnightly",
+                    "monthly"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "How often its schedule says.",
+              "title": "Frequency"
+            }
+          },
+          {
+            "description": "Only those welcoming new players.",
+            "in": "query",
+            "name": "new_players",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only those welcoming new players.",
+              "title": "New Players",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only those a player of this age may join.",
+            "in": "query",
+            "name": "age",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 99,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only those a player of this age may join.",
+              "title": "Age"
             }
           }
         ],

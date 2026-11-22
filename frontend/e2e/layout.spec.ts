@@ -131,7 +131,9 @@ test("no screen is wider than a phone", async ({ browser }) => {
   await send(l, "PATCH", `/api${base}`, { description: "A Camarilla chronicle in a rain-soaked port city, where the old Prince's grip is slipping and every clan is counting favours." });
   await send(l, "PUT", `/api${base}/profile`, {
     schedule: "Second Saturday of the month, 7 pm to midnight",
-    content_notes: "",
+    // Long enough to wrap on the troupe directory's row (#1192).
+    content_notes: "Violence, body horror, and the slow loss of humanity; players set their own lines and veils with staff before play.",
+    min_age: 18,
     links: {},
     setting: { chronicle: "The Drowned Crown", city: "Port Halden", era: "Modern nights" },
     venue: { name: "The Lantern Rooms", region: "Port Halden", address: "", access: "Step-free access" },
@@ -193,10 +195,12 @@ test("no screen is wider than a phone", async ({ browser }) => {
 
   // Signed out.
   const anon = await (await browser.newContext({ viewport })).newPage();
-  // The troupe shows its profile to anyone, so the landing page (#1164) has a troupe to list
-  // with a long name, and its public profile is all there.
+  // The troupe shows its profile to anyone, so the landing page (#1164) and the directory have
+  // a troupe to list with a long name, and its public profile is all there.
   await send(l, "PUT", `/api${base}/profile/public`, { public: true });
-  for (const url of ["/", "/sign-in", "/sign-up", "/forgot-password", "/about", "/help", "/help/getting-started", `/t/${troupeId}`, "/blog", `/blog/${article.slug}`, "/blog/tags/storytelling"]) {
+  // The troupe directory (#1192), and a search that is sure to find it among other runs' troupes.
+  const directory = `/find-a-troupe?name=${encodeURIComponent(`Drowned Crown ${run}`)}&new=1`;
+  for (const url of ["/", "/find-a-troupe", directory, "/sign-in", "/sign-up", "/forgot-password", "/about", "/help", "/help/getting-started", `/t/${troupeId}`, "/blog", `/blog/${article.slug}`, "/blog/tags/storytelling"]) {
     seen.push(`anon ${screen(url)}`);
     await visit(anon, "anon", url, wide);
   }

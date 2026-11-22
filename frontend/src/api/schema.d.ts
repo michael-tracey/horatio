@@ -7688,7 +7688,9 @@ export interface paths {
         /**
          * List Public Troupes
          * @description The troupes whose profiles are public and that aren't archived, by name, a page
-         *     at a time. For anyone at all.
+         *     at a time, found by the directory's search: by name or abbreviation, place, the
+         *     day and how often they play, whether they welcome new players, and age. For anyone
+         *     at all.
          */
         get: operations["list_public_troupes_api_public_troupes_get"];
         put?: never;
@@ -32767,6 +32769,8 @@ export interface components {
         PublicTroupeOut: {
             /** Abbreviation */
             abbreviation: string;
+            /** Content Notes */
+            content_notes: string;
             /** Description */
             description: string;
             /**
@@ -32774,12 +32778,18 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Min Age */
+            min_age: number | null;
             /** Name */
             name: string;
+            /** New Players */
+            new_players: ("welcoming" | "closed") | null;
             /** Place */
             place: string;
             /** Portrait */
             portrait: string | null;
+            /** Schedule */
+            schedule: string;
         };
         /**
          * PublicTroupePageOut
@@ -55050,6 +55060,16 @@ export interface operations {
             query?: {
                 /** @description Counting from 1. */
                 page?: number;
+                name?: string;
+                place?: string;
+                /** @description A day its schedule names. */
+                day?: ("monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday") | null;
+                /** @description How often its schedule says. */
+                frequency?: ("weekly" | "fortnightly" | "monthly") | null;
+                /** @description Only those welcoming new players. */
+                new_players?: boolean;
+                /** @description Only those a player of this age may join. */
+                age?: number | null;
             };
             header?: never;
             path?: never;
