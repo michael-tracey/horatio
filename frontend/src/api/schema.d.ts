@@ -17539,6 +17539,8 @@ export interface components {
             author_name: string;
             /** Body */
             body: string;
+            /** Body Pictures */
+            body_pictures: components["schemas"]["BlogBodyPictureOut"][];
             /**
              * Created At
              * Format: date-time
@@ -17557,6 +17559,8 @@ export interface components {
             note: string;
             /** Picture */
             picture: string | null;
+            /** Picture Sizes */
+            picture_sizes: components["schemas"]["PictureSizeOut"][];
             /** Published At */
             published_at: string | null;
             /** Revised At */
@@ -17601,6 +17605,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Sizes */
+            sizes: components["schemas"]["PictureSizeOut"][];
             /** Url */
             url: string;
         };
@@ -17623,12 +17629,16 @@ export interface components {
             author_card: components["schemas"]["AuthorCard"] | null;
             /** Body */
             body: string;
+            /** Body Pictures */
+            body_pictures: components["schemas"]["BlogBodyPictureOut"][];
             /** Edit */
             edit: string | null;
             /** Featured */
             featured: boolean;
             /** Picture */
             picture: string | null;
+            /** Picture Sizes */
+            picture_sizes: components["schemas"]["PictureSizeOut"][];
             /**
              * Published At
              * Format: date-time
@@ -17701,6 +17711,8 @@ export interface components {
             featured: boolean;
             /** Picture */
             picture: string | null;
+            /** Picture Sizes */
+            picture_sizes: components["schemas"]["PictureSizeOut"][];
             /**
              * Published At
              * Format: date-time
@@ -17783,6 +17795,8 @@ export interface components {
             body: string;
             /** Picture */
             picture: string | null;
+            /** Picture Sizes */
+            picture_sizes: components["schemas"]["PictureSizeOut"][];
             /** Submitted At */
             submitted_at: string | null;
             /** Summary */
@@ -30813,6 +30827,19 @@ export interface components {
             uploaded_at: string | null;
             /** Uploaded By */
             uploaded_by: string | null;
+        };
+        /**
+         * PictureSizeOut
+         * @description One copy of a blog article's picture (#1183): its file, to add to the picture's
+         *     address, and its size in pixels, so a page keeps its room before it loads.
+         */
+        PictureSizeOut: {
+            /** File */
+            file: string;
+            /** Height */
+            height: number;
+            /** Width */
+            width: number;
         };
         /** PlacedDots */
         PlacedDots: {

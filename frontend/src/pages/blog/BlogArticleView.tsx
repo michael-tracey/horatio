@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Link } from "react-router";
-import type { BlogPublicTroupeOut, BlogTagOut } from "../../api/types";
+import type { BlogBodyPictureOut, BlogPublicTroupeOut, BlogTagOut, PictureSizeOut } from "../../api/types";
 import { Markdown } from "../../components/Markdown";
 import { useDates } from "../../dates";
+import { sizedPicture, sizesById } from "../../pictureSizes";
 import { TroupeCard } from "./TroupeCard";
 
 /** What an article shows a reader: its published words, or its author's working ones in a preview. */
@@ -12,6 +13,10 @@ export type ArticleShown = {
   body: string;
   /** Its hero picture (add "/1200.webp" or "/600.webp"), or null. */
   picture: string | null;
+  /** Its copies' sizes, so it keeps its room while it loads (#1183). */
+  picture_sizes?: PictureSizeOut[];
+  /** The pictures its words name, with their sizes. */
+  body_pictures?: BlogBodyPictureOut[];
   author_name: string;
   /** Its name, and its card while it is public and running (#1160). */
   troupe: BlogPublicTroupeOut | null;
@@ -43,13 +48,17 @@ export function BlogArticleView({
 }) {
   const dates = useDates();
   const Title = heading;
+  const hero = a.picture ? sizedPicture(a.picture, a.picture_sizes) : null;
+  const sizes = useMemo(() => sizesById(a.body_pictures), [a.body_pictures]);
   const chip = "inline-flex min-h-7 items-center rounded-full border border-ash px-3 text-xs text-mist";
   return (
     <article aria-label={a.title} className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-4">
-      {a.picture && (
+      {hero && (
         <img
-          src={`${a.picture}/1200.webp`}
-          srcSet={`${a.picture}/600.webp 600w, ${a.picture}/1200.webp 1200w`}
+          src={hero.src}
+          srcSet={hero.srcSet}
+          width={hero.width}
+          height={hero.height}
           sizes="(min-width: 48rem) 48rem, 100vw"
           alt=""
           className="aspect-[2/1] w-full rounded-md object-cover"
@@ -92,7 +101,7 @@ export function BlogArticleView({
           {a.revised_at && <>, changed {dates.date(a.revised_at)}</>}
         </p>
       </header>
-      <Markdown text={a.body} pictures />
+      <Markdown text={a.body} pictures sizes={sizes} />
       {author}
       {a.troupe?.card && <TroupeCard troupe={a.troupe.card} />}
     </article>

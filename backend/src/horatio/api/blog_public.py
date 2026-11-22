@@ -21,9 +21,17 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
-from horatio import blog, pictures
+from horatio import blog, blog_pictures, pictures
 from horatio.api import blog_authors
-from horatio.api.blog import BlogTagOut, BlogTroupeCardOut, troupe_cards
+from horatio.api.blog import (
+    BlogBodyPictureOut,
+    BlogTagOut,
+    BlogTroupeCardOut,
+    PictureSizeOut,
+    body_pictures_out,
+    sizes_out,
+    troupe_cards,
+)
 from horatio.api.blog_authors import AuthorCard
 from horatio.auth.deps import DbSession, MaybeUser
 from horatio.models import BlogAuthor, BlogPost, BlogPostTag, BlogTag, Troupe, User
@@ -70,6 +78,8 @@ class BlogPublicSummaryOut(BaseModel):
     summary: str
     # Its hero picture (add "/1200.webp" or "/600.webp"), or None.
     picture: str | None
+    # Its copies' sizes, widest first; none where they aren't known (#1183).
+    picture_sizes: list[PictureSizeOut]
     author: BlogPublicAuthorOut
     # The troupe it names. The writing page's troupe has the same name and card, so the
     # blog and its preview draw it alike.
@@ -87,6 +97,8 @@ class BlogPublicArticleOut(BlogPublicSummaryOut):
 
     # Markdown.
     body: str
+    # The pictures its words name, with their sizes (#1183).
+    body_pictures: list[BlogBodyPictureOut]
     # Its author's card, to go under it (#1159), once they have a profile.
     author_card: AuthorCard | None
     # Where the viewer changes it, when they wrote it; None for anyone else.
@@ -157,6 +169,7 @@ def summaries(db: Session, found: list[BlogPost]) -> list[BlogPublicSummaryOut]:
     troupes = {t.id: BlogPublicTroupeOut(name=t.name, card=cards.get(t.id)) for t in found_troupes}
     authors = authors_of(db, {a.author_id for a in found})
     tags = blog.tags_of(db, [a.id for a in found])
+    heroes = blog_pictures.hero_sizes(db, [(a.id, a.picture_id) for a in found])
     out: list[BlogPublicSummaryOut] = []
     for a in found:
         assert a.published_at is not None
@@ -166,6 +179,7 @@ def summaries(db: Session, found: list[BlogPost]) -> list[BlogPublicSummaryOut]:
                 title=a.title,
                 summary=a.summary,
                 picture=pictures.blog_picture_url(a.id, a.picture_id),
+                picture_sizes=sizes_out(heroes.get(a.picture_id)) if a.picture_id else [],
                 author=authors[a.author_id][0],
                 troupe=troupes.get(a.troupe_id) if a.troupe_id else None,
                 tags=[BlogTagOut(id=t.id, name=t.name, slug=t.slug) for t in tags[a.id]],
@@ -230,9 +244,12 @@ def read_article(slug: str, db: DbSession, user: MaybeUser) -> BlogPublicArticle
     [shown] = summaries(db, [article])
     profile = authors_of(db, {article.author_id})[article.author_id][1]
     yours = user is not None and user.id == article.author_id
+    named = blog.pictures_in(article.body)
+    sizes = blog_pictures.body_sizes(db, [(article.id, p) for p in named])
     return BlogPublicArticleOut(
         **shown.model_dump(),
         body=article.body,
+        body_pictures=body_pictures_out(named, sizes),
         author_card=blog_authors.card(profile) if profile else None,
         edit=blog.link(article) if yours else None,
     )

@@ -25,7 +25,7 @@ import base64
 import html
 import re
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from email.message import EmailMessage
 from email.utils import make_msgid
@@ -39,6 +39,7 @@ from sqlalchemy.orm import Session
 from horatio import pictures
 from horatio.config import get_settings
 from horatio.models import ServerSetting
+from horatio.pictures import Sizes
 
 KEY = "email_design"
 
@@ -420,20 +421,22 @@ def _unescaped(text: str) -> str:
     return re.sub(r"\\(.)", r"\1", text).strip()
 
 
-def figure_html(line: str) -> str | None:
+def figure_html(line: str, sizes: Mapping[uuid.UUID, Sizes] | None = None) -> str | None:
     """A blog article's picture as HTML for an email or a feed: the 600 px copy at its
-    address on the site, its description as the alt text and any caption under it.
-    None for any other line."""
+    address on the site, its description as the alt text and any caption under it,
+    and the copy's width and height where `sizes` knows them (#1183), so a reader
+    keeps its room while it loads. None for any other line."""
     found = MD_FIGURE.match(line)
     if found is None:
         return None
+    picture = uuid.UUID(found.group(2))
     alt = html.escape(_unescaped(found.group(1)), quote=True)
-    src = html.escape(
-        f"{site()}{pictures.body_picture_url(uuid.UUID(found.group(2)))}/600.webp", quote=True
-    )
+    src = html.escape(f"{site()}{pictures.body_picture_url(picture)}/600.webp", quote=True)
     caption = _unescaped(found.group(3) or "")
+    size = (sizes or {}).get(picture, {}).get("600.webp")
+    measured = f'width="{size[0]}" height="{size[1]}"' if size else 'width="600"'
     shown = (
-        f'<img src="{src}" alt="{alt}" width="600" '
+        f'<img src="{src}" alt="{alt}" {measured} '
         'style="display: block; width: 100%; max-width: 600px; height: auto; border: 0">'
     )
     under = (
@@ -460,14 +463,21 @@ def _md_starts_block(line: str) -> bool:
     )
 
 
-def markdown_html(text: str, link_colour: str | None = None, *, pictures: bool = False) -> str:
+def markdown_html(
+    text: str,
+    link_colour: str | None = None,
+    *,
+    pictures: bool = False,
+    picture_sizes: Mapping[uuid.UUID, Sizes] | None = None,
+) -> str:
     """Markdown as an announcement is written (headings, paragraphs, **bold**,
     *italic*, lists, quotes, code, rules and links, as the app reads them), as HTML
     for an email (#831). It is built from the text, so raw HTML in it only ever shows
     as text; a line that is only an HTML comment is left out, as in the app.
 
-    A blog article's words give `pictures`, and their pictures (#1163) show; any
-    other Markdown shows such a line as the text it is, as the app does."""
+    A blog article's words give `pictures`, and their pictures (#1163) show, with
+    their sizes from `picture_sizes` (horatio.blog_pictures); any other Markdown shows
+    such a line as the text it is, as the app does."""
     lines = text.replace("\r\n", "\n").split("\n")
     out: list[str] = []
     gap = "margin: 0 0 16px 0"
@@ -479,7 +489,7 @@ def markdown_html(text: str, link_colour: str | None = None, *, pictures: bool =
         numbered = MD_NUMBER.match(line)
         if not line.strip() or MD_COMMENT.match(line):
             i += 1
-        elif pictures and (figure := figure_html(line)) is not None:
+        elif pictures and (figure := figure_html(line, picture_sizes)) is not None:
             out.append(figure)
             i += 1
         elif fence is not None:

@@ -1,7 +1,7 @@
-import type { BlogArticleOut, BlogTagOut, BlogTroupeOut } from "../../api/types";
+import type { BlogArticleOut, BlogTagOut, BlogTroupeOut, PictureSizeOut } from "../../api/types";
 
 /** What an article says, as the custodian reads it to decide and its author works on it: a published one's changes, if it has any, else the article itself. */
-export type Words = { title: string; summary: string; body: string; troupe: BlogTroupeOut | null; picture: string | null };
+export type Words = { title: string; summary: string; body: string; troupe: BlogTroupeOut | null; picture: string | null; picture_sizes: PictureSizeOut[] };
 
 export function working(article: BlogArticleOut): Words {
   return article.revision ?? article;

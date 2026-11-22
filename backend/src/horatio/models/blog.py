@@ -110,3 +110,22 @@ class BlogPostPicture(Record):
     post_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("blog_posts.id", ondelete="CASCADE"), index=True
     )
+    # Each copy's width and height (horatio.pictures.Sizes, #1183), so a page keeps its
+    # room before it loads; None for one uploaded before they were kept, until it is
+    # next shown (horatio.blog_pictures).
+    sizes: Mapped[dict[str, list[int]] | None] = mapped_column(JSONB(none_as_null=True))
+
+
+class BlogHeroPicture(Record):
+    """The size of a blog article's hero picture (#1183): its id is the picture's (the
+    article's `picture_id`, or its revision's), its files under `blog/<id>`
+    (horatio.pictures). Kept at upload; one uploaded before then gets its row when it is
+    next shown (horatio.blog_pictures). Gone with its files, or with the article."""
+
+    __tablename__ = "blog_hero_pictures"
+
+    post_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("blog_posts.id", ondelete="CASCADE"), index=True
+    )
+    # As a picture in the words keeps them.
+    sizes: Mapped[dict[str, list[int]]] = mapped_column(JSONB)
