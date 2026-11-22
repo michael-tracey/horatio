@@ -7771,8 +7771,8 @@ export interface paths {
          * List Public Troupes
          * @description The troupes whose profiles are public and that aren't archived, by name, a page
          *     at a time, found by the directory's search: by name or abbreviation, place, the
-         *     day and how often they play, whether they welcome new players, and age. For anyone
-         *     at all.
+         *     day (from the schedule or the games to come) and how often they play, whether
+         *     they welcome new players, and age. For anyone at all.
          */
         get: operations["list_public_troupes_api_public_troupes_get"];
         put?: never;
@@ -32894,6 +32894,8 @@ export interface components {
             name: string;
             /** New Players */
             new_players: ("welcoming" | "closed") | null;
+            /** Next Game */
+            next_game: string | null;
             /** Place */
             place: string;
             /** Portrait */
@@ -55314,7 +55316,7 @@ export interface operations {
                 page?: number;
                 name?: string;
                 place?: string;
-                /** @description A day its schedule names. */
+                /** @description A day its schedule names, or that one of its next games is on. */
                 day?: ("monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday") | null;
                 /** @description How often its schedule says. */
                 frequency?: ("weekly" | "fortnightly" | "monthly") | null;

@@ -3323,7 +3323,7 @@ test("a troupe's public page asks a newcomer to make an account, which brings th
   await expect(visitor.getByText(`Your troupe: ${troupeName}`)).toBeVisible();
 });
 
-test("signed out, the troupe directory finds a troupe by place, day and new players, and Request to join goes through signing up", async ({ browser }) => {
+test("signed out, the troupe directory finds a troupe by place, day (from its schedule or its next game) and new players, and Request to join goes through signing up", async ({ browser }) => {
   const custodian = await person(browser, "dirsearch-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "dirsearch-lead");
@@ -3331,7 +3331,8 @@ test("signed out, the troupe directory finds a troupe by place, day and new play
   const place = `Fenwatch ${run}`;
   const found = `Fenwatch Court ${run}`;
   const closed = `Fenwatch Closed Court ${run}`;
-  // Two public troupes in one place: one plays Fridays and welcomes new players, the other doesn't.
+  // Two public troupes in one place: one plays Fridays and welcomes new players; the
+  // other's schedule says Saturdays and it doesn't, but its next game is on a Friday.
   const troupes: Record<string, string> = {};
   for (const [name, schedule, newPlayers] of [
     [found, "Every other Friday, 7 pm till late", "welcoming"],
@@ -3352,6 +3353,13 @@ test("signed out, the troupe directory finds a troupe by place, day and new play
     const saved = await lead.page.request.put(`/api/troupes/${id}/profile`, { headers, data: profile });
     expect(saved.status(), await saved.text()).toBe(200);
   }
+  // Midday UTC on a Friday at least two days off: a Friday wherever the browser is.
+  const friday = new Date();
+  friday.setUTCDate(friday.getUTCDate() + 2 + ((5 - ((friday.getUTCDay() + 2) % 7) + 7) % 7));
+  friday.setUTCHours(12, 0, 0, 0);
+  const game = { starts_at: friday.toISOString(), ends_at: new Date(friday.getTime() + 4 * 3600_000).toISOString() };
+  const added = await lead.page.request.post(`/api/troupes/${troupes[closed]}/games`, { headers, data: game });
+  expect(added.status(), await added.text()).toBe(201);
 
   // From the landing page to the directory, and a search by place.
   const visitor = await (await browser.newContext()).newPage();
@@ -3366,8 +3374,12 @@ test("signed out, the troupe directory finds a troupe by place, day and new play
   // Never by the street address, which only people signed in see.
   await expect(visitor.getByText("1 Secret Street")).toHaveCount(0);
 
-  // Fridays, welcoming new players: only the one.
+  // Fridays: both, the one by its schedule and the other by its next game, which its row shows.
   await search.getByLabel("Day").selectOption("friday");
+  await expect(visitor).toHaveURL(/day=friday/);
+  await expect(results.getByRole("link")).toHaveCount(2);
+  await expect(results.getByRole("link", { name: new RegExp(closed) })).toContainText("Next game: Fri");
+  // Welcoming new players too: only the one.
   await search.getByLabel("Only troupes welcoming new players").check();
   await expect(results.getByRole("link")).toHaveCount(1);
   const row = results.getByRole("link", { name: new RegExp(found) });

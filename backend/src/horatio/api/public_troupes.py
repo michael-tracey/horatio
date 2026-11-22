@@ -9,20 +9,34 @@ The directory searches and filters them here, from the profile's own fields: its
 its place (the venue's region and name, and the setting's city, never the street
 address, which only people signed in see), the day and how often it plays (from the
 schedule, which its storytellers write as words), new players and the minimum age.
+A day is also found from its games to come (#1206): one in the next eight weeks on
+that weekday, in its lead storyteller's time zone, as the troupe keeps none of its own.
 """
 
 import math
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
-from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, and_, func, or_, select
+from sqlalchemy import (
+    ColumnElement,
+    Integer,
+    SQLColumnExpression,
+    and_,
+    exists,
+    extract,
+    func,
+    or_,
+    select,
+)
+from sqlalchemy.orm import Session
 
 from horatio import pictures, troupe_abbreviations
 from horatio.api.troupe_profiles import Profile
 from horatio.auth.deps import DbSession
-from horatio.models import Troupe
+from horatio.models import ScheduledGame, Troupe, User
 
 router = APIRouter(prefix="/public/troupes", tags=["troupe profiles"])
 
@@ -45,6 +59,10 @@ DAY_WORDS: dict[str, str] = {
 # As a whole word. Postgres regular expressions: \m and \M are the start and end of one.
 DAYS = {day: rf"\m{words}\M" for day, words in DAY_WORDS.items()}
 ANY_DAY = "(" + "|".join(DAY_WORDS.values()) + ")"
+# Its day by number, as Postgres's isodow counts them: Monday is 1.
+ISO_DAYS = {day: number for number, day in enumerate(DAY_WORDS, start=1)}
+# How far ahead its games say which day it plays.
+GAMES_AHEAD = timedelta(weeks=8)
 # How often, as a schedule says it. "Every Friday" is weekly, "every other Friday" or
 # "every second Friday" fortnightly, and anything "of the month" monthly.
 FREQUENCIES: dict[str, str] = {
@@ -74,6 +92,9 @@ class PublicTroupeOut(BaseModel):
     new_players: Literal["welcoming", "closed"] | None
     min_age: int | None
     content_notes: str
+    # When its next game starts (or the one under way began), as its profile shows
+    # it; None with none to come.
+    next_game: datetime | None
 
 
 class PublicTroupePageOut(BaseModel):
@@ -102,6 +123,20 @@ def matching(column: SQLColumnExpression[str], pattern: str) -> ColumnElement[bo
     return column.regexp_match(pattern, flags="i")
 
 
+def plays_on(day: Day, at: datetime) -> ColumnElement[bool]:
+    """It has a game still to come, starting in the next GAMES_AHEAD, that falls on
+    `day` in its lead storyteller's time zone (UTC for a lead who chose none, as
+    elsewhere). A game taken off the schedule is gone, so it never counts."""
+    zone = func.coalesce(User.preferences["time_zone"].astext, "UTC")
+    return exists().where(
+        ScheduledGame.troupe_id == Troupe.id,
+        User.id == Troupe.lead_user_id,
+        ScheduledGame.ends_at > at,
+        ScheduledGame.starts_at < at + GAMES_AHEAD,
+        extract("isodow", func.timezone(zone, ScheduledGame.starts_at)) == ISO_DAYS[day],
+    )
+
+
 def filters(
     name: str,
     place: str,
@@ -109,8 +144,9 @@ def filters(
     frequency: Frequency | None,
     new_players: bool,
     age: int | None,
+    at: datetime,
 ) -> list[ColumnElement[bool]]:
-    """Which troupes the directory's search finds, beyond SHOWN."""
+    """Which troupes the directory's search finds, beyond SHOWN, at `at`."""
     found: list[ColumnElement[bool]] = []
     if name := name.strip():
         found.append(
@@ -133,7 +169,8 @@ def filters(
         )
     schedule = field("schedule")
     if day:
-        found.append(matching(schedule, DAYS[day]))
+        # Its schedule names the day, or one of its games falls on it.
+        found.append(or_(matching(schedule, DAYS[day]), plays_on(day, at)))
     if frequency:
         found.append(matching(schedule, FREQUENCIES[frequency]))
     if new_players:
@@ -145,13 +182,27 @@ def filters(
     return found
 
 
+def next_game_of(db: Session, ids: list[uuid.UUID], at: datetime) -> dict[uuid.UUID, datetime]:
+    """When each troupe's next game starts, as its profile shows it first
+    (troupe_profiles.upcoming): the soonest not yet over."""
+    soonest = (
+        select(ScheduledGame.troupe_id, func.min(ScheduledGame.starts_at))
+        .where(ScheduledGame.troupe_id.in_(ids), ScheduledGame.ends_at > at)
+        .group_by(ScheduledGame.troupe_id)
+    )
+    return {troupe_id: starts for troupe_id, starts in db.execute(soonest)}
+
+
 @router.get("")
 def list_public_troupes(
     db: DbSession,
     page: int = Query(1, ge=1, le=10_000, description="Counting from 1."),
     name: Words = "",
     place: Words = "",
-    day: Annotated[Day | None, Query(description="A day its schedule names.")] = None,
+    day: Annotated[
+        Day | None,
+        Query(description="A day its schedule names, or that one of its next games is on."),
+    ] = None,
     frequency: Annotated[
         Frequency | None, Query(description="How often its schedule says.")
     ] = None,
@@ -163,9 +214,10 @@ def list_public_troupes(
 ) -> PublicTroupePageOut:
     """The troupes whose profiles are public and that aren't archived, by name, a page
     at a time, found by the directory's search: by name or abbreviation, place, the
-    day and how often they play, whether they welcome new players, and age. For anyone
-    at all."""
-    where = (*SHOWN, *filters(name, place, day, frequency, new_players, age))
+    day (from the schedule or the games to come) and how often they play, whether
+    they welcome new players, and age. For anyone at all."""
+    at = datetime.now(UTC)
+    where = (*SHOWN, *filters(name, place, day, frequency, new_players, age, at))
     total = db.scalar(select(func.count()).select_from(Troupe).where(*where)) or 0
     found = list(
         db.scalars(
@@ -177,6 +229,7 @@ def list_public_troupes(
         )
     )
     goes_by = troupe_abbreviations.effective(db) if found else {}
+    next_games = next_game_of(db, [t.id for t in found], at) if found else {}
     troupes: list[PublicTroupeOut] = []
     for troupe in found:
         kept = Profile.model_validate(troupe.profile)
@@ -192,6 +245,7 @@ def list_public_troupes(
                 new_players=kept.new_players,
                 min_age=kept.min_age,
                 content_notes=kept.content_notes,
+                next_game=next_games.get(troupe.id),
             )
         )
     return PublicTroupePageOut(
