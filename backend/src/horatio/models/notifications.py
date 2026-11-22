@@ -46,8 +46,8 @@ class EmailNotice(Record):
     troupe: Mapped[str | None]
     summary: Mapped[str]
     link: Mapped[str]
-    # When it may go: at once, at the person's daily digest, or after a failure,
-    # once the wait is over.
+    # When it may go: at once, at the person's digest, or after a failure, once the
+    # wait is over.
     due_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
@@ -56,6 +56,22 @@ class EmailNotice(Record):
     # Sent whether or not the person wants this kind by email: an important
     # announcement (horatio.posts).
     forced: Mapped[bool] = mapped_column(default=False, server_default="false")
+
+
+class EmailDigest(Record):
+    """The last digest sent to someone who gathers their notification emails into one
+    a day or a week (#1196, horatio.notification_emails): which window it was for, so
+    no window gets two."""
+
+    __tablename__ = "email_digests"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True
+    )
+    # The window, in the person's time zone: the day of a daily digest ("2026-11-23"),
+    # the ISO week of a weekly one ("2026-W48").
+    window: Mapped[str]
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class PushDevice(Record):
@@ -93,8 +109,12 @@ class PushNotice(Record):
     troupe: Mapped[str | None]
     summary: Mapped[str]
     link: Mapped[str]
-    # When it may go: at once, or after a failure worth trying again.
+    # When it may go: at once, at the end of the person's quiet hours, or after a
+    # failure worth trying again.
     due_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
     attempts: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Held for the end of the person's quiet hours (#1196): when they end. Those held
+    # together go as one push.
+    held_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

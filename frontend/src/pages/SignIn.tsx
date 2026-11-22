@@ -8,6 +8,7 @@ import { Button, Card, ErrorText, Field, Input, Loading, Notice } from "../compo
 import { useAction, useMe } from "../hooks";
 import { manualLink } from "../manualLink";
 import { useNext, withNext } from "../next";
+import { forgetPasswordSignIn, markPasswordSignIn } from "../passkeyOffer";
 import { passkeyAborted, passkeyProblem } from "../passkeys";
 import { useTitle } from "../title";
 import { DiscordSignIn } from "./DiscordSignIn";
@@ -43,9 +44,11 @@ async function pickPasskey(autofill: boolean) {
   return startAuthentication({ optionsJSON: optionsJSON as never, useBrowserAutofill: autofill });
 }
 
-/** The picked passkey, for the server to sign the person in with. */
+/** The picked passkey, for the server to sign the person in with. No passkey is
+ * offered after it (PasskeyOffer): this device has one. */
 async function signInWithPasskey(credential: unknown) {
   await unwrap(api.POST("/api/auth/passkey", { body: { credential: credential as never } }));
+  forgetPasswordSignIn();
 }
 
 export function SignInPage() {
@@ -57,7 +60,10 @@ export function SignInPage() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const signIn = useAction(async () => {
-    afterPassword(await unwrap(api.POST("/api/auth/login", { body: { login, password } })));
+    const answer = await unwrap(api.POST("/api/auth/login", { body: { login, password } }));
+    // Signed in with a password: offer a passkey on this device once in (#1193).
+    markPasswordSignIn();
+    afterPassword(answer);
   });
   const withPasskey = browserSupportsWebAuthn();
   const passkey = useAction(async () => {
@@ -237,6 +243,7 @@ export function SecondStepPage() {
     // The browser asks for the person's face, finger or PIN.
     const credential = await startAuthentication({ optionsJSON: optionsJSON as never });
     await unwrap(api.POST("/api/auth/second-step/passkey", { body: { credential: credential as never } }));
+    forgetPasswordSignIn();
     navigate(next ?? "/characters");
   });
   // Timed out, or too many wrong codes: start again from the password.

@@ -236,6 +236,8 @@ test("an announcement's picture shows as a thumbnail on its pinned banner, in th
   // And in the bell.
   await p.getByRole("button", { name: /^Notifications/ }).click();
   const bell = p.getByRole("dialog", { name: "Notifications" });
+  // Both unread, from one troupe: gathered into one row, which lists them (#1196).
+  await bell.getByRole("button", { name: /^2 new announcements/ }).click();
   await expect(bell.getByRole("button", { name: /Announcement: Masquerade ball/ }).locator("img")).toHaveAttribute("src", /\/600\.webp$/);
   await expect(bell.getByRole("button", { name: /Announcement: Bring a chair/ }).locator("img")).toHaveCount(0);
 });

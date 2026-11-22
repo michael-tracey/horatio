@@ -1,16 +1,39 @@
 # Getting started
 
-This part is for everyone: players, troupe staff and the custodian. It covers Horatio's front page, making an account, signing in, your account and preferences, notifications, and the calendar link. To build your first character, go on to [Players](players.md) next.
+This part is for everyone: players, troupe staff and the custodian. It covers Horatio's front page, finding a troupe to play in, making an account, signing in, your account and preferences, notifications, and the calendar link. To build your first character, go on to [Players](players.md) next.
 
 ## The front page
 
 Signed out, Horatio's address on its own opens its front page. It says briefly what Horatio is, and has:
 
 - A few articles from [the blog](#reading-the-blog), the featured ones first, and **Read the blog** for the rest.
-- **Find a troupe**: every troupe that shows its profile to anyone, by name, with its picture, where it plays and the start of its description. **Previous** and **Next** at the foot move between pages. Choose a troupe to open its profile, which says where and when it plays and how to join.
+- **Find a troupe**: every troupe that shows its profile to anyone, by name, with its picture, where it plays and the start of its description. **Previous** and **Next** at the foot move between pages. Choose a troupe to open its profile, which says where and when it plays and how to join. **Search the troupe directory** opens [the troupe directory](#finding-a-troupe), to search them all.
 - **Create an account** and **Sign in**, which take you on to **Characters**.
 
 Signed in, the same address goes straight to **Characters**.
+
+## Finding a troupe
+
+The troupe directory, at /find-a-troupe, lists every troupe that shows its profile to anyone and isn't archived, signed in or not. Open it from **Search the troupe directory** on the front page, or **Find another troupe** at the foot of a troupe's public profile. Search by:
+
+- **Name**: any part of the troupe's name, or the abbreviation its lead storyteller set.
+- **Place**: a town, city or region, or the venue's name, as the troupe's profile gives them; where it gives no city or region, the city its chronicle is set in. Never the venue's street address, which only people signed in see.
+- **Day** and **How often**: from what the profile says under **When it plays**, such as "Every other Friday" (Friday, fortnightly) or "Second Saturday of the month" (Saturday, monthly). A troupe whose schedule doesn't say isn't found by them.
+- **Your age**: only troupes whose minimum age you meet, or that give none.
+- **Only troupes welcoming new players**.
+
+Type a name or place and choose **Search**; a day, how often or new players search as soon as you choose them. **Clear the search** starts again. The search is in the page's address, so you can bookmark it or send it to someone.
+
+Each troupe is a row with its picture, name and abbreviation, where it plays, when it plays, **Welcoming new players** and its minimum age where it says them, the start of its description and its content notes. Choose one to open its public profile.
+
+### Asking to join a troupe
+
+A troupe's public profile has **Request to join** at the top:
+
+- Signed out, it opens **Create an account**, with **Sign in** beside it on the profile if you have one. Once you're signed in, you go straight on to asking that troupe.
+- Signed in, it goes on to asking at once. With no character to bring, you go to **Characters** to build a new one, with the troupe already chosen under **Which troupe will you play in?**; its house rules apply while you build. With a character you could bring, you go to the troupe's page, where **Play here** lists them, each with **Ask to join**, beside **Build a new character for** the troupe.
+
+It isn't there for the troupe's own staff, or once you have a character at home in it: **Open the troupe** opens its page. A character asking to join waits for the troupe's storytellers to accept it; see [Players](players.md).
 
 ## Creating an account
 
@@ -27,7 +50,7 @@ If the server has Discord set up, the page also offers **Sign up with Discord**.
 - If Discord hasn't verified an email for you, no account is made. Verify it on Discord, then try again.
 - If an account here already uses that email, nothing is made or linked. Sign in to it with your password, then link Discord on its Sign-in and email tab.
 
-You're signed in straight away, and land on **Characters**. While you have no characters, a welcome card there shows the three steps to your first game: find your troupe, build a character for it, and ask the troupe to accept it.
+You're signed in straight away, and land on **Characters**, or, from **Request to join** on a troupe's profile, go on to asking that troupe (see [Asking to join a troupe](#asking-to-join-a-troupe)). While you have no characters, a welcome card there shows the three steps to your first game: find your troupe, build a character for it, and ask the troupe to accept it.
 
 ![The sign-up form, with boxes for your name, handle, email and password](images/getting-started/sign-up.png)
 
@@ -123,7 +146,7 @@ The **Preferences** tab of your account holds how Horatio looks and behaves for 
 
 ## Sign-in and email
 
-The **Sign-in and email** tab of your account holds how you sign in: your email, your handle, your password and your Discord account. Which notifications come, and how, is on [the Notifications tab](#choosing-your-notifications).
+The **Sign-in and email** tab of your account holds how you sign in and how safe your account is: your email, your handle, your password, your second steps and Discord account, where you're signed in, and your recent sign-ins. Which notifications come, and how, is on [the Notifications tab](#choosing-your-notifications).
 
 ### Changing your email
 
@@ -141,7 +164,7 @@ After many tries at changing it, right or wrong, Horatio stops taking them for a
 
 ### Setting up two-step sign-in
 
-The **Two-step sign-in** card offers two kinds of second step. You can have both, and several passkeys.
+The **Your second steps** card holds your passkeys, your authenticator app, how many recovery codes you have left, and [your Discord account](#your-discord-account). It offers two kinds of second step. You can have both, and several passkeys.
 
 - **A passkey** is kept by your phone, computer or password manager, and unlocked with your face, finger or PIN. Give it a name, such as Phone, give your password, and choose **Add a passkey**; your browser asks you to confirm. A passkey made on your phone can usually sign you in on a computer nearby too. It can also sign you in alone, with no password (see [Signing in](#signing-in)).
 
@@ -156,9 +179,25 @@ An account made with Discord has no password until you set one, so where the car
 
 ### Your Discord account
 
-If the server has Discord set up, the **Discord account** card offers **Link my Discord**. Discord asks you to confirm, then tells Horatio your Discord username and nothing else. Your profile then shows that username, marked as confirmed by Discord, where a typed one is marked "typed, not checked". Staff can rely on it when they give you your character's Discord channel. Once it's linked, **Sign in with Discord** on the sign-in page signs you in too.
+If the server has Discord set up, the **Discord account** part of the **Your second steps** card offers **Link my Discord**. Discord asks you to confirm, then tells Horatio your Discord username and nothing else. Your profile then shows that username, marked as confirmed by Discord, where a typed one is marked "typed, not checked". Staff can rely on it when they give you your character's Discord channel. Once it's linked, **Sign in with Discord** on the sign-in page signs you in too.
 
 While it's linked, your Discord username comes from Discord and can't be typed over. **Unlink Discord** forgets the link and keeps the username, unless Discord is your only way to sign in, as it is for an account made with Discord. To have a password too, ask for one from **Forgot your password?** on the sign-in page. A Discord account can be linked to only one Horatio account.
+
+### Adding a passkey after signing in with your password
+
+After you sign in with your password on a phone or computer that can keep a passkey of its own, unlocked with your face, finger or PIN, Horatio offers to add one at the top of the page: "This device can keep a passkey." **Add a passkey** takes you to the passkey form in the **Your second steps** card, which asks for your password as ever. **Not now** puts the offer away. Either way, Horatio offers it only once on each device: it remembers in this browser, so a new browser, or one whose site data was cleared, may offer it again.
+
+### Where you're signed in
+
+The **Where you're signed in** card lists each phone, computer or browser signed in to your account now, with this one first, marked **This device**. Each says its browser and system, such as "Safari on iPhone", as the browser told Horatio when you signed in; when it signed in; and when it was last used, to within a few minutes. While the custodian keeps the addresses people sign in from, it also says roughly where: the first part of the address only, such as 203.0.113.…, never the whole.
+
+**Sign out** beside one signs it out at once: the next thing it does, it's asked to sign in again. **Sign out everywhere else** signs out every one but this. Neither asks for your password, as they only ever take access away, and you may need them in a hurry. If you don't know one, sign it out, then [change your password](#changing-your-password), which signs you out everywhere else too.
+
+### Recent sign-ins
+
+The **Recent sign-ins** card lists the last ten times your account was signed in to, newest first, and how: your password, your password then a second step, a passkey alone, or Discord. Tries that failed are there too, marked **Failed**: a wrong password, or a wrong code or passkey after the right password. So are tries the limits turned away, marked **Turned away**. Where they came from follows the same rule as above.
+
+It comes from Horatio's log, which keeps every sign-in only while the custodian asks it to. When it doesn't, the card says so, and shows only wrong second steps and tries turned away, which are always kept.
 
 ### When the custodian viewed as you
 
@@ -174,6 +213,8 @@ The bell in the menu shows a number when something is waiting for you. Open it t
 - **Messages**: news, such as downtime results arriving. A message stays until you read it; **Mark all read** clears them all.
 
 Choose any line to go straight to the page it's about. **Notification settings**, at the foot of the list, opens the Notifications tab below.
+
+Several unread messages of the same kind, from the same troupe, gather into one line, such as *3 new blog articles* or *2 downtimes answered*. Choose it to list them, and choose one to open it; **Mark read** beside it marks them all read. The number on the bell still counts each one. Word about your account's safety, work waiting on you and messages already read are always listed one by one.
 
 ![The bell open, with its lists of what's waiting and messages](images/getting-started/bell.png)
 
@@ -195,7 +236,7 @@ Downtime results and quest news may also go out through your troupe's own connec
 
 Where a troupe's Discord gives your character a channel of their own, **Downtime results** has a switch for it: *Troupe: post to Agnes's own Discord channel*. It's on to begin with. Turn it off and Horatio posts nothing more to that channel, neither results nor quest news, while they still come to you here, in the bell or by email as you chose. Anything already waiting to go there is cancelled, not sent. The troupe's own channels, for its news and announcements, are the troupe's to choose and aren't affected. Its staff can see that you turned your channel off.
 
-If email is set up, **Send emails** under **Emails** chooses **At once** or **Once a day**, which gathers them into one email at 8 am in your time zone. Every email has a link to stop that kind by email, which unticks it here. If the server can't send email, the tab says so, and notifications come only to the bell.
+If email is set up, **Send emails** under **Emails** chooses **At once**, **Daily** or **Weekly**. Daily or weekly gathers everything ticked under **Email** into one email, grouped by kind, at the hour you choose under **At** (8 am to begin with), and for weekly on the day you choose under **On**, in your time zone (set on the Preferences tab; until you choose one, it's UTC). You get at most one a day, or one a week: change the hour after today's has gone and the next comes tomorrow. Some emails never wait for it and come at once: word about your account's safety (a new password, your two-step sign-in reset, a recovery code used), and announcements the staff mark **Important**. Every email has a link to stop that kind by email, which unticks it here. If the server can't send email, the tab says so, and notifications come only to the bell.
 
 ![The Downtimes group on the Notifications tab: a tick for the bell and for email](images/getting-started/email-notifications.png)
 
@@ -211,6 +252,10 @@ Horatio can tell your phone, so you hear of downtime results or a boon accepted 
 Each kind ticked under **Phone** then comes to that phone, even while Horatio is closed. Tap one to open the page it's about. A notification says no more than the bell's line.
 
 Turn **On this device** off to stop them there. Signing out on a device stops them there too. Every other device where they're on is listed under **Also on**, with **Turn off** for each, so you can stop a phone you no longer have. If the server isn't set up for phone notifications, the tab says so.
+
+#### Quiet hours
+
+Under **Quiet hours**, below **Phone notifications**, you can keep your phone quiet, such as overnight. Turn **Quiet hours** on and choose **From** and **Until** (10 pm to 8 am to begin with), in your time zone. Notifications that come in them wait, and when they end they come to your phone together, as one: *3 notifications in your quiet hours*, with each line. The bell has them as they happen. Two kinds still come at once, as they matter at a game that runs late: **Powers used in play** and **Teaching to confirm**. Quiet hours are kept on your account, so they're the same on each of your devices.
 
 ## The calendar link
 

@@ -282,6 +282,28 @@ def test_an_important_announcement_emails_even_those_who_turned_it_off(
     )
 
 
+def test_an_important_announcement_doesnt_wait_for_the_digest(
+    board: Board, session: Session, mail: FakeSMTP
+) -> None:
+    """Marked important, it goes at once, on its own (#1196); the rest wait for the
+    person's digest."""
+    troupe = board.troupe
+    troupe.player.client.patch("/preferences", json={"email_digest": "weekly"})
+    board.announced(title="Snacks this week")
+    board.announced(title="Venue closed tonight", important=True)
+
+    notification_emails.send_due(session, delivery.now() + timedelta(minutes=1))
+
+    assert [str(m["Subject"]) for m in mailed_to(mail, troupe.player)] == [
+        "Lords of the Night: Announcement: Venue closed tonight"
+    ]
+    [waits] = session.scalars(
+        select(EmailNotice).where(EmailNotice.user_id == uuid.UUID(troupe.player.id))
+    )
+    assert waits.summary == "Announcement: Snacks this week"
+    assert waits.due_at > delivery.now() + timedelta(minutes=1)
+
+
 def mailed_to(mail: FakeSMTP, person: Person) -> list[EmailMessage]:
     return [m for m in mail.sent if person.email in str(m["To"])]
 

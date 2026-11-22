@@ -143,8 +143,12 @@ function ConfirmWithDiscord({ confirming, passkey, name, children }: { confirmin
  * before the browser is asked for anything or the app's key is shown (#1110, #1148). Someone who must have it can't remove their last. A
  * passkey that may not sign in alone is replaced in one go: the new one is made and
  * kept before the old one goes, so a cancelled or failed try leaves the old one as it was.
+ *
+ * On Account › Sign-in it is "Your second steps" (#1193), with the linked Discord
+ * account as `children`, after the recovery codes. Opened at `#passkeys`, as the offer
+ * after a password sign-in does (PasskeyOffer), it goes to the form adding one.
  */
-export function TwoStepCard({ onDone }: { onDone?: () => void }) {
+export function TwoStepCard({ onDone, title = "Two-step sign-in", children }: { onDone?: () => void; title?: string; children?: React.ReactNode }) {
   const toast = useToast();
   const dates = useDates();
   const state = useQuery({ queryKey: TWO_STEP, queryFn: () => unwrap(api.GET("/api/two-step")) });
@@ -161,6 +165,15 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
   const [told, setTold] = useState<{ ok: boolean; text: string } | null>(null);
   const toldRef = useRef<HTMLParagraphElement>(null);
   const loaded = state.data;
+  // Sent to add a passkey (#1193): to the form, once the card has loaded.
+  const { hash } = useLocation();
+  const passkeysRef = useRef<HTMLElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (hash !== "#passkeys" || !loaded) return;
+    passkeysRef.current?.scrollIntoView?.({ block: "start" });
+    nameRef.current?.focus({ preventScroll: true });
+  }, [hash, loaded]);
   useEffect(() => {
     const said = params.get("discord_confirm");
     if (!said || !loaded) return;
@@ -307,7 +320,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
 
   const canMake = (s: TwoStep) => s.passkeys_available && browserSupportsWebAuthn();
   const passkeys = (s: TwoStep) => (
-    <section aria-label="Passkeys" className="flex flex-col gap-2">
+    <section id="passkeys" ref={passkeysRef} aria-label="Passkeys" className="flex scroll-mt-4 flex-col gap-2">
       <SectionLabel>Passkeys</SectionLabel>
       {s.passkeys.length > 0 && (
         <ul className="divide-y divide-ash/50">
@@ -371,7 +384,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
           }}
         >
           <Field label="Passkey name" hint="So you can tell them apart, such as Phone.">
-            <Input value={name} maxLength={60} placeholder="Passkey" onChange={(e) => setName(e.target.value)} />
+            <Input ref={nameRef} value={name} maxLength={60} placeholder="Passkey" onChange={(e) => setName(e.target.value)} />
           </Field>
           {s.has_password ? (
             <Field label="Your password" hint="Asked again, so a sign-in left open can't add one.">
@@ -449,7 +462,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
   );
 
   return (
-    <Card title="Two-step sign-in">
+    <Card title={title}>
       <Loaded query={state}>
         {(s) => (
           <div className="flex flex-col gap-4 text-sm">
@@ -491,6 +504,7 @@ export function TwoStepCard({ onDone }: { onDone?: () => void }) {
                     )}
                   </section>
                 )}
+                {children}
               </>
             )}
           </div>

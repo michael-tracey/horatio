@@ -3272,7 +3272,7 @@ test("staff set a tapering game XP chart and award a game by it, with an absente
   await expect(player.page.getByRole("cell", { name: /: attended, 201–300 band, Helped \+1/ })).toBeVisible();
 });
 
-test("a troupe's public page asks a newcomer to make an account, which brings them back to the troupe", async ({ browser }) => {
+test("a troupe's public page asks a newcomer to make an account, which brings them on to build a character for it", async ({ browser }) => {
   const custodian = await person(browser, "joinlink-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "joinlink-lead");
@@ -3288,13 +3288,14 @@ test("a troupe's public page asks a newcomer to make an account, which brings th
   await l.getByRole("link", { name: troupeName }).click();
   await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(l.url()).pathname.split("/")[2]!;
-  const next = encodeURIComponent(`/troupes/${troupeId}`);
+  // Request to join goes through making an account, then into asking the troupe (#1192).
+  const next = encodeURIComponent(`/troupes/${troupeId}/join`);
 
   // Signed-in only, the page still offers a way in.
   const visitor = await (await browser.newContext()).newPage();
   await visitor.goto(`/t/${troupeId}`);
   await expect(visitor.getByText(/only for people signed in, or there is no such troupe/)).toBeVisible();
-  await expect(visitor.getByRole("link", { name: "Create an account to play here" })).toHaveAttribute("href", `/sign-up?next=${next}`);
+  await expect(visitor.getByRole("link", { name: "Request to join" })).toHaveAttribute("href", `/sign-up?next=${next}`);
   await expect(visitor.getByRole("main").getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", `/sign-in?next=${next}`);
   await visitor.screenshot(shots("anon-private-troupe"));
 
@@ -3308,8 +3309,8 @@ test("a troupe's public page asks a newcomer to make an account, which brings th
   await expect(visitor.getByRole("main").getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", `/sign-in?next=${next}`);
   await visitor.screenshot(shots("anon-public-troupe"));
 
-  // They make an account, and land on the troupe's own page.
-  await visitor.getByRole("link", { name: "Create an account to play here" }).click();
+  // They make an account, and with no character to bring, go on to build one for the troupe.
+  await visitor.getByRole("link", { name: "Request to join" }).click();
   await expect(visitor.getByRole("heading", { name: "Create an account" })).toBeVisible();
   await expect(visitor.getByText("Character sheets and downtimes for Mind's Eye Theatre troupes.")).toBeVisible();
   await visitor.screenshot(shots("signup"));
@@ -3318,8 +3319,85 @@ test("a troupe's public page asks a newcomer to make an account, which brings th
   await visitor.getByLabel("Email").fill(`joinlink-newcomer-${run}@example.com`);
   await visitor.getByLabel("Password").fill("a long enough password");
   await visitor.getByRole("button", { name: "Create account" }).click();
-  await expect(visitor.getByRole("heading", { name: troupeName })).toBeVisible();
-  await expect(visitor).toHaveURL(new RegExp(`/troupes/${troupeId}$`));
+  await expect(visitor).toHaveURL(new RegExp(`/characters\\?troupe=${troupeId}$`));
+  await expect(visitor.getByText(`Your troupe: ${troupeName}`)).toBeVisible();
+});
+
+test("signed out, the troupe directory finds a troupe by place, day and new players, and Request to join goes through signing up", async ({ browser }) => {
+  const custodian = await person(browser, "dirsearch-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "dirsearch-lead");
+  const headers = { "X-Horatio": "1" };
+  const place = `Fenwatch ${run}`;
+  const found = `Fenwatch Court ${run}`;
+  const closed = `Fenwatch Closed Court ${run}`;
+  // Two public troupes in one place: one plays Fridays and welcomes new players, the other doesn't.
+  const troupes: Record<string, string> = {};
+  for (const [name, schedule, newPlayers] of [
+    [found, "Every other Friday, 7 pm till late", "welcoming"],
+    [closed, "Last Saturday of the month", "closed"],
+  ] as const) {
+    const made = await custodian.page.request.post("/api/troupes", { headers, data: { name, lead_handle: lead.handle } });
+    expect(made.status(), await made.text()).toBe(201);
+    const id = ((await made.json()) as { id: string }).id;
+    troupes[name] = id;
+    const profile = {
+      schedule,
+      new_players: newPlayers,
+      min_age: 18,
+      content_notes: "Horror and violence.",
+      venue: { region: place, name: "The Mere Hall", address: "1 Secret Street", access: "" },
+      public: true,
+    };
+    const saved = await lead.page.request.put(`/api/troupes/${id}/profile`, { headers, data: profile });
+    expect(saved.status(), await saved.text()).toBe(200);
+  }
+
+  // From the landing page to the directory, and a search by place.
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto("/");
+  await visitor.getByRole("link", { name: "Search the troupe directory" }).click();
+  await expect(visitor.getByRole("heading", { level: 1, name: "Find a troupe" })).toBeVisible();
+  const search = visitor.getByRole("search", { name: "Search troupes" });
+  await search.getByLabel("Place").fill(place);
+  await search.getByRole("button", { name: "Search" }).click();
+  const results = visitor.getByRole("list", { name: "Troupes found" });
+  await expect(results.getByRole("link")).toHaveCount(2);
+  // Never by the street address, which only people signed in see.
+  await expect(visitor.getByText("1 Secret Street")).toHaveCount(0);
+
+  // Fridays, welcoming new players: only the one.
+  await search.getByLabel("Day").selectOption("friday");
+  await search.getByLabel("Only troupes welcoming new players").check();
+  await expect(results.getByRole("link")).toHaveCount(1);
+  const row = results.getByRole("link", { name: new RegExp(found) });
+  await expect(row).toContainText("Every other Friday");
+  await expect(row).toContainText("Welcoming new players");
+  await expect(row).toContainText("18+");
+  await expect(row).toContainText("Content notes: Horror and violence.");
+  await expect(results.getByRole("link", { name: new RegExp(closed) })).toHaveCount(0);
+  await expect(visitor).toHaveURL(/day=friday/);
+  await visitor.screenshot(shots("troupe-directory"));
+
+  // Its public profile, and Request to join, through making an account.
+  await row.click();
+  await expect(visitor).toHaveURL(new RegExp(`/t/${troupes[found]}$`));
+  await expect(visitor.getByRole("heading", { level: 1, name: found })).toBeVisible();
+  await visitor.getByRole("link", { name: "Request to join" }).click();
+  await expect(visitor.getByRole("heading", { name: "Create an account" })).toBeVisible();
+  await visitor.getByLabel("Your name").fill("dirsearch-newcomer");
+  await visitor.getByLabel("Handle").fill(`dirsearch_${run.slice(-10)}`);
+  await visitor.getByLabel("Email").fill(`dirsearch-newcomer-${run}@example.com`);
+  await visitor.getByLabel("Password").fill(PASSWORD);
+  await visitor.getByRole("button", { name: "Create account" }).click();
+
+  // On to build a character for the troupe, chosen already.
+  await expect(visitor).toHaveURL(new RegExp(`/characters\\?troupe=${troupes[found]}$`));
+  await expect(visitor.getByText(`Your troupe: ${found}`)).toBeVisible();
+  await expect(visitor.getByLabel("Which troupe will you play in?")).toHaveValue(troupes[found]!);
+  await visitor.getByLabel("Name").fill(`Fenwatch Newcomer ${run}`);
+  await visitor.getByRole("button", { name: "Create" }).click();
+  await expect(visitor).toHaveURL(/\/characters\/[0-9a-f-]+\/create/);
 });
 
 test("a troupe's Overview switches it public at once, shows its XP range, and Waiting on you leads to the work", async ({ browser }) => {

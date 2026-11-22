@@ -131,7 +131,9 @@ test("no screen is wider than a phone", async ({ browser }) => {
   await send(l, "PATCH", `/api${base}`, { description: "A Camarilla chronicle in a rain-soaked port city, where the old Prince's grip is slipping and every clan is counting favours." });
   await send(l, "PUT", `/api${base}/profile`, {
     schedule: "Second Saturday of the month, 7 pm to midnight",
-    content_notes: "",
+    // Long enough to wrap on the troupe directory's row (#1192).
+    content_notes: "Violence, body horror, and the slow loss of humanity; players set their own lines and veils with staff before play.",
+    min_age: 18,
     links: {},
     setting: { chronicle: "The Drowned Crown", city: "Port Halden", era: "Modern nights" },
     venue: { name: "The Lantern Rooms", region: "Port Halden", address: "", access: "Step-free access" },
@@ -193,10 +195,12 @@ test("no screen is wider than a phone", async ({ browser }) => {
 
   // Signed out.
   const anon = await (await browser.newContext({ viewport })).newPage();
-  // The troupe shows its profile to anyone, so the landing page (#1164) has a troupe to list
-  // with a long name, and its public profile is all there.
+  // The troupe shows its profile to anyone, so the landing page (#1164) and the directory have
+  // a troupe to list with a long name, and its public profile is all there.
   await send(l, "PUT", `/api${base}/profile/public`, { public: true });
-  for (const url of ["/", "/sign-in", "/sign-up", "/forgot-password", "/about", "/help", "/help/getting-started", `/t/${troupeId}`, "/blog", `/blog/${article.slug}`, "/blog/tags/storytelling"]) {
+  // The troupe directory (#1192), and a search that is sure to find it among other runs' troupes.
+  const directory = `/find-a-troupe?name=${encodeURIComponent(`Drowned Crown ${run}`)}&new=1`;
+  for (const url of ["/", "/find-a-troupe", directory, "/sign-in", "/sign-up", "/forgot-password", "/about", "/help", "/help/getting-started", `/t/${troupeId}`, "/blog", `/blog/${article.slug}`, "/blog/tags/storytelling"]) {
     seen.push(`anon ${screen(url)}`);
     await visit(anon, "anon", url, wide);
   }
@@ -231,7 +235,8 @@ test("no screen is wider than a phone", async ({ browser }) => {
 /**
  * The desktop top bar is one line and fits the window at its narrowest, 1024px, with Large
  * text too (#1190), and at 1280px: for the widest bar there is, a custodian with a long name
- * (#746). Large text cuts the name shorter; the account link still has it whole.
+ * (#746). Large text cuts the name shorter, and at 1024px drops "(custodian)" so the name keeps
+ * at least ten letters (#1198); the account link still has both whole.
  */
 test("the desktop top bar fits a 1024px window, with Large text too", async ({ browser }) => {
   test.skip(test.info().project.name !== "desktop", "desktop only");
@@ -239,6 +244,7 @@ test("the desktop top bar fits a 1024px window, with Large text too", async ({ b
   const name = "LayoutBarLarge-custodian-with-a-long-name";
   makeCustodian(email);
   const wide: string[] = [];
+  const labels: string[] = [];
   const fontSize = () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize);
   const account = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: new RegExp(`^Your account: ${name} \\(custodian\\)$`) });
   for (const [size, px] of [["normal", "16px"], ["large", "18.4px"]] as const) {
@@ -255,11 +261,26 @@ test("the desktop top bar fits a 1024px window, with Large text too", async ({ b
         if (over) wide.push(`${at}: ${over}`);
         const height = (await page.getByRole("banner").boundingBox())!.height;
         if (height > 80) wide.push(`${at}: the top bar is ${Math.round(height)}px tall, more than one line`);
+        // "(custodian)" shows where there's room for it; where not, it wraps out of sight.
+        const bar = await account.evaluate((a, name) => {
+          const spans = [...a.querySelectorAll("span")];
+          const label = spans.find((s) => s.textContent === " (custodian)")!;
+          const shown = label.getBoundingClientRect().top < label.parentElement!.getBoundingClientRect().bottom;
+          const text = spans.find((s) => s.textContent === name && s.childElementCount === 0)!;
+          const ruler = document.createElement("canvas").getContext("2d")!;
+          ruler.font = getComputedStyle(text).font;
+          return { shown, width: text.clientWidth, tenLetters: ruler.measureText(`${name.slice(0, 10)}…`).width };
+        }, name);
+        // Shown at Normal text; hidden at Large text and 1024px. Large at 1280px is up to the room.
+        const wanted = size === "normal" ? true : width === 1024 ? false : bar.shown;
+        if (bar.shown !== wanted) labels.push(`${at}: "(custodian)" is ${bar.shown ? "shown" : "hidden"}`);
+        if (bar.width < bar.tenLetters) labels.push(`${at}: the name is ${bar.width}px, less than ten letters (${Math.round(bar.tenLetters)}px)`);
       }
     }
   }
   expect(wide, "The top bar is wider than the window or more than one line").toEqual([]);
-  // Cut short, the name is whole in the link's name and its tooltip.
-  await expect(account).toHaveAttribute("title", name);
+  expect(labels, "The name or its label in the top bar").toEqual([]);
+  // Cut short, the name and its label are whole in the link's name and its tooltip.
+  await expect(account).toHaveAttribute("title", `${name} (custodian)`);
   await page.screenshot(shots("top-bar-large-text"));
 });

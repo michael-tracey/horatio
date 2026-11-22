@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router";
+import { Link, Navigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { useClanName } from "../../components/ClanNames";
 import type { CharacterOut, TroupeOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { CardHeading } from "../../components/Headings";
 import { AtHandle } from "../../components/PersonPicker";
-import { Badge, Card } from "../../components/ui";
+import { Badge, Card, Loading } from "../../components/ui";
 import { LinkButton } from "../../components/LinkButton";
+import { joinPath } from "../directory";
 import { newPlayersText } from "./profile";
 
 /** A long troupe name wraps the button's words onto a second line. */
@@ -119,4 +120,17 @@ function Bring({ character: c, troupeId }: { character: CharacterOut; troupeId: 
       )}
     </li>
   );
+}
+
+/**
+ * Request to join, from a troupe's public profile (/troupes/<id>/join, #1192): on into
+ * the ask-to-join flow with the troupe chosen (`joinPath`), building a new character
+ * for it or choosing one to bring.
+ */
+export function JoinTroupe({ troupe }: { troupe: TroupeOut }) {
+  const characters = useQuery({ queryKey: ["characters"], queryFn: () => unwrap(api.GET("/api/characters")) });
+  // Couldn't tell which characters there are: Play here, above, still offers the ways in.
+  if (characters.error) return <Navigate to={`/troupes/${troupe.id}`} replace />;
+  if (!characters.data) return <Loading />;
+  return <Navigate to={joinPath(troupe, characters.data)} replace />;
 }

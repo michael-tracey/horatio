@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { NotificationSettingsOut, NotificationTopicOut, Preferences } from "../../api/types";
 import { Checkbox } from "../../components/Checkbox";
@@ -7,12 +7,12 @@ import { SettingCard } from "../../components/SettingCard";
 import { SettingRow } from "../../components/SettingRow";
 import { useToast } from "../../components/Toast";
 import { Toggle } from "../../components/Toggle";
-import { Button, ErrorText, Loading, Notice } from "../../components/ui";
+import { Button, ErrorText, Input, Loading, Notice, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
 import { blocked, pushSupport, subscribeHere, subscriptionHere } from "../../offline/push";
 import { ToldOfReports } from "../troupe/BoonReportsTold";
-import { Choice, PreferenceCards, useScrollToHash } from "./PreferenceControls";
+import { Choice, PreferenceCards, useSaveSetting, useScrollToHash } from "./PreferenceControls";
 
 export const NOTIFICATION_SETTINGS = ["notification-settings"];
 
@@ -23,7 +23,9 @@ const WAYS: Record<Way, string> = { bell: "Bell", email: "Email", push: "Phone" 
 /**
  * Account › Notifications (#1053): every kind of notification Horatio sends you, grouped,
  * and where each comes, the bell, email or your phone (horatio.notification_choices). Some
- * always come, and say so. Phone notifications are turned on per device (#1054), here. Reported boons go with a role: each troupe's switch is the one beside
+ * always come, and say so. Phone notifications are turned on per device (#1054), here, with quiet
+ * hours for them (#1196); emails come at once or in a digest a day or a week (#1196). Reported
+ * boons go with a role: each troupe's switch is the one beside
  * the role (#1018), shown here too. What a troupe also sends to Discord or by its own email
  * is the troupe's choice, and is said, not chosen, but for each character's own channel on
  * its Discord, which its player can turn off (#1077). A way not listed never carries it.
@@ -45,7 +47,14 @@ export function NotificationsPage() {
         {push && ", to your phone"}, or nowhere. Work waiting on you stays in the bell until it's done, and word about your account always comes.
       </p>
       {!email && <Notice>Email isn't set up on this server, so notifications don't come by email.</Notice>}
-      {push ? <PhoneCard settings={settings.data} /> : <Notice>Phone notifications aren't set up on this server, so none come to your phone.</Notice>}
+      {push ? (
+        <>
+          <PhoneCard settings={settings.data} />
+          <QuietHours exempt={settings.data.quiet_exempt} />
+        </>
+      ) : (
+        <Notice>Phone notifications aren't set up on this server, so none come to your phone.</Notice>
+      )}
       {groups.map((group) => (
         <SettingCard key={group.name} title={group.title}>
           <div id={group.name} className="scroll-mt-4">
@@ -288,26 +297,164 @@ function Roles({ topic }: { topic: NotificationTopicOut }) {
   );
 }
 
-/** At once, or one email a day (#106). */
+const WEEKDAYS: [Preferences["digest_day"], string][] = [
+  ["monday", "Monday"],
+  ["tuesday", "Tuesday"],
+  ["wednesday", "Wednesday"],
+  ["thursday", "Thursday"],
+  ["friday", "Friday"],
+  ["saturday", "Saturday"],
+  ["sunday", "Sunday"],
+];
+
+/** "8 am", or "08:00" on a 24-hour clock. */
+export function hourName(hour: number, clock: Preferences["clock"]): string {
+  if (clock === "24") return `${String(hour).padStart(2, "0")}:00`;
+  return `${hour % 12 || 12} ${hour < 12 ? "am" : "pm"}`;
+}
+
+/** The person's time zone, as a hint names it. */
+function zoneOf(prefs: Preferences): string {
+  return prefs.time_zone ? prefs.time_zone.replaceAll("_", " ") : "UTC, until you choose a time zone under Preferences";
+}
+
+/** At once, or gathered into one email a day or a week, at the hour and on the day chosen (#106, #1196). */
 function DigestRow() {
   const prefs = usePreferences();
+  const save = useSaveSetting();
+  const gathered = prefs.email_digest !== "at_once";
   return (
-    <SettingRow label="Send emails" hint={digestHint(prefs)} short>
-      <Choice
-        name="email_digest"
-        label="Send emails"
-        choices={[
-          ["at_once", "At once"],
-          ["daily", "Once a day"],
-        ]}
-      />
-    </SettingRow>
+    <>
+      <SettingRow label="Send emails" hint={digestHint(prefs)}>
+        <Choice
+          name="email_digest"
+          label="Send emails"
+          choices={[
+            ["at_once", "At once"],
+            ["daily", "Daily"],
+            ["weekly", "Weekly"],
+          ]}
+        />
+      </SettingRow>
+      {prefs.email_digest === "weekly" && (
+        <SettingRow label="On" short>
+          <Select
+            aria-label="Digest day"
+            value={prefs.digest_day}
+            onChange={(e) => {
+              const day = e.target.value as Preferences["digest_day"];
+              save({ digest_day: day }, `Digest day: ${WEEKDAYS.find(([d]) => d === day)?.[1]}`);
+            }}
+            className="text-sm"
+          >
+            {WEEKDAYS.map(([day, name]) => (
+              <option key={day} value={day}>
+                {name}
+              </option>
+            ))}
+          </Select>
+        </SettingRow>
+      )}
+      {gathered && (
+        <SettingRow label="At" short>
+          <Select
+            aria-label="Digest hour"
+            value={prefs.digest_hour}
+            onChange={(e) => {
+              const hour = Number(e.target.value);
+              save({ digest_hour: hour }, `Digest hour: ${hourName(hour, prefs.clock)}`);
+            }}
+            className="text-sm"
+          >
+            {Array.from({ length: 24 }, (_, hour) => (
+              <option key={hour} value={hour}>
+                {hourName(hour, prefs.clock)}
+              </option>
+            ))}
+          </Select>
+        </SettingRow>
+      )}
+    </>
   );
 }
 
-function digestHint(prefs: Preferences): string {
-  const zone = prefs.time_zone ? prefs.time_zone.replaceAll("_", " ") : "UTC, until you choose a time zone";
-  return `Once a day gathers them into one email at 8 am (${zone}).`;
+export function digestHint(prefs: Preferences): string {
+  const always = "Word about your account's safety, and announcements marked important, still come at once.";
+  const at = hourName(prefs.digest_hour, prefs.clock);
+  if (prefs.email_digest === "daily") return `One email a day at ${at} (${zoneOf(prefs)}), the day's notifications grouped by kind. ${always}`;
+  if (prefs.email_digest === "weekly") {
+    const day = WEEKDAYS.find(([d]) => d === prefs.digest_day)?.[1];
+    return `One email a week, on ${day} at ${at} (${zoneOf(prefs)}), the week's notifications grouped by kind. ${always}`;
+  }
+  return "Each email as it happens. Daily or weekly gathers them into one email instead.";
+}
+
+/**
+ * Quiet hours for phone notifications (#1196): from a time to a time in the person's time
+ * zone, phone notifications wait, then come as one. The kinds the server names come anyway.
+ */
+function QuietHours({ exempt }: { exempt: string[] }) {
+  const prefs = usePreferences();
+  const save = useSaveSetting();
+  const anyway = exempt.length ? ` ${list(exempt)} still come at once, as they matter at a game.` : "";
+  return (
+    <PreferenceCards id="quiet-hours">
+      <SettingCard title="Quiet hours">
+        <SettingRow
+          label="Quiet hours"
+          hint={`Phone notifications wait from the start to the end (${zoneOf(prefs)}), then come as one. The bell has them as they happen.${anyway}`}
+          checked={prefs.quiet_hours}
+          onChange={(on) => save({ quiet_hours: on }, `Quiet hours: ${on ? "on" : "off"}`)}
+        />
+        {prefs.quiet_hours && (
+          <>
+            <SettingRow label="From" short>
+              <TimeField label="Quiet hours start" value={prefs.quiet_start} onSave={(at) => save({ quiet_start: at }, `Quiet hours from ${at}`)} />
+            </SettingRow>
+            <SettingRow label="Until" short>
+              <TimeField label="Quiet hours end" value={prefs.quiet_end} onSave={(at) => save({ quiet_end: at }, `Quiet hours until ${at}`)} />
+            </SettingRow>
+          </>
+        )}
+      </SettingCard>
+    </PreferenceCards>
+  );
+}
+
+/** A time of day, saved once it's left with a whole time in it, or after a moment's pause:
+ * a phone's time picker may never leave the field. */
+function TimeField({ label, value, onSave }: { label: string; value: string; onSave: (at: string) => void }) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const save = useRef(onSave);
+  save.current = onSave;
+  const done = () => {
+    clearTimeout(timer.current);
+    if (/^\d\d:\d\d$/.test(text) && text !== value) onSave(text);
+    else setText(value);
+  };
+  useEffect(() => {
+    if (text === value || !/^\d\d:\d\d$/.test(text)) return;
+    timer.current = setTimeout(() => save.current(text), 1500);
+    return () => clearTimeout(timer.current);
+  }, [text, value]);
+  return (
+    <Input
+      type="time"
+      aria-label={label}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={done}
+      onKeyDown={(e) => e.key === "Enter" && done()}
+      className="text-sm"
+    />
+  );
+}
+
+/** "A", "A and B", "A, B and C". */
+function list(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
 }
 
 function LockIcon() {

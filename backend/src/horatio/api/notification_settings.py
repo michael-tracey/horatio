@@ -114,6 +114,8 @@ class NotificationSettingsOut(BaseModel):
     # The groups that apply to the person: staff work only for staff, the custodian's
     # only for the custodian.
     groups: list[NotificationGroupOut]
+    # The kinds that come to the phone through quiet hours, by title (#1196).
+    quiet_exempt: list[str]
 
 
 class NotificationChoiceIn(BaseModel):
@@ -271,6 +273,7 @@ def settings_out(db: DbSession, user: User) -> NotificationSettingsOut:
             for g in notification_choices.GROUPS
             if g.audience in shown
         ],
+        quiet_exempt=[t.title for t in web_push.EXEMPT],
     )
 
 

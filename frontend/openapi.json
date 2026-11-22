@@ -36532,6 +36532,13 @@
               }
             ],
             "title": "Push Key"
+          },
+          "quiet_exempt": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Quiet Exempt",
+            "type": "array"
           }
         },
         "required": [
@@ -36539,7 +36546,8 @@
           "push",
           "push_key",
           "devices",
-          "groups"
+          "groups",
+          "quiet_exempt"
         ],
         "title": "NotificationSettingsOut",
         "type": "object"
@@ -43355,11 +43363,33 @@
             "title": "Date Format",
             "type": "string"
           },
+          "digest_day": {
+            "default": "monday",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "title": "Digest Day",
+            "type": "string"
+          },
+          "digest_hour": {
+            "default": 8,
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Digest Hour",
+            "type": "integer"
+          },
           "email_digest": {
             "default": "at_once",
             "enum": [
               "at_once",
-              "daily"
+              "daily",
+              "weekly"
             ],
             "title": "Email Digest",
             "type": "string"
@@ -43393,6 +43423,21 @@
             "default": true,
             "title": "Quick Notes",
             "type": "boolean"
+          },
+          "quiet_end": {
+            "default": "08:00",
+            "title": "Quiet End",
+            "type": "string"
+          },
+          "quiet_hours": {
+            "default": false,
+            "title": "Quiet Hours",
+            "type": "boolean"
+          },
+          "quiet_start": {
+            "default": "22:00",
+            "title": "Quiet Start",
+            "type": "string"
           },
           "ratings": {
             "default": "numbers",
@@ -44573,6 +44618,10 @@
             "title": "Abbreviation",
             "type": "string"
           },
+          "content_notes": {
+            "title": "Content Notes",
+            "type": "string"
+          },
           "description": {
             "title": "Description",
             "type": "string"
@@ -44582,9 +44631,35 @@
             "title": "Id",
             "type": "string"
           },
+          "min_age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Age"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "new_players": {
+            "anyOf": [
+              {
+                "enum": [
+                  "welcoming",
+                  "closed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Players"
           },
           "place": {
             "title": "Place",
@@ -44600,6 +44675,10 @@
               }
             ],
             "title": "Portrait"
+          },
+          "schedule": {
+            "title": "Schedule",
+            "type": "string"
           }
         },
         "required": [
@@ -44608,7 +44687,11 @@
           "abbreviation",
           "portrait",
           "description",
-          "place"
+          "place",
+          "schedule",
+          "new_players",
+          "min_age",
+          "content_notes"
         ],
         "title": "PublicTroupeOut",
         "type": "object"
@@ -46727,6 +46810,68 @@
           "submitted"
         ],
         "title": "ReceivedOut",
+        "type": "object"
+      },
+      "RecentSignIn": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "how": {
+            "title": "How",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "signed_in",
+              "failed",
+              "turned_away"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place"
+          }
+        },
+        "required": [
+          "at",
+          "outcome",
+          "how",
+          "place"
+        ],
+        "title": "RecentSignIn",
+        "type": "object"
+      },
+      "RecentSignIns": {
+        "properties": {
+          "all_kept": {
+            "title": "All Kept",
+            "type": "boolean"
+          },
+          "sign_ins": {
+            "items": {
+              "$ref": "#/components/schemas/RecentSignIn"
+            },
+            "title": "Sign Ins",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sign_ins",
+          "all_kept"
+        ],
+        "title": "RecentSignIns",
         "type": "object"
       },
       "RecentTabsIn": {
@@ -53052,6 +53197,75 @@
           "display_name"
         ],
         "title": "SignUp",
+        "type": "object"
+      },
+      "SignedInAt": {
+        "description": "One sign-in session still going.",
+        "properties": {
+          "device": {
+            "title": "Device",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_active_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Active At"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place"
+          },
+          "signed_in_at": {
+            "format": "date-time",
+            "title": "Signed In At",
+            "type": "string"
+          },
+          "this_device": {
+            "title": "This Device",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "device",
+          "signed_in_at",
+          "last_active_at",
+          "place",
+          "this_device"
+        ],
+        "title": "SignedInAt",
+        "type": "object"
+      },
+      "SignedOutElsewhere": {
+        "properties": {
+          "ended": {
+            "title": "Ended",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ended"
+        ],
+        "title": "SignedOutElsewhere",
         "type": "object"
       },
       "SireChoiceOut": {
@@ -65244,6 +65458,113 @@
         "summary": "Start Link",
         "tags": [
           "players"
+        ]
+      }
+    },
+    "/api/account/sessions": {
+      "get": {
+        "description": "Where you're signed in: each sign-in still going, this device first, then the\nmost recently used.",
+        "operationId": "sessions_api_account_sessions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SignedInAt"
+                  },
+                  "title": "Response Sessions Api Account Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sessions",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/account/sessions/sign-out-others": {
+      "post": {
+        "description": "Sign out every sign-in you have but this one.",
+        "operationId": "sign_out_everywhere_else_api_account_sessions_sign_out_others_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedOutElsewhere"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sign Out Everywhere Else",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/account/sessions/{session_id}/sign-out": {
+      "post": {
+        "description": "Sign out one of your other sign-ins. This one signs out with /auth/logout.",
+        "operationId": "sign_out_there_api_account_sessions__session_id__sign_out_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sign Out There",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/account/sign-ins": {
+      "get": {
+        "description": "Your last few sign-ins, and tries at your account that failed, as the audit\nlog has them.",
+        "operationId": "recent_sign_ins_api_account_sign_ins_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentSignIns"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Recent Sign Ins",
+        "tags": [
+          "auth"
         ]
       }
     },
@@ -86905,7 +87226,7 @@
     },
     "/api/public/troupes": {
       "get": {
-        "description": "The troupes whose profiles are public and that aren't archived, by name, a page\nat a time. For anyone at all.",
+        "description": "The troupes whose profiles are public and that aren't archived, by name, a page\nat a time, found by the directory's search: by name or abbreviation, place, the\nday and how often they play, whether they welcome new players, and age. For anyone\nat all.",
         "operationId": "list_public_troupes_api_public_troupes_get",
         "parameters": [
           {
@@ -86920,6 +87241,110 @@
               "minimum": 1,
               "title": "Page",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "place",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Place",
+              "type": "string"
+            }
+          },
+          {
+            "description": "A day its schedule names.",
+            "in": "query",
+            "name": "day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "monday",
+                    "tuesday",
+                    "wednesday",
+                    "thursday",
+                    "friday",
+                    "saturday",
+                    "sunday"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A day its schedule names.",
+              "title": "Day"
+            }
+          },
+          {
+            "description": "How often its schedule says.",
+            "in": "query",
+            "name": "frequency",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "weekly",
+                    "fortnightly",
+                    "monthly"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "How often its schedule says.",
+              "title": "Frequency"
+            }
+          },
+          {
+            "description": "Only those welcoming new players.",
+            "in": "query",
+            "name": "new_players",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Only those welcoming new players.",
+              "title": "New Players",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only those a player of this age may join.",
+            "in": "query",
+            "name": "age",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 99,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only those a player of this age may join.",
+              "title": "Age"
             }
           }
         ],

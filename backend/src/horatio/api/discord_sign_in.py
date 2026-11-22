@@ -295,7 +295,7 @@ def finish_sign_in(
     attempts.signed_in_at(db, attempts.DISCORD, ip)
     record(db, user, "account.signed_in", kind="discord", **whose, **from_ip)
     answer = go(then or "/characters")
-    set_session_cookie(answer, start_session(db, user))
+    set_session_cookie(answer, start_session(db, user, request))
     db.commit()
     return answer
 
@@ -371,7 +371,7 @@ def sign_up(body: DiscordSignUp, request: Request, db: DbSession, response: Resp
     record(db, user, "account.discord_linked", discord=user.discord_handle or "")
     discord_links.account_linked(db, user)
     db.delete(waiting)
-    set_session_cookie(response, start_session(db, user))
+    set_session_cookie(response, start_session(db, user, request))
     response.delete_cookie(SIGN_UP_COOKIE, path=SIGN_UP_PATH)
     db.commit()
     return me(user, db)
