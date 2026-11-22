@@ -562,6 +562,46 @@ def test_its_messages_move_to_the_bell_of_the_account_that_stays(
     assert any(s.startswith("The custodian moved Agnes Moreau") for s in summaries(troupe.player))
 
 
+def test_its_blog_articles_move_with_their_changes_waiting(troupe: Troupe, twin: Person) -> None:
+    added = troupe.lead.client.put(
+        f"/troupes/{troupe.id}/staff", json={"handle": twin.handle, "role": "narrator"}
+    )
+    assert added.status_code == 200, added.text
+
+    def ok(response: Any, code: int = 200) -> Any:
+        assert response.status_code == code, response.text
+        return response.json()
+
+    def write(title: str) -> str:
+        body = {"title": title, "summary": "", "body": "Start small.", "troupe_id": troupe.id}
+        return ok(twin.client.post("/blog/articles", json=body), 201)["id"]
+
+    draft, up = write("Notes from a narrator"), write("Boons 101")
+    ok(twin.client.post(f"/blog/articles/{up}/submit"))
+    ok(troupe.custodian.client.post(f"/blog/articles/{up}/publish"))
+    changed = {"title": "Boons 102", "summary": "", "body": "More.", "troupe_id": troupe.id}
+    ok(twin.client.put(f"/blog/articles/{up}", json=changed))
+    ok(twin.client.post(f"/blog/articles/{up}/submit"))
+    assert "2 blog articles" in ok(preview(troupe.custodian, troupe.player, twin))["others"]
+
+    merged(troupe, troupe.player, twin)
+
+    mine = ok(troupe.player.client.get("/blog/articles/mine"))
+    assert {a["id"]: a["mine"] for a in mine} == {draft: True, up: True}
+    [waiting] = ok(troupe.custodian.client.get("/blog/queue"))["waiting"]
+    assert (waiting["id"], waiting["author_id"]) == (up, troupe.player.id)
+    assert waiting["revision"]["title"] == "Boons 102"
+    [task] = [
+        i["summary"]
+        for i in ok(troupe.custodian.client.get("/notifications"))["items"]
+        if i["kind"] == "blog_article"
+    ]
+    assert task == "player asks you to publish changes to the blog article “Boons 102”"
+    # The staying account works on them as its own.
+    ok(troupe.player.client.post(f"/blog/articles/{up}/withdraw"))
+    ok(troupe.player.client.put(f"/blog/articles/{draft}", json=changed))
+
+
 def test_only_the_custodian_can_merge_accounts(troupe: Troupe, twin: Person) -> None:
     agnes = at_home(troupe, "Agnes Moreau", twin)
 

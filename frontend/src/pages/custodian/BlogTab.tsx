@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
-import { Link } from "react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, useLocation } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BlogArticleOut, BlogTagOut } from "../../api/types";
 import { Markdown } from "../../components/Markdown";
@@ -73,10 +73,21 @@ export function BlogTab() {
   );
 }
 
-/** One article: what it says (under Waiting, a published one's changes), who wrote it, and its tags. */
+/**
+ * One article: what it says (under Waiting, a published one's changes), who wrote it, and its tags.
+ * An address ending #article-<id>, as the custodian's bell task links (#1170), opens it to read,
+ * under Waiting while it waits there.
+ */
 function Article({ article: a, tags, waiting = false, children }: { article: BlogArticleOut; tags: BlogTagOut[]; waiting?: boolean; children?: ReactNode }) {
   const dates = useDates();
   const words = waiting ? working(a) : a;
+  const { hash } = useLocation();
+  const anchor = waiting || !a.waiting ? `article-${a.id}` : undefined;
+  const opened = !!anchor && hash === `#${anchor}`;
+  const here = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (opened) here.current?.scrollIntoView?.({ block: "start" });
+  }, [opened]);
   const when =
     waiting && a.waiting === "changes" && a.revision?.submitted_at
       ? `changes sent ${dates.date(a.revision.submitted_at)}`
@@ -88,7 +99,7 @@ function Article({ article: a, tags, waiting = false, children }: { article: Blo
             ? `published ${dates.date(a.published_at)}`
             : "";
   return (
-    <li className="flex flex-col gap-2 py-3" aria-label={words.title}>
+    <li ref={here} id={anchor} className="flex flex-col gap-2 py-3" aria-label={words.title}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-parchment">
           {words.title}
@@ -120,7 +131,7 @@ function Article({ article: a, tags, waiting = false, children }: { article: Blo
           {a.note}
         </p>
       )}
-      <details className="text-sm">
+      <details className="text-sm" open={opened || undefined}>
         <summary className="cursor-pointer text-mist hover:text-parchment">Read it</summary>
         <div className="mt-2 flex flex-col gap-3">
           {words.picture && <img src={`${words.picture}/600.webp`} alt="" className="max-h-64 w-fit rounded-md" />}

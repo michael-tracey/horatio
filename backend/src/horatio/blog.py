@@ -25,10 +25,12 @@ Its slug, its address on the blog, is made from the title, unique, and follows t
 title until its author or the custodian sets one by hand. Once it is first
 published the slug never changes, so links to it never break.
 
-The custodian publishes, returns with a note, unpublishes with a reason, features
-and tags. The author hears of each of the first three on the bell, and every step
-goes in the audit log, outside any troupe's log (no troupe_id): the blog is the
-whole site's.
+Each article or change waiting is a task on the custodian's bell
+(horatio.notifications), which goes once they publish or return it or its author
+withdraws it. The custodian publishes, returns with a note, unpublishes with a
+reason, features and tags. The author hears of each of the first three on the bell,
+and every step goes in the audit log, outside any troupe's log (no troupe_id): the
+blog is the whole site's.
 """
 
 import re
@@ -44,7 +46,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.models import BlogPost, BlogPostTag, BlogTag, Troupe, TroupeStaff, User
-from horatio.notifications import notify
+from horatio.notifications import blog_article_waiting, notify
 from horatio.permissions import TROUPE_POLICY, TroupeAction
 
 STATUSES = ("draft", "submitted", "published", "unpublished")
@@ -340,10 +342,11 @@ def submit(db: Session, user: User, article: BlogPost) -> None:
             )
         article.revision_submitted_at = now()
         audit.record(db, user, "blog.submitted", **described(article, changes=True))
-        return
-    article.status = "submitted"
-    article.submitted_at = now()
-    audit.record(db, user, "blog.submitted", **described(article))
+    else:
+        article.status = "submitted"
+        article.submitted_at = now()
+        audit.record(db, user, "blog.submitted", **described(article))
+    blog_article_waiting(db, article, user)
 
 
 def withdraw(db: Session, user: User, article: BlogPost) -> None:
