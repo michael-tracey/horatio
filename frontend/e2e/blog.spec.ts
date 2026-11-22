@@ -61,7 +61,7 @@ test("a narrator sends an article to the custodian, who follows the bell to Cust
   const task = c.getByRole("dialog", { name: "Notifications" }).getByRole("button", { name: new RegExp(`blogdesk-narr asks you to publish the blog article “${title}”`) });
   await task.click();
   await expect(c).toHaveURL(/\/custodian\/blog#article-[0-9a-f-]{36}$/);
-  await expect(c.getByRole("link", { name: /^Blog/ })).toHaveText(/^Blog\d+$/);
+  await expect(c.getByRole("main").getByRole("link", { name: /^Blog/ })).toHaveText(/^Blog\d+$/);
   const waiting = c.getByRole("heading", { name: "Waiting", level: 2 }).locator("xpath=ancestor::section[1]");
   const item = waiting.getByRole("listitem", { name: title });
   await expect(item.getByText("blogdesk-narr")).toBeVisible();
@@ -371,7 +371,8 @@ test("signed out, someone opens the blog, filters it by a tag, reads an article,
   await expect(visitor.locator("article strong", { hasText: "challenge" })).toBeVisible();
   const hero = visitor.locator("article img").first();
   await expect(hero).toBeVisible();
-  expect(await hero.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  // Asked until it has loaded: visible comes first, and a slow runner may not have it yet.
+  await expect.poll(() => hero.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
   await expect(visitor.getByRole("list", { name: "Tags" }).getByRole("link", { name: "Combat and challenges" })).toHaveAttribute("href", "/blog/tags/combat-and-challenges");
   // Nothing to change for a visitor.
   await expect(visitor.getByRole("link", { name: "Change it" })).toHaveCount(0);
