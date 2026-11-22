@@ -124,10 +124,11 @@ def updated(article: BlogPost) -> datetime:
 
 
 def content(article: BlogPost, base: str) -> str:
-    """An article's words as HTML for a feed reader, its hero picture first."""
+    """An article's words as HTML for a feed reader, its hero picture first, and the
+    pictures in its words (#1163) at their 600 px copies' addresses."""
     picture = pictures.blog_picture_url(article.id, article.picture_id)
     hero = f'<p><img src="{base}{picture}/1200.webp" alt="" /></p>\n' if picture else ""
-    return hero + markdown_html(article.body)
+    return hero + markdown_html(article.body, pictures=True)
 
 
 def feed(

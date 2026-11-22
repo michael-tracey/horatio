@@ -24,7 +24,7 @@ from horatio import pictures
 from horatio.api import blog_authors, troupe_profiles
 from horatio.api.blog_public import authors_of, published
 from horatio.blog import tags_of
-from horatio.email_design import MD_HEADING, markdown_text
+from horatio.email_design import MD_FIGURE, MD_HEADING, markdown_text
 from horatio.models import BlogPost, BlogTag
 
 # What the blog says it is: as its page's subtitle (frontend/src/pages/blog/BlogPage.tsx).
@@ -234,10 +234,11 @@ def iso(at: datetime) -> str:
 
 
 def opening(body: str) -> str:
-    """The first paragraph of an article's words that isn't a heading, as plain text:
-    its description when it has no summary."""
+    """The first paragraph of an article's words that isn't a heading or a picture,
+    as plain text: its description when it has no summary."""
     for paragraph in re.split(r"\n\s*\n", body.strip()):
-        if paragraph.strip() and not MD_HEADING.match(paragraph.split("\n")[0]):
+        first = paragraph.split("\n")[0]
+        if paragraph.strip() and not MD_HEADING.match(first) and not MD_FIGURE.match(first):
             return shortened(markdown_text(paragraph))
     return ""
 

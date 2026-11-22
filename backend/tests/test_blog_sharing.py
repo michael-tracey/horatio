@@ -303,6 +303,34 @@ def test_the_feed_is_atom_of_published_articles_only_with_their_words_escaped(
     assert top.head("/blog/feed.xml").status_code == 200
 
 
+def test_the_feed_shows_the_pictures_in_an_articles_words(
+    troupe: Troupe, top: TestClient, pages: TestClient, kept: Path
+) -> None:
+    article = draft(troupe.storyteller, troupe, title="Lighting a scene", summary="")
+    out = io.BytesIO()
+    Image.new("RGB", (1600, 900), (20, 20, 120)).save(out, "PNG")
+    files = {"file": ("p.png", out.getvalue(), "image/png")}
+    path = f"/blog/articles/{article['id']}/body-pictures"
+    picture = ok(troupe.storyteller.client.post(path, files=files), 201)
+    words = f'![Candles & <wax>](blog-picture:{picture["id"]} "Lit at dusk")\n\nKeep the room dim.'
+    changes = {"title": "Lighting a scene", "summary": "", "body": words, "troupe_id": troupe.id}
+    ok(troupe.storyteller.client.put(f"/blog/articles/{article['id']}", json=changes))
+    shown = publish(troupe, article)
+
+    [entry] = entries(top.get("/blog/feed.xml"))
+
+    html = entry.findtext(f"{ATOM}content") or ""
+    assert f'src="{SITE}{picture["url"]}/600.webp"' in html
+    assert 'alt="Candles &amp; &lt;wax&gt;"' in html and "Lit at dusk" in html
+    assert "blog-picture:" not in html
+    # Its address is anyone's to fetch, now the article is published.
+    visitor = TestClient(app, base_url="http://testserver/api")
+    assert visitor.get(f"{picture['url'].removeprefix('/api')}/600.webp").status_code == 200
+    # Its preview's description is the words, not the picture.
+    page = pages.get(f"/blog/{shown['slug']}").text
+    assert meta(page, "og:description") == ["Keep the room dim."]
+
+
 def test_the_feed_holds_the_latest_twenty(troupe: Troupe, top: TestClient) -> None:
     for n in range(22):
         published(troupe, title=f"Article {n}")
