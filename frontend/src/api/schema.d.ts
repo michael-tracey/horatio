@@ -48,6 +48,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sessions
+         * @description Where you're signed in: each sign-in still going, this device first, then the
+         *     most recently used.
+         */
+        get: operations["sessions_api_account_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/sessions/sign-out-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign Out Everywhere Else
+         * @description Sign out every sign-in you have but this one.
+         */
+        post: operations["sign_out_everywhere_else_api_account_sessions_sign_out_others_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/sessions/{session_id}/sign-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign Out There
+         * @description Sign out one of your other sign-ins. This one signs out with /auth/logout.
+         */
+        post: operations["sign_out_there_api_account_sessions__session_id__sign_out_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account/sign-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent Sign Ins
+         * @description Your last few sign-ins, and tries at your account that failed, as the audit
+         *     log has them.
+         */
+        get: operations["recent_sign_ins_api_account_sign_ins_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/account/viewed-as": {
         parameters: {
             query?: never;
@@ -33596,6 +33678,30 @@ export interface components {
             /** Submitted */
             submitted: boolean;
         };
+        /** RecentSignIn */
+        RecentSignIn: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** How */
+            how: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "signed_in" | "failed" | "turned_away";
+            /** Place */
+            place: string | null;
+        };
+        /** RecentSignIns */
+        RecentSignIns: {
+            /** All Kept */
+            all_kept: boolean;
+            /** Sign Ins */
+            sign_ins: components["schemas"]["RecentSignIn"][];
+        };
         /** RecentTabsIn */
         RecentTabsIn: {
             /** Tabs */
@@ -36035,6 +36141,35 @@ export interface components {
             handle?: string | null;
             /** Password */
             password: string;
+        };
+        /**
+         * SignedInAt
+         * @description One sign-in session still going.
+         */
+        SignedInAt: {
+            /** Device */
+            device: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Active At */
+            last_active_at: string | null;
+            /** Place */
+            place: string | null;
+            /**
+             * Signed In At
+             * Format: date-time
+             */
+            signed_in_at: string;
+            /** This Device */
+            this_device: boolean;
+        };
+        /** SignedOutElsewhere */
+        SignedOutElsewhere: {
+            /** Ended */
+            ended: number;
         };
         /** SireChoiceOut */
         SireChoiceOut: {
@@ -40839,6 +40974,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LinkStart"];
+                };
+            };
+        };
+    };
+    sessions_api_account_sessions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedInAt"][];
+                };
+            };
+        };
+    };
+    sign_out_everywhere_else_api_account_sessions_sign_out_others_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedOutElsewhere"];
+                };
+            };
+        };
+    };
+    sign_out_there_api_account_sessions__session_id__sign_out_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recent_sign_ins_api_account_sign_ins_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentSignIns"];
                 };
             };
         };

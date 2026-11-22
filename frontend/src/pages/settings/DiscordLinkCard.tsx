@@ -3,7 +3,8 @@ import { useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { DiscordAccount } from "../../api/types";
-import { Button, Card, ErrorText } from "../../components/ui";
+import { SectionLabel } from "../../components/Headings";
+import { Button, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
 
 /** What Discord's callback said (`?discord=` on /account/sign-in), in plain words. */
@@ -18,9 +19,11 @@ export function outcome(said: string | null): { ok: boolean; text: string } | nu
 /**
  * Linking the player's own Discord account (#857): Discord confirms who they are,
  * so staff and the troupe's Discord know it's really them, not just a username
- * they typed. Once linked, it signs them in too (#1128).
+ * they typed. Once linked, it signs them in too (#1128), and confirms it's them in
+ * place of a password they haven't got (#1140). A part of "Your second steps" on
+ * Account › Sign-in (#1193), after the recovery codes.
  */
-export function DiscordLinkCard() {
+export function DiscordLinkSection() {
   const [params, setParams] = useSearchParams();
   const account = useQuery({
     queryKey: ["account-discord"],
@@ -50,10 +53,11 @@ export function DiscordLinkCard() {
   if (!data.available && !data.linked) return null;
 
   return (
-    <Card title="Discord account">
+    <section aria-label="Discord account" className="flex flex-col gap-2">
+      <SectionLabel>Discord account</SectionLabel>
       <div className="flex flex-col gap-3">
         {said && (
-          <p ref={told} role="status" className={`flex flex-wrap items-center gap-2 text-sm ${said.ok ? "text-parchment" : "text-blood-bright"}`}>
+          <p ref={told} role="status" className={`flex flex-wrap items-center gap-2 ${said.ok ? "text-parchment" : "text-blood-bright"}`}>
             {said.text}
             <Button type="button" variant="ghost" className="min-h-8 px-2" onClick={dismiss}>
               Dismiss
@@ -62,7 +66,7 @@ export function DiscordLinkCard() {
         )}
         {data.linked ? (
           <>
-            <p className="text-sm text-mist">
+            <p className="text-mist">
               Linked to <span className="text-parchment">@{data.handle}</span>, as Discord confirmed it. Your profile shows that username, and staff can see it's really you.
               {data.available && " You can sign in with Discord too."}
             </p>
@@ -71,7 +75,7 @@ export function DiscordLinkCard() {
                 Unlink Discord
               </Button>
             ) : (
-              <p className="text-sm text-mist">
+              <p className="text-mist">
                 Discord is your only way to sign in, so it stays linked. To unlink it, set a password first: ask for a link from{" "}
                 <Link to="/forgot-password" className="text-gold underline">
                   Forgot your password?
@@ -81,7 +85,7 @@ export function DiscordLinkCard() {
           </>
         ) : (
           <>
-            <p className="text-sm text-mist">
+            <p className="text-mist">
               Link your Discord account so staff and your troupe's Discord know it's really you. Discord tells Horatio your username and nothing else. Once it's linked, you can
               sign in with Discord too.
             </p>
@@ -92,6 +96,6 @@ export function DiscordLinkCard() {
         )}
         <ErrorText error={link.error ?? unlink.error} />
       </div>
-    </Card>
+    </section>
   );
 }

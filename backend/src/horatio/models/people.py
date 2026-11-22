@@ -155,6 +155,14 @@ class Session(Record):
     # Until when someone with no password has confirmed it's them with Discord, from
     # this sign-in (#1140): it stands in for the password once, for a few minutes.
     confirmed_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The browser it was started from, as its User-Agent said (#1193), to tell the
+    # person where they're signed in.
+    user_agent: Mapped[str | None] = mapped_column(String(512))
+    # Where it was started from: kept only while the custodian records addresses with
+    # sign-in events (horatio.audit.sign_in_ip), and shown only while they still do.
+    ip_address: Mapped[str | None] = mapped_column(String(64))
+    # When it was last used, to within horatio.auth.sessions.ACTIVE_EVERY.
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class PasswordReset(Record):

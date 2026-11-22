@@ -229,7 +229,7 @@ def sign_up(body: SignUp, request: Request, db: DbSession, response: Response) -
         user_id=user.id,
         **sign_in_ip(db, request),
     )
-    set_session_cookie(response, start_session(db, user))
+    set_session_cookie(response, start_session(db, user, request))
     db.commit()
     return me(user)
 
@@ -287,7 +287,7 @@ def sign_in(body: SignIn, request: Request, db: DbSession, response: Response) -
         return asked
     attempts.signed_in(db, body.login, ip)
     record(db, user, "account.signed_in", member=user.display_name, user_id=user.id, **from_ip)
-    set_session_cookie(response, start_session(db, user))
+    set_session_cookie(response, start_session(db, user, request))
     db.commit()
     return me(user, db)
 
@@ -378,7 +378,7 @@ def sign_in_with_passkey(
         user_id=user.id,
         **from_ip,
     )
-    set_session_cookie(response, start_session(db, user))
+    set_session_cookie(response, start_session(db, user, request))
     response.delete_cookie(passkeys.COOKIE, path="/api/auth")
     db.commit()
     return me(user, db)
@@ -554,6 +554,8 @@ def signed_in_by_second_step(
         )
         if email.configured():
             background.add_task(email_recovery_code_used, user.id, datetime.now(UTC), left)
+    # After Discord as the first step, so the account's recent sign-ins say so (#1193).
+    first: dict[str, Any] = {"after": "discord"} if waiting.login_hash == attempts.DISCORD else {}
     record(
         db,
         user,
@@ -561,9 +563,10 @@ def signed_in_by_second_step(
         kind=method,
         member=user.display_name,
         user_id=user.id,
+        **first,
         **from_ip,
     )
-    set_session_cookie(response, start_session(db, user))
+    set_session_cookie(response, start_session(db, user, request))
     clear_second_step_cookie(response)
     db.commit()
     return me(user, db)
@@ -673,7 +676,7 @@ def reset_password(
         asked = ask_second_step(db, user, response, None, request)
         db.commit()
         return asked
-    set_session_cookie(response, start_session(db, user))
+    set_session_cookie(response, start_session(db, user, request))
     db.commit()
     return me(user, db)
 
