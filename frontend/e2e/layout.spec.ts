@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, closeContextsAfterEach, creatingVampire, makeCustodian, person, run } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, closeContextsAfterEach, creatingVampire, makeCustodian, person, run, shots } from "./support";
 
 /**
  * No screen is wider than a phone (#923). A player, a narrator and a storyteller who is
@@ -226,4 +226,40 @@ test("no screen is wider than a phone", async ({ browser }) => {
   // The boons screen's own tabs (#982): To review, Boonbreakers and Audits each at an address of its own.
   for (const part of ["review", "boonbreakers", "audits"]) expect(seen).toContain(`staff ${screen(`${base}/boons/${part}`)}`);
   expect(wide, `Wider than a ${viewport.width}px phone, of ${seen.length} screens`).toEqual([]);
+});
+
+/**
+ * The desktop top bar is one line and fits the window at its narrowest, 1024px, with Large
+ * text too (#1190), and at 1280px: for the widest bar there is, a custodian with a long name
+ * (#746). Large text cuts the name shorter; the account link still has it whole.
+ */
+test("the desktop top bar fits a 1024px window, with Large text too", async ({ browser }) => {
+  test.skip(test.info().project.name !== "desktop", "desktop only");
+  const { page, email } = await person(browser, "LayoutBarLarge-custodian-with-a-long-name", { viewport: { width: 1024, height: 800 } });
+  const name = "LayoutBarLarge-custodian-with-a-long-name";
+  makeCustodian(email);
+  const wide: string[] = [];
+  const fontSize = () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize);
+  const account = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: new RegExp(`^Your account: ${name} \\(custodian\\)$`) });
+  for (const [size, px] of [["normal", "16px"], ["large", "18.4px"]] as const) {
+    await send(page, "PATCH", "/api/preferences", { text_size: size });
+    for (const width of [1024, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const url of ["/characters", "/custodian", "/account"]) {
+        await page.goto(url);
+        await expect(account).toBeVisible();
+        await expect.poll(fontSize).toBe(px);
+        await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+        const at = `${size} text, ${width}px, ${url}`;
+        const over = await overflow(page);
+        if (over) wide.push(`${at}: ${over}`);
+        const height = (await page.getByRole("banner").boundingBox())!.height;
+        if (height > 80) wide.push(`${at}: the top bar is ${Math.round(height)}px tall, more than one line`);
+      }
+    }
+  }
+  expect(wide, "The top bar is wider than the window or more than one line").toEqual([]);
+  // Cut short, the name is whole in the link's name and its tooltip.
+  await expect(account).toHaveAttribute("title", name);
+  await page.screenshot(shots("top-bar-large-text"));
 });
