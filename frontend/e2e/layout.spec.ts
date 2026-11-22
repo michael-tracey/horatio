@@ -193,7 +193,10 @@ test("no screen is wider than a phone", async ({ browser }) => {
 
   // Signed out.
   const anon = await (await browser.newContext({ viewport })).newPage();
-  for (const url of ["/sign-in", "/sign-up", "/forgot-password", "/about", "/help", "/help/getting-started", `/t/${troupeId}`, "/blog", `/blog/${article.slug}`, "/blog/tags/storytelling"]) {
+  // The troupe shows its profile to anyone, so the landing page (#1164) has a troupe to list
+  // with a long name, and its public profile is all there.
+  await send(l, "PUT", `/api${base}/profile/public`, { public: true });
+  for (const url of ["/", "/sign-in", "/sign-up", "/forgot-password", "/about", "/help", "/help/getting-started", `/t/${troupeId}`, "/blog", `/blog/${article.slug}`, "/blog/tags/storytelling"]) {
     seen.push(`anon ${screen(url)}`);
     await visit(anon, "anon", url, wide);
   }

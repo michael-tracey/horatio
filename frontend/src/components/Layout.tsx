@@ -142,8 +142,8 @@ function SignedOutLinks({ link }: { link: LinkClass }) {
   const passedOn = useNext();
   const next = SIGN_IN_PAGES.test(pathname) ? passedOn : SPENT_LINKS.test(pathname) || pathname === "/" ? null : pathname + search + hash;
   // One red button a screen (#920): it steps back where the page has its own, the
-  // sign-in pages' and a troupe's public page's.
-  const ownPrimary = SIGN_IN_PAGES.test(pathname) || pathname.startsWith("/t/");
+  // sign-in pages', a troupe's public page's and the landing page's (#1164).
+  const ownPrimary = SIGN_IN_PAGES.test(pathname) || pathname.startsWith("/t/") || pathname === "/";
   return (
     <nav aria-label="Main" className="flex items-center gap-3 text-sm whitespace-nowrap sm:gap-4">
       {/* Too narrow for all three, the footer has Help instead. */}

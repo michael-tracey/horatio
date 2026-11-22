@@ -14,6 +14,7 @@ import { ClaimPage } from "./pages/ClaimPage";
 import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { DiscordSignUpPage } from "./pages/DiscordSignIn";
+import { Home } from "./Home";
 import { ForgotPasswordPage, ResetPasswordPage, SecondStepPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
@@ -116,6 +117,8 @@ export const routes = createRoutesFromElements(
       <Route path="/play/troupes/:troupeId/scene" element={<ToScenes />} />
     </Route>
     <Route element={<Layout />}>
+      {/* Signed out, the landing page (#1164); signed in, on to Characters. */}
+      <Route index element={<Home />} />
       <Route path="/sign-in" element={<SignInPage />} />
       <Route path="/sign-in/second-step" element={<SecondStepPage />} />
       <Route path="/about" element={<AboutPage />} />
@@ -182,7 +185,6 @@ export const routes = createRoutesFromElements(
         }
       />
       <Route element={<RequireSignIn />}>
-        <Route index element={<Navigate to="/characters" replace />} />
         <Route path="/characters" element={<CharactersPage />} />
         <Route path="/characters/import" element={<ImportCharacterPage />} />
         <Route path="/characters/:characterId/*" element={<ForCharacter><CharacterPage /></ForCharacter>} />

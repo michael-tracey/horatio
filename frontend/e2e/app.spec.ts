@@ -108,6 +108,63 @@ test("signed out, the header offers Sign in and Create account, and an address t
   await expect(p).toHaveURL(/\/troupes$/);
 });
 
+test("signed out, / is the landing page, with an article and a public troupe; signing in goes on to Characters as before (#1164)", async ({ browser }) => {
+  const lead = await person(browser, "landing-lead");
+  makeCustodian(lead.email);
+  const player = await person(browser, "landing-player");
+  const l = lead.page;
+  const send = async (method: "PATCH" | "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await l.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // A troupe whose profile is public, and a featured article from it.
+  const troupeName = `Saltmarsh Landing Court ${run}`;
+  const { id: troupeId } = await send("POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await send("PATCH", `/api/troupes/${troupeId}`, { description: "A Camarilla court on the salt flats, where the tide keeps every secret for a night." });
+  await send("PUT", `/api/troupes/${troupeId}/profile/public`, { public: true });
+  const title = `Welcoming a new player to your court ${run}`;
+  const article = await send("POST", "/api/blog/articles", { title, summary: "Five things to do at their first game.", body: "Say hello.", troupe_id: troupeId });
+  await send("POST", `/api/blog/articles/${article.id}/submit`);
+  await send("POST", `/api/blog/articles/${article.id}/publish`);
+  await send("PUT", `/api/blog/articles/${article.id}/featured`, { featured: true });
+
+  const page = await (await browser.newContext()).newPage();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Welcome to Horatio", level: 1 })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/");
+  await expect(page).toHaveTitle("Welcome · Horatio");
+  await expect(page.getByRole("heading", { name: "What Horatio is" })).toBeVisible();
+  // The article, among the blog's featured and newest.
+  await expect(page.getByRole("list", { name: "Articles" }).getByRole("link", { name: title })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Read the blog" })).toHaveAttribute("href", "/blog");
+  // The troupe, by name among every public troupe: a page at a time until it shows.
+  const ours = page.getByRole("list", { name: "Troupes" }).getByRole("link", { name: new RegExp(troupeName) });
+  const pages = page.getByRole("navigation", { name: "Pages of troupes" });
+  for (let n = 0; n < 100 && !(await ours.isVisible()); n++) {
+    const range = await pages.getByRole("paragraph").textContent();
+    await pages.getByRole("button", { name: "Next" }).click();
+    await expect(pages.getByRole("paragraph")).not.toHaveText(range ?? "");
+  }
+  await expect(ours).toContainText("A Camarilla court on the salt flats");
+  await page.screenshot(shots("landing"));
+  await ours.click();
+  await expect(page).toHaveURL(new RegExp(`/t/${troupeId}$`));
+  await expect(page.getByRole("heading", { name: troupeName, level: 1 })).toBeVisible();
+
+  // Signing in from it goes on to their characters, and / takes them there from then on.
+  await page.goto("/");
+  await page.getByRole("main").getByRole("link", { name: "Sign in", exact: true }).click();
+  await page.getByLabel("Email or handle").fill(player.email);
+  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/characters");
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/characters");
+});
+
 test("the top bar is one line, on a phone too: the bell and a menu that holds the links (#746)", async ({ browser }) => {
   // A custodian with a long name: the widest bar there is.
   const { page, email } = await person(browser, "phonebar-custodian-with-a-long-name");

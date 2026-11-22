@@ -118,6 +118,22 @@ def meta(page: str, name: str) -> list[str]:
 # --- link previews ---------------------------------------------------------------------
 
 
+def test_the_landing_page_previews_as_horatio_and_names_the_blogs_feed(
+    pages: TestClient,
+) -> None:
+    page = pages.get("/").text
+
+    assert "<title>Welcome · Horatio</title>" in page
+    assert meta(page, "og:title") == ["Horatio"]
+    assert meta(page, "og:description")[0].startswith("Character sheets, downtimes")
+    assert meta(page, "description") == meta(page, "og:description")
+    assert meta(page, "og:url") == [f"{SITE}/"]
+    assert f'href="{SITE}/blog/feed.xml"' in page
+    # The site's own picture.
+    assert meta(page, "og:image") == [f"{SITE}/preview.jpg"]
+    assert meta(page, "og:image:width") == ["1200"]
+
+
 def test_the_blog_previews_as_itself_and_names_its_feed(pages: TestClient) -> None:
     page = pages.get("/blog").text
 
@@ -440,6 +456,7 @@ def test_the_sitemap_lists_the_public_pages_and_nothing_private(
 
     published_at = article["published_at"][:19] + "Z"
     assert found == {
+        f"{SITE}/": None,
         f"{SITE}/blog": published_at,
         f"{SITE}/blog/{article['slug']}": published_at,
         f"{SITE}/blog/tags/storytelling": published_at,
@@ -450,8 +467,8 @@ def test_the_sitemap_lists_the_public_pages_and_nothing_private(
     assert hidden["id"] not in str(found) and gone["id"] not in str(found)
 
 
-def test_an_empty_sitemap_has_the_blog(top: TestClient) -> None:
-    assert addresses(top) == {f"{SITE}/blog": None}
+def test_an_empty_sitemap_has_the_landing_page_and_the_blog(top: TestClient) -> None:
+    assert addresses(top) == {f"{SITE}/": None, f"{SITE}/blog": None}
 
 
 def test_robots_keeps_search_engines_to_the_public_pages(top: TestClient) -> None:

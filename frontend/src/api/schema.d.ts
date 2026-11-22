@@ -7677,6 +7677,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/public/troupes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Public Troupes
+         * @description The troupes whose profiles are public and that aren't archived, by name, a page
+         *     at a time. For anyone at all.
+         */
+        get: operations["list_public_troupes_api_public_troupes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quest-requests/{request_id}/accept": {
         parameters: {
             query?: never;
@@ -32684,6 +32705,38 @@ export interface components {
             /** Public */
             public: boolean;
         };
+        /** PublicTroupeOut */
+        PublicTroupeOut: {
+            /** Abbreviation */
+            abbreviation: string;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Place */
+            place: string;
+            /** Portrait */
+            portrait: string | null;
+        };
+        /**
+         * PublicTroupePageOut
+         * @description A page of public troupes, by name.
+         */
+        PublicTroupePageOut: {
+            /** Page */
+            page: number;
+            /** Pages */
+            pages: number;
+            /** Total */
+            total: number;
+            /** Troupes */
+            troupes: components["schemas"]["PublicTroupeOut"][];
+        };
         /** PublishedOut */
         PublishedOut: {
             /** Count */
@@ -54922,6 +54975,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_troupes_api_public_troupes_get: {
+        parameters: {
+            query?: {
+                /** @description Counting from 1. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTroupePageOut"];
+                };
             };
             /** @description Validation Error */
             422: {
