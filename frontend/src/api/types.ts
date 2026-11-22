@@ -185,6 +185,8 @@ export type XpStandingOut = Schemas["XpStandingOut"];
 export type LeavingOut = Schemas["LeavingOut"];
 export type WithdrawnOut = Schemas["WithdrawnOut"];
 export type TroupeProfileOut = Schemas["TroupeProfileOut"];
+export type PublicTroupeOut = Schemas["PublicTroupeOut"];
+export type PublicTroupePageOut = Schemas["PublicTroupePageOut"];
 // The blog's authors (#1159).
 // The card each article shows (AuthorCard on the server), a part of an author's page.
 export type AuthorCard = Pick<Schemas["AuthorPage"], "handle" | "display_name" | "bio" | "links" | "picture">;

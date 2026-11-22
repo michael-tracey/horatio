@@ -1,10 +1,20 @@
 # Getting started
 
-This part is for everyone: players, troupe staff and the custodian. It covers making an account, signing in, your account and preferences, notifications, and the calendar link. To build your first character, go on to [Players](players.md) next.
+This part is for everyone: players, troupe staff and the custodian. It covers Horatio's front page, making an account, signing in, your account and preferences, notifications, and the calendar link. To build your first character, go on to [Players](players.md) next.
+
+## The front page
+
+Signed out, Horatio's address on its own opens its front page. It says briefly what Horatio is, and has:
+
+- A few articles from [the blog](#reading-the-blog), the featured ones first, and **Read the blog** for the rest.
+- **Find a troupe**: every troupe that shows its profile to anyone, by name, with its picture, where it plays and the start of its description. **Previous** and **Next** at the foot move between pages. Choose a troupe to open its profile, which says where and when it plays and how to join.
+- **Create an account** and **Sign in**, which take you on to **Characters**.
+
+Signed in, the same address goes straight to **Characters**.
 
 ## Creating an account
 
-1. Choose **Create account** at the top of any page, or **Create an account** on the sign-in page.
+1. Choose **Create account** at the top of any page, or **Create an account** on the front page or the sign-in page.
 2. Fill in:
    - **Your name**: the name other people see. You can change it later.
    - **Handle**: how others find you, such as `night_owl`, instead of your email. Use letters, numbers, `_` and `-`. Leave it blank and Horatio makes one from your name.
@@ -225,7 +235,7 @@ Keep the link to yourself: anyone with it can see those dates and your answers. 
 
 ## Reading the blog
 
-Horatio's blog, at **/blog**, has articles on playing and running a game, written by the staff of troupes on Horatio and published by the custodian. Anyone can read it, signed in or not, so you can share a link to an article with anyone.
+Horatio's blog, at **/blog**, has articles on playing and running a game, written by the staff of troupes on Horatio and published by the custodian. Anyone can read it, signed in or not, so you can share a link to an article with anyone. Signed out, [the front page](#the-front-page) shows a few of its articles too.
 
 - The newest articles come first, a page at a time, with any featured ones across the top. **Previous** and **Next** at the foot move between pages.
 - The tags above the articles, such as **Storytelling** or **Safety and consent**, show only the articles with that tag. **All** shows every one again. Each article's own tags lead to the same lists.

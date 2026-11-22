@@ -215,9 +215,9 @@ def shown_authors(db: Session) -> list[BlogAuthor]:
 
 @router.api_route("/sitemap.xml", methods=["GET", "HEAD"])
 def sitemap(request: Request, db: DbSession) -> Response:
-    """Every public page worth a search engine's visit: the blog, its published
-    articles, the tags they have, the authors whose pages are shown, and the troupes
-    whose profiles are public and running."""
+    """Every public page worth a search engine's visit: the landing page (#1164), the
+    blog, its published articles, the tags they have, the authors whose pages are
+    shown, and the troupes whose profiles are public and running."""
     base = site()
     root = ET.Element("urlset", xmlns=SITEMAP)
 
@@ -228,6 +228,7 @@ def sitemap(request: Request, db: DbSession) -> Response:
             child(entry, "lastmod", stamp(lastmod))
 
     articles = list(db.scalars(newest(published())))
+    url("/")
     url("/blog", max((updated(a) for a in articles), default=None))
     for article in articles:
         url(f"/blog/{quote(article.slug)}", updated(article))

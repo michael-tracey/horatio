@@ -3,7 +3,8 @@ chat, on social media or in a search result. The app draws its pages in the brow
 so the API puts each page's own title, description and picture into index.html for
 the sites that only read the page's head (horatio.app.serve_frontend).
 
-Public pages have their own: a troupe's public profile (/t/<troupe>), the blog
+Public pages have their own: the landing page (/, #1164), a troupe's public profile
+(/t/<troupe>), the blog
 (/blog), an article (/blog/<slug>), a tag's page (/blog/tags/<tag>) and an author's
 page (/blog/authors/<handle>). Only what anyone may read goes in: an article that is
 not published, a tag that has gone, or an author whose page is not shown, keeps the
@@ -26,6 +27,13 @@ from horatio.api.blog_public import authors_of, published
 from horatio.blog import tags_of
 from horatio.email_design import MD_FIGURE, MD_HEADING, markdown_text
 from horatio.models import BlogPost, BlogTag
+
+# What the landing page says Horatio is (frontend/src/pages/LandingPage.tsx).
+HOME_TITLE = "Horatio"
+HOME_DESCRIPTION = (
+    "Character sheets, downtimes and game nights for Mind's Eye Theatre LARP troupes."
+    " Read the blog, and find a troupe to play in."
+)
 
 # What the blog says it is: as its page's subtitle (frontend/src/pages/blog/BlogPage.tsx).
 BLOG_TITLE = "Horatio's blog"
@@ -121,6 +129,8 @@ def with_preview(index: str, preview: LinkPreview, public_url: str) -> str:
 def for_path(db: Session, path: str) -> LinkPreview | None:
     """The link preview of the page at `path` (with no leading slash), or None for the
     site's own."""
+    if path == "":
+        return home()
     if found := PUBLIC_PROFILE.fullmatch(path):
         return troupe(db, found.group(1))
     if path.rstrip("/") == "blog":
@@ -155,6 +165,18 @@ def troupe(db: Session, troupe_id: str) -> LinkPreview | None:
         image_size=(512, 512) if found["image"] else None,
         card="summary" if found["image"] else "",
         path=f"/t/{troupe_id.lower()}",
+    )
+
+
+def home() -> LinkPreview:
+    """The landing page, as people signed out see it: anyone signed in goes on to their
+    characters, but a link to / is still the site's."""
+    return LinkPreview(
+        title=HOME_TITLE,
+        description=HOME_DESCRIPTION,
+        page_title="Welcome · Horatio",
+        path="/",
+        feeds=(blog_feed(),),
     )
 
 

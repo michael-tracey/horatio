@@ -96,6 +96,7 @@ from horatio.api import (
     printing,
     projects,
     public_pictures,
+    public_troupes,
     quests,
     recent_tabs,
     remembrances,
@@ -357,6 +358,7 @@ for module in (
     jyhad_card,
     search,
     blog_authors,
+    public_troupes,
 ):
     api.include_router(module.router)
 # The signed-in person's choice of throw pictures (#671), beside the troupe's own.

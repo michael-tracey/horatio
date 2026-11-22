@@ -44480,6 +44480,84 @@
         "title": "PublicIn",
         "type": "object"
       },
+      "PublicTroupeOut": {
+        "properties": {
+          "abbreviation": {
+            "title": "Abbreviation",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "place": {
+            "title": "Place",
+            "type": "string"
+          },
+          "portrait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portrait"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "abbreviation",
+          "portrait",
+          "description",
+          "place"
+        ],
+        "title": "PublicTroupeOut",
+        "type": "object"
+      },
+      "PublicTroupePageOut": {
+        "description": "A page of public troupes, by name.",
+        "properties": {
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "pages": {
+            "title": "Pages",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "troupes": {
+            "items": {
+              "$ref": "#/components/schemas/PublicTroupeOut"
+            },
+            "title": "Troupes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "troupes",
+          "page",
+          "pages",
+          "total"
+        ],
+        "title": "PublicTroupePageOut",
+        "type": "object"
+      },
       "PublishedOut": {
         "properties": {
           "count": {
@@ -86735,6 +86813,54 @@
         "summary": "Public Picture",
         "tags": [
           "pictures"
+        ]
+      }
+    },
+    "/api/public/troupes": {
+      "get": {
+        "description": "The troupes whose profiles are public and that aren't archived, by name, a page\nat a time. For anyone at all.",
+        "operationId": "list_public_troupes_api_public_troupes_get",
+        "parameters": [
+          {
+            "description": "Counting from 1.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Counting from 1.",
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTroupePageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Public Troupes",
+        "tags": [
+          "troupe profiles"
         ]
       }
     },
