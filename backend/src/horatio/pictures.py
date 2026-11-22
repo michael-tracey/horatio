@@ -31,6 +31,10 @@ Horatio shows, all WebP, in `HORATIO_UPLOAD_DIR`:
 
 Each upload (and each new crop) is kept in a directory of its own, named by a new
 id, so its address changes and no cache ever shows the one it replaced.
+
+A blog article's pictures (#1183) keep each copy's width and height too, so its pages
+keep their room before they load: `write_post_picture` returns them, and
+`post_picture_sizes` reads them from the files of one kept before.
 """
 
 import math
@@ -43,7 +47,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pillow_heif
-from PIL import Image, ImageCms, ImageOps
+from PIL import Image, ImageCms, ImageOps, UnidentifiedImageError
 
 from horatio.config import get_settings
 
@@ -86,6 +90,9 @@ POST_WIDTHS = (1200, 600)
 POST_FILES = {f"{w}.webp" for w in POST_WIDTHS}
 # A blog article's hero picture is twice as wide as it is high (#1157).
 HERO_RATIO = 2
+
+# Each copy's width and height in pixels, by its file's name: {"1200.webp": [w, h], ...}.
+Sizes = dict[str, list[int]]
 
 
 class PictureError(Exception):
@@ -255,16 +262,33 @@ def write_banner(directory: Path, image: Image.Image) -> None:
         _webp(wide, directory / f"{width}.webp")
 
 
-def write_post_picture(directory: Path, image: Image.Image) -> None:
+def write_post_picture(directory: Path, image: Image.Image) -> Sizes:
     """Write a post's picture's (or a masthead's) files into `directory`, which must
-    be new: the whole picture at each width, never made bigger, transparency kept."""
+    be new: the whole picture at each width, never made bigger, transparency kept.
+    Returns each copy's size."""
     directory.mkdir(parents=True)
+    sizes: Sizes = {}
     for width in POST_WIDTHS:
         fitted = image
         if image.width > width:
             height = max(1, round(image.height * width / image.width))
             fitted = image.resize((width, height), Image.Resampling.LANCZOS)
         _webp(fitted, directory / f"{width}.webp")
+        sizes[f"{width}.webp"] = [fitted.width, fitted.height]
+    return sizes
+
+
+def post_picture_sizes(directory: Path) -> Sizes | None:
+    """The size of each copy of a picture kept as a post's is, read from its files;
+    None if any of them is missing or unreadable."""
+    sizes: Sizes = {}
+    for name in sorted(POST_FILES):
+        try:
+            with Image.open(directory / name) as image:
+                sizes[name] = [image.width, image.height]
+        except (OSError, UnidentifiedImageError):
+            return None
+    return sizes
 
 
 def hero_box(width: int, height: int, crop: Crop | None) -> Box:
@@ -283,10 +307,11 @@ def hero_box(width: int, height: int, crop: Crop | None) -> Box:
     return (left, top, left + frame_w, top + frame_h)
 
 
-def write_hero_picture(directory: Path, image: Image.Image, crop: Crop | None) -> None:
+def write_hero_picture(directory: Path, image: Image.Image, crop: Crop | None) -> Sizes:
     """Write a blog article's hero picture's files into `directory`, which must be new:
-    its 2:1 frame, as a post's picture is kept (1200 and 600 px wide)."""
-    write_post_picture(directory, image.crop(hero_box(image.width, image.height, crop)))
+    its 2:1 frame, as a post's picture is kept (1200 and 600 px wide). Returns each
+    copy's size."""
+    return write_post_picture(directory, image.crop(hero_box(image.width, image.height, crop)))
 
 
 def write_logo(directory: Path, image: Image.Image) -> None:

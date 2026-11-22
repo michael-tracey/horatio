@@ -264,9 +264,22 @@ test("a storyteller puts a picture in an article's words, previews it, and once 
 
   // A reader signed out sees it on the article's own page, with its caption.
   const reader = await stranger.newPage();
+  // Held back, the picture already keeps its room, 4:1 as uploaded, so the words don't jump (#1183).
+  let release = () => {};
+  const held = new Promise<void>((done) => (release = done));
+  await reader.route("**/api/blog/body-pictures/**", async (route) => {
+    await held;
+    await route.continue();
+  });
   await reader.goto(address);
   const read = reader.getByRole("article", { name: title });
   const there = read.getByRole("img", { name: "Candles along a long table" });
+  await expect(there).toHaveAttribute("height", "60");
+  const box = (await there.boundingBox())!;
+  expect(await there.evaluate((img: HTMLImageElement) => img.naturalWidth), "not loaded yet").toBe(0);
+  expect(box.height, "its height before it loads").toBeGreaterThan(0);
+  expect(Math.abs(box.height - box.width / 4), "its shape before it loads").toBeLessThan(2);
+  release();
   // Loaded lazily, as it comes near.
   await there.scrollIntoViewIfNeeded();
   await expect(there).toBeVisible();

@@ -25,6 +25,7 @@ function summary(over: Partial<BlogPublicSummaryOut>): BlogPublicSummaryOut {
     title: "Running your first Elysium",
     summary: "What I wish I'd known.",
     picture: null,
+    picture_sizes: [],
     author: { name: "Mara Quinn", handle: null },
     troupe: { name: "Lords of the Night", card: null },
     tags: [{ id: "t2", name: "Storytelling", slug: "storytelling" }],
@@ -50,6 +51,7 @@ const ARTICLE: BlogPublicArticleOut = {
     { id: "t3", name: "Safety and consent", slug: "safety-and-consent" },
   ],
   picture: "/api/blog/articles/a1/pictures/p1",
+  body_pictures: [],
   author_card: null,
   edit: null,
 };
@@ -93,6 +95,21 @@ describe("the blog (#1158)", () => {
     expect(within(tags).getByRole("link", { name: "All" }).getAttribute("aria-current")).toBe("page");
     expect(within(tags).getByRole("link", { name: "Storytelling" }).getAttribute("href")).toBe("/blog/tags/storytelling");
     expect(document.title).toBe("Blog · Horatio");
+  });
+
+  it("gives a card's picture its width and height, so the list doesn't jump (#1183)", async () => {
+    const sizes = [
+      { file: "1200.webp", width: 1200, height: 600 },
+      { file: "600.webp", width: 600, height: 300 },
+    ];
+    const pictured = { ...ELYSIUM, picture: "/api/blog/articles/a1/pictures/p1", picture_sizes: sizes };
+    answering({ "/api/blog/public/articles": page({ articles: [pictured], featured: [] }), "/api/blog/public/tags": TAGS });
+    show("/blog");
+
+    const card = await screen.findByRole("listitem", { name: "Running your first Elysium" });
+    const img = card.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe("/api/blog/articles/a1/pictures/p1/600.webp");
+    expect([img.getAttribute("width"), img.getAttribute("height")]).toEqual(["600", "300"]);
   });
 
   it("shows a tag's articles, marked in the tags, without the featured row", async () => {
@@ -178,6 +195,27 @@ describe("an article's page (#1158)", () => {
     expect(screen.queryByRole("link", { name: "Change it" })).toBeNull();
     expect(screen.getByRole("link", { name: "← Blog" }).getAttribute("href")).toBe("/blog");
     await waitFor(() => expect(document.title).toBe("Running your first Elysium · Blog · Horatio"));
+  });
+
+  it("gives its hero picture and the pictures in its words their width and height (#1183)", async () => {
+    const id = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
+    const hero = [
+      { file: "1200.webp", width: 1200, height: 600 },
+      { file: "600.webp", width: 600, height: 300 },
+    ];
+    const inWords = [
+      { file: "1200.webp", width: 900, height: 1200 },
+      { file: "600.webp", width: 600, height: 800 },
+    ];
+    const body = `Before.\n\n![A tall candle](blog-picture:${id})`;
+    answering({ "/api/blog/public/articles/{slug}": { ...ARTICLE, body, picture_sizes: hero, body_pictures: [{ id, url: `/api/blog/body-pictures/${id}`, sizes: inWords }] } });
+    show("/blog/running-your-first-elysium");
+
+    const figure = await screen.findByRole("img", { name: "A tall candle" });
+    expect([figure.getAttribute("width"), figure.getAttribute("height")]).toEqual(["900", "1200"]);
+    expect(figure.getAttribute("srcset")).toBe(`/api/blog/body-pictures/${id}/600.webp 600w, /api/blog/body-pictures/${id}/1200.webp 900w`);
+    const top = document.querySelector("article > img")!;
+    expect([top.getAttribute("width"), top.getAttribute("height")]).toEqual(["1200", "600"]);
   });
 
   it("links a public troupe, puts the author's and troupe's cards under it, and offers its author a way to change it", async () => {

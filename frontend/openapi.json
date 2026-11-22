@@ -5376,6 +5376,13 @@
             "title": "Body",
             "type": "string"
           },
+          "body_pictures": {
+            "items": {
+              "$ref": "#/components/schemas/BlogBodyPictureOut"
+            },
+            "title": "Body Pictures",
+            "type": "array"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -5408,6 +5415,13 @@
               }
             ],
             "title": "Picture"
+          },
+          "picture_sizes": {
+            "items": {
+              "$ref": "#/components/schemas/PictureSizeOut"
+            },
+            "title": "Picture Sizes",
+            "type": "array"
           },
           "published_at": {
             "anyOf": [
@@ -5540,6 +5554,7 @@
           "summary",
           "body",
           "picture",
+          "picture_sizes",
           "author_id",
           "author_name",
           "troupe",
@@ -5553,6 +5568,7 @@
           "revised_at",
           "unpublished_at",
           "revision",
+          "body_pictures",
           "waiting",
           "mine"
         ],
@@ -5567,6 +5583,13 @@
             "title": "Id",
             "type": "string"
           },
+          "sizes": {
+            "items": {
+              "$ref": "#/components/schemas/PictureSizeOut"
+            },
+            "title": "Sizes",
+            "type": "array"
+          },
           "url": {
             "title": "Url",
             "type": "string"
@@ -5574,7 +5597,8 @@
         },
         "required": [
           "id",
-          "url"
+          "url",
+          "sizes"
         ],
         "title": "BlogBodyPictureOut",
         "type": "object"
@@ -5627,6 +5651,13 @@
             "title": "Body",
             "type": "string"
           },
+          "body_pictures": {
+            "items": {
+              "$ref": "#/components/schemas/BlogBodyPictureOut"
+            },
+            "title": "Body Pictures",
+            "type": "array"
+          },
           "edit": {
             "anyOf": [
               {
@@ -5652,6 +5683,13 @@
               }
             ],
             "title": "Picture"
+          },
+          "picture_sizes": {
+            "items": {
+              "$ref": "#/components/schemas/PictureSizeOut"
+            },
+            "title": "Picture Sizes",
+            "type": "array"
           },
           "published_at": {
             "format": "date-time",
@@ -5705,6 +5743,7 @@
           "title",
           "summary",
           "picture",
+          "picture_sizes",
           "author",
           "troupe",
           "tags",
@@ -5712,6 +5751,7 @@
           "published_at",
           "revised_at",
           "body",
+          "body_pictures",
           "author_card",
           "edit"
         ],
@@ -5849,6 +5889,13 @@
             ],
             "title": "Picture"
           },
+          "picture_sizes": {
+            "items": {
+              "$ref": "#/components/schemas/PictureSizeOut"
+            },
+            "title": "Picture Sizes",
+            "type": "array"
+          },
           "published_at": {
             "format": "date-time",
             "title": "Published At",
@@ -5901,6 +5948,7 @@
           "title",
           "summary",
           "picture",
+          "picture_sizes",
           "author",
           "troupe",
           "tags",
@@ -6074,6 +6122,13 @@
             ],
             "title": "Picture"
           },
+          "picture_sizes": {
+            "items": {
+              "$ref": "#/components/schemas/PictureSizeOut"
+            },
+            "title": "Picture Sizes",
+            "type": "array"
+          },
           "submitted_at": {
             "anyOf": [
               {
@@ -6111,6 +6166,7 @@
           "body",
           "troupe",
           "picture",
+          "picture_sizes",
           "submitted_at"
         ],
         "title": "BlogRevisionOut",
@@ -39762,6 +39818,30 @@
           "uploaded_at"
         ],
         "title": "PictureOut",
+        "type": "object"
+      },
+      "PictureSizeOut": {
+        "description": "One copy of a blog article's picture (#1183): its file, to add to the picture's\naddress, and its size in pixels, so a page keeps its room before it loads.",
+        "properties": {
+          "file": {
+            "title": "File",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "file",
+          "width",
+          "height"
+        ],
+        "title": "PictureSizeOut",
         "type": "object"
       },
       "PlacedDots": {

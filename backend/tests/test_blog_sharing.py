@@ -345,7 +345,7 @@ def test_the_feed_is_atom_of_published_articles_only_with_their_words_escaped(
     assert "&lt;script&gt;" in html and "<script>" not in html
     assert 'href="https://example.org/a?b=1&amp;c=2"' in html
     picture = ok(troupe.storyteller.client.get(f"/blog/articles/{second['id']}"))["picture"]
-    assert f'<img src="{SITE}{picture}/1200.webp" alt="" />' in html
+    assert f'<img src="{SITE}{picture}/1200.webp" alt="" width="1200" height="600" />' in html
     # In the document itself, all of it is escaped once more.
     assert b"<script>" not in response.content and b"&lt;script&gt;" not in response.content
     assert "Secret" not in response.text and first["slug"] in response.text

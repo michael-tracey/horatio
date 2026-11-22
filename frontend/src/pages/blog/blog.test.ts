@@ -14,6 +14,7 @@ function article(over: Partial<BlogArticleOut> = {}): BlogArticleOut {
     summary: "What I wish I'd known.",
     body: "Start small.",
     picture: null,
+    picture_sizes: [],
     author_id: "u1",
     author_name: "Mara Quinn",
     troupe: { id: "lords", name: "Lords of the Night", archived: false, public: true, card: null },
@@ -27,13 +28,14 @@ function article(over: Partial<BlogArticleOut> = {}): BlogArticleOut {
     revised_at: null,
     unpublished_at: null,
     revision: null,
+    body_pictures: [],
     waiting: null,
     mine: true,
     ...over,
   };
 }
 
-const REVISION = { title: "Running your first Elysium, again", summary: "", body: "Start smaller.", troupe: null, picture: null, submitted_at: null };
+const REVISION = { title: "Running your first Elysium, again", summary: "", body: "Start smaller.", troupe: null, picture: null, picture_sizes: [], submitted_at: null };
 
 describe("where an article stands, for its author (#1157)", () => {
   it("says what a new article and a draft are, and what comes next", () => {

@@ -28,6 +28,7 @@ function article(over: Partial<BlogArticleOut>): BlogArticleOut {
     summary: "What I wish I'd known.",
     body: "Start **small**.",
     picture: null,
+    picture_sizes: [],
     author_id: "u1",
     author_name: "Mara Quinn",
     troupe: TROUPE,
@@ -41,6 +42,7 @@ function article(over: Partial<BlogArticleOut>): BlogArticleOut {
     revised_at: null,
     unpublished_at: null,
     revision: null,
+    body_pictures: [],
     waiting: "article",
     mine: false,
     ...over,
@@ -65,7 +67,7 @@ const CHANGED = article({
   title: "Safety at the table",
   published_at: "2026-10-01T12:00:00Z",
   waiting: "changes",
-  revision: { title: "Safety at every table", summary: "Revised.", body: "New words.", troupe: TROUPE, picture: null, submitted_at: "2026-11-21T09:00:00Z" },
+  revision: { title: "Safety at every table", summary: "Revised.", body: "New words.", troupe: TROUPE, picture: null, picture_sizes: [], submitted_at: "2026-11-21T09:00:00Z" },
 });
 const DOWN = article({ id: "a4", status: "unpublished", title: "Old news", published_at: "2026-09-01T12:00:00Z", unpublished_at: "2026-11-02T12:00:00Z", waiting: null, note: "Out of date." });
 

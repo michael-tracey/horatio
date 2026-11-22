@@ -17,11 +17,10 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from PIL import Image, UnidentifiedImageError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import pictures
+from horatio import blog_pictures, pictures
 from horatio.api import blog_authors, troupe_profiles
 from horatio.api.blog_public import authors_of, published
 from horatio.blog import tags_of
@@ -236,20 +235,14 @@ def author(db: Session, handle: str) -> LinkPreview | None:
     )
 
 
-def hero_size(found: BlogPost) -> tuple[int, int] | None:
+def hero_size(db: Session, found: BlogPost) -> tuple[int, int] | None:
     """The width and height of an article's hero picture's 1200 px copy, which is
     narrower for a picture that was smaller (never made bigger)."""
-    root = pictures.upload_dir()
-    if root is None or found.picture_id is None:
+    if found.picture_id is None:
         return None
-    path = pictures.blog_picture_file(root, found.picture_id, "1200.webp")
-    if path is None:
-        return None
-    try:
-        with Image.open(path) as image:
-            return image.size
-    except (OSError, UnidentifiedImageError):
-        return None
+    sizes = blog_pictures.hero_sizes(db, [(found.id, found.picture_id)]).get(found.picture_id)
+    size = (sizes or {}).get("1200.webp")
+    return (size[0], size[1]) if size else None
 
 
 def iso(at: datetime) -> str:
@@ -284,7 +277,7 @@ def article(db: Session, slug: str) -> LinkPreview | None:
         description=shortened(found.summary) or opening(found.body),
         page_title=f"{found.title} · Blog · Horatio",
         image=f"{picture}/1200.webp" if picture else "",
-        image_size=hero_size(found),
+        image_size=hero_size(db, found),
         card="summary_large_image",
         kind="article",
         path=f"/blog/{found.slug}",
