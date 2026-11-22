@@ -214,6 +214,8 @@ The bell in the menu shows a number when something is waiting for you. Open it t
 
 Choose any line to go straight to the page it's about. **Notification settings**, at the foot of the list, opens the Notifications tab below.
 
+Several unread messages of the same kind, from the same troupe, gather into one line, such as *3 new blog articles* or *2 downtimes answered*. Choose it to list them, and choose one to open it; **Mark read** beside it marks them all read. The number on the bell still counts each one. Word about your account's safety, work waiting on you and messages already read are always listed one by one.
+
 ![The bell open, with its lists of what's waiting and messages](images/getting-started/bell.png)
 
 ### Choosing your notifications
@@ -234,7 +236,7 @@ Downtime results and quest news may also go out through your troupe's own connec
 
 Where a troupe's Discord gives your character a channel of their own, **Downtime results** has a switch for it: *Troupe: post to Agnes's own Discord channel*. It's on to begin with. Turn it off and Horatio posts nothing more to that channel, neither results nor quest news, while they still come to you here, in the bell or by email as you chose. Anything already waiting to go there is cancelled, not sent. The troupe's own channels, for its news and announcements, are the troupe's to choose and aren't affected. Its staff can see that you turned your channel off.
 
-If email is set up, **Send emails** under **Emails** chooses **At once** or **Once a day**, which gathers them into one email at 8 am in your time zone. Every email has a link to stop that kind by email, which unticks it here. If the server can't send email, the tab says so, and notifications come only to the bell.
+If email is set up, **Send emails** under **Emails** chooses **At once**, **Daily** or **Weekly**. Daily or weekly gathers everything ticked under **Email** into one email, grouped by kind, at the hour you choose under **At** (8 am to begin with), and for weekly on the day you choose under **On**, in your time zone (set on the Preferences tab; until you choose one, it's UTC). You get at most one a day, or one a week: change the hour after today's has gone and the next comes tomorrow. Some emails never wait for it and come at once: word about your account's safety (a new password, your two-step sign-in reset, a recovery code used), and announcements the staff mark **Important**. Every email has a link to stop that kind by email, which unticks it here. If the server can't send email, the tab says so, and notifications come only to the bell.
 
 ![The Downtimes group on the Notifications tab: a tick for the bell and for email](images/getting-started/email-notifications.png)
 
@@ -250,6 +252,10 @@ Horatio can tell your phone, so you hear of downtime results or a boon accepted 
 Each kind ticked under **Phone** then comes to that phone, even while Horatio is closed. Tap one to open the page it's about. A notification says no more than the bell's line.
 
 Turn **On this device** off to stop them there. Signing out on a device stops them there too. Every other device where they're on is listed under **Also on**, with **Turn off** for each, so you can stop a phone you no longer have. If the server isn't set up for phone notifications, the tab says so.
+
+#### Quiet hours
+
+Under **Quiet hours**, below **Phone notifications**, you can keep your phone quiet, such as overnight. Turn **Quiet hours** on and choose **From** and **Until** (10 pm to 8 am to begin with), in your time zone. Notifications that come in them wait, and when they end they come to your phone together, as one: *3 notifications in your quiet hours*, with each line. The bell has them as they happen. Two kinds still come at once, as they matter at a game that runs late: **Powers used in play** and **Teaching to confirm**. Quiet hours are kept on your account, so they're the same on each of your devices.
 
 ## The calendar link
 

@@ -2,13 +2,15 @@
 chooses which kinds come by push, and the delivery worker sends each one, encrypted
 to that browser and signed with the server's key, to a fake push service here. A
 device the push service says is gone is forgotten; turning push off on a device
-stops it; with no key set, push isn't available."""
+stops it; with no key set, push isn't available. Quiet hours (#1196) hold pushes until
+they end, then send them as one, but for the kinds that come through them."""
 
 import json
 import os
 import uuid
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import http_ece
@@ -21,9 +23,10 @@ from py_vapid import Vapid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import delivery, notifications, web_push
+from horatio import delivery, notification_choices, notifications, web_push
 from horatio.config import get_settings
 from horatio.models import PushDevice, PushNotice, Suspension, User
+from horatio.preferences import Preferences
 from tests.api_helpers import Person, sign_up
 
 ANDROID = (
@@ -368,6 +371,161 @@ def test_a_troupe_and_a_long_line_as_the_bell_shows_them(
     assert shown["title"] == "Lords of the Night"
     assert len(shown["body"]) == web_push.LONGEST
     assert shown["body"].endswith("…")
+
+
+# --- quiet hours (#1196) -----------------------------------------------------------------
+
+# 11 pm in London, in November: in quiet hours from 10 pm to 7:30 am. Before now, so the
+# pushes' own times (the database's clock) are after it.
+NIGHT = datetime(2026, 11, 2, 23, 0, tzinfo=UTC)
+MORNING = datetime(2026, 11, 3, 7, 30, tzinfo=UTC)
+
+
+@pytest.fixture
+def night(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(delivery, "now", lambda: NIGHT)
+
+
+def quiet(person: Person, **more: object) -> None:
+    ok(
+        person.client.patch(
+            "/preferences",
+            json={
+                "quiet_hours": True,
+                "quiet_start": "22:00",
+                "quiet_end": "07:30",
+                "time_zone": "Europe/London",
+                **more,
+            },
+        )
+    )
+
+
+def test_quiet_hours_hold_pushes_and_send_them_as_one_when_they_end(
+    client_for: Callable[[], TestClient], session: Session, pushes: FakePushService, night: None
+) -> None:
+    person = sign_up(client_for, "quiet-push")
+    phone = Browser(endpoint("quiet"))
+    ok(turn_on(person, phone))
+    quiet(person)
+
+    tell(session, person, "downtime.delivered", "Your downtime results are ready.")
+    tell(session, person, "boon.accepted", "Your boon was accepted.")
+    assert {(n.due_at, n.held_until) for n in waiting(session)} == {(MORNING, MORNING)}
+    # Still in the bell at once.
+    assert len(person.client.get("/notifications").json()["items"]) == 2
+    assert web_push.send_due(session, NIGHT + timedelta(hours=2)) == 0
+    assert pushes.received == []
+
+    assert web_push.send_due(session, MORNING) == 1
+    [request] = pushes.received
+    assert phone.read(request.content) == {
+        "title": "Horatio",
+        "body": "2 notifications in your quiet hours: Your downtime results are ready;"
+        " Your boon was accepted.",
+        "link": "/characters",
+    }
+    assert waiting(session) == []
+
+
+def test_what_matters_at_a_game_and_the_accounts_safety_come_through_quiet_hours(
+    client_for: Callable[[], TestClient], session: Session, pushes: FakePushService, night: None
+) -> None:
+    person = sign_up(client_for, "quiet-game")
+    ok(turn_on(person, Browser(endpoint("quiet-game"))))
+    quiet(person)
+    tell(session, person, "play.effect_on_you", "Dominate was used on Agnes.")
+    [notice] = waiting(session)
+    assert (notice.due_at, notice.held_until) == (NIGHT, None)
+    assert web_push.send_due(session, NIGHT) == 1
+
+    # The page names them: powers used in play and teaching to confirm. Word about the
+    # account's safety never comes by push, but would come through too.
+    shown = ok(person.client.get("/notification-settings"))
+    assert shown["quiet_exempt"] == ["Powers used in play", "Teaching to confirm"]
+    assert web_push.exempt(notification_choices.BY_NAME["security"])
+    assert not web_push.exempt(notification_choices.BY_NAME["bonds"])
+
+
+def test_changing_quiet_hours_re_times_what_waits(
+    client_for: Callable[[], TestClient], session: Session, pushes: FakePushService, night: None
+) -> None:
+    person = sign_up(client_for, "quiet-change")
+    ok(turn_on(person, Browser(endpoint("quiet-change"))))
+    quiet(person)
+    tell(session, person, "downtime.delivered")
+    tell(session, person, "boon.accepted")
+
+    # Ending at 9 instead: they wait till then.
+    quiet(person, quiet_end="09:00")
+    nine = datetime(2026, 11, 3, 9, 0, tzinfo=UTC)
+    assert {n.due_at for n in waiting(session)} == {nine}
+    assert web_push.send_due(session, MORNING) == 0
+
+    # Turned off: they go now, still as one.
+    ok(person.client.patch("/preferences", json={"quiet_hours": False}))
+    assert {n.due_at for n in waiting(session)} == {NIGHT}
+    assert web_push.send_due(session, NIGHT) == 1
+    assert len(pushes.received) == 1
+    assert waiting(session) == []
+    # And with them off, the next goes at once.
+    tell(session, person, "downtime.delivered")
+    assert [n.held_until for n in waiting(session)] == [None]
+
+
+def test_a_push_held_till_morning_is_news_then_and_retried_together(
+    client_for: Callable[[], TestClient], session: Session, pushes: FakePushService, night: None
+) -> None:
+    person = sign_up(client_for, "quiet-retry")
+    phone = Browser(endpoint("quiet-retry"))
+    ok(turn_on(person, phone))
+    # Quiet from 6 pm to 8 am: longer than a push service keeps one.
+    quiet(person, quiet_start="18:00", quiet_end="08:00")
+    tell(session, person, "downtime.delivered")
+    tell(session, person, "boon.accepted")
+    eight = datetime(2026, 11, 3, 8, 0, tzinfo=UTC)
+
+    pushes.answers[phone.endpoint] = 503
+    assert web_push.send_due(session, eight) == 1
+    assert {(n.attempts, n.due_at) for n in waiting(session)} == {(1, eight + timedelta(minutes=1))}
+    pushes.answers.clear()
+    assert web_push.send_due(session, eight + timedelta(minutes=1)) == 1
+    assert len(pushes.received) == 2
+    assert waiting(session) == []
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "zone", "at", "until"),
+    [
+        # Overnight, before midnight and after.
+        ("22:00", "07:30", "UTC", (2026, 11, 2, 23, 0), (2026, 11, 3, 7, 30)),
+        ("22:00", "07:30", "UTC", (2026, 11, 3, 1, 0), (2026, 11, 3, 7, 30)),
+        ("22:00", "07:30", "UTC", (2026, 11, 3, 7, 30), None),
+        ("22:00", "07:30", "UTC", (2026, 11, 3, 21, 59), None),
+        # Within a day.
+        ("13:00", "15:00", "UTC", (2026, 11, 3, 14, 0), (2026, 11, 3, 15, 0)),
+        ("13:00", "15:00", "UTC", (2026, 11, 3, 12, 0), None),
+        # In the person's time zone: 11 pm in New York is 4 am UTC in November.
+        ("22:00", "07:00", "America/New_York", (2026, 11, 3, 4, 0), (2026, 11, 3, 12, 0)),
+        # Over the night the clocks go back in New York (1 November): 7 am is EST.
+        ("22:00", "07:00", "America/New_York", (2026, 11, 1, 3, 0), (2026, 11, 1, 12, 0)),
+        # And forward (14 March 2027): 7 am is EDT.
+        ("22:00", "07:00", "America/New_York", (2027, 3, 14, 4, 0), (2027, 3, 14, 11, 0)),
+        # The same time twice keeps no quiet hours.
+        ("22:00", "22:00", "UTC", (2026, 11, 3, 22, 30), None),
+    ],
+)
+def test_quiet_hours_end_in_the_persons_time_zone(
+    start: str,
+    end: str,
+    zone: str,
+    at: tuple[int, ...],
+    until: tuple[int, ...] | None,
+) -> None:
+    prefs = Preferences(quiet_hours=True, quiet_start=start, quiet_end=end, time_zone=zone)
+    expected = datetime(*until, tzinfo=UTC) if until else None
+    assert web_push.quiet_until(prefs, datetime(*at, tzinfo=UTC)) == expected
+    assert web_push.quiet_until(prefs.model_copy(update={"quiet_hours": False}), NIGHT) is None
 
 
 @pytest.mark.parametrize(

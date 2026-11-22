@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-from horatio import preferences
+from horatio import notification_emails, preferences, web_push
 from horatio.api.throw_images import may_choose
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.connectors import email
@@ -36,6 +36,11 @@ def change_preferences(changes: dict[str, Any], db: DbSession, user: CurrentUser
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "You can choose only the throw pictures of a troupe you play in.",
         )
+    # What waits for a digest or for the end of quiet hours goes as they now say (#1196).
+    if notification_emails.DIGEST_SETTINGS & changes.keys():
+        notification_emails.retime(db, user)
+    if web_push.QUIET_SETTINGS & changes.keys():
+        web_push.retime(db, user)
     db.commit()
     return kept
 

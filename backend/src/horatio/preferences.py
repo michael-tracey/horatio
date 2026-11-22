@@ -6,19 +6,35 @@ settings someone has changed (`users.preferences`), so changing a default here
 changes it for everyone who kept it. The tickets that follow #100 each give a
 setting its effect: #101 ratings, #102 time zone and dates, #104 paper and
 badge size, #105 the Play View, #106 notifications by email, #107 text size,
-#635 the theme, #671 the Throws tab's pictures. Where each kind of notification
+#635 the theme, #671 the Throws tab's pictures, #1196 the digest's day and hour
+and quiet hours for phone notifications. Where each kind of notification
 comes (#1053) is kept alongside them (horatio.notification_choices).
 """
 
+import re
 import uuid
+from datetime import time
 from typing import Any, Literal
 from zoneinfo import available_timezones
 
 from fastapi import HTTPException, status
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from horatio import notification_choices
 from horatio.models import User
+
+Weekday = Literal["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+WEEKDAYS: tuple[Weekday, ...] = (
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+)
+# A time of day as quiet hours keep it: "22:00", on a 24-hour clock.
+CLOCK_TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
 class Preferences(BaseModel):
@@ -53,8 +69,19 @@ class Preferences(BaseModel):
     # horatio.notification_choices name them (#1053). `change` takes them, and `read`
     # leaves them out.
 
-    # Each email as it happens, or everything gathered into one a day.
-    email_digest: Literal["at_once", "daily"] = "at_once"
+    # Each email as it happens, or everything gathered into one a day or a week, at
+    # `digest_hour` in the person's time zone, on `digest_day` for a week's (#1196).
+    # Word about their account's safety, and an announcement marked important, never
+    # wait for it (horatio.notification_emails).
+    email_digest: Literal["at_once", "daily", "weekly"] = "at_once"
+    digest_hour: int = Field(default=8, ge=0, le=23)
+    digest_day: Weekday = "monday"
+    # Quiet hours for phone notifications (#1196): from `quiet_start` to `quiet_end`,
+    # "HH:MM" in the person's time zone, pushes wait and come afterwards, gathered into
+    # one. A few kinds come anyway (horatio.web_push.EXEMPT).
+    quiet_hours: bool = False
+    quiet_start: str = "22:00"
+    quiet_end: str = "08:00"
     # Troupes' Who's Who names the player by their handle, not their name (#264).
     whos_who_handle: bool = False
 
@@ -64,6 +91,17 @@ class Preferences(BaseModel):
         if zone is not None and zone not in available_timezones():
             raise ValueError(f"{zone} is not a time zone Horatio knows.")
         return zone
+
+    @field_validator("quiet_start", "quiet_end")
+    @classmethod
+    def clock_time(cls, value: str) -> str:
+        if not CLOCK_TIME.match(value):
+            raise ValueError(f"{value} isn't a time of day, such as 22:00.")
+        return value
+
+    def quiet_times(self) -> tuple[time, time]:
+        """When quiet hours start and end, as times of day."""
+        return time.fromisoformat(self.quiet_start), time.fromisoformat(self.quiet_end)
 
     @field_validator("throw_images")
     @classmethod

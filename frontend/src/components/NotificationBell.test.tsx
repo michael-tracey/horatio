@@ -45,10 +45,10 @@ function Where() {
   return <p>At {pathname + search}</p>;
 }
 
-function show({ beforeSetup = false, at = "/" }: { beforeSetup?: boolean; at?: string } = {}) {
+function show({ beforeSetup = false, at = "/", items = ITEMS }: { beforeSetup?: boolean; at?: string; items?: NotificationOut[] } = {}) {
   vi.spyOn(api, "GET").mockImplementation((async (path: string) =>
     path === "/api/notifications"
-      ? { data: { items: ITEMS, count: 2 }, response: new Response(null, { status: 200 }) }
+      ? { data: { items, count: items.filter((i) => i.task || !i.read).length }, response: new Response(null, { status: 200 }) }
       : { error: { detail: "Not found" }, response: new Response(null, { status: 404 }) }) as never);
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -82,6 +82,69 @@ describe("the bell", () => {
     fireEvent.click(within(screen.getByRole("dialog", { name: "Notifications" })).getByRole("link", { name: "Nick" }));
     expect(screen.getByText("At /players/u2")).not.toBeNull();
     expect(screen.queryByRole("dialog", { name: "Notifications" })).toBeNull();
+  });
+
+  describe("similar unread messages gathered into one row (#1196)", () => {
+    const blog = (n: number, read = false): NotificationOut => ({
+      ...plain,
+      id: `b${n}`,
+      kind: "blog.new",
+      task: false,
+      troupe_id: null,
+      troupe_name: null,
+      summary: `New on the blog: Article ${n}`,
+      link: `/blog/article-${n}`,
+      read,
+    });
+    const GATHERED = [ITEMS[0]!, blog(1), ITEMS[1]!, blog(2), blog(3), blog(4, true)];
+    const marked = () => vi.spyOn(api, "POST").mockResolvedValue({ data: null, response: new Response(null, { status: 204 }) } as never);
+
+    it("shows one row for them, counting each on the bell, and lists them when tapped", async () => {
+      show({ items: GATHERED });
+      // The task, the downtime result and the three unread articles: each counts.
+      fireEvent.click(await screen.findByRole("button", { name: "Notifications, 5 waiting" }));
+      const bell = screen.getByRole("dialog", { name: "Notifications" });
+      const row = within(bell).getByRole("button", { name: /^3 new blog articles/ });
+      expect(row.getAttribute("aria-expanded")).toBe("false");
+      expect(within(bell).queryByRole("button", { name: /Article 1/ })).toBeNull();
+      // One read already stays on its own.
+      expect(within(bell).getByRole("button", { name: /Article 4/ })).not.toBeNull();
+
+      fireEvent.click(row);
+      expect(row.getAttribute("aria-expanded")).toBe("true");
+      const listed = within(bell).getByRole("list", { name: "3 new blog articles" });
+      expect(
+        within(listed)
+          .getAllByRole("button")
+          .map((b) => b.textContent),
+      ).toEqual([1, 2, 3].map((n) => expect.stringContaining(`New on the blog: Article ${n}`)));
+      // Each opens its article, marked read.
+      const post = marked();
+      fireEvent.click(within(listed).getByRole("button", { name: /Article 2/ }));
+      await waitFor(() => expect(post).toHaveBeenCalledWith("/api/notifications/read", { body: { ids: ["b2"] } }));
+      expect(screen.getByText("At /blog/article-2")).not.toBeNull();
+    });
+
+    it("marks the whole row read at once", async () => {
+      const post = marked();
+      show({ items: GATHERED });
+      fireEvent.click(await screen.findByRole("button", { name: "Notifications, 5 waiting" }));
+      fireEvent.click(within(screen.getByRole("dialog", { name: "Notifications" })).getByRole("button", { name: "Mark 3 new blog articles read" }));
+      await waitFor(() => expect(post).toHaveBeenCalledWith("/api/notifications/read", { body: { ids: ["b1", "b2", "b3"] } }));
+    });
+
+    it("opens them in place before setup too (#1146)", async () => {
+      const post = marked();
+      show({ items: GATHERED, beforeSetup: true, at: "/two-step" });
+      fireEvent.click(await screen.findByRole("button", { name: "Notifications, 5 waiting" }));
+      const bell = screen.getByRole("dialog", { name: "Notifications" });
+      fireEvent.click(within(bell).getByRole("button", { name: /^3 new blog articles/ }));
+      const article = within(within(bell).getByRole("list", { name: "3 new blog articles" })).getByRole("button", { name: /Article 3/ });
+      fireEvent.click(article);
+      await waitFor(() => expect(post).toHaveBeenCalledWith("/api/notifications/read", { body: { ids: ["b3"] } }));
+      expect(article.getAttribute("aria-expanded")).toBe("true");
+      expect(screen.getByText("At /two-step")).not.toBeNull();
+    });
   });
 
   describe("before two-step sign-in is set up (#1146)", () => {

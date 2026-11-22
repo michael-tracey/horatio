@@ -81,6 +81,11 @@ export const DEFAULT_PREFERENCES: Preferences = {
   text_size: "normal",
   theme: "dark",
   email_digest: "at_once",
+  digest_hour: 8,
+  digest_day: "monday",
+  quiet_hours: false,
+  quiet_start: "22:00",
+  quiet_end: "08:00",
   whos_who_handle: false,
 };
 

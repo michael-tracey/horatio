@@ -3,8 +3,9 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router";
 import { api } from "../../api/client";
-import type { NotificationSettingsOut, NotificationTopicOut } from "../../api/types";
-import { NotificationsPage } from "./NotificationsPage";
+import type { Me, NotificationSettingsOut, NotificationTopicOut, Preferences } from "../../api/types";
+import { DEFAULT_PREFERENCES } from "../../hooks";
+import { digestHint, hourName, NotificationsPage } from "./NotificationsPage";
 
 afterEach(() => {
   cleanup();
@@ -28,6 +29,7 @@ const PAGE: NotificationSettingsOut = {
   push: true,
   push_key: KEY,
   devices: [],
+  quiet_exempt: ["Powers used in play", "Teaching to confirm"],
   groups: [
     {
       name: "account",
@@ -70,10 +72,17 @@ const PAGE: NotificationSettingsOut = {
   ],
 };
 
-/** The page, with `/api/notification-settings` answering `page`; a choice answers it back. */
-function show(page: NotificationSettingsOut = PAGE) {
+/** The page, with `/api/notification-settings` answering `page`; a choice answers it back.
+ * The person's settings are `prefs`, and a change to them is kept. */
+function show(page: NotificationSettingsOut = PAGE, prefs: Partial<Preferences> = {}) {
+  let kept: Preferences = { ...DEFAULT_PREFERENCES, ...prefs };
+  vi.spyOn(api, "PATCH").mockImplementation((async (_path: string, { body }: { body: Partial<Preferences> }) => {
+    kept = { ...kept, ...body };
+    return { data: kept, response: new Response(null, { status: 200 }) };
+  }) as never);
   vi.spyOn(api, "GET").mockImplementation((async (path: string) => {
     if (path === "/api/notification-settings") return { data: page, response: new Response(null, { status: 200 }) };
+    if (path === "/api/auth/me") return { data: { id: "u1", handle: "agnes", display_name: "Agnes", preferences: kept } as Me, response: new Response(null, { status: 200 }) };
     return { error: { detail: "Not found" }, response: new Response(null, { status: 404 }) };
   }) as never);
   const put = vi.spyOn(api, "PUT").mockImplementation((async () => ({ data: page, response: new Response(null, { status: 200 }) })) as never);
@@ -94,6 +103,61 @@ function show(page: NotificationSettingsOut = PAGE) {
 }
 
 describe("Account › Notifications", () => {
+  describe("the digest and quiet hours (#1196)", () => {
+    it("gathers emails into one a week, on the day and at the hour chosen", async () => {
+      show();
+      const emails = await screen.findByRole("region", { name: "Emails" });
+      expect(within(emails).queryByRole("combobox", { name: "Digest hour" })).toBeNull();
+      fireEvent.click(within(emails).getByRole("radio", { name: "Weekly" }));
+      await vi.waitFor(() => expect(api.PATCH).toHaveBeenCalledWith("/api/preferences", { body: { email_digest: "weekly" } }));
+
+      const day = await within(emails).findByRole("combobox", { name: "Digest day" });
+      fireEvent.change(day, { target: { value: "thursday" } });
+      await vi.waitFor(() => expect(api.PATCH).toHaveBeenCalledWith("/api/preferences", { body: { digest_day: "thursday" } }));
+      const hour = within(emails).getByRole("combobox", { name: "Digest hour" });
+      await vi.waitFor(() => expect(hour).toHaveProperty("disabled", false));
+      fireEvent.change(hour, { target: { value: "18" } });
+      await vi.waitFor(() => expect(api.PATCH).toHaveBeenCalledWith("/api/preferences", { body: { digest_hour: 18 } }));
+      expect(await within(emails).findByText(/One email a week, on Thursday at 6 pm/)).toBeTruthy();
+    });
+
+    it("says what still comes at once, and where the time zone comes from", () => {
+      const prefs = { ...DEFAULT_PREFERENCES, email_digest: "daily", digest_hour: 7, time_zone: "America/New_York" } as Preferences;
+      expect(digestHint(prefs)).toBe(
+        "One email a day at 7 am (America/New York), the day's notifications grouped by kind. Word about your account's safety, and announcements marked important, still come at once.",
+      );
+      expect(digestHint({ ...prefs, email_digest: "at_once" })).toMatch(/^Each email as it happens/);
+      expect(digestHint({ ...prefs, time_zone: null })).toContain("(UTC, until you choose a time zone under Preferences)");
+      expect([0, 12, 13].map((h) => hourName(h, "12"))).toEqual(["12 am", "12 pm", "1 pm"]);
+      expect(hourName(7, "24")).toBe("07:00");
+    });
+
+    it("keeps quiet hours for the phone, naming the kinds that still come", async () => {
+      show(PAGE, { time_zone: "Europe/London" });
+      const quiet = await screen.findByRole("region", { name: "Quiet hours" });
+      expect(within(quiet).getByText(/Powers used in play and Teaching to confirm still come at once/)).toBeTruthy();
+      expect(within(quiet).queryByLabelText("Quiet hours start")).toBeNull();
+      fireEvent.click(within(quiet).getByRole("switch", { name: "Quiet hours" }));
+      await vi.waitFor(() => expect(api.PATCH).toHaveBeenCalledWith("/api/preferences", { body: { quiet_hours: true } }));
+
+      const start = await within(quiet).findByLabelText("Quiet hours start");
+      expect(start).toHaveProperty("value", "22:00");
+      await vi.waitFor(() => expect(start).toHaveProperty("disabled", false));
+      fireEvent.change(start, { target: { value: "23:30" } });
+      // Saved once left, not at each keystroke.
+      expect(api.PATCH).toHaveBeenCalledTimes(1);
+      fireEvent.blur(start);
+      await vi.waitFor(() => expect(api.PATCH).toHaveBeenCalledWith("/api/preferences", { body: { quiet_start: "23:30" } }));
+      expect(within(quiet).getByLabelText("Quiet hours end")).toHaveProperty("value", "08:00");
+    });
+
+    it("leaves quiet hours out where the server can't push", async () => {
+      show({ ...PAGE, push: false, push_key: null });
+      await screen.findByRole("region", { name: "Emails" });
+      expect(screen.queryByRole("region", { name: "Quiet hours" })).toBeNull();
+    });
+  });
+
   it("lists each kind under its group, with a tick for each way it can come", async () => {
     const put = show();
     const downtimes = await screen.findByRole("region", { name: "Downtimes" });

@@ -255,6 +255,41 @@ test("a bell line naming a player wraps, its name opens their profile and the re
   await expect(page).toHaveURL(/\/account$/);
 });
 
+test("similar unread notices gather into one row in the bell, which opens to list them and marks them read together (#1196)", async ({ browser }) => {
+  const asker = await person(browser, "bellgroup-asker");
+  const custodian = await person(browser, "bellgroup-custodian");
+  makeCustodian(custodian.email);
+  // Three troupes asked for and approved: three notices of the same kind.
+  const headers = { "X-Horatio": "1" };
+  const names = ["Ashes", "Embers", "Cinders"].map((n) => `Gathered Court of ${n} ${run}`);
+  for (const name of names) {
+    const asked = await asker.page.request.post("/api/troupe-requests", { headers, data: { name } });
+    expect(asked.status(), await asked.text()).toBeLessThan(300);
+    const approved = await custodian.page.request.post(`/api/troupe-requests/${(await asked.json()).id}/approve`, { headers });
+    expect(approved.status(), await approved.text()).toBeLessThan(300);
+  }
+  const page = asker.page;
+  await page.reload();
+  // Each still counts on the bell.
+  const bell = page.getByRole("button", { name: "Notifications, 3 waiting" });
+  await bell.click();
+  const panel = page.getByRole("dialog", { name: "Notifications" });
+  const row = panel.getByRole("button", { name: /^3 new troupes ready/ });
+  await expect(row).toHaveAttribute("aria-expanded", "false");
+  await expect(panel.getByText(names[0]!, { exact: false })).toHaveCount(0);
+
+  await row.click();
+  const listed = panel.getByRole("list", { name: "3 new troupes ready" });
+  for (const name of names) await expect(listed.getByRole("button", { name: new RegExp(name) })).toBeVisible();
+  await page.screenshot(shots("bell-gathered"));
+
+  // Marked read together: the number goes, and they are listed one by one, read.
+  await panel.getByRole("button", { name: "Mark 3 new troupes ready read" }).click();
+  await expect(page.getByRole("button", { name: "Notifications", exact: true })).toBeVisible();
+  await expect(row).toHaveCount(0);
+  for (const name of names) await expect(panel.getByRole("button", { name: new RegExp(name) })).toBeVisible();
+});
+
 test("the browser tab names the page: the tab open, then the troupe or character, then Horatio; signed out, nothing it couldn't show (#775)", async ({ browser }) => {
   const custodian = await person(browser, "tabtitle-custodian");
   makeCustodian(custodian.email);

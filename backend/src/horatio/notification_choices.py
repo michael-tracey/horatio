@@ -10,7 +10,9 @@ bell, and goes when the work is done; so is word about their account's safety. A
 topic with no route for a way never comes that way. `horatio.notifications.notify`,
 `horatio.notification_emails.queue` and `horatio.web_push.queue` honour each
 person's choice; a kind no topic covers is refused there, so a new kind can't be
-sent without a line on the page.
+sent without a line on the page. An `urgent` topic, word about the account's safety,
+never waits for the person's digest email or the end of their quiet hours (#1196);
+an `at_game` one comes through quiet hours too.
 
 A choice is kept with the person's other settings (`users.preferences`, only where
 it differs from the default), named `<way>_<topic>`: `email_downtime`,
@@ -83,6 +85,12 @@ class Topic:
     # Where the switches for the characters' own Discord channels sit (#1077). They
     # cover downtime results and quest news alike, so they're shown once.
     own_channels: bool = False
+    # Word about the person's account's safety (#1196): never held back, by email for
+    # their digest or on their phone for quiet hours.
+    urgent: bool = False
+    # What only matters while a game is on, such as a power used on the character:
+    # pushed through quiet hours, as it would be stale after them (#1196).
+    at_game: bool = False
 
     def setting(self, way: Way) -> str:
         return f"{way}_{self.name}"
@@ -129,6 +137,7 @@ GROUPS = (
                     "troupe.staff_two_step",
                 ),
                 {"bell": ALWAYS},
+                urgent=True,
             ),
             Topic(
                 "account_emails",
@@ -139,6 +148,7 @@ GROUPS = (
                 " email.",
                 (),
                 {"email": ALWAYS},
+                urgent=True,
             ),
             Topic(
                 "troupe_requests",
@@ -222,6 +232,7 @@ GROUPS = (
                     "play.effect_disputed",
                 ),
                 PUSHED,
+                at_game=True,
             ),
             Topic(
                 "teaching",
@@ -232,6 +243,7 @@ GROUPS = (
                 # Pushed as it is asked, to those who tick it (#1097).
                 {"bell": ALWAYS, "push": OFF},
                 task=True,
+                at_game=True,
             ),
             Topic(
                 "quests",
