@@ -269,6 +269,8 @@ Under the table, three cards show what's going on with accounts:
 
 Horatio has a blog of its own: articles on playing and running a game, for everyone who uses Horatio, written by the staff of any troupe that isn't archived, narrators included. Nothing is on it until you publish it, and readers can't comment. Its reading pages aren't open yet: for now an article, published or not, is seen only by its author and you.
 
+How staff write an article, and what the blog asks of them, is in [Writing for the blog](blog.md).
+
 **Custodian › Blog** holds the articles sent to you, and the tab shows how many are waiting. It has three lists:
 
 - **Waiting**: the articles their authors have sent you, and the changes to published articles, the longest waiting first. A published article's changes are marked **Changes**.

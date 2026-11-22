@@ -77,6 +77,8 @@ THROW_FILES = {f"{s}.webp" for s in THROWS}
 # A post's picture or a masthead, at these widths, keeping its shape.
 POST_WIDTHS = (1200, 600)
 POST_FILES = {f"{w}.webp" for w in POST_WIDTHS}
+# A blog article's hero picture is twice as wide as it is high (#1157).
+HERO_RATIO = 2
 
 
 class PictureError(Exception):
@@ -249,6 +251,28 @@ def write_post_picture(directory: Path, image: Image.Image) -> None:
             height = max(1, round(image.height * width / image.width))
             fitted = image.resize((width, height), Image.Resampling.LANCZOS)
         _webp(fitted, directory / f"{width}.webp")
+
+
+def hero_box(width: int, height: int, crop: Crop | None) -> Box:
+    """A blog article's hero picture's frame in pixels (#1157): twice as wide as it is
+    high, kept inside the picture, its width `crop.size` of the picture's; the widest
+    frame in the middle when there is no crop. frontend/src/components/crop.ts draws
+    the same frame while cropping."""
+    widest = min(width, height * HERO_RATIO)
+    frame_w = widest if crop is None else max(HERO_RATIO, min(widest, round(crop.size * width)))
+    frame_h = max(1, min(height, round(frame_w / HERO_RATIO)))
+    if crop is None:
+        left, top = (width - frame_w) // 2, (height - frame_h) // 2
+    else:
+        left = min(max(round(crop.x * width), 0), width - frame_w)
+        top = min(max(round(crop.y * height), 0), height - frame_h)
+    return (left, top, left + frame_w, top + frame_h)
+
+
+def write_hero_picture(directory: Path, image: Image.Image, crop: Crop | None) -> None:
+    """Write a blog article's hero picture's files into `directory`, which must be new:
+    its 2:1 frame, as a post's picture is kept (1200 and 600 px wide)."""
+    write_post_picture(directory, image.crop(hero_box(image.width, image.height, crop)))
 
 
 def write_logo(directory: Path, image: Image.Image) -> None:

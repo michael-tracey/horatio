@@ -37,12 +37,15 @@ export default function RichEditor({
   label,
   describedBy,
   placeholder = "Write your backstory here…",
+  moreTools,
 }: {
   initial: string;
   onChange: (markdown: string) => void;
   label: string;
   describedBy?: string;
   placeholder?: string;
+  /** Buttons of a page's own, after the formatting and before Undo: a blog article's pictures (#1163) are to come in here. */
+  moreTools?: (editor: Editor) => Tool[];
 }) {
   const changed = useRef(onChange);
   changed.current = onChange;
@@ -89,7 +92,7 @@ export default function RichEditor({
 
   return (
     <div className="rounded-md border border-line bg-night focus-within:border-gold/60">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} moreTools={moreTools} />
       {/* Its height kept while the editor is being made, so the page doesn't jump. */}
       <EditorContent editor={editor} className="rich-editor min-h-60" />
       {refused && (
@@ -102,14 +105,14 @@ export default function RichEditor({
   );
 }
 
-type Tool = { label: string; face: ReactNode; active?: boolean; disabled?: boolean; run: () => void };
+export type Tool = { label: string; face: ReactNode; active?: boolean; disabled?: boolean; run: () => void };
 
 /**
  * The formatting buttons. One tab stop, with the arrow keys moving between them (the
  * ARIA toolbar pattern). They wrap onto a second row on a phone, at a size a thumb
  * can tap.
  */
-function Toolbar({ editor }: { editor: Editor | null }) {
+function Toolbar({ editor, moreTools }: { editor: Editor | null; moreTools?: (editor: Editor) => Tool[] }) {
   const state = useEditorState({
     editor,
     selector: ({ editor: e }) =>
@@ -142,6 +145,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
     { label: "Numbered list", face: "1. List", active: state.numbers, run: () => chain().toggleOrderedList().run() },
     { label: "Quote", face: "“ ”", active: state.quote, run: () => chain().toggleBlockquote().run() },
     { label: "Link", face: "Link", active: state.link || linking, run: () => setLinking(!linking) },
+    ...(moreTools?.(editor) ?? []),
     { label: "Undo", face: "↶", disabled: !state.undo, run: () => chain().undo().run() },
     { label: "Redo", face: "↷", disabled: !state.redo, run: () => chain().redo().run() },
   ];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { centred, fromCrop, portraitFrame, resized, square, toCrop } from "./crop";
+import { centred, fromCrop, heroCentred, heroFrame, heroResized, portraitFrame, resized, square, toCrop } from "./crop";
 
 describe("the crop square", () => {
   it("starts as the biggest square in the middle", () => {
@@ -37,5 +37,24 @@ describe("the badge's portrait frame", () => {
 
   it("is narrowed when the picture is too short for it", () => {
     expect(portraitFrame(400, 300, { left: 50, top: 0, width: 300, height: 300 })).toEqual({ left: 80, top: 0, width: 240, height: 300 });
+  });
+});
+
+describe("a blog article's hero frame (#1157)", () => {
+  it("starts as the widest 2:1 frame in the middle, as the server cuts it", () => {
+    // pictures.hero_box(1600, 900, None) is (0, 50, 1600, 850).
+    expect(heroCentred(1600, 900)).toEqual({ left: 0, top: 50, width: 1600, height: 800 });
+    expect(heroCentred(600, 1000)).toEqual({ left: 0, top: 350, width: 600, height: 300 });
+  });
+
+  it("stays inside the picture, two to one, and never too small or too big", () => {
+    expect(heroFrame(1600, 900, 1400, 800, 4000)).toEqual({ left: 0, top: 100, width: 1600, height: 800 });
+    expect(heroFrame(1600, 900, -50, -50, 10)).toEqual({ left: 0, top: 0, width: 160, height: 80 });
+  });
+
+  it("grows and shrinks about its centre, and goes to the API's fractions", () => {
+    const box = heroResized(1600, 900, heroCentred(1600, 900), 800);
+    expect(box).toEqual({ left: 400, top: 250, width: 800, height: 400 });
+    expect(toCrop(1600, 900, box)).toEqual({ x: 0.25, y: 250 / 900, size: 0.5 });
   });
 });
