@@ -12,8 +12,10 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy.orm import Session
 
+from horatio import blog_bell
 from horatio.api import blog_public
 from horatio.config import get_settings
+from horatio.models import BlogPost
 from tests.api_helpers import Person, Troupe
 
 
@@ -219,6 +221,19 @@ def test_retired_renamed_and_merged_tags_on_the_blog(troupe: Troupe, anyone: Tes
     assert anyone.get("/blog/public/tags/downtimes").status_code == 404
     assert titles(ok(anyone.get("/blog/public/tags/community"))) == ["On downtimes"]
     assert "downtimes" not in [t["slug"] for t in ok(anyone.get("/blog/public/tags"))]
+
+
+def test_the_new_article_bell_leads_to_its_page(
+    troupe: Troupe, anyone: TestClient, session: Session
+) -> None:
+    article = published(troupe)
+
+    link = blog_bell.link(session.get_one(BlogPost, article["id"]))
+
+    # The bell's /blog/<slug> is the page that reads /blog/public/articles/<slug>.
+    assert link == "/blog/running-your-first-elysium"
+    shown = ok(anyone.get(link.replace("/blog/", "/blog/public/articles/", 1)))
+    assert shown["title"] == "Running your first Elysium"
 
 
 def test_the_blogs_own_addresses_arent_slugs(troupe: Troupe) -> None:
