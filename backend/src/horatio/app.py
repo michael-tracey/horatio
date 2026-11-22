@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path, PurePosixPath
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
 from horatio import delivery, link_previews, secret_links
 from horatio.api import (
@@ -395,9 +395,15 @@ def serve_frontend(dist: Path, target: FastAPI = app) -> None:
     hashed = {"Cache-Control": "public, max-age=31536000, immutable"}
 
     @target.get("/{path:path}", include_in_schema=False)
-    def frontend(path: str, db: DbSession) -> Response:
+    def frontend(path: str, request: Request, db: DbSession) -> Response:
         if path.startswith("api/"):
             raise HTTPException(status_code=404)
+        # A page moved for good, such as a merged tag's (#1184): search engines and
+        # link previews follow it there.
+        to = link_previews.moved(db, path)
+        if to is not None:
+            query = f"?{request.url.query}" if request.url.query else ""
+            return RedirectResponse(to + query, status_code=301)
         # A public page's own link preview (horatio.link_previews).
         preview = link_previews.for_path(db, path)
         if preview is not None:

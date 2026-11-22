@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, Navigate, useParams, useSearchParams } from "react-router";
 import { api, ApiError, unwrap } from "../../api/client";
 import type { BlogPublicAuthorOut, BlogPublicPageOut, BlogPublicSummaryOut, BlogTagOut } from "../../api/types";
 import { authorPath } from "../../components/AuthorCard";
@@ -144,7 +144,8 @@ function FeedLink({ tag }: { tag?: string }) {
 /**
  * The game developer blog (#1158), for anyone, signed in or not: articles newest first
  * a page at a time, the featured ones across the top of the first page, and its tags to
- * filter by. At /blog/tags/<tag>, that tag's articles.
+ * filter by. At /blog/tags/<tag>, that tag's articles; at a merged tag's old address, the
+ * API answers with the tag it was merged into, and the page moves to that tag's (#1184).
  */
 export function BlogPage() {
   const { tag } = useParams();
@@ -165,7 +166,10 @@ export function BlogPage() {
     window.scrollTo({ top: 0 });
   };
   const tagName = found.data?.tag?.name;
+  // Not while the last tag's page stands in for this one's.
+  const movedTo = tag && !found.isPlaceholderData && found.data?.tag && found.data.tag.slug !== tag ? found.data.tag.slug : null;
 
+  if (movedTo) return <Navigate replace to={{ pathname: `/blog/tags/${encodeURIComponent(movedTo)}`, search: params.toString() }} />;
   if (found.error) {
     const missing = found.error instanceof ApiError && found.error.status === 404;
     return (

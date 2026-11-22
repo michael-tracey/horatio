@@ -84,6 +84,20 @@ class BlogTag(Record):
     retired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class BlogTagAlias(Record):
+    """An address a tag had before it was merged into another (#1184): its page and
+    feed there lead to the tag it points to. A merge moves the merged tag's own
+    aliases along with it, so a chain of merges leads to the last tag; and no tag
+    takes an alias's slug (horatio.blog_tags)."""
+
+    __tablename__ = "blog_tag_aliases"
+
+    slug: Mapped[str] = mapped_column(unique=True)
+    tag_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("blog_tags.id", ondelete="CASCADE"), index=True
+    )
+
+
 class BlogPostTag(Record):
     """An article tagged with one of the blog's tags."""
 

@@ -1455,7 +1455,8 @@ export interface paths {
         /**
          * Tag Articles
          * @description A tag's published articles, newest first, a page at a time. A retired tag's page
-         *     stays; one merged into another has gone, and with it its address (#1161).
+         *     stays (#1161). At the address of one merged into another, the other's page: its
+         *     slug, as `tag` gives it, is where the app moves to (#1184).
          */
         get: operations["tag_articles_api_blog_public_tags__slug__get"];
         put?: never;

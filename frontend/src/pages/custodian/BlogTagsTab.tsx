@@ -156,7 +156,7 @@ function TagForm({ tag, onDone }: { tag: BlogTagKeptOut | null; onDone: (found: 
   );
 }
 
-/** Merge a tag into another that isn't retired: every article it is on gets the other. */
+/** Merge a tag into another that isn't retired: every article it is on gets the other, and its address leads there (#1184). */
 function MergeForm({ tag, tags, onDone }: { tag: BlogTagKeptOut; tags: BlogTagKeptOut[]; onDone: (found: BlogTagKeptOut[], into: string) => void }) {
   const others = tags.filter((t) => t.id !== tag.id && !t.retired);
   const [into, setInto] = useState(others[0]?.id ?? "");
@@ -174,7 +174,7 @@ function MergeForm({ tag, tags, onDone }: { tag: BlogTagKeptOut; tags: BlogTagKe
         {tag.articles === 0
           ? `No article has ${tag.name}.`
           : `The ${tag.articles === 1 ? "article" : `${tag.articles} articles`} tagged ${tag.name} ${tag.articles === 1 ? "is" : "are"} tagged with the tag you choose instead.`}{" "}
-        Then {tag.name} is removed, and its page on the blog with it.
+        Then {tag.name} is removed, and its page and feed on the blog lead to that tag from now on.
       </p>
       <Field label="Merge it into">
         <Select value={into} onChange={(e) => setInto(e.target.value)}>

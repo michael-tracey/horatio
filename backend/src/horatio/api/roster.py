@@ -41,6 +41,7 @@ from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules.model import RuleSetData
 from horatio.rules.npc_kinds import kind_name
 from horatio.rules.store import read_troupe_rules
+from horatio.titles import and_list
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["roster"])
 
@@ -527,7 +528,7 @@ MESSAGES: dict[str, str] = {
     "blog.tag_retired": "{actor} retired the blog tag {name}. It stays on the articles that"
     " have it.",
     "blog.tag_restored": "{actor} brought back the blog tag {name}.",
-    "blog.tag_merged": "{actor} merged the blog tag {name} into {into}, on {articles}.",
+    "blog.tag_merged": "{actor} merged the blog tag {name} into {into}, on {articles}.{leads_on}",
     "blog.tags_reordered": "{actor} put the blog's tags in a new order: {names}.",
     "agency.created": "{actor} made the news agency {name}.",
     "agency.changed": "{actor} changed the news agency {name}.",
@@ -1276,6 +1277,15 @@ def message(
         "too many wrong codes at the account"
         if data.get("limit") == "wrong_codes_at_account"
         else "too many wrong codes from where they were"
+    )
+    # A merged blog tag's addresses, which lead on to the tag it was merged into (#1184).
+    aliases = data.get("aliases")
+    values["leads_on"] = (
+        f" {'Its address' if len(aliases) == 1 else 'Its addresses'}"
+        f" {and_list([f'/blog/tags/{a}' for a in aliases])}"
+        f" {'leads' if len(aliases) == 1 else 'lead'} there now."
+        if isinstance(aliases, list) and aliases
+        else ""
     )
     # Given at a Play View game: " at game 3".
     values["at_game"] = f" at game {data['game']}" if data.get("game") else ""

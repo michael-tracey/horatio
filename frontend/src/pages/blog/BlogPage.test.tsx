@@ -111,6 +111,22 @@ describe("the blog (#1158)", () => {
     await waitFor(() => expect(document.title).toBe("Storytelling · Blog · Horatio"));
   });
 
+  it("moves on from a merged tag's old address to the tag it was merged into (#1184)", async () => {
+    // The API answers the old address with the other tag's page.
+    const get = answering({
+      "/api/blog/public/tags/{slug}": { ...page({ articles: [ELYSIUM], total: 1 }), tag: { id: "t2", name: "Storytelling", slug: "storytelling" } },
+      "/api/blog/public/tags": TAGS,
+    });
+    show("/blog/tags/stories?page=2");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Storytelling" })).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole("link", { name: "Follow this tag by feed" }).getAttribute("href")).toBe("/blog/tags/storytelling/feed.xml"));
+    expect(get).toHaveBeenCalledWith("/api/blog/public/tags/{slug}", { params: { path: { slug: "stories" }, query: { page: 2 } } });
+    expect(get).toHaveBeenCalledWith("/api/blog/public/tags/{slug}", { params: { path: { slug: "storytelling" }, query: { page: 2 } } });
+    const tags = await screen.findByRole("navigation", { name: "Tags" });
+    await waitFor(() => expect(within(tags).getByRole("link", { name: "Storytelling" }).getAttribute("aria-current")).toBe("page"));
+  });
+
   it("says when a tag is unknown", async () => {
     answering({ "/api/blog/public/tags": TAGS });
     show("/blog/tags/nope");
