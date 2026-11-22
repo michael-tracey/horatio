@@ -287,7 +287,7 @@ test("a storyteller puts a picture in an article's words, previews it, and once 
   await expect(read.locator("figcaption")).toHaveText("The hall at midnight");
 });
 
-test("the custodian adds, renames, retires and merges a tag in Custodian › Blog › Tags, each showing its articles (#1161)", async ({ browser }) => {
+test("the custodian adds, renames, retires and merges a tag in Custodian › Blog › Tags, each showing its articles, and its old address leads to the other (#1161, #1184)", async ({ browser }) => {
   const custodian = await person(browser, "blogtags-cust");
   makeCustodian(custodian.email);
   const c = custodian.page;
@@ -326,6 +326,7 @@ test("the custodian adds, renames, retires and merges a tag in Custodian › Blo
   await c.screenshot(shots("blog-tags"));
 
   // Merged into another, it goes, and the article has the other.
+  const oldSlug = ((await (await c.request.get("/api/blog/tags/kept")).json()) as { name: string; slug: string }[]).find((t) => t.name === renamed)!.slug;
   await row.getByRole("button", { name: `Actions for ${renamed}` }).click();
   await c.getByRole("menuitem", { name: "Merge into…" }).click();
   const merging = c.getByRole("dialog", { name: `Merge ${renamed}` });
@@ -334,6 +335,14 @@ test("the custodian adds, renames, retires and merges a tag in Custodian › Blo
   await expect(tags.getByRole("row", { name: renamed })).toHaveCount(0);
   const merged = await (await c.request.get(`/api/blog/articles/${article.id}`)).json();
   expect(merged.tags.map((t: { name: string }) => t.name)).toEqual(["Community"]);
+
+  // Its old address leads to the tag it was merged into, and so does its feed (#1184).
+  await c.goto(`/blog/tags/${oldSlug}`);
+  await expect(c).toHaveURL(/\/blog\/tags\/community$/);
+  await expect(c.getByRole("heading", { name: "Community", level: 1 })).toBeVisible();
+  const feed = await c.request.get(`/blog/tags/${oldSlug}/feed.xml`, { maxRedirects: 0 });
+  expect(feed.status()).toBe(301);
+  expect(feed.headers()["location"]).toBe("/blog/tags/community/feed.xml");
 });
 
 test("signed out, someone opens the blog, filters it by a tag, reads an article, its author's page and its troupe's, but never a draft (#1158, #1160)", async ({ browser }) => {

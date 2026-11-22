@@ -283,10 +283,19 @@ def test_a_tags_and_an_authors_page_preview_while_they_are_shown(
     assert meta(page, "og:type") == ["profile"]
 
     default = pages.get("/characters").text
-    # A tag merged into another has gone, and so has its page.
+    # A tag merged into another has moved for good to the other's page, whose preview
+    # is there (#1184), keeping the page asked for.
     path = f"/blog/tags/{tags['Storytelling']}/merge"
     ok(troupe.custodian.client.post(path, json={"into_id": tags["Downtimes"]}))
-    assert pages.get("/blog/tags/storytelling").text == default
+    for old in ("/blog/tags/storytelling", "/blog/tags/storytelling/"):
+        moved = pages.get(old, follow_redirects=False)
+        assert moved.status_code == 301
+        assert moved.headers["location"] == "/blog/tags/downtimes"
+    paged = pages.get("/blog/tags/storytelling?page=2", follow_redirects=False)
+    assert paged.headers["location"] == "/blog/tags/downtimes?page=2"
+    page = pages.get("/blog/tags/storytelling").text
+    assert meta(page, "og:title") == ["Downtimes · Horatio&#x27;s blog"]
+    assert meta(page, "og:url") == [f"{SITE}/blog/tags/downtimes"]
     assert pages.get("/blog/tags/no-such-tag").text == default
     # An author merged into another account isn't shown.
     other = sign_up(client_for, "elsewhere")
@@ -407,12 +416,21 @@ def test_a_tag_has_a_feed_of_its_own(troupe: Troupe, top: TestClient) -> None:
     assert feed.findtext(f"{ATOM}id") == f"{SITE}/blog/tags/storytelling"
     assert [e.findtext(f"{ATOM}title") for e in entries(response)] == ["Tagged"]
     assert top.get("/blog/tags/no-such-tag/feed.xml").status_code == 404
-    # Merged into another, it has gone.
+    # Merged into another, its feed has moved for good to the other's (#1184).
     path = f"/blog/tags/{tags['Storytelling']}/merge"
     ok(troupe.custodian.client.post(path, json={"into_id": tags["Downtimes"]}))
-    assert top.get("/blog/tags/storytelling/feed.xml").status_code == 404
-    downtimes = entries(top.get("/blog/tags/downtimes/feed.xml"))
+    moved = top.get("/blog/tags/storytelling/feed.xml", follow_redirects=False)
+    assert moved.status_code == 301
+    assert moved.headers["location"] == "/blog/tags/downtimes/feed.xml"
+    assert top.head("/blog/tags/storytelling/feed.xml", follow_redirects=False).status_code == 301
+    downtimes = entries(top.get("/blog/tags/storytelling/feed.xml"))
     assert [e.findtext(f"{ATOM}title") for e in downtimes] == ["Tagged"]
+    # Merged on again, the old feed leads to the last tag.
+    path = f"/blog/tags/{tags['Downtimes']}/merge"
+    ok(troupe.custodian.client.post(path, json={"into_id": tags["Community"]}))
+    for old in ("storytelling", "downtimes"):
+        moved = top.get(f"/blog/tags/{old}/feed.xml", follow_redirects=False)
+        assert moved.headers["location"] == "/blog/tags/community/feed.xml"
 
 
 def test_an_empty_feed_is_still_a_feed(top: TestClient) -> None:

@@ -8,7 +8,8 @@ Public pages have their own: the landing page (/, #1164), a troupe's public prof
 (/blog), an article (/blog/<slug>), a tag's page (/blog/tags/<tag>) and an author's
 page (/blog/authors/<handle>). Only what anyone may read goes in: an article that is
 not published, a tag that has gone, or an author whose page is not shown, keeps the
-site's own preview, which says nothing about it.
+site's own preview, which says nothing about it. A merged tag's old address moves on
+to the tag it was merged into (`moved`), whose preview is there.
 """
 
 import html
@@ -16,11 +17,12 @@ import re
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from urllib.parse import quote
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import blog_pictures, pictures
+from horatio import blog_pictures, blog_tags, pictures
 from horatio.api import blog_authors, troupe_profiles
 from horatio.api.blog_public import authors_of, published
 from horatio.blog import tags_of
@@ -125,6 +127,16 @@ def with_preview(index: str, preview: LinkPreview, public_url: str) -> str:
     )
 
 
+def moved(db: Session, path: str) -> str | None:
+    """Where the page at `path` (with no leading slash) has moved to for good, if it
+    has: a merged tag's old address leads to the tag it was merged into (#1184)."""
+    if found := TAG.fullmatch(path):
+        into = blog_tags.moved_to(db, found.group(1))
+        if into is not None:
+            return f"/blog/tags/{quote(into.slug)}"
+    return None
+
+
 def for_path(db: Session, path: str) -> LinkPreview | None:
     """The link preview of the page at `path` (with no leading slash), or None for the
     site's own."""
@@ -201,7 +213,8 @@ def blog() -> LinkPreview:
 
 
 def tag(db: Session, slug: str) -> LinkPreview | None:
-    """A tag's page; none for one that has gone (merged into another)."""
+    """A tag's page. At a merged tag's old address, the app moves on to the tag it
+    was merged into before any preview (`moved`)."""
     found = db.scalar(select(BlogTag).where(BlogTag.slug == slug))
     if found is None:
         return None

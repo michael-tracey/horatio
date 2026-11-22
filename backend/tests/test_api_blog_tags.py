@@ -1,14 +1,16 @@
 """The blog's tags as the custodian keeps them (issue #1161): adding, renaming (and what
-it does to a tag's slug), merging, retiring and bringing back, reordering, the counts,
-who may, and the audit log."""
+it does to a tag's slug), merging (and its old address leading on, #1184), retiring and
+bringing back, reordering, the counts, who may, and the audit log."""
 
 from collections.abc import Callable
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from horatio.models import BlogTag, BlogTagAlias
 from tests.api_helpers import Troupe
 
 
@@ -193,6 +195,71 @@ def test_merging_moves_every_article_to_the_other_tag_and_removes_it(troupe: Tro
     assert gone.status_code == 404
 
 
+def aliases(session: Session) -> dict[str, str]:
+    """Each merged tag's old slug, and the name of the tag it leads to."""
+    return {
+        alias.slug: session.get_one(BlogTag, alias.tag_id).name
+        for alias in session.scalars(select(BlogTagAlias))
+    }
+
+
+def test_a_merged_tags_address_leads_to_the_tag_it_was_merged_into(
+    troupe: Troupe, session: Session
+) -> None:
+    c = troupe.custodian.client
+    tags = kept(troupe)
+    article(troupe, ["Tips and tricks"], publish=True, title="Ten tips")
+
+    ok(
+        c.post(
+            f"/blog/tags/{tags['Tips and tricks']['id']}/merge",
+            json={"into_id": tags["How to play"]["id"]},
+        )
+    )
+    assert aliases(session) == {"tips-and-tricks": "How to play"}
+    # Merged on again, its own old address goes with it, so the chain leads to the last.
+    ok(
+        c.post(
+            f"/blog/tags/{tags['How to play']['id']}/merge",
+            json={"into_id": tags["Community"]["id"]},
+        )
+    )
+    assert aliases(session) == {"tips-and-tricks": "Community", "how-to-play": "Community"}
+    for old in ("tips-and-tricks", "how-to-play"):
+        found = ok(c.get(f"/blog/public/tags/{old}"))
+        assert found["tag"]["slug"] == "community"
+        assert [a["title"] for a in found["articles"]] == ["Ten tips"]
+
+    # Logged with the merge: both addresses lead to Community now.
+    log = ok(c.get("/audit", params={"group": "blog"}))["entries"]
+    assert log[0]["message"] == (
+        "custodian merged the blog tag How to play into Community, on 1 article."
+        " Its addresses /blog/tags/how-to-play and /blog/tags/tips-and-tricks lead there now."
+    )
+
+
+def test_no_tag_takes_a_merged_tags_old_address(troupe: Troupe) -> None:
+    c = troupe.custodian.client
+    tags = kept(troupe)
+    ok(
+        c.post(
+            f"/blog/tags/{tags['Tips and tricks']['id']}/merge",
+            json={"into_id": tags["How to play"]["id"]},
+        )
+    )
+
+    # A new tag of the same name has a slug of its own: the old address still leads on.
+    added = ok(c.post("/blog/tags", json={"name": "Tips and tricks"}))[-1]
+    assert added["slug"] == "tips-and-tricks-2"
+    assert ok(c.get("/blog/public/tags/tips-and-tricks"))["tag"]["name"] == "How to play"
+    # Nor does one renamed to it, even the tag it leads to.
+    ok(c.put(f"/blog/tags/{tags['Community']['id']}", json={"name": "Tips and tricks!"}))
+    assert kept(troupe)["Tips and tricks!"]["slug"] == "tips-and-tricks-3"
+    ok(c.put(f"/blog/tags/{tags['How to play']['id']}", json={"name": "Tips-and-tricks"}))
+    assert kept(troupe)["Tips-and-tricks"]["slug"] == "tips-and-tricks-4"
+    assert ok(c.get("/blog/public/tags/tips-and-tricks"))["tag"]["name"] == "Tips-and-tricks"
+
+
 def test_a_tag_isnt_merged_into_itself_or_a_retired_one(troupe: Troupe) -> None:
     tags = kept(troupe)
     community = tags["Community"]["id"]
@@ -250,7 +317,8 @@ def test_every_change_is_in_the_audit_log(troupe: Troupe) -> None:
         "custodian renamed the blog tag Elysium to Elysium etiquette.",
         "custodian retired the blog tag Elysium etiquette. It stays on the articles that have it.",
         "custodian brought back the blog tag Elysium etiquette.",
-        "custodian merged the blog tag Community into Elysium etiquette, on 1 article.",
+        "custodian merged the blog tag Community into Elysium etiquette, on 1 article."
+        " Its address /blog/tags/community leads there now.",
     ]
     assert messages[6].startswith(
         "custodian put the blog's tags in a new order: Elysium etiquette, How to play,"

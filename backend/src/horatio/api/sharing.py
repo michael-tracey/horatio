@@ -23,6 +23,7 @@ from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
 from fastapi import APIRouter, Request, Response, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
@@ -202,10 +203,12 @@ def blog_feed(request: Request, db: DbSession) -> Response:
 
 @router.api_route("/blog/tags/{slug}/feed.xml", methods=["GET", "HEAD"])
 def tag_feed(slug: str, request: Request, db: DbSession) -> Response:
-    """A tag's latest published articles, newest first. A retired tag's stays; one
-    merged into another has gone, as its page has (#1161)."""
+    """A tag's latest published articles, newest first. A retired tag's stays (#1161);
+    one merged into another has moved for good to the other's (#1184)."""
     found = tag_by_slug(db, slug)
     page = f"/blog/tags/{quote(found.slug)}"
+    if found.slug != slug:
+        return RedirectResponse(f"{page}/feed.xml", status.HTTP_301_MOVED_PERMANENTLY)
     title = f"{found.name} · {BLOG_TITLE}"
     articles = latest(db, tagged(published(), found))
     return feed(db, request, title, page, f"{page}/feed.xml", articles)

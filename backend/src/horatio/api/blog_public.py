@@ -21,7 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
-from horatio import blog, blog_pictures, pictures, suspensions
+from horatio import blog, blog_pictures, blog_tags, pictures, suspensions
 from horatio.api import blog_authors
 from horatio.api.blog import (
     BlogBodyPictureOut,
@@ -215,7 +215,9 @@ def page_of(db: Session, query: Select[BlogPost], page: int) -> BlogPublicPageOu
 
 
 def tag_by_slug(db: Session, slug: str) -> BlogTag:
-    tag = db.scalar(select(BlogTag).where(BlogTag.slug == slug))
+    """The tag at `slug`; at a merged tag's old address, the tag it was merged into
+    (#1184), whose own slug then differs from `slug`."""
+    tag = db.scalar(select(BlogTag).where(BlogTag.slug == slug)) or blog_tags.moved_to(db, slug)
     if tag is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such tag.")
     return tag
@@ -286,7 +288,8 @@ def list_tags(db: DbSession) -> list[BlogPublicTagCountOut]:
 @router.get("/tags/{slug}")
 def tag_articles(slug: str, db: DbSession, page: int = Page) -> BlogPublicTagPageOut:
     """A tag's published articles, newest first, a page at a time. A retired tag's page
-    stays; one merged into another has gone, and with it its address (#1161)."""
+    stays (#1161). At the address of one merged into another, the other's page: its
+    slug, as `tag` gives it, is where the app moves to (#1184)."""
     tag = tag_by_slug(db, slug)
     found = page_of(db, tagged(published(), tag), page)
     return BlogPublicTagPageOut(

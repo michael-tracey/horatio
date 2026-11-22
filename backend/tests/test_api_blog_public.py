@@ -297,11 +297,17 @@ def test_retired_renamed_and_merged_tags_on_the_blog(troupe: Troupe, anyone: Tes
     assert renamed["tag"]["name"] == "Between games"
     assert titles(renamed) == ["On downtimes"]
 
-    # Merged into another, its page goes; its articles are on the other's.
+    # Merged into another, its articles are on the other's, and its address gives the
+    # other's page, for the app to move to (#1184).
     path = f"/blog/tags/{kept['Downtimes']}/merge"
     ok(c.post(path, json={"into_id": kept["Community"]}))
-    assert anyone.get("/blog/public/tags/downtimes").status_code == 404
     assert titles(ok(anyone.get("/blog/public/tags/community"))) == ["On downtimes"]
+    moved = ok(anyone.get("/blog/public/tags/downtimes"))
+    assert moved["tag"] == {"id": kept["Community"], "name": "Community", "slug": "community"}
+    assert titles(moved) == ["On downtimes"]
+    assert titles(ok(anyone.get("/blog/public/articles", params={"tag": "downtimes"}))) == [
+        "On downtimes"
+    ]
     assert "downtimes" not in [t["slug"] for t in ok(anyone.get("/blog/public/tags"))]
 
 

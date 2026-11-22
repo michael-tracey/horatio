@@ -323,11 +323,13 @@ All the addresses in them start with the site's address, HORATIO_PUBLIC_URL, so 
 - **Rename…** it. No two tags share a name, whatever the case. Each tag has an address on the blog, made from its name: it follows a rename until a published article has the tag, then stays as it is, so links to the tag keep working. The rename box says which.
 - **Move up** or **Move down**, to change the order.
 - **Retire** it. A retired tag stays on the articles that have it, and still shows on them, but isn't offered for any more. **Offer it again** brings it back.
-- **Merge into…** another tag, for two that mean the same. Every article with it gets the other tag instead, and the tag is removed, with its address on the blog. You can't merge into a retired tag.
+- **Merge into…** another tag, for two that mean the same. Every article with it gets the other tag instead, and the tag is removed. You can't merge into a retired tag.
+
+After a merge, the removed tag's address on the blog leads to the tag it was merged into, so links to it keep working: its page, such as /blog/tags/storytelling, opens the other tag's page, its feed moves to the other tag's feed, and a link to it previews as the other tag. If you later merge that tag too, the old addresses go with it to the next one. No tag can take an address that leads on like this: a new tag, or one renamed, with the same name gets a number after it, such as storytelling-2.
 
 Choose **Add a tag** to add one at the end of the list.
 
-Each step goes in the audit log, under **Blog**.
+Each step goes in the audit log, under **Blog**. A merge's entry says which old addresses now lead to the other tag.
 
 ## Backups
 

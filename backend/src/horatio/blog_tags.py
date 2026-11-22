@@ -7,7 +7,9 @@ pages (#1158), is made from the name and follows it on a rename until an article
 has been published carries the tag; after that it stays, so links to the tag page keep
 working. A retired tag stays on the articles that have it, and shows on them, but
 isn't chosen for any more. Merging one tag into another moves it off every article
-onto the other, then removes it, and with it its address.
+onto the other, then removes it; its address is kept as an alias of the other
+(#1184), so its page and feed lead there, as do the aliases it had itself, so a
+chain of merges leads to the last tag. No tag takes an alias's slug.
 
 Every change goes in the audit log, as the blog's other steps do (blog.*).
 """
@@ -16,12 +18,12 @@ import uuid
 from dataclasses import dataclass
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.blog import now, slugify
-from horatio.models import BlogPost, BlogPostTag, BlogTag, User
+from horatio.models import BlogPost, BlogPostTag, BlogTag, BlogTagAlias, User
 
 
 @dataclass(frozen=True)
@@ -69,13 +71,17 @@ def slug_fixed(db: Session, tag: BlogTag) -> bool:
 
 
 def free_slug(db: Session, wanted: str, keeping: uuid.UUID | None = None) -> str:
-    """`wanted`, or with -2, -3... after it if another tag has it."""
+    """`wanted`, or with -2, -3... after it if another tag has it, or it is an alias:
+    a merged tag's old address, which leads on to another tag for good."""
     query = select(BlogTag.slug).where(
         or_(BlogTag.slug == wanted, BlogTag.slug.startswith(f"{wanted}-"))
     )
     if keeping is not None:
         query = query.where(BlogTag.id != keeping)
-    taken = set(db.scalars(query))
+    aliases = select(BlogTagAlias.slug).where(
+        or_(BlogTagAlias.slug == wanted, BlogTagAlias.slug.startswith(f"{wanted}-"))
+    )
+    taken = set(db.scalars(query)) | set(db.scalars(aliases))
     n = 1
     slug = wanted
     while slug in taken:
@@ -140,9 +146,19 @@ def retire(db: Session, user: User, tag: BlogTag, retired: bool) -> None:
     audit.record(db, user, action, tag_id=tag.id, name=tag.name)
 
 
+def moved_to(db: Session, slug: str) -> BlogTag | None:
+    """The tag `slug` leads to, if it is a merged tag's old address."""
+    return db.scalar(
+        select(BlogTag)
+        .join(BlogTagAlias, BlogTagAlias.tag_id == BlogTag.id)
+        .where(BlogTagAlias.slug == slug)
+    )
+
+
 def merge(db: Session, user: User, tag: BlogTag, into: BlogTag) -> int:
-    """Move `tag` off every article onto `into`, then remove it. Returns how many
-    articles had it."""
+    """Move `tag` off every article onto `into`, then remove it. Its address, and
+    those that led to it, lead to `into` from now on. Returns how many articles
+    had it."""
     if tag.id == into.id:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "Choose another tag to merge it into."
@@ -156,6 +172,10 @@ def merge(db: Session, user: User, tag: BlogTag, into: BlogTag) -> int:
     having = set(db.scalars(select(BlogPostTag.post_id).where(BlogPostTag.tag_id == into.id)))
     db.add_all(BlogPostTag(post_id=p, tag_id=into.id) for p in sorted(carrying - having))
     db.execute(delete(BlogPostTag).where(BlogPostTag.tag_id == tag.id))
+    # Its address, and the old ones that led to it, lead to `into` now.
+    moved = sorted(db.scalars(select(BlogTagAlias.slug).where(BlogTagAlias.tag_id == tag.id)))
+    db.execute(update(BlogTagAlias).where(BlogTagAlias.tag_id == tag.id).values(tag_id=into.id))
+    db.add(BlogTagAlias(slug=tag.slug, tag_id=into.id))
     audit.record(
         db,
         user,
@@ -165,7 +185,9 @@ def merge(db: Session, user: User, tag: BlogTag, into: BlogTag) -> int:
         slug=tag.slug,
         into=into.name,
         into_id=into.id,
+        into_slug=into.slug,
         articles=articles_text(len(carrying)),
+        aliases=[tag.slug, *moved],
     )
     db.delete(tag)
     db.flush()
