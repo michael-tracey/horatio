@@ -5716,12 +5716,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "public": {
+            "title": "Public",
+            "type": "boolean"
           }
         },
         "required": [
           "id",
           "name",
-          "archived"
+          "archived",
+          "public"
         ],
         "title": "BlogTroupeOut",
         "type": "object"
@@ -6182,6 +6187,45 @@
       },
       "Body_upload_picture_api_blog_articles__article_id__picture_post": {
         "properties": {
+          "crop_size": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Size"
+          },
+          "crop_x": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop X"
+          },
+          "crop_y": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Y"
+          },
           "file": {
             "contentMediaType": "application/octet-stream",
             "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
@@ -66946,7 +66990,7 @@
         ]
       },
       "post": {
-        "description": "Its hero picture, as a post's is kept (1200 and 600 px wide). On a published\narticle it is part of the changes, so the old one stays up until they are.",
+        "description": "Its hero picture, cut to the 2:1 frame its author places (its left and top as\nfractions of the picture's width and height, and its width as a fraction of the\npicture's), or the widest in the middle; kept as a post's is (1200 and 600 px\nwide). On a published article it is part of the changes, so the old one stays up\nuntil they are.",
         "operationId": "upload_picture_api_blog_articles__article_id__picture_post",
         "parameters": [
           {

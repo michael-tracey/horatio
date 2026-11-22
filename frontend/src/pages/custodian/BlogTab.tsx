@@ -8,6 +8,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Textarea 
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { toggled, working } from "../blog/blog";
+import { TagChips } from "../blog/TagChips";
 
 export function useBlogQueue(enabled = true) {
   return useQuery({ queryKey: ["blog-queue"], queryFn: () => unwrap(api.GET("/api/blog/queue")), enabled });
@@ -178,24 +179,7 @@ function Tags({ article: a, tags }: { article: BlogArticleOut; tags: BlogTagOut[
   if (tags.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
-      <ul aria-label="Tags" className="flex flex-wrap gap-2">
-        {tags.map((t) => {
-          const chosen = on.includes(t.id);
-          return (
-            <li key={t.id}>
-              <button
-                type="button"
-                aria-pressed={chosen}
-                disabled={save.isPending}
-                onClick={() => save.mutate(toggled(on, t.id))}
-                className={`min-h-8 rounded-full border px-3 text-sm ${chosen ? "border-gold bg-gold/10 text-gold" : "border-ash text-parchment hover:border-mist"}`}
-              >
-                {t.name}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <TagChips tags={tags} chosen={on} disabled={save.isPending} onToggle={(id) => save.mutate(toggled(on, id))} />
       <ErrorText error={save.error} />
     </div>
   );

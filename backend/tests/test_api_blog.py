@@ -14,7 +14,7 @@ from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import blog
+from horatio import blog, pictures
 from horatio.config import get_settings
 from horatio.models import AuditEvent
 from tests.api_helpers import Person, Troupe, sign_up
@@ -109,6 +109,20 @@ def test_a_narrator_writes_and_submits(troupe: Troupe) -> None:
     assert queue(troupe)["waiting"] == ["Running your first Elysium"]
 
 
+def test_the_writer_hears_whether_each_troupe_is_public(troupe: Troupe) -> None:
+    assert ok(troupe.narrator.client.get("/blog/writer"))["troupes"][0]["public"] is False
+    ok(troupe.storyteller.client.put(f"/troupes/{troupe.id}/profile/public", json={"public": True}))
+
+    shown = ok(troupe.narrator.client.get("/blog/writer"))["troupes"][0]
+    assert shown == {
+        "id": troupe.id,
+        "name": "Lords of the Night",
+        "archived": False,
+        "public": True,
+    }
+    assert draft(troupe.narrator, troupe.id)["troupe"]["public"] is True
+
+
 def test_players_and_strangers_dont_write(troupe: Troupe) -> None:
     for person in (troupe.player, troupe.stranger):
         writer = ok(person.client.get("/blog/writer"))
@@ -196,7 +210,12 @@ def test_submitting_checks_the_troupe_again_and_publishing_keeps_it(troupe: Trou
     )
     ok(archive_other)
     again = ok(troupe.narrator.client.get(f"/blog/articles/{article['id']}"))
-    assert again["troupe"] == {"id": other["id"], "name": "Court of Ash", "archived": True}
+    assert again["troupe"] == {
+        "id": other["id"],
+        "name": "Court of Ash",
+        "archived": True,
+        "public": False,
+    }
     assert done["status"] == again["status"] == "published"
 
 
@@ -564,8 +583,9 @@ def test_a_hero_picture_is_kept_apart_from_any_troupe_for_its_author_and_the_cus
     assert (kept / "blog" / picture.rsplit("/", 1)[1] / "1200.webp").is_file()
     shown = fetch(troupe.storyteller, picture)
     assert shown.status_code == 200
+    # With no crop, the widest 2:1 frame in the middle.
     with Image.open(io.BytesIO(shown.content)) as image:
-        assert image.size == (1200, 675)
+        assert image.size == (1200, 600)
     assert fetch(troupe.custodian, picture, "600.webp").status_code == 200
     assert fetch(troupe.lead, picture).status_code == 404
     assert fetch(troupe.storyteller, picture, "full.webp").status_code == 404
@@ -574,6 +594,38 @@ def test_a_hero_picture_is_kept_apart_from_any_troupe_for_its_author_and_the_cus
     removed = ok(troupe.storyteller.client.delete(f"/blog/articles/{article['id']}/picture"))
     assert removed["picture"] is None
     assert not (kept / "blog" / picture.rsplit("/", 1)[1]).exists()
+
+
+def test_a_hero_picture_is_cut_to_the_frame_its_author_places(troupe: Troupe, kept: Path) -> None:
+    article = draft(troupe.storyteller, troupe.id)
+    # Left half of a 1600 x 900 picture that is red on the left and blue on the right.
+    two = Image.new("RGB", (1600, 900), (200, 0, 0))
+    two.paste((0, 0, 200), (800, 0, 1600, 900))
+    out = io.BytesIO()
+    two.save(out, "PNG")
+
+    added = ok(
+        troupe.storyteller.client.post(
+            f"/blog/articles/{article['id']}/picture",
+            files={"file": ("p.png", out.getvalue(), "image/png")},
+            data={"crop_x": "0", "crop_y": "0.5", "crop_size": "0.5"},
+        )
+    )
+
+    shown = fetch(troupe.storyteller, added["picture"], "600.webp")
+    with Image.open(io.BytesIO(shown.content)) as image:
+        # 800 x 400 from the left edge, halfway down, made 600 x 300: all red.
+        assert image.size == (600, 300)
+        red, _, blue = image.convert("RGB").getpixel((590, 150))  # type: ignore[misc]
+        assert red > 150 and blue < 50
+
+
+def test_the_hero_frame_stays_inside_the_picture() -> None:
+    crop = pictures.Crop(0.9, 0.9, 2.0)
+    assert pictures.hero_box(1600, 900, None) == (0, 50, 1600, 850)
+    assert pictures.hero_box(1600, 900, crop) == (0, 100, 1600, 900)
+    assert pictures.hero_box(600, 1000, None) == (0, 350, 600, 650)
+    assert pictures.hero_box(1, 1, None) == (0, 0, 1, 1)
 
 
 def test_a_published_articles_new_picture_waits_with_its_changes(

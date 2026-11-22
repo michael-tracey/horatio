@@ -43,7 +43,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
     <div className="flex flex-col gap-6">
       <div className="grid gap-6 md:grid-cols-2 empty:hidden">
         {change && <GettingReadyCard troupeId={troupe.id} />}
-        {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
+        {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} onStaff={!!troupe.my_role} />}
         {/* For its members: the same people as see its Who's Who. */}
         {troupe.whos_who && !troupe.archived && <PinnedBanners troupeId={troupe.id} />}
         {troupe.whos_who && !troupe.archived && <LatestNews troupeId={troupe.id} />}
@@ -105,11 +105,16 @@ function Profile({ troupe, leading }: { troupe: TroupeOut; leading: boolean }) {
   );
 }
 
-/** What waits on this staff member, one line per kind of work, each a link straight to it. */
-function WaitingCard({ troupeId }: { troupeId: string }) {
+/** What waits on this staff member, one line per kind of work, each a link straight to it; and, for its staff, a way to write for the blog naming the troupe (#1157). */
+function WaitingCard({ troupeId, onStaff }: { troupeId: string; onStaff: boolean }) {
   const waiting = useWaiting(troupeId);
+  const write = onStaff && (
+    <Link to={`/blog/write/new?troupe=${troupeId}`} className="text-sm text-mist underline hover:text-parchment">
+      Write for the blog
+    </Link>
+  );
   return (
-    <Card title="Waiting on you" className="md:col-span-2">
+    <Card title="Waiting on you" className="md:col-span-2" actions={write}>
       {waiting.isPending ? (
         <Loading />
       ) : waiting.error ? (
