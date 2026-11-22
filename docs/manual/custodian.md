@@ -283,7 +283,7 @@ How staff write an article, and what the blog asks of them, is in [Writing for t
 
 Each article or change waiting is on your bell too, until you publish it or return it, or its author withdraws it. Choosing it opens **Custodian › Blog** with that article open to read. To have it emailed or pushed to you as well, tick it under **Custodian › Blog articles waiting** on your Account › Notifications.
 
-Each article shows its title, author, the troupe it names (an author on staff in several chooses one, or none) and its summary. Choose **Read it** to read the whole article, with its picture.
+Each article shows its title, author, the troupe it names (an author on staff in several chooses one, or none) and its summary. Choose **Read it** to read the whole article, with its picture, and the troupe's card when the troupe is public and not archived (see [What readers see of your troupe](blog.md#what-readers-see-of-your-troupe)).
 
 ### Publishing or returning an article
 

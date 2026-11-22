@@ -40,7 +40,7 @@ Save the article as a draft first, then choose **Add a picture** under **Picture
 
 1. Open **Write for the blog** and choose **Write an article**.
 2. Give it a **Title** and a **Summary**: a line or two, shown under the title and wherever the article is listed.
-3. Under **Troupe**, choose the troupe you're on the staff of that the article names, or **None**. If you're on the staff of several, choose one. Readers can follow its name to the troupe's public profile. A troupe whose profile isn't public, or that is archived, shows its name only, with no link.
+3. Under **Troupe**, choose the troupe you're on the staff of that the article names, or **None**. If you're on the staff of several, choose one. See [What readers see of your troupe](#what-readers-see-of-your-troupe).
 4. Write the article in the editor, with headings, lists, quotes and links from its buttons.
 5. Under **Tags**, choose what it's about from the custodian's list, such as **Storytelling** or **Safety and consent**. The custodian may change them before it goes up.
 6. Choose **Save draft**. Only you and the custodian can see a draft.
@@ -50,6 +50,12 @@ At the top, a line says where the article stands and what happens next. Each art
 ### Preview
 
 Choose **Preview** at the top of the article to see it as the blog will show it: its picture, tags, title, summary, your name and troupe, the words, and under them the card about you from **Account › Blog author**. If you haven't set that up yet, **Set up your author profile** takes you there; the list of your articles has the same link. A banner says it is a preview: nobody else sees it until the custodian publishes it. Choose **Write** to carry on.
+
+### What readers see of your troupe
+
+If the troupe's profile is public and the troupe isn't archived, the article has a card about it under the card about you. It shows the troupe's portrait, name and abbreviation, and its description, as its public profile has them. The troupe's name, in the card and beside your name, links to that profile. They come from the troupe's profile and its Settings › Names, not from the article.
+
+If the troupe's profile isn't public, or the troupe is archived, the article shows its name only: no card, no link and nothing else about it. That's worked out each time someone reads the article. So if the troupe's profile stops being public, or the troupe is archived, after the article is published, its card and link go at once, and they come back if it goes public again. You don't need to change the article. The preview shows what readers would see now.
 
 ## How approval works
 

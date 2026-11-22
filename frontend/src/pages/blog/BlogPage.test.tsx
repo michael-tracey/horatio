@@ -26,7 +26,7 @@ function summary(over: Partial<BlogPublicSummaryOut>): BlogPublicSummaryOut {
     summary: "What I wish I'd known.",
     picture: null,
     author: { name: "Mara Quinn", handle: null },
-    troupe: { id: "lords", name: "Lords of the Night", archived: false, public: false },
+    troupe: { name: "Lords of the Night", card: null },
     tags: [{ id: "t2", name: "Storytelling", slug: "storytelling" }],
     featured: false,
     published_at: "2026-11-01T12:00:00Z",
@@ -154,22 +154,30 @@ describe("an article's page (#1158)", () => {
     expect(within(tags).getByRole("link", { name: "Safety and consent" }).getAttribute("href")).toBe("/blog/tags/safety-and-consent");
     expect(screen.getByText("small").tagName).toBe("STRONG");
     expect(document.querySelector("article script")).toBeNull();
-    // A private troupe is its name only.
+    // A private troupe is its name only, with no card.
     expect(screen.getByText("Lords of the Night")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Lords of the Night" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "About Lords of the Night" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Change it" })).toBeNull();
     expect(screen.getByRole("link", { name: "← Blog" }).getAttribute("href")).toBe("/blog");
     await waitFor(() => expect(document.title).toBe("Running your first Elysium · Blog · Horatio"));
   });
 
-  it("links a public troupe, puts the author's card under it, and offers its author a way to change it", async () => {
+  it("links a public troupe, puts the author's and troupe's cards under it, and offers its author a way to change it", async () => {
     const card = { handle: "mara", display_name: "Mara Quinn", bio: "I run *Lords*.", links: [], picture: null };
     answering({
-      "/api/blog/public/articles/{slug}": { ...ARTICLE, troupe: { id: "lords", name: "Lords of the Night", archived: false, public: true }, author: { name: "Mara Quinn", handle: "mara" }, author_card: card, edit: "/blog/write/a1" },
+      "/api/blog/public/articles/{slug}": { ...ARTICLE, troupe: { name: "Lords of the Night", card: { id: "lords", name: "Lords of the Night", abbreviation: "LotN", portrait: "/api/troupes/lords/portraits/p9", description: "A Camarilla game in Leeds." } }, author: { name: "Mara Quinn", handle: "mara" }, author_card: card, edit: "/blog/write/a1" },
     });
     show("/blog/running-your-first-elysium");
 
-    expect((await screen.findByRole("link", { name: "Lords of the Night" })).getAttribute("href")).toBe("/t/lords");
+    const byline = (await screen.findByText(/^By /)).closest("p")!;
+    expect(within(byline).getByRole("link", { name: "Lords of the Night" }).getAttribute("href")).toBe("/t/lords");
+    // The troupe's card (#1160): its portrait, name linked to its profile, pill and description.
+    const troupe = screen.getByRole("region", { name: "About Lords of the Night" });
+    expect(within(troupe).getByRole("link", { name: "Lords of the Night" }).getAttribute("href")).toBe("/t/lords");
+    expect(within(troupe).getByText("LotN").closest("[title]")?.getAttribute("title")).toBe("Lords of the Night");
+    expect(within(troupe).getByText("A Camarilla game in Leeds.")).toBeTruthy();
+    expect(troupe.querySelector("img")?.getAttribute("src")).toBe("/api/troupes/lords/portraits/p9/128.webp");
     const about = screen.getByRole("region", { name: "About Mara Quinn" });
     expect(within(about).getByRole("link", { name: "Mara Quinn" }).getAttribute("href")).toBe("/blog/authors/mara");
     expect(within(about).getByText("Lords").tagName).toBe("EM");

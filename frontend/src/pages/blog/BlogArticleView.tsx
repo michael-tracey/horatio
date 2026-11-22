@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import type { BlogTagOut, BlogTroupeOut } from "../../api/types";
+import type { BlogPublicTroupeOut, BlogTagOut } from "../../api/types";
 import { Markdown } from "../../components/Markdown";
 import { useDates } from "../../dates";
-import { troupeLinked } from "./blog";
+import { TroupeCard } from "./TroupeCard";
 
 /** What an article shows a reader: its published words, or its author's working ones in a preview. */
 export type ArticleShown = {
@@ -13,7 +13,8 @@ export type ArticleShown = {
   /** Its hero picture (add "/1200.webp" or "/600.webp"), or null. */
   picture: string | null;
   author_name: string;
-  troupe: BlogTroupeOut | null;
+  /** Its name, and its card while it is public and running (#1160). */
+  troupe: BlogPublicTroupeOut | null;
   tags: BlogTagOut[];
   published_at: string | null;
   revised_at: string | null;
@@ -23,9 +24,10 @@ export type ArticleShown = {
  * An article as the blog shows it (#1157): its hero picture, tags, title, summary,
  * byline and words. The writing page's preview draws it, and the blog's own article
  * page (#1158) is meant to as well, so the two can't drift apart. The troupe it names
- * is a link to the troupe's public page only when that is public and running (#1155);
- * otherwise its name alone. `author` is the room under the words for the author's
- * card (#1159); `tagLink` makes each tag a link to its page.
+ * is a link to the troupe's public page, with its card beside the author's, only when
+ * it has a card: when it is public and running (#1160); otherwise its name alone.
+ * `author` is the room under the words for the author's card (#1159); `tagLink` makes
+ * each tag a link to its page.
  */
 export function BlogArticleView({
   article: a,
@@ -76,8 +78,8 @@ export function BlogArticleView({
           {a.troupe && (
             <>
               {" of "}
-              {troupeLinked(a.troupe) ? (
-                <Link to={`/t/${a.troupe.id}`} className="text-gold hover:underline">
+              {a.troupe.card ? (
+                <Link to={`/t/${a.troupe.card.id}`} className="text-gold hover:underline">
                   {a.troupe.name}
                 </Link>
               ) : (
@@ -92,6 +94,7 @@ export function BlogArticleView({
       </header>
       <Markdown text={a.body} />
       {author}
+      {a.troupe?.card && <TroupeCard troupe={a.troupe.card} />}
     </article>
   );
 }
