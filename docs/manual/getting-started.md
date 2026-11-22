@@ -146,7 +146,7 @@ The **Preferences** tab of your account holds how Horatio looks and behaves for 
 
 ## Sign-in and email
 
-The **Sign-in and email** tab of your account holds how you sign in: your email, your handle, your password and your Discord account. Which notifications come, and how, is on [the Notifications tab](#choosing-your-notifications).
+The **Sign-in and email** tab of your account holds how you sign in and how safe your account is: your email, your handle, your password, your second steps and Discord account, where you're signed in, and your recent sign-ins. Which notifications come, and how, is on [the Notifications tab](#choosing-your-notifications).
 
 ### Changing your email
 
@@ -164,7 +164,7 @@ After many tries at changing it, right or wrong, Horatio stops taking them for a
 
 ### Setting up two-step sign-in
 
-The **Two-step sign-in** card offers two kinds of second step. You can have both, and several passkeys.
+The **Your second steps** card holds your passkeys, your authenticator app, how many recovery codes you have left, and [your Discord account](#your-discord-account). It offers two kinds of second step. You can have both, and several passkeys.
 
 - **A passkey** is kept by your phone, computer or password manager, and unlocked with your face, finger or PIN. Give it a name, such as Phone, give your password, and choose **Add a passkey**; your browser asks you to confirm. A passkey made on your phone can usually sign you in on a computer nearby too. It can also sign you in alone, with no password (see [Signing in](#signing-in)).
 
@@ -179,9 +179,25 @@ An account made with Discord has no password until you set one, so where the car
 
 ### Your Discord account
 
-If the server has Discord set up, the **Discord account** card offers **Link my Discord**. Discord asks you to confirm, then tells Horatio your Discord username and nothing else. Your profile then shows that username, marked as confirmed by Discord, where a typed one is marked "typed, not checked". Staff can rely on it when they give you your character's Discord channel. Once it's linked, **Sign in with Discord** on the sign-in page signs you in too.
+If the server has Discord set up, the **Discord account** part of the **Your second steps** card offers **Link my Discord**. Discord asks you to confirm, then tells Horatio your Discord username and nothing else. Your profile then shows that username, marked as confirmed by Discord, where a typed one is marked "typed, not checked". Staff can rely on it when they give you your character's Discord channel. Once it's linked, **Sign in with Discord** on the sign-in page signs you in too.
 
 While it's linked, your Discord username comes from Discord and can't be typed over. **Unlink Discord** forgets the link and keeps the username, unless Discord is your only way to sign in, as it is for an account made with Discord. To have a password too, ask for one from **Forgot your password?** on the sign-in page. A Discord account can be linked to only one Horatio account.
+
+### Adding a passkey after signing in with your password
+
+After you sign in with your password on a phone or computer that can keep a passkey of its own, unlocked with your face, finger or PIN, Horatio offers to add one at the top of the page: "This device can keep a passkey." **Add a passkey** takes you to the passkey form in the **Your second steps** card, which asks for your password as ever. **Not now** puts the offer away. Either way, Horatio offers it only once on each device: it remembers in this browser, so a new browser, or one whose site data was cleared, may offer it again.
+
+### Where you're signed in
+
+The **Where you're signed in** card lists each phone, computer or browser signed in to your account now, with this one first, marked **This device**. Each says its browser and system, such as "Safari on iPhone", as the browser told Horatio when you signed in; when it signed in; and when it was last used, to within a few minutes. While the custodian keeps the addresses people sign in from, it also says roughly where: the first part of the address only, such as 203.0.113.…, never the whole.
+
+**Sign out** beside one signs it out at once: the next thing it does, it's asked to sign in again. **Sign out everywhere else** signs out every one but this. Neither asks for your password, as they only ever take access away, and you may need them in a hurry. If you don't know one, sign it out, then [change your password](#changing-your-password), which signs you out everywhere else too.
+
+### Recent sign-ins
+
+The **Recent sign-ins** card lists the last ten times your account was signed in to, newest first, and how: your password, your password then a second step, a passkey alone, or Discord. Tries that failed are there too, marked **Failed**: a wrong password, or a wrong code or passkey after the right password. So are tries the limits turned away, marked **Turned away**. Where they came from follows the same rule as above.
+
+It comes from Horatio's log, which keeps every sign-in only while the custodian asks it to. When it doesn't, the card says so, and shows only wrong second steps and tries turned away, which are always kept.
 
 ### When the custodian viewed as you
 

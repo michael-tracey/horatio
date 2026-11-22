@@ -66,9 +66,10 @@ test("account settings are in two tabs, Preferences and Sign-in and email, each 
   }
   await page.goto("/account/sign-in");
   await expect(page.getByLabel("Your handle")).toBeVisible();
-  expect(await cards()).toEqual(["Email", "Handle", "Password", "Two-step sign-in"]);
-  // Under 2000 px on a phone, on a server that can't send email, as this suite's can't.
-  expect(await tall()).toBeLessThan(2000);
+  expect(await cards()).toEqual(["Email", "Handle", "Password", "Your second steps", "Where you're signed in", "Recent sign-ins"]);
+  // Under 2600 px on a phone, on a server that can't send email, as this suite's can't:
+  // 2000 before where you're signed in and recent sign-ins joined it (#1193).
+  expect(await tall()).toBeLessThan(2600);
   await page.screenshot(shots("account-sign-in-phone"));
 
   // The profile is what others see, and nothing about signing in.
@@ -452,6 +453,49 @@ test("a signed-in person changes their password, and signs in with the new one",
   await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
 });
 
+test("where you're signed in: both devices listed, the other signed out from here, and a passkey offered there once (#1193)", async ({ browser }) => {
+  const { page, email } = await person(browser, "where-signed-in");
+  // A phone that can keep a passkey of its own, signing in with the password.
+  const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1";
+  const other = await (await browser.newContext({ userAgent: iphone })).newPage();
+  await passkeyDevice(other);
+  await other.goto("/sign-in");
+  await other.getByLabel("Email or handle").fill(email);
+  await other.getByLabel("Password").fill(PASSWORD);
+  await other.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  // Offered a passkey after the password, once: Not now, and it's gone for good here.
+  const offer = other.getByRole("region", { name: "Add a passkey" });
+  await expect(offer.getByRole("link", { name: "Add a passkey" })).toHaveAttribute("href", "/account/sign-in#passkeys");
+  await offer.getByRole("button", { name: "Not now" }).click();
+  await expect(offer).toHaveCount(0);
+  await other.reload();
+  await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  await expect(offer).toHaveCount(0);
+
+  // Both sign-ins are listed on Account › Sign-in, this one marked.
+  await page.goto("/account/sign-in");
+  const card = page.locator("section", { has: page.getByRole("heading", { name: "Where you're signed in", exact: true }) });
+  const rows = card.getByRole("listitem");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.filter({ hasText: "This device" })).toHaveCount(1);
+  const phone = rows.filter({ hasText: "Safari on iPhone" });
+  await expect(phone).toContainText(/Signed in .*, active in the last few minutes/);
+  await expect(page.getByRole("heading", { name: "Recent sign-ins", exact: true })).toBeVisible();
+  await page.screenshot(shots("settings-where-signed-in"));
+
+  // Signing the phone out needs no password, and it's signed out at once.
+  await phone.getByRole("button", { name: /^Sign out on Safari on iPhone/ }).click();
+  await expect(page.getByText("Signed out on Safari on iPhone.")).toBeVisible();
+  await expect(rows).toHaveCount(1);
+  await expect(card.getByText("You're signed in only here.")).toBeVisible();
+  await other.reload();
+  await expect(other.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+  // Still signed in here.
+  await page.reload();
+  await expect(rows.filter({ hasText: "This device" })).toHaveCount(1);
+});
+
 /** An authenticator app's code (RFC 6238: HMAC-SHA1, 30 s, 6 digits) for the base32
  * `secret`, at `at` milliseconds: what the person's phone would show. */
 function appCode(secret: string, at = Date.now()): string {
@@ -469,7 +513,7 @@ test("two-step sign-in: an authenticator app set up from Account, then asked for
   const { page, email } = await person(browser, "twostep-player");
   await (await topBar(page)).getByRole("link", { name: "Your account" }).click();
   await page.locator("main").getByRole("link", { name: "Sign-in and email", exact: true }).click();
-  const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
+  const card = page.locator("section", { has: page.getByRole("heading", { name: "Your second steps", exact: true }) });
   await card.getByRole("button", { name: "Set up an authenticator app" }).click();
   // Asked for the password first (#1148): a wrong one shows no QR code or key.
   const app = card.getByRole("region", { name: "Authenticator app" });
@@ -559,7 +603,7 @@ test("two-step sign-in with a passkey: added from Account, then signed in with a
   const { page, email } = await person(browser, "passkey-player");
   const device = await passkeyDevice(page);
   await page.goto("/account/sign-in");
-  const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
+  const card = page.locator("section", { has: page.getByRole("heading", { name: "Your second steps", exact: true }) });
   await card.getByLabel("Passkey name").fill("This laptop");
   // Asked for the password again first, so a sign-in left open can't add one (#1110).
   await card.getByLabel("Your password").fill(PASSWORD);
@@ -590,7 +634,7 @@ test("signing in with a passkey alone: no password, and no second step after it 
   const { page } = await person(browser, "passkey-alone");
   await passkeyDevice(page);
   await page.goto("/account/sign-in");
-  const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
+  const card = page.locator("section", { has: page.getByRole("heading", { name: "Your second steps", exact: true }) });
   await card.getByLabel("Passkey name").fill("This laptop");
   await card.getByLabel("Your password").fill(PASSWORD);
   await card.getByRole("button", { name: "Add a passkey" }).click();
@@ -629,7 +673,7 @@ test("replacing a passkey that may not sign in alone, in one go: the old one sta
   // A device that keeps passkeys only as a second step.
   const older = await passkeyDevice(page, { hasResidentKey: false });
   await page.goto("/account/sign-in");
-  const card = page.locator("section", { has: page.getByRole("heading", { name: "Two-step sign-in", exact: true }) });
+  const card = page.locator("section", { has: page.getByRole("heading", { name: "Your second steps", exact: true }) });
   const passkeys = card.getByRole("region", { name: "Passkeys" });
   await card.getByLabel("Passkey name").fill("Old key");
   await card.getByLabel("Your password").fill(PASSWORD);

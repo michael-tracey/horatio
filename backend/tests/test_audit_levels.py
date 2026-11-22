@@ -52,6 +52,7 @@ USES = {
     "horatio.api.email_changes": "reads by action",
     "horatio.api.players": "reads by action",
     "horatio.api.site_services": "reads by action",
+    "horatio.api.account_security": "an account's recent sign-ins: shows whatever is kept",
 }
 
 # Where AuditEvent.action is matched other than by ==/in_, and why that reads no
@@ -62,6 +63,7 @@ FILTERS = {
     ("horatio.api.audit", "in_"),  # actions whose wording has the words searched
     ("horatio.api.character_log", "not_in"),  # what a player isn't told
     ("horatio.audit_retention", "not_in"),  # keeps every notice action from the purge
+    ("horatio.api.account_security", "in_"),  # sign-in events, says when some aren't kept
     ("horatio.bonds", "startswith"),
     ("horatio.boons", "startswith"),
 }

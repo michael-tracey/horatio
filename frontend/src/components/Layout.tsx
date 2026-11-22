@@ -7,6 +7,7 @@ import { useNext, withNext } from "../next";
 import { NeedsConnection } from "../offline/NeedsConnection";
 import { OfflineStrip, useSendWaiting, useSignOut } from "../offline/Offline";
 import { NotificationBell } from "./NotificationBell";
+import { PasskeyOffer } from "./PasskeyOffer";
 import { SiteSearch } from "./SiteSearch";
 import { Splash } from "./Splash";
 import { ErrorText } from "./ui";
@@ -86,6 +87,8 @@ export function Layout() {
       <OfflineStrip />
       {signOut.dialog}
       <main className={`mx-auto ${page.width} px-4 py-6 sm:py-8`}>
+        {/* After a password sign-in, once on each device (#1193). */}
+        <PasskeyOffer />
         <WidePages ask={page.ask}>
           <Outlet />
         </WidePages>

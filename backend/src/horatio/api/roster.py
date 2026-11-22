@@ -811,6 +811,8 @@ MESSAGES: dict[str, str] = {
     "account.two_step_email_failed.recovery_code": "Horatio could not email {member} that a"
     " recovery code was used to sign in as them: {error}",
     "account.signed_out": "{actor} signed out{from_ip}.",
+    "account.session_ended": "{actor} signed out their sign-in on {device}{from_ip}.",
+    "account.other_sessions_ended": "{actor} signed out everywhere else{from_ip}, ending {ended}.",
     "account.sign_in_failed": "Someone failed to sign in as {member}{from_ip}: wrong password.",
     "account.sign_in_failed.unknown": "Someone failed to sign in{from_ip} to an account that"
     " doesn't exist.",
