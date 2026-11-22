@@ -144,3 +144,14 @@ describe("keeping what wasn't changed", () => {
     expect(keepUnchanged(changed, BUILT, normalised)).toBe(changed);
   });
 });
+
+describe("a blog article's pictures (#1163)", () => {
+  const ID = "0196f2a4-3333-7000-8000-000000000003";
+
+  it("go into the editor and back as they were, only for a blog article", () => {
+    const md = `Intro.\n\n![A \\] crowd](blog-picture:${ID} "Caption with \\"quotes\\"")\n\nAfter.`;
+    expect(toMarkdown(toDoc(md, { pictures: true }))).toBe(md);
+    expect(toDoc(md, { pictures: true }).content![1]).toEqual({ type: "blogPicture", attrs: { id: ID, alt: "A ] crowd", caption: 'Caption with "quotes"' } });
+    expect(toDoc(md).content!.map((n) => n.type)).toEqual(["paragraph", "paragraph", "paragraph"]);
+  });
+});

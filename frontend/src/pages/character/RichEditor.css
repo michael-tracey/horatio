@@ -63,3 +63,13 @@
   @apply pointer-events-none float-left h-0 text-mist;
   content: attr(data-placeholder);
 }
+/* A picture in a blog article's words (#1163), as the article shows it. */
+.rich-editor [data-blog-picture] {
+  @apply flex flex-col gap-1.5 select-none;
+}
+.rich-editor [data-blog-picture] img {
+  @apply h-auto max-h-96 w-auto max-w-full self-start rounded-md;
+}
+.rich-editor [data-blog-picture] figcaption {
+  @apply text-xs text-mist;
+}

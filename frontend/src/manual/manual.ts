@@ -103,6 +103,8 @@ export function blockText(b: Block): string {
       return b.v;
     case "table":
       return [b.head, ...b.rows].map((row) => row.map(plain).join(" ")).join(" ");
+    case "figure":
+      return `${b.alt} ${b.caption}`;
     case "hr":
     case "comment":
       return "";

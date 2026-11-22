@@ -17,10 +17,11 @@ const raw: { what: string; pattern: RegExp; max: number; use: string }[] = [
   { what: "<button", pattern: /<button\b/g, max: 162, use: "`Button` (components/ui.tsx) or `LinkButton` (components/LinkButton.tsx)" },
   // 162: the blog article's hidden picture input (#1156), opened by a Button, as a post's is.
   // 163: the slider sizing a blog article's hero picture (#1157), as the crop dialog's does.
+  // 164: the file chooser for a picture in a blog article's words (#1163), which `Input` doesn't take.
   {
     what: "<input",
     pattern: /<input\b/g,
-    max: 163,
+    max: 164,
     use: "`Input` (components/ui.tsx), or `Checkbox`, `Toggle`, `RadioList` or `Segmented` for a checkbox or radio",
   },
   { what: "<select", pattern: /<select\b/g, max: 7, use: "`Select` (components/ui.tsx)" },

@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import { parseBlocks, type Align, type Block, type Inline } from "../markdown";
+import { blogPictureUrl, parseBlocks, type Align, type Block, type Inline } from "../markdown";
 
 const HEADING_CLASSES = [
   "text-xl text-gold",
@@ -13,9 +13,11 @@ const HEADING_CLASSES = [
 /**
  * Markdown, as a backstory is written: rendered as elements, never as HTML (see
  * markdown.ts). Its headings sit below the page's own: a `#` heading is an h3.
+ * A blog article's words give `pictures`, to show the pictures in them (#1163);
+ * anything else shows such a line as text.
  */
-export function Markdown({ text }: { text: string }) {
-  const blocks = useMemo(() => parseBlocks(text), [text]);
+export function Markdown({ text, pictures = false }: { text: string; pictures?: boolean }) {
+  const blocks = useMemo(() => parseBlocks(text, false, { pictures }), [text, pictures]);
   return <div className="flex flex-col gap-3 text-sm leading-relaxed break-words">{blocks.map((b, i) => block(b, i, BACKSTORY))}</div>;
 }
 
@@ -96,6 +98,8 @@ function block(b: Block, key: number, render: Render): ReactNode {
       return <hr key={key} className="border-ash" />;
     case "comment":
       return null;
+    case "figure":
+      return <BlogFigure key={key} id={b.id} alt={b.alt} caption={b.caption} />;
     case "table":
       return (
         <div key={key} className="overflow-x-auto">
@@ -124,6 +128,29 @@ function block(b: Block, key: number, render: Render): ReactNode {
         </div>
       );
   }
+}
+
+/**
+ * A blog article's picture: the 600 or 1200 px copy, whichever suits the screen, as
+ * wide as the words (so never wider than a phone), loaded only as it comes near,
+ * with its caption under it.
+ */
+export function BlogFigure({ id, alt, caption }: { id: string; alt: string; caption: string }) {
+  const url = blogPictureUrl(id);
+  return (
+    <figure className="my-2 flex flex-col gap-1.5">
+      <img
+        src={`${url}/1200.webp`}
+        srcSet={`${url}/600.webp 600w, ${url}/1200.webp 1200w`}
+        sizes="(min-width: 48rem) 48rem, 100vw"
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        className="h-auto w-full rounded-md"
+      />
+      {caption && <figcaption className="text-xs text-mist">{caption}</figcaption>}
+    </figure>
+  );
 }
 
 function inlines(nodes: Inline[], render: Render): ReactNode[] {

@@ -38,14 +38,20 @@ export default function RichEditor({
   describedBy,
   placeholder = "Write your backstory here…",
   moreTools,
+  pictures = false,
+  panel,
 }: {
   initial: string;
   onChange: (markdown: string) => void;
   label: string;
   describedBy?: string;
   placeholder?: string;
-  /** Buttons of a page's own, after the formatting and before Undo: a blog article's pictures (#1163) are to come in here. */
+  /** Buttons of a page's own, after the formatting and before Undo: a blog article's Picture (#1163). */
   moreTools?: (editor: Editor) => Tool[];
+  /** A blog article's words, which hold its pictures (#1163). */
+  pictures?: boolean;
+  /** A page's own form for one of its buttons, under the toolbar: adding a picture, say. */
+  panel?: ReactNode;
 }) {
   const changed = useRef(onChange);
   changed.current = onChange;
@@ -54,8 +60,8 @@ export default function RichEditor({
   // The same options on every render: Tiptap resets the editor's view whenever they
   // differ, which can move the cursor while the player types.
   const [fixed] = useState(() => ({
-    extensions: editorExtensions({ placeholder, onRefused: () => setRefused(true) }),
-    content: toDoc(initial),
+    extensions: editorExtensions({ placeholder, onRefused: () => setRefused(true), pictures }),
+    content: toDoc(initial, { pictures }),
     // Made once the editor is on the page, not while rendering: one made while
     // rendering can be thrown away by Tiptap before React finishes mounting it (as
     // happens here, the editor being loaded lazily), and a second takes its place
@@ -93,6 +99,7 @@ export default function RichEditor({
   return (
     <div className="rounded-md border border-line bg-night focus-within:border-gold/60">
       <Toolbar editor={editor} moreTools={moreTools} />
+      {panel}
       {/* Its height kept while the editor is being made, so the page doesn't jump. */}
       <EditorContent editor={editor} className="rich-editor min-h-60" />
       {refused && (

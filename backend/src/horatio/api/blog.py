@@ -4,7 +4,8 @@ an article is and how it moves along is in horatio.blog.
 Staff of any troupe that is running write articles, and see only their own; the
 custodian sees every one, and publishes, returns, unpublishes, features and tags
 them. The blog's reading pages, for anyone, are api/blog_public.py (#1158); of
-what is here, only a published article's hero picture is anyone's to see.
+what is here, only a published article's hero picture, and the pictures its
+published words name (#1163), are anyone's to see.
 """
 
 import uuid
@@ -22,7 +23,7 @@ from horatio import blog, pictures, troupe_abbreviations
 from horatio.api.pictures import uploads
 from horatio.api.troupe_profiles import read_upload
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
-from horatio.models import BlogPost, Troupe, User
+from horatio.models import BlogPost, BlogPostPicture, Troupe, User
 from horatio.permissions import require_custodian
 
 router = APIRouter(prefix="/blog", tags=["blog"])
@@ -124,6 +125,15 @@ class BlogQueueOut(BaseModel):
     waiting: list[BlogArticleOut]
     published: list[BlogArticleOut]
     unpublished: list[BlogArticleOut]
+
+
+class BlogBodyPictureOut(BaseModel):
+    """A picture uploaded for an article's words, to put in them as
+    `![what it shows](blog-picture:<id> "its caption")`."""
+
+    id: uuid.UUID
+    # Where it is shown: add "/1200.webp" or "/600.webp".
+    url: str
 
 
 class BlogArticleIn(BaseModel):
@@ -293,6 +303,17 @@ def drop_picture(picture_id: uuid.UUID | None) -> None:
         pictures.remove(pictures.blog_picture_dir(root, picture_id))
 
 
+def drop_body_pictures(article_id: uuid.UUID, picture_ids: list[uuid.UUID] | None = None) -> None:
+    """Delete the files of pictures in an article's words: those given, or all of them."""
+    root = pictures.upload_dir()
+    if root is None:
+        return
+    if picture_ids is None:
+        pictures.remove(pictures.body_picture_dir(root, article_id))
+    for picture_id in picture_ids or []:
+        pictures.remove(pictures.body_picture_dir(root, article_id, picture_id))
+
+
 # --- writing ---------------------------------------------------------------------------
 
 
@@ -327,6 +348,7 @@ def my_articles(db: DbSession, user: CurrentUser) -> list[BlogArticleOut]:
 @router.post("/articles", status_code=status.HTTP_201_CREATED)
 def new_article(body: BlogArticleIn, db: DbSession, user: CurrentUser) -> BlogArticleOut:
     """A new draft, by a member of staff of a troupe that is running, or the custodian."""
+    blog.check_pictures(db, None, body.body)
     article = blog.make(db, user, body.title, body.summary, body.body, body.troupe_id)
     db.commit()
     return article_out(db, user, article)
@@ -344,8 +366,11 @@ def change_article(
     """Its author's change. A published article stays up as it is: the change is to
     its revision, for the custodian to publish once submitted."""
     article = own_article(db, user, article_id)
+    blog.check_pictures(db, article.id, body.body)
     blog.write(db, user, article, body.title, body.summary, body.body, body.troupe_id)
+    gone = blog.unused_pictures(db, article)
     db.commit()
+    drop_body_pictures(article.id, gone)
     return article_out(db, user, article)
 
 
@@ -356,6 +381,7 @@ def delete_article(article_id: uuid.UUID, db: DbSession, user: CurrentUser) -> N
     picture = blog.throw_away(db, user, article)
     db.commit()
     drop_picture(picture)
+    drop_body_pictures(article_id)
 
 
 @router.post("/articles/{article_id}/submit")
@@ -381,8 +407,10 @@ def discard_revision(article_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
     """Throw away a published article's changes; it stays as published."""
     article = own_article(db, user, article_id)
     picture = blog.discard_changes(db, user, article)
+    gone = blog.unused_pictures(db, article)
     db.commit()
     drop_picture(picture)
+    drop_body_pictures(article.id, gone)
     return article_out(db, user, article)
 
 
@@ -484,6 +512,54 @@ def article_picture(
     return FileResponse(path, media_type="image/webp", headers={"Cache-Control": cache})
 
 
+# --- pictures in its words ------------------------------------------------------------
+
+
+@router.post("/articles/{article_id}/body-pictures", status_code=status.HTTP_201_CREATED)
+def upload_body_picture(
+    article_id: uuid.UUID, file: PictureUpload, db: DbSession, user: CurrentUser
+) -> BlogBodyPictureOut:
+    """A picture for the article's words (#1163), kept as a post's is (1200 and 600 px
+    wide, its whole shape). Its author puts it in the words, and it stays once they
+    are saved naming it; up to blog.PICTURE_LIMIT at once."""
+    article = own_article(db, user, article_id)
+    blog.changeable(article)
+    root = uploads()
+    image = read_upload(file)
+    picture = blog.add_picture(db, article)
+    directory = pictures.body_picture_dir(root, article.id, picture.id)
+    with pictures.writing(directory):
+        pictures.write_post_picture(directory, image)
+        db.commit()
+    return BlogBodyPictureOut(id=picture.id, url=pictures.body_picture_url(picture.id))
+
+
+@router.get("/body-pictures/{picture_id}/{name}", response_class=FileResponse)
+def body_picture(picture_id: uuid.UUID, name: str, db: DbSession, user: MaybeUser) -> FileResponse:
+    """A picture in an article's words. Once the published article's words name it,
+    it is anyone's, signed in or not, and shared caches may keep it for an hour, so
+    one taken down soon drops out of them. Before that, a draft's or a published
+    article's changes', it is for the article's author and the custodian alone."""
+    picture = db.get(BlogPostPicture, picture_id)
+    article = db.get(BlogPost, picture.post_id) if picture is not None else None
+    public = article is not None and blog.picture_public(article, picture_id)
+    allowed = public or (
+        article is not None
+        and user is not None
+        and (user.is_custodian or article.author_id == user.id)
+    )
+    root = pictures.upload_dir()
+    path = (
+        pictures.body_picture_file(root, article.id, picture_id, name)
+        if allowed and article is not None and root is not None
+        else None
+    )
+    if path is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such picture.")
+    cache = "public, max-age=3600" if public else "private, max-age=31536000, immutable"
+    return FileResponse(path, media_type="image/webp", headers={"Cache-Control": cache})
+
+
 # --- the custodian's -------------------------------------------------------------------
 
 
@@ -540,8 +616,10 @@ def publish_article(article_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
     the old."""
     article = custodian_article(db, user, article_id)
     gone = blog.publish(db, user, article)
+    unused = blog.unused_pictures(db, article)
     db.commit()
     drop_picture(gone)
+    drop_body_pictures(article.id, unused)
     return article_out(db, user, article)
 
 
@@ -564,8 +642,10 @@ def unpublish_article(
     """Take a published article down, telling its author why."""
     article = custodian_article(db, user, article_id)
     gone = blog.unpublish(db, user, article, body.reason)
+    unused = blog.unused_pictures(db, article)
     db.commit()
     drop_picture(gone)
+    drop_body_pictures(article.id, unused)
     return article_out(db, user, article)
 
 

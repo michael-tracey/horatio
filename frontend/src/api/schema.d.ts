@@ -962,6 +962,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blog/articles/{article_id}/body-pictures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Body Picture
+         * @description A picture for the article's words (#1163), kept as a post's is (1200 and 600 px
+         *     wide, its whole shape). Its author puts it in the words, and it stays once they
+         *     are saved naming it; up to blog.PICTURE_LIMIT at once.
+         */
+        post: operations["upload_body_picture_api_blog_articles__article_id__body_pictures_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blog/articles/{article_id}/featured": {
         parameters: {
             query?: never;
@@ -1310,6 +1332,29 @@ export interface paths {
          *     breaks the site's rules. Logged; the rest of their profile stays.
          */
         post: operations["clear_author_api_blog_authors__handle__clear_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/body-pictures/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Body Picture
+         * @description A picture in an article's words. Once the published article's words name it,
+         *     it is anyone's, signed in or not, and shared caches may keep it for an hour, so
+         *     one taken down soon drops out of them. Before that, a draft's or a published
+         *     article's changes', it is for the article's author and the custodian alone.
+         */
+        get: operations["body_picture_api_blog_body_pictures__picture_id___name__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17524,6 +17569,20 @@ export interface components {
             /** Waiting */
             waiting: ("article" | "changes") | null;
         };
+        /**
+         * BlogBodyPictureOut
+         * @description A picture uploaded for an article's words, to put in them as
+         *     `![what it shows](blog-picture:<id> "its caption")`.
+         */
+        BlogBodyPictureOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Url */
+            url: string;
+        };
         /** BlogFeaturedIn */
         BlogFeaturedIn: {
             /** Featured */
@@ -17916,6 +17975,14 @@ export interface components {
         };
         /** Body_upload_banner_api_troupes__troupe_id__banner_post */
         Body_upload_banner_api_troupes__troupe_id__banner_post: {
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
+        /** Body_upload_body_picture_api_blog_articles__article_id__body_pictures_post */
+        Body_upload_body_picture_api_blog_articles__article_id__body_pictures_post: {
             /**
              * File
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
@@ -42344,6 +42411,41 @@ export interface operations {
             };
         };
     };
+    upload_body_picture_api_blog_articles__article_id__body_pictures_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_body_picture_api_blog_articles__article_id__body_pictures_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogBodyPictureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     feature_article_api_blog_articles__article_id__featured_put: {
         parameters: {
             query?: never;
@@ -42964,6 +43066,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AuthorPage"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    body_picture_api_blog_body_pictures__picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

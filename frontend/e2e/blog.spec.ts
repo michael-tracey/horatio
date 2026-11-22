@@ -190,6 +190,90 @@ test("a storyteller writes for the blog from their troupe, previews and submits 
   await expect(item.getByText("No, the Prince won't see you tonight.")).toBeVisible();
 });
 
+test("a storyteller puts a picture in an article's words, previews it, and once the custodian publishes it anyone can see the picture (#1163)", async ({ browser }) => {
+  const custodian = await person(browser, "blogpic-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "blogpic-lead");
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Court of Lit Halls ${run}`, lead_handle: lead.handle });
+  const l = lead.page;
+
+  const title = `Lighting a scene ${run}`;
+  await l.goto(`/blog/write/new?troupe=${troupe.id}`);
+  await l.getByLabel("Title").fill(title);
+  const words = l.getByRole("textbox", { name: "Article" });
+  await words.click();
+  await l.keyboard.type("Candles do more than any speech.");
+  // A new article is saved before a picture goes in its words.
+  await l.getByRole("button", { name: "Insert a picture" }).click();
+  await expect(l.getByText("Save it as a draft first, then add pictures to its words.")).toBeVisible();
+  await l.getByRole("button", { name: "Close" }).click();
+  await l.getByRole("button", { name: "Save draft" }).click();
+  await expect(l).toHaveURL(/\/blog\/write\/[0-9a-f-]{36}$/);
+  const address = (await l.getByText(/^Its address: /).textContent())!.replace("Its address: ", "");
+
+  // Choose it, say what it shows (asked every time), and caption it.
+  await words.click();
+  await l.keyboard.press("Control+End");
+  await l.getByRole("button", { name: "Insert a picture" }).click();
+  const adding = l.getByRole("form", { name: "Add a picture to the words" });
+  await adding.getByLabel("Picture to add").setInputFiles({ name: "hall.png", mimeType: "image/png", buffer: PNG });
+  await adding.getByRole("button", { name: "Add the picture" }).click();
+  await expect(adding.getByText(/^Say what the picture shows/)).toBeVisible();
+  await adding.getByLabel("What it shows").fill("Candles along a long table");
+  await adding.getByLabel("Caption (optional)").fill("The hall at midnight");
+  await adding.getByRole("button", { name: "Add the picture" }).click();
+  await expect(adding).toBeHidden();
+  await expect(words.getByRole("img", { name: "Candles along a long table" })).toBeVisible();
+  await l.getByRole("button", { name: "Save draft" }).click();
+  await expect(l.getByRole("button", { name: "Save draft" })).toBeDisabled();
+
+  // The preview shows it as the blog will, with its caption.
+  await l.getByRole("radio", { name: "Preview" }).click();
+  const shown = l.getByRole("article", { name: title });
+  const picture = shown.getByRole("img", { name: "Candles along a long table" });
+  await expect(picture).toBeVisible();
+  await expect.poll(() => picture.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(shown.locator("figcaption")).toHaveText("The hall at midnight");
+  expect(await l.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), "nothing scrolls sideways").toBe(true);
+  const src = (await picture.getAttribute("src"))!;
+  expect(src).toMatch(/^\/api\/blog\/body-pictures\/[0-9a-f-]{36}\/1200\.webp$/);
+  await l.screenshot(shots("blog-picture-preview"));
+
+  // Signed out, nobody sees it until it is published.
+  const stranger = await browser.newContext();
+  expect((await stranger.request.get(src)).status()).toBe(404);
+  await l.getByRole("radio", { name: "Write" }).click();
+  await l.getByRole("button", { name: "Submit to the custodian" }).click();
+  await expect(l.getByText(/^Waiting for the custodian since /)).toBeVisible();
+
+  const c = custodian.page;
+  await c.goto("/custodian/blog");
+  const waiting = c.getByRole("heading", { name: "Waiting", level: 2 }).locator("xpath=ancestor::section[1]");
+  const item = waiting.getByRole("listitem", { name: title });
+  await item.getByText("Read it").click();
+  await expect(item.getByRole("img", { name: "Candles along a long table" })).toBeVisible();
+  await item.getByRole("button", { name: "Publish", exact: true }).click();
+  const published = c.getByRole("heading", { name: "Published", level: 2 }).locator("xpath=ancestor::section[1]");
+  await expect(published.getByRole("listitem", { name: title })).toBeVisible();
+
+  // Published, the picture is anyone's, and caches may keep it.
+  const seen = await stranger.request.get(src);
+  expect(seen.status()).toBe(200);
+  expect(seen.headers()["content-type"]).toBe("image/webp");
+  expect(seen.headers()["cache-control"]).toBe("public, max-age=3600");
+
+  // A reader signed out sees it on the article's own page, with its caption.
+  const reader = await stranger.newPage();
+  await reader.goto(address);
+  const read = reader.getByRole("article", { name: title });
+  const there = read.getByRole("img", { name: "Candles along a long table" });
+  // Loaded lazily, as it comes near.
+  await there.scrollIntoViewIfNeeded();
+  await expect(there).toBeVisible();
+  await expect.poll(() => there.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(read.locator("figcaption")).toHaveText("The hall at midnight");
+});
+
 test("the custodian adds, renames, retires and merges a tag in Custodian › Blog › Tags, each showing its articles (#1161)", async ({ browser }) => {
   const custodian = await person(browser, "blogtags-cust");
   makeCustodian(custodian.email);
