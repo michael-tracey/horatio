@@ -3,6 +3,7 @@ articles, and only what the blog shows of them; paging, featured and tags; and h
 pictures public once their article is."""
 
 import io
+import uuid
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from horatio import blog_bell
 from horatio.api import blog_public
 from horatio.config import get_settings
 from horatio.models import BlogPost
+from horatio.models import Troupe as TroupeRow
 from tests.api_helpers import Person, Troupe
 
 
@@ -107,13 +109,8 @@ def test_an_article_shows_its_published_words_and_nothing_private(
         "body": "Start **small**.",
         "picture": None,
         "author": {"name": "storyteller", "handle": None},
-        # The troupe isn't public, so the blog names it without a link.
-        "troupe": {
-            "id": troupe.id,
-            "name": "Lords of the Night",
-            "archived": False,
-            "public": False,
-        },
+        # The troupe isn't public, so the blog names it, and nothing more (#1160).
+        "troupe": {"name": "Lords of the Night", "card": None},
         "tags": [
             {"id": shown["tags"][0]["id"], "name": "Storytelling", "slug": "storytelling"},
             {
@@ -134,16 +131,99 @@ def test_an_article_shows_its_published_words_and_nothing_private(
     assert mine["edit"] == f"/blog/write/{article['id']}"
 
 
-def test_a_troupe_says_whether_it_is_public_and_running(troupe: Troupe, anyone: TestClient) -> None:
-    published(troupe)
+def card_of(troupe: Troupe, session: Session, **more: Any) -> dict[str, Any]:
+    """The troupe's card as the blog shows it, once it is public with a description, an
+    abbreviation and a portrait."""
     ok(troupe.lead.client.put(f"/troupes/{troupe.id}/profile/public", json={"public": True}))
+    body = {"description": "A Camarilla game in Leeds.", "abbreviation": "LotN", **more}
+    ok(troupe.lead.client.patch(f"/troupes/{troupe.id}", json=body))
+    portrait = uuid.uuid4()
+    session.get_one(TroupeRow, troupe.id).portrait_id = portrait
+    session.flush()
+    return {
+        "id": troupe.id,
+        "name": "Lords of the Night",
+        "abbreviation": "LotN",
+        "portrait": f"/api/troupes/{troupe.id}/portraits/{portrait}",
+        "description": "A Camarilla game in Leeds.",
+    }
+
+
+def test_a_public_troupe_has_its_card(troupe: Troupe, anyone: TestClient, session: Session) -> None:
+    published(troupe)
+    card = card_of(troupe, session)
     path = "/blog/public/articles/running-your-first-elysium"
 
-    linked = {"id": troupe.id, "name": "Lords of the Night", "archived": False, "public": True}
-    assert ok(anyone.get(path))["troupe"] == linked
+    assert ok(anyone.get(path))["troupe"] == {"name": "Lords of the Night", "card": card}
+    # The list of articles names it the same way.
+    [listed] = ok(anyone.get("/blog/public/articles"))["articles"]
+    assert listed["troupe"] == {"name": "Lords of the Night", "card": card}
+    # Its author's preview and the custodian's queue have the card too.
+    [mine] = ok(troupe.storyteller.client.get("/blog/articles/mine"))
+    assert mine["troupe"]["card"] == card
+    [queued] = ok(troupe.custodian.client.get("/blog/queue"))["published"]
+    assert queued["troupe"]["card"] == card
+    assert ok(troupe.storyteller.client.get("/blog/writer"))["troupes"][0]["card"] == card
+
+
+def test_a_troupe_without_an_abbreviation_goes_by_its_made_one(
+    troupe: Troupe, anyone: TestClient, session: Session
+) -> None:
+    published(troupe)
+    card_of(troupe, session, abbreviation="")
+
+    shown = ok(anyone.get("/blog/public/articles/running-your-first-elysium"))
+
+    assert shown["troupe"]["card"]["abbreviation"] == "LotN"
+
+
+def test_a_private_troupe_is_named_and_nothing_more(troupe: Troupe, anyone: TestClient) -> None:
+    published(troupe)
+    body = {"description": "Only for us", "abbreviation": "LotN"}
+    ok(troupe.lead.client.patch(f"/troupes/{troupe.id}", json=body))
+
+    shown = ok(anyone.get("/blog/public/articles/running-your-first-elysium"))
+    listed = ok(anyone.get("/blog/public/articles"))
+
+    assert shown["troupe"] == {"name": "Lords of the Night", "card": None}
+    # Not its id, its abbreviation or its description, anywhere on the blog.
+    for found in (shown, listed):
+        assert str(troupe.id) not in str(found)
+        assert "Only for us" not in str(found) and "LotN" not in str(found)
+    # Its author still sees which troupe it is, to choose it.
+    [mine] = ok(troupe.storyteller.client.get("/blog/articles/mine"))
+    assert (mine["troupe"]["id"], mine["troupe"]["card"]) == (troupe.id, None)
+
+
+def test_a_troupe_that_goes_private_or_is_archived_drops_its_card(
+    troupe: Troupe, anyone: TestClient, session: Session
+) -> None:
+    published(troupe)
+    card_of(troupe, session)
+    path = "/blog/public/articles/running-your-first-elysium"
+    named = {"name": "Lords of the Night", "card": None}
+
+    ok(troupe.lead.client.put(f"/troupes/{troupe.id}/profile/public", json={"public": False}))
+    shown = ok(anyone.get(path))
+    assert shown["troupe"] == named
+    assert str(troupe.id) not in str(shown)
+
+    ok(troupe.lead.client.put(f"/troupes/{troupe.id}/profile/public", json={"public": True}))
+    assert ok(anyone.get(path))["troupe"]["card"] is not None
 
     ok(troupe.lead.client.post(f"/troupes/{troupe.id}/archive", json={"reason": "Done"}))
-    assert ok(anyone.get(path))["troupe"] == {**linked, "archived": True}
+    shown = ok(anyone.get(path))
+    assert shown["troupe"] == named
+    assert str(troupe.id) not in str(ok(anyone.get("/blog/public/articles")))
+    # The custodian's queue says why: it is public, but archived.
+    [queued] = ok(troupe.custodian.client.get("/blog/queue"))["published"]
+    assert queued["troupe"] == {
+        "id": troupe.id,
+        "name": "Lords of the Night",
+        "archived": True,
+        "public": True,
+        "card": None,
+    }
 
 
 def test_the_blog_is_newest_first_a_page_at_a_time_with_the_featured_on_top(

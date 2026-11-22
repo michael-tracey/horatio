@@ -5685,7 +5685,7 @@
           "troupe": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BlogTroupeOut"
+                "$ref": "#/components/schemas/BlogPublicTroupeOut"
               },
               {
                 "type": "null"
@@ -5881,7 +5881,7 @@
           "troupe": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BlogTroupeOut"
+                "$ref": "#/components/schemas/BlogPublicTroupeOut"
               },
               {
                 "type": "null"
@@ -5974,6 +5974,31 @@
           "tag"
         ],
         "title": "BlogPublicTagPageOut",
+        "type": "object"
+      },
+      "BlogPublicTroupeOut": {
+        "description": "The troupe an article names, as the blog shows it (#1160): its name, and its card\nwhile it is public and running. Of a private or archived troupe, only its name.",
+        "properties": {
+          "card": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlogTroupeCardOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "card"
+        ],
+        "title": "BlogPublicTroupeOut",
         "type": "object"
       },
       "BlogQueueOut": {
@@ -6245,12 +6270,64 @@
         "title": "BlogTagsIn",
         "type": "object"
       },
+      "BlogTroupeCardOut": {
+        "description": "A troupe's card on an article (#1160): what its public profile shows anyone, for a\ntroupe that is public and running. The blog links it to /t/<id>.",
+        "properties": {
+          "abbreviation": {
+            "title": "Abbreviation",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "portrait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portrait"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "abbreviation",
+          "portrait",
+          "description"
+        ],
+        "title": "BlogTroupeCardOut",
+        "type": "object"
+      },
       "BlogTroupeOut": {
-        "description": "The troupe an article names.",
+        "description": "The troupe an article names, for its author and the custodian.",
         "properties": {
           "archived": {
             "title": "Archived",
             "type": "boolean"
+          },
+          "card": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlogTroupeCardOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "format": "uuid",
@@ -6270,7 +6347,8 @@
           "id",
           "name",
           "archived",
-          "public"
+          "public",
+          "card"
         ],
         "title": "BlogTroupeOut",
         "type": "object"
