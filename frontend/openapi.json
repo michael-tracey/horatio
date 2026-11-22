@@ -6079,6 +6079,97 @@
         "title": "BlogSlugIn",
         "type": "object"
       },
+      "BlogTagKeptOut": {
+        "properties": {
+          "articles": {
+            "title": "Articles",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "published": {
+            "title": "Published",
+            "type": "integer"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "slug_fixed": {
+            "title": "Slug Fixed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "slug_fixed",
+          "retired",
+          "articles",
+          "published"
+        ],
+        "title": "BlogTagKeptOut",
+        "type": "object"
+      },
+      "BlogTagMergeIn": {
+        "properties": {
+          "into_id": {
+            "format": "uuid",
+            "title": "Into Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "into_id"
+        ],
+        "title": "BlogTagMergeIn",
+        "type": "object"
+      },
+      "BlogTagNameIn": {
+        "properties": {
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "BlogTagNameIn",
+        "type": "object"
+      },
+      "BlogTagOrderIn": {
+        "properties": {
+          "tag_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Tag Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tag_ids"
+        ],
+        "title": "BlogTagOrderIn",
+        "type": "object"
+      },
       "BlogTagOut": {
         "properties": {
           "id": {
@@ -6101,6 +6192,19 @@
           "slug"
         ],
         "title": "BlogTagOut",
+        "type": "object"
+      },
+      "BlogTagRetiredIn": {
+        "properties": {
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "retired"
+        ],
+        "title": "BlogTagRetiredIn",
         "type": "object"
       },
       "BlogTagsIn": {
@@ -68394,7 +68498,7 @@
     },
     "/api/blog/public/tags": {
       "get": {
-        "description": "The blog's tags, in the custodian's order, with how many published articles\nhave each.",
+        "description": "The tags with published articles, in the custodian's order, with how many each\nhas: retired ones too, as they stay on the articles that have them (#1161).",
         "operationId": "list_tags_api_blog_public_tags_get",
         "responses": {
           "200": {
@@ -68420,7 +68524,7 @@
     },
     "/api/blog/public/tags/{slug}": {
       "get": {
-        "description": "A tag's published articles, newest first, a page at a time.",
+        "description": "A tag's published articles, newest first, a page at a time. A retired tag's page\nstays; one merged into another has gone, and with it its address (#1161).",
         "operationId": "tag_articles_api_blog_public_tags__slug__get",
         "parameters": [
           {
@@ -68497,9 +68601,55 @@
         ]
       }
     },
+    "/api/blog/tag-order": {
+      "put": {
+        "description": "Every tag, retired ones too, in a new order.",
+        "operationId": "order_tags_api_blog_tag_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogTagOrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogTagKeptOut"
+                  },
+                  "title": "Response Order Tags Api Blog Tag Order Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Order Tags",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
     "/api/blog/tags": {
       "get": {
-        "description": "The blog's tags, in the custodian's order.",
+        "description": "The tags an article can be tagged with, in the custodian's order: not the\nretired ones, which stay only on the articles that have them (#1161).",
         "operationId": "list_tags_api_blog_tags_get",
         "responses": {
           "200": {
@@ -68518,6 +68668,249 @@
           }
         },
         "summary": "List Tags",
+        "tags": [
+          "blog"
+        ]
+      },
+      "post": {
+        "description": "A new tag, at the end of the list.",
+        "operationId": "add_tag_api_blog_tags_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogTagNameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogTagKeptOut"
+                  },
+                  "title": "Response Add Tag Api Blog Tags Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Tag",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/tags/kept": {
+      "get": {
+        "description": "Every tag, retired ones too, with how many articles carry each.",
+        "operationId": "kept_tags_api_blog_tags_kept_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogTagKeptOut"
+                  },
+                  "title": "Response Kept Tags Api Blog Tags Kept Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Kept Tags",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/tags/{tag_id}": {
+      "put": {
+        "operationId": "rename_tag_api_blog_tags__tag_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tag Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogTagNameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogTagKeptOut"
+                  },
+                  "title": "Response Rename Tag Api Blog Tags  Tag Id  Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rename Tag",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/tags/{tag_id}/merge": {
+      "post": {
+        "description": "Move the tag off every article onto another, then remove it.",
+        "operationId": "merge_tag_api_blog_tags__tag_id__merge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tag Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogTagMergeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogTagKeptOut"
+                  },
+                  "title": "Response Merge Tag Api Blog Tags  Tag Id  Merge Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Merge Tag",
+        "tags": [
+          "blog"
+        ]
+      }
+    },
+    "/api/blog/tags/{tag_id}/retired": {
+      "put": {
+        "description": "Retire a tag, or bring it back. Retired, it stays on the articles that have it.",
+        "operationId": "retire_tag_api_blog_tags__tag_id__retired_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tag Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlogTagRetiredIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlogTagKeptOut"
+                  },
+                  "title": "Response Retire Tag Api Blog Tags  Tag Id  Retired Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retire Tag",
         "tags": [
           "blog"
         ]

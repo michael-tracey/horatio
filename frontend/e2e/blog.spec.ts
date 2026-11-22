@@ -28,7 +28,7 @@ async function publishedArticle(c: Page, title: string, body: string, tags: stri
   return send(c, "POST", `/api/blog/articles/${article.id}/publish`, {});
 }
 
-test("a narrator sends an article to the custodian, who tags and publishes it from Custodian › Blog, and the narrator hears so (#1156)", async ({ browser }) => {
+test("a narrator sends an article to the custodian, who follows the bell to Custodian › Blog, tags and publishes it, and the narrator hears so (#1156, #1170)", async ({ browser }) => {
   const custodian = await person(browser, "blogdesk-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "blogdesk-lead");
@@ -53,15 +53,19 @@ test("a narrator sends an article to the custodian, who tags and publishes it fr
   await n.getByRole("button", { name: "Submit to the custodian" }).click();
   await expect(n.getByText(/^Waiting for the custodian since /)).toBeVisible();
 
-  // It waits on Custodian › Blog, whose tab counts what waits (the other project's too).
+  // It is a task on the custodian's bell (#1170), which opens it on Custodian › Blog,
+  // whose tab counts what waits (the other project's too).
   const c = custodian.page;
-  await c.goto("/custodian/blog");
+  await c.goto("/characters");
+  await c.getByRole("button", { name: /^Notifications/ }).click();
+  const task = c.getByRole("dialog", { name: "Notifications" }).getByRole("button", { name: new RegExp(`blogdesk-narr asks you to publish the blog article “${title}”`) });
+  await task.click();
+  await expect(c).toHaveURL(/\/custodian\/blog#article-[0-9a-f-]{36}$/);
   await expect(c.getByRole("link", { name: /^Blog/ })).toHaveText(/^Blog\d+$/);
   const waiting = c.getByRole("heading", { name: "Waiting", level: 2 }).locator("xpath=ancestor::section[1]");
   const item = waiting.getByRole("listitem", { name: title });
   await expect(item.getByText("blogdesk-narr")).toBeVisible();
   await expect(item.getByText(`of ${troupeName}`, { exact: false })).toBeVisible();
-  await item.getByText("Read it").click();
   await expect(item.getByText("Ask the players what their characters want, then wait.")).toBeVisible();
   const tags = item.getByRole("list", { name: "Tags" });
   await tags.getByRole("button", { name: "Storytelling" }).click();
@@ -73,6 +77,9 @@ test("a narrator sends an article to the custodian, who tags and publishes it fr
   const published = c.getByRole("heading", { name: "Published", level: 2 }).locator("xpath=ancestor::section[1]");
   await expect(published.getByRole("listitem", { name: title })).toBeVisible();
   await expect(waiting.getByRole("listitem", { name: title })).toHaveCount(0);
+  await c.getByRole("button", { name: /^Notifications/ }).click();
+  await expect(task).toHaveCount(0);
+  await c.keyboard.press("Escape");
   await expect(published.getByRole("listitem", { name: title }).getByRole("list", { name: "Tags" }).getByRole("button", { name: "Storytelling" })).toHaveAttribute("aria-pressed", "true");
 
   // The narrator hears of it on the bell, which leads back to the article.
@@ -181,6 +188,55 @@ test("a storyteller writes for the blog from their troupe, previews and submits 
   await c.reload();
   await item.getByText("Read it").click();
   await expect(item.getByText("No, the Prince won't see you tonight.")).toBeVisible();
+});
+
+test("the custodian adds, renames, retires and merges a tag in Custodian › Blog › Tags, each showing its articles (#1161)", async ({ browser }) => {
+  const custodian = await person(browser, "blogtags-cust");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  // Unique to the run and the project, within a tag name's 40 characters.
+  const name = `Etiquette ${run} ${test.info().project.name.slice(0, 1)}`;
+
+  await c.goto("/custodian/blog/tags");
+  await expect(c.getByRole("link", { name: "Tags", exact: true })).toHaveAttribute("aria-current", "page");
+  await c.getByRole("button", { name: "Add a tag" }).click();
+  await c.getByRole("dialog", { name: "Add a tag" }).getByLabel("Name").fill(name);
+  await c.getByRole("button", { name: "Add the tag" }).click();
+  const tags = c.getByRole("table", { name: "Tags" });
+  await expect(tags.getByRole("row", { name })).toContainText("No articles");
+
+  // An article of the custodian's own carries it.
+  const kept: { id: string; name: string }[] = await (await c.request.get("/api/blog/tags/kept")).json();
+  const tag = kept.find((t) => t.name === name)!;
+  const article = await send(c, "POST", "/api/blog/articles", { title: `Bowing at Elysium ${run}`, body: "Low, and not for long." });
+  await send(c, "PUT", `/api/blog/articles/${article.id}/tags`, { tag_ids: [tag.id] });
+  await c.reload();
+  await expect(tags.getByRole("row", { name })).toContainText("1 article, none published");
+
+  const renamed = `${name} rules`;
+  await tags.getByRole("button", { name: `Actions for ${name}` }).click();
+  await c.getByRole("menuitem", { name: "Rename…" }).click();
+  const dialog = c.getByRole("dialog", { name: `Rename ${name}` });
+  await expect(dialog.getByText(/follows the new name, as no published article has it yet/)).toBeVisible();
+  await dialog.getByLabel("Name").fill(renamed);
+  await dialog.getByRole("button", { name: "Rename" }).click();
+  const row = tags.getByRole("row", { name: renamed });
+  await expect(row).toBeVisible();
+
+  await row.getByRole("button", { name: `Actions for ${renamed}` }).click();
+  await c.getByRole("menuitem", { name: "Retire" }).click();
+  await expect(row.getByText("Retired")).toBeVisible();
+  await c.screenshot(shots("blog-tags"));
+
+  // Merged into another, it goes, and the article has the other.
+  await row.getByRole("button", { name: `Actions for ${renamed}` }).click();
+  await c.getByRole("menuitem", { name: "Merge into…" }).click();
+  const merging = c.getByRole("dialog", { name: `Merge ${renamed}` });
+  await merging.getByLabel("Merge it into").selectOption({ label: "Community" });
+  await merging.getByRole("button", { name: "Merge into Community" }).click();
+  await expect(tags.getByRole("row", { name: renamed })).toHaveCount(0);
+  const merged = await (await c.request.get(`/api/blog/articles/${article.id}`)).json();
+  expect(merged.tags.map((t: { name: string }) => t.name)).toEqual(["Community"]);
 });
 
 test("signed out, someone opens the blog, filters it by a tag, reads an article and its author's page, but never a draft (#1158)", async ({ browser }) => {

@@ -232,8 +232,8 @@ def read_article(slug: str, db: DbSession, user: MaybeUser) -> BlogPublicArticle
 
 @router.get("/tags")
 def list_tags(db: DbSession) -> list[BlogPublicTagCountOut]:
-    """The blog's tags, in the custodian's order, with how many published articles
-    have each."""
+    """The tags with published articles, in the custodian's order, with how many each
+    has: retired ones too, as they stay on the articles that have them (#1161)."""
     counts: dict[uuid.UUID, int] = {
         t: n
         for t, n in db.execute(
@@ -244,14 +244,16 @@ def list_tags(db: DbSession) -> list[BlogPublicTagCountOut]:
         )
     }
     return [
-        BlogPublicTagCountOut(id=t.id, name=t.name, slug=t.slug, articles=counts.get(t.id, 0))
-        for t in blog.all_tags(db)
+        BlogPublicTagCountOut(id=t.id, name=t.name, slug=t.slug, articles=counts[t.id])
+        for t in blog.all_tags(db, retired=True)
+        if counts.get(t.id)
     ]
 
 
 @router.get("/tags/{slug}")
 def tag_articles(slug: str, db: DbSession, page: int = Page) -> BlogPublicTagPageOut:
-    """A tag's published articles, newest first, a page at a time."""
+    """A tag's published articles, newest first, a page at a time. A retired tag's page
+    stays; one merged into another has gone, and with it its address (#1161)."""
     tag = tag_by_slug(db, slug)
     found = page_of(db, tagged(published(), tag), page)
     return BlogPublicTagPageOut(

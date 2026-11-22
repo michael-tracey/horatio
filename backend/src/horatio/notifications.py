@@ -16,7 +16,8 @@ horatio.notification_choices, which says where it comes: a message comes to the
 bell unless the person turns it off there, a task always. Either may also come by
 email or by push to those who choose it (horatio.notification_emails,
 horatio.web_push): `notify` sees to that for messages; a task emails and pushes when
-its work arrives (`approval_waiting`, `troupe_request_waiting`, `teaching_asked`).
+its work arrives (`approval_waiting`, `troupe_request_waiting`, `teaching_asked`,
+`blog_article_waiting`).
 """
 
 import uuid
@@ -31,6 +32,7 @@ from horatio import clan_names, notification_choices, notification_emails, web_p
 from horatio.announcement_emails import ANNOUNCEMENT_LINK
 from horatio.models import (
     Approval,
+    BlogPost,
     Character,
     DisciplinePurchase,
     HomeTroupeChange,
@@ -260,6 +262,45 @@ def troupe_request_tasks(db: Session, user: User) -> list[Item]:
     ]
 
 
+def blog_article_item(article: BlogPost, author: str) -> Item:
+    """An article, or a published one's changes, waiting for the custodian to publish
+    or return (horatio.blog). It opens Custodian › Blog with that article open."""
+    changes = article.status == "published" and article.revision_submitted_at is not None
+    title = article.revision["title"] if changes and article.revision else article.title
+    what = "changes to the blog article" if changes else "the blog article"
+    at = article.revision_submitted_at if changes else article.submitted_at
+    assert at is not None
+    return Item(
+        id=f"blog_article:{article.id}",
+        kind="blog_article",
+        task=True,
+        troupe_id=None,
+        troupe_name=None,
+        summary=f"{author} asks you to publish {what} “{title}”",
+        link=f"/custodian/blog#article-{article.id}",
+        at=at,
+        read=False,
+    )
+
+
+def blog_article_tasks(db: Session, user: User) -> list[Item]:
+    """Articles sent for the blog, and published ones' changes: the custodian's own
+    work. Each goes once it is published or returned, or its author withdraws it."""
+    if not user.is_custodian:
+        return []
+    rows = db.execute(
+        select(BlogPost, User.display_name)
+        .join(User, BlogPost.author_id == User.id)
+        .where(
+            or_(
+                BlogPost.status == "submitted",
+                (BlogPost.status == "published") & BlogPost.revision_submitted_at.is_not(None),
+            )
+        )
+    )
+    return [blog_article_item(article, author) for article, author in rows]
+
+
 def quest_request_tasks(db: Session, user: User) -> list[Item]:
     """Open quest requests in troupes running quests: every one for the storytellers
     and assistant storytellers, and a narrator's own (horatio.quests). Each goes once
@@ -330,6 +371,7 @@ def teaching_tasks(db: Session, user: User) -> list[Item]:
 TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [
     approval_tasks,
     troupe_request_tasks,
+    blog_article_tasks,
     quest_request_tasks,
     teaching_tasks,
 ]
@@ -371,6 +413,15 @@ def troupe_request_waiting(db: Session, request: TroupeRequest, requester: User)
     link = "/custodian/troupe-management#requests"
     notification_emails.queue(db, custodians, "troupe_request", summary, link)
     web_push.queue(db, custodians, "troupe_request", summary, link)
+
+
+def blog_article_waiting(db: Session, article: BlogPost, author: User) -> None:
+    """An article, or a published one's changes, has just been sent for the blog:
+    email and push to the custodians who want that, but not to its author."""
+    custodians = list(db.scalars(select(User.id).where(User.is_custodian, User.id != author.id)))
+    item = blog_article_item(article, author.display_name)
+    notification_emails.queue(db, custodians, "blog_article", item.summary, item.link)
+    web_push.queue(db, custodians, "blog_article", item.summary, item.link)
 
 
 def signed_up(db: Session, user: User) -> None:

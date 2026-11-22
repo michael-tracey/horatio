@@ -16,7 +16,8 @@ accounts. The custodian picks which one stays, and merges the other into it:
   turned off (#1077) stay off; and its blog author profile (#1159), if the
   staying account has none;
 - its bell messages, the scenes it made, the responses assigned to it and not yet
-  written, and its troupe requests still waiting;
+  written, its troupe requests still waiting, and the blog articles it wrote, with
+  any changes waiting on them (horatio.blog);
 - its handle, and the former handles it still holds, become the staying
   account's former handles, its own held for good, so links and searches still
   find the person.
@@ -59,6 +60,7 @@ from horatio.email_design import Body, compose
 from horatio.models import (
     AuthIdentity,
     BlogAuthor,
+    BlogPost,
     Character,
     EmailChange,
     EmailNotice,
@@ -102,6 +104,7 @@ PROFILE = (
 )
 # The Who's Who's naming them by their handle (#264), which moves on its own.
 WHOS_WHO = "choice to be named by handle in the Who's Who"
+BLOG_AUTHOR = "blog author profile"
 PROVIDERS = {"discord": "Discord", "google": "Google"}
 
 
@@ -221,6 +224,16 @@ def _takes_whos_who(keep: User, other: User) -> bool:
     return preferences.read(other).whos_who_handle and "whos_who_handle" not in (
         keep.preferences or {}
     )
+
+
+def _takes_blog_author(db: Session, keep: User, other: User) -> bool:
+    """Whether the staying account takes the other's blog author profile (#1159): only
+    where it has none of its own."""
+
+    def has(user: User) -> bool:
+        return db.scalar(select(BlogAuthor.id).where(BlogAuthor.user_id == user.id)) is not None
+
+    return has(other) and not has(keep)
 
 
 def plural(count: int, one: str, many: str) -> str:
@@ -346,6 +359,8 @@ def preview(db: Session, keep: User, other: User, viewer: User) -> Preview:
         settings.append(f"lines and veils ({shared})")
     if _takes_whos_who(keep, other):
         settings.append(WHOS_WHO)
+    if _takes_blog_author(db, keep, other):
+        settings.append(BLOG_AUTHOR)
 
     held = list(
         db.scalars(
@@ -382,6 +397,11 @@ def preview(db: Session, keep: User, other: User, viewer: User) -> Preview:
                 ),
                 "troupe request waiting",
                 "troupe requests waiting",
+            ),
+            (
+                _count(db, BlogPost, BlogPost.author_id == other.id),
+                "blog article",
+                "blog articles",
             ),
         )
         if n
@@ -509,7 +529,7 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
             off: sorted({*(keep.preferences or {}).get(off, []), *other.preferences[off]}),
         }
 
-    if db.scalar(select(BlogAuthor.id).where(BlogAuthor.user_id == keep.id)) is None:
+    if BLOG_AUTHOR in found.settings:
         db.execute(update(BlogAuthor).where(BlogAuthor.user_id == other.id).values(user_id=keep.id))
 
     _suspension(db, actor, keep, other, found)
@@ -544,6 +564,7 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
         .where(TroupeRequest.requester_id == other.id, TroupeRequest.status == "pending")
         .values(requester_id=keep.id)
     )
+    db.execute(update(BlogPost).where(BlogPost.author_id == other.id).values(author_id=keep.id))
 
     db.execute(update(FormerHandle).where(FormerHandle.user_id == other.id).values(user_id=keep.id))
     db.add(FormerHandle(user_id=keep.id, handle=other.handle, held_until=FOR_GOOD))

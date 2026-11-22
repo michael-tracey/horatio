@@ -187,10 +187,38 @@ def test_a_tags_articles_and_how_many_each_tag_has(troupe: Troupe, anyone: TestC
     assert titles(tagged) == ["On safety and scenes", "On safety"]
     assert tagged["total"] == 2
     assert titles(filtered) == ["On safety and scenes"]
-    # Every tag, in the custodian's order, counting only what is published.
-    assert (tags["safety-and-consent"], tags["storytelling"], tags["community"]) == (2, 1, 0)
+    # Only tags with published articles, in the custodian's order, counting those.
+    assert tags == {"storytelling": 1, "safety-and-consent": 2}
     assert anyone.get("/blog/public/tags/no-such-tag").status_code == 404
     assert anyone.get("/blog/public/articles", params={"tag": "nope"}).status_code == 404
+
+
+def test_retired_renamed_and_merged_tags_on_the_blog(troupe: Troupe, anyone: TestClient) -> None:
+    c = troupe.custodian.client
+    kept = {t["name"]: t["id"] for t in ok(c.get("/blog/tags/kept"))}
+    one = published(troupe, title="On safety")
+    two = published(troupe, title="On downtimes")
+    tag(troupe, one, "Safety and consent")
+    tag(troupe, two, "Downtimes")
+
+    # Retired, a tag stays on its articles, in the list and at its page.
+    ok(c.put(f"/blog/tags/{kept['Safety and consent']}/retired", json={"retired": True}))
+    listed = [t["slug"] for t in ok(anyone.get("/blog/public/tags"))]
+    assert "safety-and-consent" in listed
+    assert titles(ok(anyone.get("/blog/public/tags/safety-and-consent"))) == ["On safety"]
+
+    # Renamed once a published article has it, it keeps its address.
+    ok(c.put(f"/blog/tags/{kept['Downtimes']}", json={"name": "Between games"}))
+    renamed = ok(anyone.get("/blog/public/tags/downtimes"))
+    assert renamed["tag"]["name"] == "Between games"
+    assert titles(renamed) == ["On downtimes"]
+
+    # Merged into another, its page goes; its articles are on the other's.
+    path = f"/blog/tags/{kept['Downtimes']}/merge"
+    ok(c.post(path, json={"into_id": kept["Community"]}))
+    assert anyone.get("/blog/public/tags/downtimes").status_code == 404
+    assert titles(ok(anyone.get("/blog/public/tags/community"))) == ["On downtimes"]
+    assert "downtimes" not in [t["slug"] for t in ok(anyone.get("/blog/public/tags"))]
 
 
 def test_the_blogs_own_addresses_arent_slugs(troupe: Troupe) -> None:

@@ -1388,8 +1388,8 @@ export interface paths {
         };
         /**
          * List Tags
-         * @description The blog's tags, in the custodian's order, with how many published articles
-         *     have each.
+         * @description The tags with published articles, in the custodian's order, with how many each
+         *     has: retired ones too, as they stay on the articles that have them (#1161).
          */
         get: operations["list_tags_api_blog_public_tags_get"];
         put?: never;
@@ -1409,7 +1409,8 @@ export interface paths {
         };
         /**
          * Tag Articles
-         * @description A tag's published articles, newest first, a page at a time.
+         * @description A tag's published articles, newest first, a page at a time. A retired tag's page
+         *     stays; one merged into another has gone, and with it its address (#1161).
          */
         get: operations["tag_articles_api_blog_public_tags__slug__get"];
         put?: never;
@@ -1440,6 +1441,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blog/tag-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Order Tags
+         * @description Every tag, retired ones too, in a new order.
+         */
+        put: operations["order_tags_api_blog_tag_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blog/tags": {
         parameters: {
             query?: never;
@@ -1449,10 +1470,92 @@ export interface paths {
         };
         /**
          * List Tags
-         * @description The blog's tags, in the custodian's order.
+         * @description The tags an article can be tagged with, in the custodian's order: not the
+         *     retired ones, which stay only on the articles that have them (#1161).
          */
         get: operations["list_tags_api_blog_tags_get"];
         put?: never;
+        /**
+         * Add Tag
+         * @description A new tag, at the end of the list.
+         */
+        post: operations["add_tag_api_blog_tags_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/tags/kept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Kept Tags
+         * @description Every tag, retired ones too, with how many articles carry each.
+         */
+        get: operations["kept_tags_api_blog_tags_kept_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename Tag */
+        put: operations["rename_tag_api_blog_tags__tag_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/tags/{tag_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge Tag
+         * @description Move the tag off every article onto another, then remove it.
+         */
+        post: operations["merge_tag_api_blog_tags__tag_id__merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/tags/{tag_id}/retired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Retire Tag
+         * @description Retire a tag, or bring it back. Retired, it stays on the articles that have it.
+         */
+        put: operations["retire_tag_api_blog_tags__tag_id__retired_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -17603,6 +17706,44 @@ export interface components {
             /** Slug */
             slug: string;
         };
+        /** BlogTagKeptOut */
+        BlogTagKeptOut: {
+            /** Articles */
+            articles: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Published */
+            published: number;
+            /** Retired */
+            retired: boolean;
+            /** Slug */
+            slug: string;
+            /** Slug Fixed */
+            slug_fixed: boolean;
+        };
+        /** BlogTagMergeIn */
+        BlogTagMergeIn: {
+            /**
+             * Into Id
+             * Format: uuid
+             */
+            into_id: string;
+        };
+        /** BlogTagNameIn */
+        BlogTagNameIn: {
+            /** Name */
+            name: string;
+        };
+        /** BlogTagOrderIn */
+        BlogTagOrderIn: {
+            /** Tag Ids */
+            tag_ids: string[];
+        };
         /** BlogTagOut */
         BlogTagOut: {
             /**
@@ -17614,6 +17755,11 @@ export interface components {
             name: string;
             /** Slug */
             slug: string;
+        };
+        /** BlogTagRetiredIn */
+        BlogTagRetiredIn: {
+            /** Retired */
+            retired: boolean;
         };
         /** BlogTagsIn */
         BlogTagsIn: {
@@ -42971,6 +43117,39 @@ export interface operations {
             };
         };
     };
+    order_tags_api_blog_tag_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogTagOrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogTagKeptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tags_api_blog_tags_get: {
         parameters: {
             query?: never;
@@ -42987,6 +43166,164 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlogTagOut"][];
+                };
+            };
+        };
+    };
+    add_tag_api_blog_tags_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogTagNameIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogTagKeptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    kept_tags_api_blog_tags_kept_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogTagKeptOut"][];
+                };
+            };
+        };
+    };
+    rename_tag_api_blog_tags__tag_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogTagNameIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogTagKeptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_tag_api_blog_tags__tag_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogTagMergeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogTagKeptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_tag_api_blog_tags__tag_id__retired_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlogTagRetiredIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlogTagKeptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

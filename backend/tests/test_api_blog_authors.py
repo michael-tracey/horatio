@@ -326,6 +326,10 @@ def test_a_merged_accounts_profile_goes_to_the_account_it_was_merged_into(
 ) -> None:
     twice = sign_up(client_for, "twice")
     save(twice, handle="twice_writes")
+    found = troupe.custodian.client.get(
+        "/accounts/merge", params={"keep": troupe.storyteller.handle, "merge": twice.handle}
+    )
+    assert "blog author profile" in found.json()["settings"]
     merged = troupe.custodian.client.post(
         "/accounts/merge",
         json={"keep": troupe.storyteller.handle, "merge": twice.handle, "reason": "Same person."},

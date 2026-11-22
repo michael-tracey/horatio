@@ -444,6 +444,7 @@ export type NotificationSettingsOut = Schemas["NotificationSettingsOut"];
 export type NotificationTopicOut = Schemas["NotificationTopicOut"];
 export type BlogArticleOut = Schemas["BlogArticleOut"];
 export type BlogQueueOut = Schemas["BlogQueueOut"];
+export type BlogTagKeptOut = Schemas["BlogTagKeptOut"];
 export type BlogTagOut = Schemas["BlogTagOut"];
 export type BlogTroupeOut = Schemas["BlogTroupeOut"];
 export type BlogWriterOut = Schemas["BlogWriterOut"];
