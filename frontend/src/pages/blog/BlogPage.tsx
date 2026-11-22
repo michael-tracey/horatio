@@ -104,6 +104,23 @@ export function ArticleList({ found, onPage, none = "No articles yet." }: { foun
   );
 }
 
+/** Where a feed reader follows the blog, or one tag of it (#1162). */
+export function feedPath(tag?: string): string {
+  return tag ? `/blog/tags/${encodeURIComponent(tag)}/feed.xml` : "/blog/feed.xml";
+}
+
+/**
+ * The blog's feed, or the tag's, for a feed reader. A plain link, as the API answers
+ * it rather than the app: the router would take it for an article.
+ */
+function FeedLink({ tag }: { tag?: string }) {
+  return (
+    <a href={feedPath(tag)} type="application/atom+xml" className="text-sm text-gold underline hover:text-parchment">
+      {tag ? "Follow this tag by feed" : "Follow by feed"}
+    </a>
+  );
+}
+
 /**
  * The game developer blog (#1158), for anyone, signed in or not: articles newest first
  * a page at a time, the featured ones across the top of the first page, and its tags to
@@ -148,7 +165,12 @@ export function BlogPage() {
 
   return (
     <>
-      <PageTitle subtitle={tag ? "Articles with this tag, newest first." : "Essays by the staff of troupes on Horatio: on playing, running a game, and the tricks of both."}>{tag ? (tagName ?? "Tag") : "Blog"}</PageTitle>
+      <PageTitle
+        subtitle={tag ? "Articles with this tag, newest first." : "Essays by the staff of troupes on Horatio: on playing, running a game, and the tricks of both."}
+        actions={<FeedLink tag={tag} />}
+      >
+        {tag ? (tagName ?? "Tag") : "Blog"}
+      </PageTitle>
       <TagFilter open={tag} />
       {found.isPending ? (
         <Loading />

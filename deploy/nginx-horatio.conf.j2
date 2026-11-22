@@ -72,7 +72,8 @@ server {
     # has no Brotli module, so gzip only.
     gzip on;
     gzip_types application/json text/css application/javascript text/javascript
-               image/svg+xml application/manifest+json;
+               image/svg+xml application/manifest+json application/atom+xml
+               application/xml;
     gzip_min_length 1024;
     gzip_comp_level 5;
     gzip_vary on;

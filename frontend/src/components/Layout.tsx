@@ -88,14 +88,30 @@ export function Layout() {
           <Outlet />
         </WidePages>
       </main>
-      {/* The Dark Pack Agreement's notices, on every page (in full on About). */}
-      <footer className={`mx-auto ${page.width} px-4 pt-2 pb-8 text-center text-xs text-mist`}>
-        Unofficial fan-made material under Paradox Interactive's Dark Pack Agreement. Portions © Paradox Interactive AB, used with permission. ·{" "}
-        <Link to="/about" className="underline hover:text-parchment">
-          About Horatio
-        </Link>
-        {/* Signed out on a narrow phone, Help is here rather than in the header. */}
-        {!me.data && (
+      <SiteFooter width={page.width} signedIn={!!me.data} />
+    </div>
+  );
+}
+
+/**
+ * The Dark Pack Agreement's notices, on every page (in full on About), and About.
+ * Signed out, the blog (#1162) and, on a narrow phone, Help, which is then not in
+ * the header.
+ */
+export function SiteFooter({ width, signedIn }: { width: string; signedIn: boolean }) {
+  return (
+    <footer className={`mx-auto ${width} px-4 pt-2 pb-8 text-center text-xs text-mist`}>
+      Unofficial fan-made material under Paradox Interactive's Dark Pack Agreement. Portions © Paradox Interactive AB, used with permission. ·{" "}
+      <Link to="/about" className="underline hover:text-parchment">
+        About Horatio
+      </Link>
+      {!signedIn && (
+        <>
+          {" "}
+          ·{" "}
+          <Link to="/blog" className="underline hover:text-parchment">
+            Blog
+          </Link>
           <span className="min-[26rem]:hidden">
             {" "}
             ·{" "}
@@ -103,9 +119,9 @@ export function Layout() {
               Help
             </Link>
           </span>
-        )}
-      </footer>
-    </div>
+        </>
+      )}
+    </footer>
   );
 }
 

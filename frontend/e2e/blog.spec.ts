@@ -304,3 +304,49 @@ test("signed out, someone opens the blog, filters it by a tag, reads an article 
   await c.goto(`/blog/${tagged.slug}`);
   await expect(c.getByRole("link", { name: "Change it" })).toHaveAttribute("href", `/blog/write/${tagged.id}`);
 });
+
+test("signed out, someone finds the blog from the sign-in page; its feeds, the sitemap and robots.txt hold only what is published, and an article's link has its own preview (#1162)", async ({ browser }) => {
+  const custodian = await person(browser, "blogfeed-cust");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  const title = `Pacing a long night ${run}`;
+  const article = await publishedArticle(c, title, "Break the night into **acts**.", ["Storytelling"], true);
+  const unready = `Unfinished pacing ${run}`;
+  const draft = await send(c, "POST", "/api/blog/articles", { title: unready, summary: "", body: "Secret.", troupe_id: null });
+
+  // The sign-in page's footer leads to the blog, which links to its feed.
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto("/sign-in");
+  await visitor.getByRole("contentinfo").getByRole("link", { name: "Blog" }).click();
+  await expect(visitor.getByRole("heading", { name: "Blog", level: 1 })).toBeVisible();
+  await expect(visitor.getByRole("link", { name: "Follow by feed" })).toHaveAttribute("href", "/blog/feed.xml");
+
+  // The feed is the API's Atom, not a page of the app.
+  const feed = await visitor.request.get("/blog/feed.xml");
+  expect(feed.status()).toBe(200);
+  expect(feed.headers()["content-type"]).toContain("application/atom+xml");
+  const xml = await feed.text();
+  expect(xml).toContain(`<title>${title}</title>`);
+  expect(xml).toContain("&lt;strong&gt;acts&lt;/strong&gt;");
+  expect(xml).toMatch(/&lt;img src="http[^"]+\/1200\.webp"/);
+  expect(xml).not.toContain(unready);
+  expect(await (await visitor.request.get("/blog/tags/storytelling/feed.xml")).text()).toContain(title);
+
+  const sitemap = await visitor.request.get("/sitemap.xml");
+  expect(sitemap.headers()["content-type"]).toContain("application/xml");
+  const urls = await sitemap.text();
+  expect(urls).toContain(`/blog/${article.slug}</loc>`);
+  expect(urls).not.toContain(`/blog/${draft.slug}<`);
+  const robots = await visitor.request.get("/robots.txt");
+  expect(robots.headers()["content-type"]).toContain("text/plain");
+  expect(await robots.text()).toMatch(/^Sitemap: http\S+\/sitemap\.xml$/m);
+
+  // An article's page carries its own link preview for other sites; a draft's, the site's.
+  const page = await (await visitor.request.get(`/blog/${article.slug}`)).text();
+  expect(page).toContain(`<meta property="og:title" content="${title}" />`);
+  expect(page).toContain('<meta property="og:type" content="article" />');
+  expect(page).toMatch(/<meta property="og:image" content="http[^"]+\/1200\.webp" \/>/);
+  const drafts = await (await visitor.request.get(`/blog/${draft.slug}`)).text();
+  expect(drafts).toContain('<meta property="og:title" content="Horatio" />');
+  expect(drafts).not.toContain(unready);
+});

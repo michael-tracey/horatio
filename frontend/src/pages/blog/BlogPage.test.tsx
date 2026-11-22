@@ -6,7 +6,7 @@ import { api } from "../../api/client";
 import type { BlogPublicArticleOut, BlogPublicPageOut, BlogPublicSummaryOut, BlogPublicTagCountOut } from "../../api/types";
 import { ArticlePage } from "./ArticlePage";
 import { AuthorPage } from "./AuthorPage";
-import { BlogPage, pageFrom } from "./BlogPage";
+import { BlogPage, feedPath, pageFrom } from "./BlogPage";
 
 afterEach(() => {
   cleanup();
@@ -131,6 +131,23 @@ describe("the blog (#1158)", () => {
     answering({ "/api/blog/public/articles": page({ articles: [], featured: [], total: 0 }), "/api/blog/public/tags": TAGS.map((t) => ({ ...t, articles: 0 })) });
     show("/blog");
     expect(await screen.findByText("No articles yet.")).toBeTruthy();
+  });
+
+  it("links to the blog's feed, and on a tag's page to the tag's (#1162)", async () => {
+    answering({
+      "/api/blog/public/articles": page(),
+      "/api/blog/public/tags/{slug}": { ...page({ articles: [ELYSIUM], total: 1 }), tag: { id: "t2", name: "Storytelling", slug: "storytelling" } },
+      "/api/blog/public/tags": TAGS,
+    });
+    show("/blog");
+    const feed = await screen.findByRole("link", { name: "Follow by feed" });
+    expect(feed.getAttribute("href")).toBe("/blog/feed.xml");
+    expect(feed.getAttribute("type")).toBe("application/atom+xml");
+    cleanup();
+
+    show("/blog/tags/storytelling");
+    expect((await screen.findByRole("link", { name: "Follow this tag by feed" })).getAttribute("href")).toBe("/blog/tags/storytelling/feed.xml");
+    expect(feedPath("a b")).toBe("/blog/tags/a%20b/feed.xml");
   });
 
   it("reads the page asked for from the address", () => {
