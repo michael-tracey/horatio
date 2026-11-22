@@ -39,7 +39,7 @@ export function Layout() {
     <div className="min-h-screen">
       <header className="relative z-20 border-b border-ash bg-dusk/80 backdrop-blur">
         <div className={`mx-auto flex ${page.width} items-center justify-between gap-3 px-4 py-3`}>
-          <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-wider text-parchment">
+          <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-wider text-parchment lg:shrink-0">
             <img src="/mark-64.png" alt="" width={32} height={32} className="h-8 w-8" />
             Horatio
           </Link>
@@ -59,8 +59,9 @@ export function Layout() {
             <div className="flex min-w-0 items-center gap-1 lg:gap-4">
               {/* Search everything (#1046), on every screen, before the bar's links. */}
               <SiteSearch />
-              {/* The whole bar from lg up; below it, the bell and a menu, so the bar stays one line (#746). */}
-              <nav aria-label="Main" className="hidden items-center gap-x-4 text-sm whitespace-nowrap lg:flex">
+              {/* The whole bar from lg up; below it, the bell and a menu, so the bar stays one line (#746).
+                  Where even that is too wide, as with Large text at 1024px, the name gives way (#1190). */}
+              <nav aria-label="Main" className="hidden min-w-0 items-center gap-x-4 text-sm whitespace-nowrap lg:flex">
                 <SiteLinks isCustodian={me.data.is_custodian} link={link} />
                 <NotificationBell />
                 <AccountLink name={me.data.display_name} isCustodian={me.data.is_custodian} className={(state) => `inline-flex min-w-0 items-center gap-1.5 ${link(state)}`} short />
@@ -192,16 +193,20 @@ function SiteLinks({ isCustodian, link, onPick, blog = false }: { isCustodian: b
   );
 }
 
-/** The person's own name, which opens their account; "(custodian)" after it for the custodian. `short` cuts a long name short, to keep the bar to one line. */
+/**
+ * The person's own name, which opens their account; "(custodian)" after it for the custodian.
+ * `short` cuts a long name short, and shorter still where the bar has no room for it (#1190),
+ * to keep the bar to one line; its tooltip has it whole.
+ */
 function AccountLink({ name, isCustodian, className, short = false, onPick }: { name: string; isCustodian: boolean; className: LinkClass; short?: boolean; onPick?: () => void }) {
   return (
-    <NavLink to="/account" className={className} onClick={onPick}>
+    <NavLink to="/account" className={className} onClick={onPick} title={short ? name : undefined}>
       <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
         <circle cx="12" cy="8" r="4" />
         <path d="M4 21a8 8 0 0 1 16 0" strokeLinecap="round" />
       </svg>
       <span className="sr-only">Your account: </span>
-      <span className={short ? "max-w-48 truncate" : "min-w-0 break-words"}>{name}</span>
+      <span className={short ? "min-w-0 max-w-48 truncate" : "min-w-0 break-words"}>{name}</span>
       {isCustodian && <span className="shrink-0"> (custodian)</span>}
     </NavLink>
   );
