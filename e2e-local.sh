@@ -68,14 +68,16 @@ cd "$ROOT/backend"
 # drops the connection fails with ECONNRESET. 300 s outlasts the longest test.
 # The custodian isn't held to two-step sign-in: tests make custodians partway through,
 # already signed in. Authenticator apps get a key of the suite's own, and passkeys
-# are signed for the address the suite opens.
+# are signed for the address the suite opens. Nobody hears of new blog articles on
+# the bell (horatio.blog_bell): a notice to every account would change the bell's
+# count in whatever other test is running then.
 E2E_TOTP_KEY="ZTJlIG9ubHk6IG5vdCBhIHJlYWwga2V5ICEhISEhISE="
 UPLOADS="$ROOT/.local/e2e-uploads"
 rm -rf "$UPLOADS" && mkdir -p "$UPLOADS"
 HORATIO_COOKIE_SECURE=false HORATIO_FRONTEND_DIST="$ROOT/frontend/dist" HORATIO_UPLOAD_DIR="$UPLOADS" \
   HORATIO_AUTH_LIMITS=false HORATIO_TWO_STEP_FOR_CUSTODIANS=false HORATIO_TOTP_KEY="$E2E_TOTP_KEY" \
   HORATIO_WEBAUTHN_ORIGIN="http://localhost:$PORT" \
-  HORATIO_DISCORD_BOT_TOKEN= HORATIO_SMTP_HOST= HORATIO_DARK_PACK_DIR= \
+  HORATIO_DISCORD_BOT_TOKEN= HORATIO_SMTP_HOST= HORATIO_DARK_PACK_DIR= HORATIO_BLOG_BELL=false \
   setsid uv run uvicorn horatio.app:app --port "$PORT" --timeout-keep-alive 300 >"$LOG" 2>&1 < /dev/null &
 api=$!
 stop_api() {

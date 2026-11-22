@@ -176,10 +176,10 @@ def test_the_page_lists_every_topic_that_applies(
     assert names == [t.name for t in TOPICS]
     # Staff see staff work, but not the custodian's.
     groups = [g["name"] for g in page(troupe.narrator)["groups"]]
-    assert groups == ["account", "characters", "downtimes", "boons", "troupes", "staff"]
+    assert groups == ["account", "characters", "downtimes", "boons", "troupes", "blog", "staff"]
     # A player sees neither.
     groups = [g["name"] for g in page(troupe.player)["groups"]]
-    assert groups == ["account", "characters", "downtimes", "boons", "troupes"]
+    assert groups == ["account", "characters", "downtimes", "boons", "troupes", "blog"]
     assert client_for().get("/notification-settings").status_code == 401
 
 
@@ -193,6 +193,8 @@ def test_the_locked_ones_say_so(client_for: Callable[[], TestClient]) -> None:
     topics = shown(person)
     assert routes(topics["security"]) == {"bell": (True, True)}
     assert routes(topics["account_emails"]) == {"email": (True, True)}
+    # New blog articles: in the bell unless turned off, and never by email or push (#1165).
+    assert routes(topics["blog_new"]) == {"bell": (True, False)}
     # Teaching asked of your character: always in the bell; pushed if you tick it (#1097).
     assert routes(topics["teaching"]) == {"bell": (True, True), "push": (False, False)}
     assert topics["teaching"]["task"] is True
