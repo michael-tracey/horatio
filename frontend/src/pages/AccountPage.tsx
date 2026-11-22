@@ -10,6 +10,7 @@ import { LinksEditor } from "../components/LinksEditor";
 import { Button, Card, ErrorText, Field, Input, Loading, PageTitle, Tabs, Textarea } from "../components/ui";
 import { useAction, useLeaveWarning, useMe } from "../hooks";
 import { DevicePanel } from "../offline/DevicePanel";
+import { useWriter } from "./blog/writer";
 import { LinesVeilsForm } from "./LinesVeilsForm";
 import { BlogAuthorPage } from "./settings/BlogAuthorPage";
 import { NotificationsPage } from "./settings/NotificationsPage";
@@ -47,13 +48,22 @@ export function AccountPage() {
     enabled: !!id,
   });
   const onDevice = !!useMatch("/account/device");
+  const writer = useWriter();
   const title = (
     <>
       <PageTitle
         actions={
-          <Link to={`/players/${id}`} className="text-sm text-gold underline">
-            See your profile
-          </Link>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link to={`/players/${id}`} className="text-sm text-gold underline">
+              See your profile
+            </Link>
+            {/* For staff and the custodian (#1157). */}
+            {writer.data?.can_write && (
+              <Link to="/blog/write" className="text-sm text-gold underline">
+                Write for the blog
+              </Link>
+            )}
+          </div>
         }
       >
         Your account

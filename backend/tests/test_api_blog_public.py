@@ -105,11 +105,20 @@ def test_an_article_shows_its_published_words_and_nothing_private(
         "body": "Start **small**.",
         "picture": None,
         "author": {"name": "storyteller", "handle": None},
-        # The troupe isn't public, so it is its name only.
-        "troupe": {"name": "Lords of the Night", "id": None},
+        # The troupe isn't public, so the blog names it without a link.
+        "troupe": {
+            "id": troupe.id,
+            "name": "Lords of the Night",
+            "archived": False,
+            "public": False,
+        },
         "tags": [
-            {"name": "Storytelling", "slug": "storytelling"},
-            {"name": "Safety and consent", "slug": "safety-and-consent"},
+            {"id": shown["tags"][0]["id"], "name": "Storytelling", "slug": "storytelling"},
+            {
+                "id": shown["tags"][1]["id"],
+                "name": "Safety and consent",
+                "slug": "safety-and-consent",
+            },
         ],
         "featured": False,
         "published_at": shown["published_at"],
@@ -123,17 +132,16 @@ def test_an_article_shows_its_published_words_and_nothing_private(
     assert mine["edit"] == f"/blog/write/{article['id']}"
 
 
-def test_a_public_troupe_is_linked_and_an_archived_one_isnt(
-    troupe: Troupe, anyone: TestClient
-) -> None:
+def test_a_troupe_says_whether_it_is_public_and_running(troupe: Troupe, anyone: TestClient) -> None:
     published(troupe)
     ok(troupe.lead.client.put(f"/troupes/{troupe.id}/profile/public", json={"public": True}))
     path = "/blog/public/articles/running-your-first-elysium"
 
-    assert ok(anyone.get(path))["troupe"] == {"name": "Lords of the Night", "id": troupe.id}
+    linked = {"id": troupe.id, "name": "Lords of the Night", "archived": False, "public": True}
+    assert ok(anyone.get(path))["troupe"] == linked
 
     ok(troupe.lead.client.post(f"/troupes/{troupe.id}/archive", json={"reason": "Done"}))
-    assert ok(anyone.get(path))["troupe"] == {"name": "Lords of the Night", "id": None}
+    assert ok(anyone.get(path))["troupe"] == {**linked, "archived": True}
 
 
 def test_the_blog_is_newest_first_a_page_at_a_time_with_the_featured_on_top(
@@ -174,7 +182,8 @@ def test_a_tags_articles_and_how_many_each_tag_has(troupe: Troupe, anyone: TestC
     filtered = ok(anyone.get("/blog/public/articles", params={"tag": "storytelling"}))
     tags = {t["slug"]: t["articles"] for t in ok(anyone.get("/blog/public/tags"))}
 
-    assert tagged["tag"] == {"name": "Safety and consent", "slug": "safety-and-consent"}
+    assert tagged["tag"]["name"] == "Safety and consent"
+    assert tagged["tag"]["slug"] == "safety-and-consent"
     assert titles(tagged) == ["On safety and scenes", "On safety"]
     assert tagged["total"] == 2
     assert titles(filtered) == ["On safety and scenes"]
@@ -296,7 +305,7 @@ def test_a_hero_picture_is_public_once_its_article_is(
     assert shown.status_code == 200
     assert shown.headers["cache-control"] == "public, max-age=3600"
     with Image.open(io.BytesIO(shown.content)) as image:
-        assert image.size == (600, 338)
+        assert image.size == (600, 300)
     assert ok(anyone.get("/blog/public/articles"))["articles"][0]["picture"] == picture
     assert fetch(anyone, picture, "full.webp").status_code == 404
 

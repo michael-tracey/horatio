@@ -230,7 +230,7 @@ Horatio's blog, at **/blog**, has articles on playing and running a game, writte
 - An article shows who wrote it and when, and the troupe it comes from. A troupe whose profile is public is a link to that profile.
 - Under the article is its author's card, as they set it in [their blog author profile](#your-blog-author-profile). Their name leads to their author page, which lists every article of theirs on the blog, newest first.
 
-Readers can't comment on articles. If you wrote an article, its page has **Change it**, which opens it for writing.
+Readers can't comment on articles. If you wrote an article, its page has **Change it**, which opens it for writing. For writing one, see [Writing for the blog](blog.md).
 
 ## Searching everything
 

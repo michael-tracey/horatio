@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -45,6 +45,8 @@ class BlogTroupeOut(BaseModel):
     name: str
     # Archived since; the blog's pages won't link it (#1160).
     archived: bool
+    # Its profile is public; one that isn't is named but not linked (#1157).
+    public: bool
 
 
 class BlogRevisionOut(BaseModel):
@@ -164,7 +166,12 @@ def custodian_article(db: Session, user: User, article_id: uuid.UUID) -> BlogPos
 
 
 def troupe_out(troupe: Troupe) -> BlogTroupeOut:
-    return BlogTroupeOut(id=troupe.id, name=troupe.name, archived=troupe.archived_at is not None)
+    return BlogTroupeOut(
+        id=troupe.id,
+        name=troupe.name,
+        archived=troupe.archived_at is not None,
+        public=troupe.public,
+    )
 
 
 def articles_out(db: Session, user: User, found: list[BlogPost]) -> list[BlogArticleOut]:
@@ -364,10 +371,19 @@ PictureUpload = Annotated[UploadFile, File(description="JPEG, PNG, WebP or HEIC,
 
 @router.post("/articles/{article_id}/picture")
 def upload_picture(
-    article_id: uuid.UUID, file: PictureUpload, db: DbSession, user: CurrentUser
+    article_id: uuid.UUID,
+    file: PictureUpload,
+    db: DbSession,
+    user: CurrentUser,
+    crop_x: Annotated[float | None, Form(ge=0, le=1)] = None,
+    crop_y: Annotated[float | None, Form(ge=0, le=1)] = None,
+    crop_size: Annotated[float | None, Form(gt=0, le=1)] = None,
 ) -> BlogArticleOut:
-    """Its hero picture, as a post's is kept (1200 and 600 px wide). On a published
-    article it is part of the changes, so the old one stays up until they are."""
+    """Its hero picture, cut to the 2:1 frame its author places (its left and top as
+    fractions of the picture's width and height, and its width as a fraction of the
+    picture's), or the widest in the middle; kept as a post's is (1200 and 600 px
+    wide). On a published article it is part of the changes, so the old one stays up
+    until they are."""
     article = own_article(db, user, article_id)
     blog.changeable(article)
     root = uploads()
@@ -375,7 +391,12 @@ def upload_picture(
     new = uuid.uuid4()
     directory = pictures.blog_picture_dir(root, new)
     with pictures.writing(directory):
-        pictures.write_post_picture(directory, image)
+        crop = (
+            pictures.Crop(crop_x, crop_y, crop_size)
+            if crop_x is not None and crop_y is not None and crop_size is not None
+            else None
+        )
+        pictures.write_hero_picture(directory, image, crop)
         old = blog.change_picture(article, new)
         db.commit()
     drop_picture(old)

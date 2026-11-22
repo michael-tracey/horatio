@@ -23,6 +23,7 @@ from sqlalchemy.sql import Select
 
 from horatio import blog, pictures
 from horatio.api import blog_authors
+from horatio.api.blog import BlogTagOut, BlogTroupeOut, troupe_out
 from horatio.api.blog_authors import AuthorCard
 from horatio.auth.deps import DbSession, MaybeUser
 from horatio.models import BlogAuthor, BlogPost, BlogPostTag, BlogTag, Troupe, User
@@ -38,12 +39,7 @@ FEATURED = 3
 # --- shapes ----------------------------------------------------------------------------
 
 
-class BlogPublicTagOut(BaseModel):
-    name: str
-    slug: str
-
-
-class BlogPublicTagCountOut(BlogPublicTagOut):
+class BlogPublicTagCountOut(BlogTagOut):
     # How many published articles have it.
     articles: int
 
@@ -58,15 +54,6 @@ class BlogPublicAuthorOut(BaseModel):
     handle: str | None
 
 
-class BlogPublicTroupeOut(BaseModel):
-    """The troupe an article names. A private or archived troupe is its name only."""
-
-    name: str
-    # For its public profile (/t/<id>) and troupe card (#1160); None when it is
-    # private or archived, so it isn't linked.
-    id: uuid.UUID | None
-
-
 class BlogPublicSummaryOut(BaseModel):
     """An article in a list of them."""
 
@@ -76,8 +63,10 @@ class BlogPublicSummaryOut(BaseModel):
     # Its hero picture (add "/1200.webp" or "/600.webp"), or None.
     picture: str | None
     author: BlogPublicAuthorOut
-    troupe: BlogPublicTroupeOut | None
-    tags: list[BlogPublicTagOut]
+    # The troupe it names: the writing page's shape, so the blog and its preview draw
+    # it alike. The blog links it only while it is public and not archived.
+    troupe: BlogTroupeOut | None
+    tags: list[BlogTagOut]
     featured: bool
     # When it was first published: its date on the blog.
     published_at: datetime
@@ -108,7 +97,7 @@ class BlogPublicPageOut(BaseModel):
 
 
 class BlogPublicTagPageOut(BlogPublicPageOut):
-    tag: BlogPublicTagOut
+    tag: BlogTagOut
 
 
 class BlogPublicAuthorPageOut(BlogPublicPageOut):
@@ -126,11 +115,6 @@ def published() -> Select[BlogPost]:
 
 def newest(query: Select[BlogPost]) -> Select[BlogPost]:
     return query.order_by(BlogPost.published_at.desc(), BlogPost.id.desc())
-
-
-def troupe_shown(troupe: Troupe) -> BlogPublicTroupeOut:
-    linked = troupe.public and troupe.archived_at is None
-    return BlogPublicTroupeOut(name=troupe.name, id=troupe.id if linked else None)
 
 
 def authors_of(
@@ -161,7 +145,7 @@ def summaries(db: Session, found: list[BlogPost]) -> list[BlogPublicSummaryOut]:
     """The articles as the blog lists them, asking the database a few times in all."""
     troupe_ids = {a.troupe_id for a in found if a.troupe_id is not None}
     troupes = {
-        t.id: troupe_shown(t) for t in db.scalars(select(Troupe).where(Troupe.id.in_(troupe_ids)))
+        t.id: troupe_out(t) for t in db.scalars(select(Troupe).where(Troupe.id.in_(troupe_ids)))
     }
     authors = authors_of(db, {a.author_id for a in found})
     tags = blog.tags_of(db, [a.id for a in found])
@@ -176,7 +160,7 @@ def summaries(db: Session, found: list[BlogPost]) -> list[BlogPublicSummaryOut]:
                 picture=pictures.blog_picture_url(a.id, a.picture_id),
                 author=authors[a.author_id][0],
                 troupe=troupes.get(a.troupe_id) if a.troupe_id else None,
-                tags=[BlogPublicTagOut(name=t.name, slug=t.slug) for t in tags[a.id]],
+                tags=[BlogTagOut(id=t.id, name=t.name, slug=t.slug) for t in tags[a.id]],
                 featured=a.featured,
                 published_at=a.published_at,
                 revised_at=a.revised_at,
@@ -260,7 +244,7 @@ def list_tags(db: DbSession) -> list[BlogPublicTagCountOut]:
         )
     }
     return [
-        BlogPublicTagCountOut(name=t.name, slug=t.slug, articles=counts.get(t.id, 0))
+        BlogPublicTagCountOut(id=t.id, name=t.name, slug=t.slug, articles=counts.get(t.id, 0))
         for t in blog.all_tags(db)
     ]
 
@@ -271,7 +255,7 @@ def tag_articles(slug: str, db: DbSession, page: int = Page) -> BlogPublicTagPag
     tag = tag_by_slug(db, slug)
     found = page_of(db, tagged(published(), tag), page)
     return BlogPublicTagPageOut(
-        **found.model_dump(), tag=BlogPublicTagOut(name=tag.name, slug=tag.slug)
+        **found.model_dump(), tag=BlogTagOut(id=tag.id, name=tag.name, slug=tag.slug)
     )
 
 

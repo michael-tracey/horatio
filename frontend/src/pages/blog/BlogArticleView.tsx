@@ -1,139 +1,97 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import type { BlogPublicAuthorOut, BlogPublicTagOut, BlogPublicTroupeOut } from "../../api/types";
-import { authorPath } from "../../components/AuthorCard";
+import type { BlogTagOut, BlogTroupeOut } from "../../api/types";
 import { Markdown } from "../../components/Markdown";
-import { PageTitle } from "../../components/ui";
 import { useDates } from "../../dates";
+import { troupeLinked } from "./blog";
 
-/** A tag as a chip, leading to the tag's own page. */
-export function TagChip({ tag }: { tag: BlogPublicTagOut }) {
-  return (
-    <Link to={`/blog/tags/${tag.slug}`} className="inline-flex min-h-8 items-center rounded-full border border-ash px-3 text-sm text-parchment hover:border-gold hover:text-gold">
-      {tag.name}
-    </Link>
-  );
-}
-
-/** Who wrote it: their name, leading to their author page once they have one (#1159). */
-export function AuthorName({ author }: { author: BlogPublicAuthorOut }) {
-  if (!author.handle) return <>{author.name}</>;
-  return (
-    <Link to={authorPath(author.handle)} className="text-gold hover:underline">
-      {author.name}
-    </Link>
-  );
-}
-
-/**
- * The troupe an article names: its public profile, or its name only when the troupe
- * is private or archived. The troupe card (#1160) takes its place.
- */
-export function TroupeLine({ troupe }: { troupe: BlogPublicTroupeOut }) {
-  return (
-    <p className="text-sm text-mist">
-      From{" "}
-      {troupe.id ? (
-        <Link to={`/t/${troupe.id}`} className="text-gold hover:underline">
-          {troupe.name}
-        </Link>
-      ) : (
-        troupe.name
-      )}
-    </p>
-  );
-}
-
-/** "Published 3 Nov 2026", and when it was last changed if it was. */
-export function Dateline({ publishedAt, revisedAt }: { publishedAt: string | null; revisedAt?: string | null }) {
-  const dates = useDates();
-  if (!publishedAt) return null;
-  return (
-    <>
-      <time dateTime={publishedAt}>{dates.date(publishedAt)}</time>
-      {revisedAt && <>, changed {dates.date(revisedAt)}</>}
-    </>
-  );
-}
-
-/** Its summary, then who wrote it and when, as lines of the title's subtitle. */
-function Byline({ article }: { article: ArticleWords }) {
-  return (
-    <>
-      {article.summary && <span className="mb-1 block text-base text-parchment">{article.summary}</span>}
-      <span className="block">
-        By <AuthorName author={article.author} />
-        {article.published_at && (
-          <>
-            , <Dateline publishedAt={article.published_at} revisedAt={article.revised_at} />
-          </>
-        )}
-      </span>
-    </>
-  );
-}
-
-export type ArticleWords = {
+/** What an article shows a reader: its published words, or its author's working ones in a preview. */
+export type ArticleShown = {
   title: string;
   summary: string;
-  /** Markdown. */
   body: string;
-  /** Its hero picture: add "/1200.webp" or "/600.webp". */
+  /** Its hero picture (add "/1200.webp" or "/600.webp"), or null. */
   picture: string | null;
-  tags: BlogPublicTagOut[];
-  author: BlogPublicAuthorOut;
-  troupe: BlogPublicTroupeOut | null;
-  /** None while it isn't published, as in a preview. */
+  author_name: string;
+  troupe: BlogTroupeOut | null;
+  tags: BlogTagOut[];
   published_at: string | null;
-  revised_at?: string | null;
+  revised_at: string | null;
 };
 
 /**
- * An article as the blog shows it (#1158): its title, summary, hero picture, who wrote
- * it and when, its tags, and its words, through the Markdown that renders no HTML. On
- * its own page it is the page's title; elsewhere, a preview say, give `heading={2}`.
- * `authorCard` goes under it (#1159's AuthorCard, for an author with a profile); its
- * author's name is on the dateline either way.
+ * An article as the blog shows it (#1157): its hero picture, tags, title, summary,
+ * byline and words. The writing page's preview draws it, and the blog's own article
+ * page (#1158) is meant to as well, so the two can't drift apart. The troupe it names
+ * is a link to the troupe's public page only when that is public and running (#1155);
+ * otherwise its name alone. `author` is the room under the words for the author's
+ * card (#1159); `tagLink` makes each tag a link to its page.
  */
-export function BlogArticleView({ article, heading = 1, actions, authorCard }: { article: ArticleWords; heading?: 1 | 2; actions?: ReactNode; authorCard?: ReactNode }) {
-  const title = article.title || "Untitled";
+export function BlogArticleView({
+  article: a,
+  heading = "h1",
+  author,
+  tagLink,
+}: {
+  article: ArticleShown;
+  /** The title's level: h1 on the blog's own page, h2 inside another page. */
+  heading?: "h1" | "h2";
+  author?: ReactNode;
+  tagLink?: (tag: BlogTagOut) => string;
+}) {
+  const dates = useDates();
+  const Title = heading;
+  const chip = "inline-flex min-h-7 items-center rounded-full border border-ash px-3 text-xs text-mist";
   return (
-    <article className="flex min-w-0 flex-col gap-4">
-      {article.picture && (
+    <article aria-label={a.title} className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-4">
+      {a.picture && (
         <img
-          src={`${article.picture}/1200.webp`}
-          srcSet={`${article.picture}/600.webp 600w, ${article.picture}/1200.webp 1200w`}
-          sizes="(min-width: 64rem) 64rem, 100vw"
+          src={`${a.picture}/1200.webp`}
+          srcSet={`${a.picture}/600.webp 600w, ${a.picture}/1200.webp 1200w`}
+          sizes="(min-width: 48rem) 48rem, 100vw"
           alt=""
-          className="aspect-[16/9] w-full rounded-lg border border-ash object-cover"
+          className="aspect-[2/1] w-full rounded-md object-cover"
         />
       )}
-      {heading === 1 ? (
-        <PageTitle actions={actions} subtitle={<Byline article={article} />}>
-          {title}
-        </PageTitle>
-      ) : (
-        <div>
-          <h2 className="text-2xl text-parchment">{title}</h2>
-          <p className="mt-1 text-sm text-mist">
-            <Byline article={article} />
-          </p>
-        </div>
-      )}
-      {article.troupe && <TroupeLine troupe={article.troupe} />}
-      {article.tags.length > 0 && (
+      {a.tags.length > 0 && (
         <ul aria-label="Tags" className="flex flex-wrap gap-2">
-          {article.tags.map((t) => (
-            <li key={t.slug}>
-              <TagChip tag={t} />
+          {a.tags.map((t) => (
+            <li key={t.id}>
+              {tagLink ? (
+                <Link to={tagLink(t)} className={`${chip} hover:border-mist hover:text-parchment`}>
+                  {t.name}
+                </Link>
+              ) : (
+                <span className={chip}>{t.name}</span>
+              )}
             </li>
           ))}
         </ul>
       )}
-      <div className="max-w-prose">
-        <Markdown text={article.body} />
-      </div>
-      {authorCard && <div className="mt-4">{authorCard}</div>}
+      <header className="flex flex-col gap-2">
+        <Title className="font-display text-2xl break-words text-parchment sm:text-3xl">{a.title || "Untitled"}</Title>
+        {a.summary && <p className="text-base break-words text-mist">{a.summary}</p>}
+        <p className="text-sm text-mist">
+          By <span className="text-parchment">{a.author_name}</span>
+          {a.troupe && (
+            <>
+              {" of "}
+              {troupeLinked(a.troupe) ? (
+                <Link to={`/t/${a.troupe.id}`} className="text-gold hover:underline">
+                  {a.troupe.name}
+                </Link>
+              ) : (
+                <span className="text-parchment">{a.troupe.name}</span>
+              )}
+            </>
+          )}
+          {" · "}
+          {a.published_at ? dates.date(a.published_at) : "Not published yet"}
+          {a.revised_at && <>, changed {dates.date(a.revised_at)}</>}
+        </p>
+      </header>
+      <Markdown text={a.body} />
+      {author}
     </article>
   );
 }

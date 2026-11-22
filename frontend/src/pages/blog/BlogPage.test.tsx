@@ -14,9 +14,9 @@ afterEach(() => {
 });
 
 const TAGS: BlogPublicTagCountOut[] = [
-  { name: "How to play", slug: "how-to-play", articles: 0 },
-  { name: "Storytelling", slug: "storytelling", articles: 2 },
-  { name: "Safety and consent", slug: "safety-and-consent", articles: 1 },
+  { id: "t1", name: "How to play", slug: "how-to-play", articles: 0 },
+  { id: "t2", name: "Storytelling", slug: "storytelling", articles: 2 },
+  { id: "t3", name: "Safety and consent", slug: "safety-and-consent", articles: 1 },
 ];
 
 function summary(over: Partial<BlogPublicSummaryOut>): BlogPublicSummaryOut {
@@ -26,8 +26,8 @@ function summary(over: Partial<BlogPublicSummaryOut>): BlogPublicSummaryOut {
     summary: "What I wish I'd known.",
     picture: null,
     author: { name: "Mara Quinn", handle: null },
-    troupe: { name: "Lords of the Night", id: null },
-    tags: [{ name: "Storytelling", slug: "storytelling" }],
+    troupe: { id: "lords", name: "Lords of the Night", archived: false, public: false },
+    tags: [{ id: "t2", name: "Storytelling", slug: "storytelling" }],
     featured: false,
     published_at: "2026-11-01T12:00:00Z",
     revised_at: null,
@@ -46,8 +46,8 @@ const ARTICLE: BlogPublicArticleOut = {
   ...ELYSIUM,
   body: "Start **small**.\n\n<script>alert(1)</script>",
   tags: [
-    { name: "Storytelling", slug: "storytelling" },
-    { name: "Safety and consent", slug: "safety-and-consent" },
+    { id: "t2", name: "Storytelling", slug: "storytelling" },
+    { id: "t3", name: "Safety and consent", slug: "safety-and-consent" },
   ],
   picture: "/api/blog/articles/a1/pictures/p1",
   author_card: null,
@@ -97,7 +97,7 @@ describe("the blog (#1158)", () => {
 
   it("shows a tag's articles, marked in the tags, without the featured row", async () => {
     const get = answering({
-      "/api/blog/public/tags/{slug}": { ...page({ articles: [ELYSIUM], total: 1 }), tag: { name: "Storytelling", slug: "storytelling" } },
+      "/api/blog/public/tags/{slug}": { ...page({ articles: [ELYSIUM], total: 1 }), tag: { id: "t2", name: "Storytelling", slug: "storytelling" } },
       "/api/blog/public/tags": TAGS,
     });
     show("/blog/tags/storytelling");
@@ -148,14 +148,14 @@ describe("an article's page (#1158)", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Running your first Elysium" })).toBeTruthy();
     expect(screen.getByText("What I wish I'd known.")).toBeTruthy();
-    expect(screen.getByText(/By Mara Quinn/)).toBeTruthy();
+    expect(screen.getByText("Mara Quinn").closest("p")?.textContent).toMatch(/^By Mara Quinn of Lords of the Night · /);
     expect(document.querySelector("article img")?.getAttribute("src")).toBe("/api/blog/articles/a1/pictures/p1/1200.webp");
     const tags = screen.getByRole("list", { name: "Tags" });
     expect(within(tags).getByRole("link", { name: "Safety and consent" }).getAttribute("href")).toBe("/blog/tags/safety-and-consent");
     expect(screen.getByText("small").tagName).toBe("STRONG");
     expect(document.querySelector("article script")).toBeNull();
     // A private troupe is its name only.
-    expect(screen.getByText(/From Lords of the Night/)).toBeTruthy();
+    expect(screen.getByText("Lords of the Night")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Lords of the Night" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Change it" })).toBeNull();
     expect(screen.getByRole("link", { name: "← Blog" }).getAttribute("href")).toBe("/blog");
@@ -165,7 +165,7 @@ describe("an article's page (#1158)", () => {
   it("links a public troupe, puts the author's card under it, and offers its author a way to change it", async () => {
     const card = { handle: "mara", display_name: "Mara Quinn", bio: "I run *Lords*.", links: [], picture: null };
     answering({
-      "/api/blog/public/articles/{slug}": { ...ARTICLE, troupe: { name: "Lords of the Night", id: "lords" }, author: { name: "Mara Quinn", handle: "mara" }, author_card: card, edit: "/blog/write/a1" },
+      "/api/blog/public/articles/{slug}": { ...ARTICLE, troupe: { id: "lords", name: "Lords of the Night", archived: false, public: true }, author: { name: "Mara Quinn", handle: "mara" }, author_card: card, edit: "/blog/write/a1" },
     });
     show("/blog/running-your-first-elysium");
 
@@ -173,8 +173,6 @@ describe("an article's page (#1158)", () => {
     const about = screen.getByRole("region", { name: "About Mara Quinn" });
     expect(within(about).getByRole("link", { name: "Mara Quinn" }).getAttribute("href")).toBe("/blog/authors/mara");
     expect(within(about).getByText("Lords").tagName).toBe("EM");
-    // The dateline's name leads there too.
-    expect(screen.getAllByRole("link", { name: "Mara Quinn" })).toHaveLength(2);
     expect(screen.getByRole("link", { name: "Change it" }).getAttribute("href")).toBe("/blog/write/a1");
   });
 

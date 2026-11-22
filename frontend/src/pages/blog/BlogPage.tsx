@@ -1,11 +1,12 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, ApiError, unwrap } from "../../api/client";
-import type { BlogPublicPageOut, BlogPublicSummaryOut, BlogPublicTagOut } from "../../api/types";
+import type { BlogPublicAuthorOut, BlogPublicPageOut, BlogPublicSummaryOut, BlogTagOut } from "../../api/types";
+import { authorPath } from "../../components/AuthorCard";
 import { Pager } from "../../components/Pager";
 import { Badge, Empty, ErrorText, Loading, PageTitle } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useTitle } from "../../title";
-import { AuthorName, Dateline } from "./BlogArticleView";
 
 // As many as the API puts on a page (blog_public.PAGE_SIZE).
 export const PAGE_SIZE = 12;
@@ -16,11 +17,22 @@ export function pageFrom(params: URLSearchParams): number {
   return Number.isInteger(n) && n >= 1 ? n : 1;
 }
 
+/** Who wrote it: their name, leading to their author page once they have one (#1159). */
+function AuthorName({ author }: { author: BlogPublicAuthorOut }) {
+  if (!author.handle) return <>{author.name}</>;
+  return (
+    <Link to={authorPath(author.handle)} className="text-gold hover:underline">
+      {author.name}
+    </Link>
+  );
+}
+
 /** An article in a list: its picture, title, summary, author, date and tags. */
 export function ArticleCard({ article: a, wide = false }: { article: BlogPublicSummaryOut; wide?: boolean }) {
+  const dates = useDates();
   return (
     <li aria-label={a.title} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-ash bg-night">
-      {a.picture && <img src={`${a.picture}/600.webp`} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" />}
+      {a.picture && <img src={`${a.picture}/600.webp`} alt="" loading="lazy" className="aspect-[2/1] w-full object-cover" />}
       <div className="flex flex-col gap-2 p-4">
         <h3 className={wide ? "text-xl" : "text-lg"}>
           <Link to={`/blog/${a.slug}`} className="text-parchment hover:text-gold">
@@ -34,7 +46,7 @@ export function ArticleCard({ article: a, wide = false }: { article: BlogPublicS
         </h3>
         {a.summary && <p className="text-sm">{a.summary}</p>}
         <p className="text-xs text-mist">
-          By <AuthorName author={a.author} />, <Dateline publishedAt={a.published_at} />
+          By <AuthorName author={a.author} />, <time dateTime={a.published_at}>{dates.date(a.published_at)}</time>
         </p>
         {a.tags.length > 0 && (
           <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
@@ -104,7 +116,7 @@ export function BlogPage() {
   useTitle("Blog");
   const found = useQuery({
     queryKey: ["blog-public", "articles", tag ?? null, page],
-    queryFn: (): Promise<BlogPublicPageOut & { tag?: BlogPublicTagOut }> =>
+    queryFn: (): Promise<BlogPublicPageOut & { tag?: BlogTagOut }> =>
       tag
         ? unwrap(api.GET("/api/blog/public/tags/{slug}", { params: { path: { slug: tag }, query: { page } } }))
         : unwrap(api.GET("/api/blog/public/articles", { params: { query: { page } } })),

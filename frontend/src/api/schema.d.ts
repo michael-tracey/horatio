@@ -990,8 +990,11 @@ export interface paths {
         put?: never;
         /**
          * Upload Picture
-         * @description Its hero picture, as a post's is kept (1200 and 600 px wide). On a published
-         *     article it is part of the changes, so the old one stays up until they are.
+         * @description Its hero picture, cut to the 2:1 frame its author places (its left and top as
+         *     fractions of the picture's width and height, and its width as a fraction of the
+         *     picture's), or the widest in the middle; kept as a post's is (1200 and 600 px
+         *     wide). On a published article it is part of the changes, so the old one stays up
+         *     until they are.
          */
         post: operations["upload_picture_api_blog_articles__article_id__picture_post"];
         /** Remove Picture */
@@ -17455,10 +17458,10 @@ export interface components {
             /** Summary */
             summary: string;
             /** Tags */
-            tags: components["schemas"]["BlogPublicTagOut"][];
+            tags: components["schemas"]["BlogTagOut"][];
             /** Title */
             title: string;
-            troupe: components["schemas"]["BlogPublicTroupeOut"] | null;
+            troupe: components["schemas"]["BlogTroupeOut"] | null;
         };
         /**
          * BlogPublicAuthorOut
@@ -17527,22 +17530,20 @@ export interface components {
             /** Summary */
             summary: string;
             /** Tags */
-            tags: components["schemas"]["BlogPublicTagOut"][];
+            tags: components["schemas"]["BlogTagOut"][];
             /** Title */
             title: string;
-            troupe: components["schemas"]["BlogPublicTroupeOut"] | null;
+            troupe: components["schemas"]["BlogTroupeOut"] | null;
         };
         /** BlogPublicTagCountOut */
         BlogPublicTagCountOut: {
             /** Articles */
             articles: number;
-            /** Name */
-            name: string;
-            /** Slug */
-            slug: string;
-        };
-        /** BlogPublicTagOut */
-        BlogPublicTagOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Name */
             name: string;
             /** Slug */
@@ -17558,19 +17559,9 @@ export interface components {
             page: number;
             /** Pages */
             pages: number;
-            tag: components["schemas"]["BlogPublicTagOut"];
+            tag: components["schemas"]["BlogTagOut"];
             /** Total */
             total: number;
-        };
-        /**
-         * BlogPublicTroupeOut
-         * @description The troupe an article names. A private or archived troupe is its name only.
-         */
-        BlogPublicTroupeOut: {
-            /** Id */
-            id: string | null;
-            /** Name */
-            name: string;
         };
         /**
          * BlogQueueOut
@@ -17643,6 +17634,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Public */
+            public: boolean;
         };
         /**
          * BlogWriterOut
@@ -17841,6 +17834,12 @@ export interface components {
         };
         /** Body_upload_picture_api_blog_articles__article_id__picture_post */
         Body_upload_picture_api_blog_articles__article_id__picture_post: {
+            /** Crop Size */
+            crop_size?: number | null;
+            /** Crop X */
+            crop_x?: number | null;
+            /** Crop Y */
+            crop_y?: number | null;
             /**
              * File
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
