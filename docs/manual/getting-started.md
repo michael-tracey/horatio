@@ -234,6 +234,14 @@ Horatio's blog, at **/blog**, has articles on playing and running a game, writte
 
 Readers can't comment on articles. If you wrote an article, its page has **Change it**, which opens it for writing. For writing one, see [Writing for the blog](blog.md).
 
+### Following the blog by feed
+
+To hear of new articles without opening Horatio, follow the blog in a feed reader, such as Feedly, Inoreader or NetNewsWire. Choose **Follow by feed** at the top of the blog and give its address, **/blog/feed.xml** on your Horatio's site, to your reader. Most readers find it from the blog's own address too. It holds the 20 newest articles, each in full, with its picture.
+
+On a tag's page, **Follow this tag by feed** follows only the articles with that tag, at an address such as /blog/tags/storytelling/feed.xml.
+
+A link to the blog or an article, shared in a chat or on social media, shows the article's title, its summary and its picture.
+
 ## Searching everything
 
 The magnifying glass at the top of every page, or **/** or **Ctrl K** (**⌘K** on a Mac) on any page, opens a search of everything you may see: characters, players, boons, locations, quests, equipment, news, announcements and this manual, and a troupe's settings for its storytellers. Each kind is a group of its own, and each result opens its page; **Enter** opens the first.

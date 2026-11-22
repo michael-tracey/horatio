@@ -1,8 +1,5 @@
 import asyncio
-import html
 import logging
-import re
-import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path, PurePosixPath
@@ -10,7 +7,7 @@ from pathlib import Path, PurePosixPath
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
-from horatio import delivery, secret_links
+from horatio import delivery, link_previews, secret_links
 from horatio.api import (
     account_merges,
     appearance,
@@ -113,6 +110,7 @@ from horatio.api import (
     setting_style,
     setup,
     shared_backgrounds,
+    sharing,
     sheets,
     sire_lines,
     site_email,
@@ -375,33 +373,9 @@ def health() -> dict[str, str]:
 
 
 app.include_router(api)
-
-
-# A troupe's public profile (horatio.api.troupe_profiles).
-PUBLIC_PROFILE = re.compile(r"t/([0-9a-fA-F-]{36})/?")
-
-
-def with_preview(index: str, preview: dict[str, str], public_url: str) -> str:
-    """index.html with its link preview made a troupe's: its name, a line about
-    it, and its portrait where it has one (the site's picture where not)."""
-
-    def meta(attribute: str, name: str, value: str, page: str) -> str:
-        tag = re.compile(rf'<meta {attribute}="{re.escape(name)}" content="[^"]*" />')
-        return tag.sub(
-            lambda _: f'<meta {attribute}="{name}" content="{html.escape(value)}" />', page
-        )
-
-    page = meta("property", "og:title", preview["title"], index)
-    page = meta("property", "og:description", preview["description"], page)
-    page = meta("name", "description", preview["description"], page)
-    if preview["image"]:
-        page = meta("property", "og:image", public_url + preview["image"], page)
-        page = meta("property", "og:image:width", "512", page)
-        page = meta("property", "og:image:height", "512", page)
-        page = meta("name", "twitter:card", "summary", page)
-    return page.replace(
-        "<title>Horatio</title>", f"<title>{html.escape(preview['title'])} · Horatio</title>"
-    )
+# The blog's feeds, the sitemap and robots.txt (#1162), at the site's top level and
+# before the frontend's catch-all below.
+app.include_router(sharing.router)
 
 
 def serve_frontend(dist: Path, target: FastAPI = app) -> None:
@@ -422,15 +396,12 @@ def serve_frontend(dist: Path, target: FastAPI = app) -> None:
     def frontend(path: str, db: DbSession) -> Response:
         if path.startswith("api/"):
             raise HTTPException(status_code=404)
-        public = PUBLIC_PROFILE.fullmatch(path)
-        if public:
-            try:
-                troupe_id = uuid.UUID(public.group(1))
-            except ValueError:
-                return HTMLResponse(index, headers=fresh)
-            preview = troupe_profiles.link_preview(db, troupe_id)
-            page = with_preview(index, preview, public_url) if preview else index
-            return HTMLResponse(page, headers=fresh)
+        # A public page's own link preview (horatio.link_previews).
+        preview = link_previews.for_path(db, path)
+        if preview is not None:
+            return HTMLResponse(
+                link_previews.with_preview(index, preview, public_url), headers=fresh
+            )
         candidate = (dist / path).resolve()
         if (
             path

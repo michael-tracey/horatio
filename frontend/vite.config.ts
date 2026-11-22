@@ -54,7 +54,9 @@ export default defineConfig({
         // obligation (#709), with the boon statistics' shaping that only they use.
         globIgnores: ["preview.jpg", "logo.png", "assets/d3-*.js", "assets/BoonStatisticsPage-*.js", "assets/ObligationWeb-*.js", "assets/boonStatistics-*.js"],
         navigateFallback: "index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        // The API, and what the API answers beside the app's pages (#1162): the blog's
+        // feeds, the sitemap and robots.txt, which are never the app.
+        navigateFallbackDenylist: [/^\/api\//, /^\/blog\/(tags\/[^/]+\/)?feed\.xml$/, /^\/(sitemap\.xml|robots\.txt)$/],
         importScripts: ["push-sw.js"],
         // The rules and the manual make some of the app's files big.
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
@@ -81,7 +83,12 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: { "/api": `http://localhost:${apiPort}` },
+    // The blog's feeds, the sitemap and robots.txt are the API's too (#1162).
+    proxy: {
+      "/api": `http://localhost:${apiPort}`,
+      "^/blog/(tags/[^/]+/)?feed\\.xml$": `http://localhost:${apiPort}`,
+      "^/(sitemap\\.xml|robots\\.txt)$": `http://localhost:${apiPort}`,
+    },
     // The user manual is bundled from ../docs/manual (src/manual/content.ts).
     fs: { allow: [".", "../docs/manual"] },
   },
