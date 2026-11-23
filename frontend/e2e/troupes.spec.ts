@@ -2779,9 +2779,10 @@ test("a player leaves the home troupe after a dialog naming the title that ends,
 
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {
   test.slow();
-  const custodian = await person(browser, "profile-custodian");
+  // The troupe is made in New York, so it starts in New York's time zone (#1211), which
+  // its games are entered in; the lead plans them there, and a visitor reads them in Tokyo.
+  const custodian = await person(browser, "profile-custodian", { timezoneId: "America/New_York" });
   makeCustodian(custodian.email);
-  // The lead plans games in New York; a visitor reads them in Tokyo.
   const lead = await person(browser, "profile-lead", { timezoneId: "America/New_York" });
   const player = await person(browser, "profile-player");
   const visitor = await (await browser.newContext({ timezoneId: "Asia/Tokyo" })).newPage();
