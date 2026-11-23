@@ -275,6 +275,21 @@ forbids = { has = { category = "flaws", name = "Baali: Carrion Comfort" } }
 message = "Carrion Comfort bars the Herd background."
 page = "Vol. 2, p. 281"
 
+# After the one above, so the checks before them keep their keys.
+[[checks]]
+category = "backgrounds"
+name = "Herd"
+forbids = { weakness = ["Nagaraja"] }
+message = "Nagaraja cannot take Herd: they must eat human flesh, and Herd doesn't feed them."
+page = "Vol. 2, p. 60"
+
+[[checks]]
+category = "backgrounds"
+name = "Herd"
+forbids = { weakness = ["Nosferatu: Creeps"] }
+message = "Creeps cannot take Herd: human blood barely feeds them."
+page = "Vol. 2, p. 48"
+
 # --- only one -------------------------------------------------------------------
 
 [[checks]]

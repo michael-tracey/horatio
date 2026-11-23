@@ -642,7 +642,7 @@ properties = { in_clan = ["Auspex", "Fortitude", "Necromancy: Mortis Path"], wea
 category = "clan"
 name = "Cappadocians: Lamia"
 page_reference = "73"
-properties = { in_clan = ["Fortitude", "Potence", "Necromancy: Mortis Path"], weakness = "Instead of the Cappadocian weakness, their bite spreads a disease that can kill a mortal within a week.", weakness_page = "76" }
+properties = { in_clan = ["Fortitude", "Potence", "Necromancy: Mortis Path"], weakness = "Instead of the Cappadocian weakness, their bite spreads a disease that can kill a mortal within a week.", weakness_page = "76", weakness_effects = { feeding_note = "a mortal you feed on falls sick: they test Physical + Survival against 8, and die within a week if they fail." } }
 
 [[traits]]
 category = "clan"
@@ -714,7 +714,7 @@ properties = { in_clan = ["Fortitude", "Potence", "Visceratika"], weakness = "Mo
 category = "clan"
 name = "Giovanni"
 page_reference = "52"
-properties = { in_clan = ["Dominate", "Potence", "Necromancy: Sepulchre Path"], weakness = "A painful bite: feeding does 3 damage to a mortal for each Blood, not 2.", weakness_page = "53" }
+properties = { in_clan = ["Dominate", "Potence", "Necromancy: Sepulchre Path"], weakness = "A painful bite: feeding does 3 damage to a mortal for each Blood, not 2.", weakness_page = "53", weakness_effects = { feeding_note = "your bite does 3 damage to a mortal for each Blood you take, not 2." } }
 
 [[traits]]
 category = "clan"
@@ -782,7 +782,7 @@ properties = { in_clan = ["Animalism", "Obfuscate", "Potence"], weakness = "Hide
 category = "clan"
 name = "Nosferatu: Creeps"
 page_reference = "Vol. 2, p. 45"
-properties = { in_clan = ["Animalism", "Auspex", "Obfuscate"], weakness = "The Nosferatu weakness, and human blood barely feeds them, so no Herd; animal and vampire blood are fine.", weakness_page = "Vol. 2, p. 48", weakness_adds = true }
+properties = { in_clan = ["Animalism", "Auspex", "Obfuscate"], weakness = "The Nosferatu weakness, and human blood barely feeds them, so no Herd; animal and vampire blood are fine.", weakness_page = "Vol. 2, p. 48", weakness_adds = true, weakness_effects = { feeding_note = "from a human you get 1 Blood only by draining them dry; animal and vampire blood feed you as usual." } }
 
 [[traits]]
 category = "clan"
@@ -800,13 +800,13 @@ properties = { in_clan = ["Animalism", "Auspex", "Chimerstry"] }
 category = "clan"
 name = "Salubri"
 page_reference = "77"
-properties = { in_clan = ["Auspex", "Fortitude", "Valeren"], weakness = "Can feed only during violence, so no Herd, theirs or anyone's.", weakness_page = "77" }
+properties = { in_clan = ["Auspex", "Fortitude", "Valeren"], weakness = "Can feed only during violence, so no Herd, theirs or anyone's.", weakness_page = "77", weakness_effects = { feeding_note = "you can feed only during violence." } }
 
 [[traits]]
 category = "clan"
 name = "Salubri: Healer"
 page_reference = "80"
-properties = { in_clan = ["Auspex", "Fortitude", "Obeah"], weakness = "Instead of the Salubri weakness, they can't feed on the unwilling: feeding takes an extra downtime action unless it comes from Herd.", weakness_page = "80" }
+properties = { in_clan = ["Auspex", "Fortitude", "Obeah"], weakness = "Instead of the Salubri weakness, they can't feed on the unwilling: feeding takes an extra downtime action unless it comes from Herd.", weakness_page = "80", weakness_effects = { feeding_note = "you can feed only on the willing." } }
 
 [[traits]]
 category = "clan"
@@ -866,7 +866,7 @@ properties = { in_clan = ["Animalism", "Auspex", "Thaumaturgy: Path of Elemental
 category = "clan"
 name = "Ventrue"
 page_reference = "68"
-properties = { in_clan = ["Dominate", "Fortitude", "Presence"], weakness = "Feed on one narrow kind of mortal, agreed with the Storyteller; other mortal or animal blood gives nothing.", weakness_page = "68" }
+properties = { in_clan = ["Dominate", "Fortitude", "Presence"], weakness = "Feed on one narrow kind of mortal, agreed with the Storyteller; other mortal or animal blood gives nothing.", weakness_page = "68", weakness_effects = { feeding_note = "you feed only on your chosen kind of mortal; other blood gives you nothing." } }
 
 [[traits]]
 category = "clan"
@@ -1133,6 +1133,40 @@ page = "316"
 category = "merits"
 trait = "Efficient Digestion"
 herd_factor = 2
+
+# Clan weaknesses (horatio.clan_weaknesses): an entry for a clan holds for a character
+# carrying its weakness, labelled "Nagaraja weakness", and not for one freed of it.
+# `note` says when it holds, where Horatio can't tell.
+
+# Salubri feed only during violence: no Herd, theirs or anyone's (p. 77).
+[[feeding_modifiers]]
+category = "clan"
+trait = "Salubri"
+herd_factor = 0
+page = "77"
+
+# Healers can't feed on the unwilling: feeding any way but Herd takes an extra
+# downtime action (p. 80).
+[[feeding_modifiers]]
+category = "clan"
+trait = "Salubri: Healer"
+amount = 1
+note = "unless fed from Herd"
+page = "80"
+
+# Creeps get almost nothing from human blood, so no Herd (Vol. 2, p. 48).
+[[feeding_modifiers]]
+category = "clan"
+trait = "Nosferatu: Creeps"
+herd_factor = 0
+page = "Vol. 2, p. 48"
+
+# Nagaraja can't benefit from Herd (Vol. 2, p. 60).
+[[feeding_modifiers]]
+category = "clan"
+trait = "Nagaraja"
+herd_factor = 0
+page = "Vol. 2, p. 60"
 
 # ---------------------------------------------------------------------------
 # Character creation, as Yorick seeded it: picks give that many free dots to

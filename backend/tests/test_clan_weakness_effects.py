@@ -14,14 +14,18 @@ from sqlalchemy.orm import Session
 from horatio import clan_weaknesses
 from horatio.reference import (
     Sheet,
+    feeding_notes,
     frenzy,
     pools,
     technique_bases,
     weakness_lines,
     work_out,
 )
+from horatio.rules import feeding
+from horatio.rules.checks import Context, violations
 from horatio.rules.files import DATA_DIR, load_rule_set
-from horatio.rules.model import RuleSetData, SheetTrait
+from horatio.rules.model import RuleSetData, SheetTrait, TroupeRules
+from horatio.rules.pricing import choose_rule
 from tests.api_helpers import Troupe
 from tests.conftest import ghoul_rule_set
 from tests.test_api_troupe_settings_share import ok
@@ -235,6 +239,90 @@ def test_the_weakness_lines_say_which_book_and_what_brought_it() -> None:
     assert [w.book for w in weakness_lines(brujah)] == [None]
     seeker, _ = worked(sheet("Toreador", FREE))
     assert weakness_lines(seeker) == [] and seeker.freed
+
+
+def test_feeding_reminders_for_the_feed_sheet() -> None:
+    giovanni, _ = worked(sheet("Giovanni: Premascine"))
+    assert feeding_notes(giovanni) == [
+        "Giovanni weakness: your bite does 3 damage to a mortal for each Blood you take, not 2."
+    ]
+    creeps, _ = worked(sheet("Nosferatu: Creeps"))
+    assert [n.split(":")[0] for n in feeding_notes(creeps)] == ["Creeps weakness"]
+
+
+# --- feeding between games -----------------------------------------------------------
+
+
+def rules() -> TroupeRules:
+    return TroupeRules(rule_set=vampire())
+
+
+def need(clan: str, *more: Any) -> feeding.Need:
+    return feeding.need(1, "", feeding.basis(rules(), sheet(clan, *more)))
+
+
+def test_herd_counts_for_nothing_where_the_weakness_says() -> None:
+    for clan, source in (
+        ("Nagaraja", "Nagaraja weakness"),
+        ("Nosferatu: Creeps", "Creeps weakness"),
+        ("Salubri", "Salubri weakness"),
+    ):
+        found = need(clan)
+        assert found.herd_factor == 0, clan
+        assert [line.text for line in found.lines][1] == f"{source} (no Herd)"
+    # Healers feed from Herd, but any other way takes an action more (p. 80).
+    healer = need("Salubri: Healer")
+    assert healer.herd_factor == 1 and healer.needed == 2
+    assert healer.lines[1].text == "Healer weakness +1 (unless fed from Herd)"
+    assert healer.notes == ("Healer weakness: you can feed only on the willing.",)
+    # Freed of it, Herd counts again.
+    assert need("Nagaraja", FREE).herd_factor == 1
+
+
+def test_feeding_notes_go_with_the_need() -> None:
+    assert need("Ventrue: Crusader").notes == (
+        "Ventrue weakness: you feed only on your chosen kind of mortal; other blood gives you"
+        " nothing.",
+    )
+    assert need("Gangrel").notes == ()
+
+
+# --- checks and prices ---------------------------------------------------------------
+
+
+def broken(clan: str, *more: Any) -> list[str]:
+    traits = sheet(clan, *more)
+    context = Context(weaknesses=clan_weaknesses.carries(vampire(), traits))
+    return [v.message for v in violations(vampire().checks, traits, context)]
+
+
+def test_herd_is_barred_by_the_weakness_not_the_clan() -> None:
+    herd = ("backgrounds", "Herd", 1)
+    assert "Nagaraja cannot take Herd" in " ".join(broken("Nagaraja", herd))
+    assert "Creeps cannot take Herd" in " ".join(broken("Nosferatu: Creeps", herd))
+    assert "Salubri cannot take Herd. (p. 77)" in broken("Salubri", herd)
+    # A Healer's weakness is its own, and it feeds from Herd (p. 80).
+    assert not any("Herd" in m for m in broken("Salubri: Healer", herd))
+    assert not any("Herd" in m for m in broken("Salubri", herd, FREE))
+
+
+def test_coldly_logical_bars_empathy_and_doubles_morality() -> None:
+    empathy = ("skills", "Empathy", 1)
+    assert any(
+        "rules out Empathy" in m
+        for m in broken("Brujah", empathy, ("flaws", "Brujah: Coldly Logical", 1))
+    )
+    assert not any("Empathy" in m for m in broken("Brujah", empathy))
+
+    humanity = SheetTrait("paths", "Humanity", 5)
+    for clan, more, rate in (
+        ("Brujah", (), 10),
+        ("Brujah", (("flaws", "Brujah: Coldly Logical", 1),), 20),
+        ("Brujah: True Brujah", (), 20),
+        ("Brujah: True Brujah", (FREE,), 10),
+    ):
+        rule = choose_rule(rules(), sheet(clan, *more), humanity)
+        assert rule.rate == rate, (clan, more)
 
 
 # --- through the API ------------------------------------------------------------------
