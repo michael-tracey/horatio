@@ -408,7 +408,7 @@ def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> G
         )
     )
     rows.sort(key=lambda r: r[1].name.lower())
-    month = checkin.earned_this_month(db, [c.id for _, c, _ in rows])
+    month = checkin.earned_this_month(db, [c.id for _, c, _ in rows], troupe)
     here = {c.id for _, c, _ in rows}
     others = [
         (c, u)

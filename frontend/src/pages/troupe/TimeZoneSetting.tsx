@@ -14,8 +14,9 @@ export function zoneDefaultText(troupe: Pick<TroupeOut, "time_zone_default">): s
 /**
  * The troupe's time zone (#1211), Settings › Time zone: where its games are entered on the
  * schedule and the day each falls on, for the directory's Day, and where its NPCs' items
- * expire. Its storytellers choose one from the IANA list, as each person does in Settings;
- * left empty, it is the lead storyteller's, then UTC. Its other running staff read it.
+ * expire; once chosen, the rules' days and months too (#1215). Its storytellers choose one
+ * from the IANA list, as each person does in Settings; left empty, it is the lead
+ * storyteller's, then UTC. Its other running staff read it.
  */
 export function TimeZoneSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const save = useSaveOnChange(

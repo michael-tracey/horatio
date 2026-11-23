@@ -8,7 +8,8 @@ Play View: at check-in (horatio.checkin), or else at the night's first tap
 (horatio.play). A month's is taken at the first game of the calendar month, or is
 charged as a downtime cycle closes and taken as the next night begins, as the troupe
 chooses: once for each calendar month, by when the cycle closed, so a second cycle
-closing in the same month charges nothing more. Each is its own line in the night's
+closing in the same month charges nothing more. Months are the troupe's, on its clock
+(horatio.troupe_zones.rule_zone, #1215). Each is its own line in the night's
 log: "Retainer upkeep: −2 Blood". Each Retainer is paid for in full or not at all, from
 what the night starts with; one the character can't pay for is marked neglected, and
 staff are told. What follows is the troupe's call, so nothing is lost by itself, and
@@ -26,13 +27,13 @@ while its dots are away.
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any, Literal
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications, play, retainers
+from horatio import audit, notifications, play, retainers, troupe_zones
 from horatio.models import (
     Character,
     CycleParticipant,
@@ -279,12 +280,10 @@ def neglect(
 # --- the night ---------------------------------------------------------------------------
 
 
-def month_start(at: datetime) -> datetime:
-    return datetime.combine(at.astimezone(UTC).date().replace(day=1), time(), UTC)
-
-
 def paid_this_month(db: Session, character: Character, at: datetime) -> bool:
-    """A month's upkeep was taken already in the calendar month of `at`."""
+    """A month's upkeep was taken already in the calendar month of `at`, the
+    character's troupe's (horatio.troupe_zones.rule_zone)."""
+    began = troupe_zones.month_began(troupe_of(db, character), at)
     return (
         db.scalar(
             select(PlayEvent.id)
@@ -292,7 +291,7 @@ def paid_this_month(db: Session, character: Character, at: datetime) -> bool:
             .where(
                 PlayGame.character_id == character.id,
                 PlayEvent.upkeep["per"].astext == "month",
-                PlayEvent.happened_at >= month_start(at),
+                PlayEvent.happened_at >= began,
             )
             .limit(1)
         )
@@ -379,7 +378,7 @@ def cycle_closed(db: Session, staff: User, cycle: DowntimeCycle) -> None:
         return
     today = date.today()
     closed = cycle.closed_at or datetime.now(UTC)
-    month = closed.astimezone(UTC).date().replace(day=1)
+    month = troupe_zones.rule_day(troupe, closed).replace(day=1)
     ids = db.scalars(
         select(CycleParticipant.character_id)
         .where(CycleParticipant.cycle_id == cycle.id, CycleParticipant.removed_at.is_(None))

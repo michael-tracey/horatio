@@ -10,11 +10,19 @@ change of zone moves no game: it changes which day each falls on, here.
 
 Everything that needs a troupe's zone asks here: `name` and `zone` for one troupe,
 `names` for many at once, and `column` inside a query.
+
+**Rule days and months** (#1215) are counted on the troupe's clock too: the night a
+bond is on, a calendar month's game XP and Retainer upkeep, an influence effect's
+month. A New York troupe's game at 11 pm on 31 October is still October's. They use
+the troupe's own zone only (`rule_zone`, `rule_day`, `rule_column`): a troupe that has
+none, as every troupe made before #1211, counts them in UTC, as they always were, not
+on its lead's clock, so the rules don't change under it.
 """
 
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo, available_timezones
 
 from fastapi import HTTPException, status
@@ -91,6 +99,34 @@ def column() -> ColumnElement[str]:
         .scalar_subquery()
     )
     return func.coalesce(Troupe.time_zone, lead, UTC_NAME)
+
+
+def rule_zone(troupe: Troupe | None) -> ZoneInfo:
+    """The zone the troupe's rule days and months are counted in: its own, or UTC for a
+    troupe that has none, or no troupe."""
+    return ZoneInfo(troupe.time_zone if troupe is not None and troupe.time_zone else UTC_NAME)
+
+
+def now() -> datetime:
+    """The current time; tests replace this."""
+    return datetime.now(UTC)
+
+
+def rule_day(troupe: Troupe | None, at: datetime | None = None) -> date:
+    """The day `at` (now) falls on, on the troupe's rule clock."""
+    return (at or now()).astimezone(rule_zone(troupe)).date()
+
+
+def month_began(troupe: Troupe | None, at: datetime | None = None) -> datetime:
+    """The moment the calendar month of `at` (now) began, on the troupe's rule clock."""
+    zone = rule_zone(troupe)
+    day = (at or now()).astimezone(zone).date().replace(day=1)
+    return datetime.combine(day, datetime.min.time(), zone)
+
+
+def rule_column() -> ColumnElement[str]:
+    """The troupe's rule zone in a query over `troupes`, as `rule_zone` decides it."""
+    return func.coalesce(Troupe.time_zone, UTC_NAME)
 
 
 def set_zone(db: Session, user: User, troupe: Troupe, value: str | None) -> None:

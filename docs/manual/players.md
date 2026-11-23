@@ -363,7 +363,7 @@ The form is the troupe's own. On the right, the cycle's card gives its due date 
 Each line names its source, as the book has it:
 
 - **Traits that give actions:** Computer (one, spent as any other or on cancelling or observing another character's action), each Science field (one, only for work in that field), the ritual Soul of the Homunculi (two) and Mytherceria's Ay Befriend (one no one can trace or observe). Your troupe can change any of these in its house rules.
-- **Status spent at a game:** spending Veteran on the Play View adds an action to the next downtime, such as "Veteran spent at the 3 Nov game". Undoing the tap takes it back.
+- **Status spent at a game:** spending Veteran on the Play View adds an action to the next downtime, such as "Veteran spent at the 3 Nov game" (the day in the troupe's time zone, or in yours if it hasn't chosen one). Undoing the tap takes it back.
 - **What others did to you:** staff take off what Call of the Hungry Dead or an indirect influence attack costs the character, such as "Call of the Hungry Dead against you".
 
 An action only for one thing, such as a Science action, says so on its question: "Of these, 1 Science action (Chemistry only)". A Science action goes only on a [keyword](#keywords-what-kind-of-action) that fits a Science, such as Investigate, Craft or Narrative; staff judge what fits its field.

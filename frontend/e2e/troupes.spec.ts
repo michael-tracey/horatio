@@ -3462,6 +3462,9 @@ test("storytellers set the troupe's time zone, games are entered in it, and the 
   await settingsPart(l, troupeId, "time-zone");
   const card = l.getByRole("region", { name: "Time zone" });
   await expect(card).toContainText(/Now: Asia\/Tokyo \(.+\) \(the lead storyteller's\)/);
+  // The rules count their days and months in it once chosen, in UTC until then (#1215).
+  await expect(card).toContainText("The rules count their days and months in it too");
+  await expect(card).toContainText("and the rules count in UTC");
   await card.getByRole("combobox", { name: "Time zone" }).fill("America/New_York");
   await expect(l.getByText("Time zone: America/New York")).toBeVisible();
   await expect(card).toContainText(/Now: America\/New York \(E[SD]T\)/);

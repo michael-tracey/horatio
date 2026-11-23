@@ -218,6 +218,35 @@ def test_a_defend_from_last_month_does_not_count(scene: Scene) -> None:
     assert scene.preview(attack).json()["defended"] == 0
 
 
+def test_the_month_of_a_defend_and_a_boost_is_the_troupes(scene: Scene) -> None:
+    """At 11 pm on 31 October it is still October in a New York troupe (#1215): a Defend
+    at 7 pm counts against an Attack then, and a Boost ends as November begins there. In
+    a troupe with no zone the months are UTC's, where it is 1 November already."""
+    seven_pm = datetime(2026, 10, 31, 23, 0, tzinfo=UTC)
+    eleven_pm = datetime(2026, 11, 1, 3, 0, tzinfo=UTC)
+
+    def boost_ends() -> datetime:
+        boost = scene.logged(
+            character_id=scene.agnes,
+            action_key="boost",
+            times=3,
+            happened_at=eleven_pm.isoformat(),
+            target={"character_id": scene.bea},
+        )
+        return datetime.fromisoformat(scene.preview(boost).json()["ends_at"])
+
+    scene.defend(seven_pm)
+    assert scene.preview(scene.attack(2, at=eleven_pm)).json()["defended"] == 0
+    assert boost_ends() == datetime(2026, 12, 1, tzinfo=UTC)
+
+    zoned = scene.troupe.lead.client.patch(
+        f"/troupes/{scene.troupe.id}", json={"time_zone": "America/New_York"}
+    )
+    assert zoned.status_code == 200, zoned.text
+    assert scene.preview(scene.attack(2, at=eleven_pm)).json()["defended"] == 1
+    assert boost_ends() == datetime(2026, 11, 1, 4, 0, tzinfo=UTC)
+
+
 def test_staff_can_set_the_levels_and_see_what_they_cost(scene: Scene) -> None:
     attack = scene.attack(1)
 

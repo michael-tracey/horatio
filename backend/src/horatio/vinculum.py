@@ -210,16 +210,18 @@ def tie_nights(rating: int, night: date) -> list[date]:
 @dataclass
 class History:
     """A troupe's Vinculum history: the nights each shared with each other, as felt by
-    the first toward the second, and who each is."""
+    the first toward the second, and who each is. Ratings are as of the troupe's day,
+    `today` (horatio.bonds.today)."""
 
     nights: dict[tuple[Key, Key], set[date]]
     names: dict[Key, bonds.Party]
+    today: date
 
     def rating(self, felt_by: Key, toward: Key, on_day: date | None = None) -> int:
-        return rating_of(self.nights.get((felt_by, toward), ()), on_day or bonds.today())
+        return rating_of(self.nights.get((felt_by, toward), ()), on_day or self.today)
 
     def ratings(self, on_day: date | None = None) -> dict[tuple[Key, Key], int]:
-        day = on_day or bonds.today()
+        day = on_day or self.today
         found = {pair: rating_of(n, day) for pair, n in self.nights.items()}
         return {pair: r for pair, r in found.items() if r > 0}
 
@@ -283,7 +285,7 @@ def history(db: Session, troupe: Troupe) -> History:
         made = tie_nights(tie.rating, tie.night)
         nights[(a, b)].update(made)
         nights[(b, a)].update(made)
-    return History(dict(nights), names)
+    return History(dict(nights), names, bonds.today(troupe))
 
 
 # --- what a rating does ---------------------------------------------------------------
@@ -420,7 +422,7 @@ def new_vaulderie(
         raise conflict("This troupe doesn't keep the Vinculum.")
     if source not in SOURCES:
         raise unprocessable(f"Where it was told is one of {', '.join(SOURCES)}.")
-    bonds.check_night(night)
+    bonds.check_night(night, troupe)
     people = checked(people)
     if len(note) > 2000:
         raise unprocessable("A note is at most 2000 characters.")
@@ -574,7 +576,7 @@ def report(
         p.party.character is not None and p.party.character.id == character.id for p in people
     ):
         raise unprocessable(f"{character.name} has to be one of the participants.")
-    bonds.check_player_night(night, *(p.party.character for p in people))
+    bonds.check_player_night(night, troupe, *(p.party.character for p in people))
     vaulderie = new_vaulderie(db, user, troupe, night, people, officiant, source, note, "pending")
     audit.record(
         db,
@@ -675,7 +677,7 @@ def add_tie(
         raise unprocessable("Give a reason for the background tie.")
     if rating not in RATINGS:
         raise unprocessable("A Vinculum rating is 1 to 5.")
-    bonds.check_night(night)
+    bonds.check_night(night, troupe)
     a = key_of(one.character.id if one.character else None, one.name)
     b = key_of(other.character.id if other.character else None, other.name)
     if a == b:

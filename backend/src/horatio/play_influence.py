@@ -143,10 +143,15 @@ def fitted(
 
 def game_day(db: Session, character: Character, game_id: uuid.UUID) -> str:
     """The game as an owed action's reason names it: "Spent at the 11 Jul game",
-    on the day its first tap was made, in the player's time zone."""
+    on the day its first tap was made, in the time zone of the troupe that is owed it,
+    the character's home troupe (#1215). For a troupe with no zone of its own, as
+    before it could have one, in the player's."""
     first = db.scalar(select(func.min(PlayEvent.happened_at)).where(PlayEvent.game_id == game_id))
-    player = db.get(User, character.player_id) if character.player_id else None
-    zone = (preferences.read(player).time_zone if player else None) or "UTC"
+    troupe = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
+    zone = troupe.time_zone if troupe is not None else None
+    if zone is None:
+        player = db.get(User, character.player_id) if character.player_id else None
+        zone = (preferences.read(player).time_zone if player else None) or "UTC"
     day = (first or datetime.now(ZoneInfo(zone))).astimezone(ZoneInfo(zone))
     return f"Spent at the {day.day} {day:%b} game"
 

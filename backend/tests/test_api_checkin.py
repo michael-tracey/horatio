@@ -486,4 +486,42 @@ def test_earned_xp_counts_this_month_only(troupe: Troupe, session: Session) -> N
         ]
     )
     session.flush()
-    assert checkin.earned_this_month(session, [character_id]) == {character_id: 6}
+    home = session.get_one(TroupeRecord, uuid.UUID(troupe.id))
+    assert checkin.earned_this_month(session, [character_id], home) == {character_id: 6}
+
+
+def test_earned_xp_counts_the_troupes_month(
+    troupe: Troupe, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A New York game's award at 11 pm on 31 October is dated 1 November by the
+    server's day, in UTC, and is October's there (#1215). With no zone it is November's,
+    as before."""
+    character_id = uuid.UUID(member_character(troupe, troupe.player, "Agnes"))
+    lead = session.scalar(select(XpEntry.entered_by).where(XpEntry.character_id == character_id))
+    assert lead is not None
+    late_on_the_31st = datetime(2026, 11, 1, 3, 0, tzinfo=UTC)  # 11 pm in New York
+    session.add(
+        XpEntry(
+            character_id=character_id,
+            kind="award",
+            amount=4,
+            reason="Game",
+            entered_by=lead,
+            entered_on=late_on_the_31st.date(),
+            created_at=late_on_the_31st,
+        )
+    )
+    session.flush()
+    home = session.get_one(TroupeRecord, uuid.UUID(troupe.id))
+
+    def this_month(at: datetime) -> int:
+        monkeypatch.setattr(checkin, "now", lambda: at)
+        return checkin.earned_this_month(session, [character_id], home)[character_id]
+
+    assert this_month(late_on_the_31st) == 4  # with no zone, UTC's November
+    assert this_month(datetime(2026, 11, 1, 16, 0, tzinfo=UTC)) == 4
+
+    home.time_zone = "America/New_York"
+    session.flush()
+    assert this_month(late_on_the_31st + timedelta(minutes=30)) == 4  # still October there
+    assert this_month(datetime(2026, 11, 1, 16, 0, tzinfo=UTC)) == 0  # November, without it
