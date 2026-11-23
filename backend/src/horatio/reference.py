@@ -46,6 +46,13 @@ issue #601), as Quickness does to Celerity's.
 A troupe's house merits and flaws carry `pools` and `active` in their catalogue
 properties, as the troupe's rules read them (horatio.rules.house_effects), and are
 read here like a book merit's.
+
+So do the clan weaknesses the character carries (issue #1197), from their
+`weakness_effects` in the rules data, as horatio.clan_weaknesses works them out:
+their `pools`, `active` and `use` are read as an [[others]] entry's, labelled with
+the weakness ("Brujah weakness"). A frenzy entry's `difficulty` makes resisting
+harder, and its `note` is said in the Frenzy panel. `weaknesses` lists each with
+its line, page, notes and uses, and `feeding_notes` what they say about feeding.
 """
 
 import re
@@ -59,6 +66,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from horatio.clan_weaknesses import Carried, carried, lifted
 from horatio.rules.model import RuleSetData, SheetTrait
 from horatio.sheets import SheetRow
 
@@ -584,11 +592,42 @@ class Frenzy(BaseModel):
     # The same, while a switch is on: Heart of Darkness's removed heart, one fewer
     # (core p. 161). `value` is the Beast traits more, or fewer.
     switched_beast: list[SwitchedPart] = []
+    # What makes resisting harder without counting as Beast traits: the core book's
+    # Brujah weakness, 2 (p. 45; issue #1197).
+    against: list[PoolPart] = []
+    # What a clan weakness says about frenzy: "Gangrel weakness: each frenzy gives you
+    # another animal feature until you next sleep."
+    notes: list[str] = []
+
+
+class WeaknessLine(BaseModel):
+    """A clan weakness the character carries (horatio.clan_weaknesses), for its line
+    on the Pools tab: what it is, its page, and what the Play View can't work out."""
+
+    # "Brujah weakness", "Ishtarri weakness": what its parts and notes are labelled.
+    name: str
+    # The clan or bloodline it is of.
+    clan: str
+    text: str
+    page: str | None
+    # Its book's name where the books differ and the troupe chose one: "Core book".
+    book: str | None = None
+    # The trait it comes by, where not the character's own clan: "Brujah: Coldly Logical".
+    via: str | None = None
+    notes: list[str] = []
+    # Its uses, each a button (the Toreador's 1 Willpower to look away, p. 61).
+    uses: list[PowerUse] = []
 
 
 class Reference(BaseModel):
     pools: list[TestPool]
     frenzy: Frenzy
+    # The clan weaknesses the character carries (issue #1197).
+    weaknesses: list[WeaknessLine] = []
+    # Where none, though its clan has one: "Golconda Seeker" (core pp. 249-250).
+    weakness_freed_by: str | None = None
+    # What its weaknesses say about feeding, for the Feed sheet: "Giovanni weakness: …".
+    feeding_notes: list[str] = []
     disciplines: list[DisciplinePowers]
     other_powers: list[OtherPower]
     # Modifiers that change no pool shown here: "Hard of Hearing: -2 to Awareness".
@@ -677,6 +716,11 @@ class Effect:
     # What its part is called, if not its source: "Accurate".
     label: str | None = None
     qualities: tuple[VariantQuality, ...] = ()
+    # For frenzy: how much harder resisting is, not as Beast traits (the core book's
+    # Brujah weakness).
+    difficulty: int = 0
+    # A clan weakness's (issue #1197): its frenzy notes go in the Frenzy panel.
+    weakness: bool = False
 
 
 @dataclass
@@ -708,6 +752,10 @@ class Sheet:
     # Each skill held, by name and detail ("Crafts", "Painting"): its rating, and the
     # attribute the catalogue lists it under.
     skills: dict[tuple[str, str], tuple[int, str | None]] = field(default_factory=dict)
+    # The clan weaknesses the character carries (horatio.clan_weaknesses).
+    weaknesses: list[Carried] = field(default_factory=list[Carried])
+    # A Golconda Seeker free of the clan's weakness (core pp. 249-250).
+    freed: bool = False
 
     def rating(self, category: str, name: str) -> int:
         return self.ratings.get((category, name), 0)
@@ -726,8 +774,11 @@ class Sheet:
 
     @property
     def switch_keys(self) -> frozenset[str]:
-        """Every switch's key: the powers file's, and the house merits' this sheet has."""
-        return catalogue().switch_keys | {a["key"] for e in house_entries(self) for a in actives(e)}
+        """Every switch's key: the powers file's, and the house merits' and clan
+        weaknesses' this sheet has."""
+        return catalogue().switch_keys | {
+            a["key"] for e in [*house_entries(self), *weakness_entries(self)] for a in actives(e)
+        }
 
     def with_focus(self, focus: str) -> "Sheet":
         return Sheet(
@@ -738,11 +789,14 @@ class Sheet:
             traits=self.traits,
             choices=self.choices,
             skills=self.skills,
+            weaknesses=self.weaknesses,
+            freed=self.freed,
         )
 
     @classmethod
     def read(cls, rows: Iterable[SheetRow], rule_set: RuleSetData) -> "Sheet":
         sheet = cls()
+        rows = list(rows)
         for row in rows:
             sheet.add(
                 row.category.key,
@@ -753,13 +807,20 @@ class Sheet:
                 row.trait.power_choices,
                 row.trait.detail,
             )
+        sheet.weigh([row.as_rules_trait() for row in rows], rule_set)
         return sheet
+
+    def weigh(self, traits: Sequence[SheetTrait], rule_set: RuleSetData) -> None:
+        """Note the clan weaknesses the character carries (horatio.clan_weaknesses)."""
+        self.weaknesses = carried(rule_set, traits)
+        self.freed = lifted(rule_set, traits)
 
     @classmethod
     def of(cls, traits: Iterable[SheetTrait], rule_set: RuleSetData) -> "Sheet":
         """The pools' makings from the rules' own view of a sheet, for trying one out
         (horatio.house_preview) where there are no rows."""
         sheet = cls()
+        traits = list(traits)
         for t in traits:
             category = rule_set.categories.get(t.category)
             sheet.add(
@@ -770,6 +831,7 @@ class Sheet:
                 rule_set,
                 detail=t.detail,
             )
+        sheet.weigh(traits, rule_set)
         return sheet
 
     def add(
@@ -885,6 +947,8 @@ class Owner:
     # Where it comes from, for a switch: "Protean 4", "Celerity", "Bullet Time".
     origin: str
     chosen: Mapping[str, str] = field(default_factory=dict[str, str])
+    # A clan weakness the character carries (issue #1197).
+    weakness: bool = False
 
 
 def house_entries(sheet: Sheet) -> list[Mapping[str, Any]]:
@@ -894,6 +958,20 @@ def house_entries(sheet: Sheet) -> list[Mapping[str, Any]]:
         for category, name, properties in sheet.traits
         if category in ("merits", "flaws") and "active" in properties
     ]
+
+
+def weakness_entries(sheet: Sheet) -> list[Mapping[str, Any]]:
+    """The clan weaknesses the character carries, as [[others]] entries named for
+    the weakness ("Assamite weakness"), with their `pools`, `active` and `use`. Their
+    `notes` are their own, not added to another entry's switch, so stay off."""
+    return [
+        {"name": w.name, **{k: v for k, v in w.effects.items() if k in ENTRY_KEYS}}
+        for w in sheet.weaknesses
+    ]
+
+
+# What of a clan weakness's effects is read as an [[others]] entry's.
+ENTRY_KEYS = ("pools", "active", "use")
 
 
 def owners(sheet: Sheet) -> Iterable[Owner]:
@@ -915,6 +993,8 @@ def owners(sheet: Sheet) -> Iterable[Owner]:
             yield Owner(other, short, name)
     for entry in house_entries(sheet):
         yield Owner(entry, entry["name"], entry["name"])
+    for entry in weakness_entries(sheet):
+        yield Owner(entry, entry["name"], entry["name"], weakness=True)
 
 
 def _effects(
@@ -949,6 +1029,7 @@ def _effects(
                     VariantQuality(name=q["name"], play=q["play"], page=_page(q))
                     for q in e.get("qualities", [])
                 ),
+                difficulty=e.get("difficulty", 0),
             )
         )
     return found
@@ -959,7 +1040,8 @@ def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
     merits and flaws, resolved to numbers."""
     found: list[Effect] = []
     for owner in owners(sheet):
-        found += _effects(owner.entry.get("pools", []), owner.source, owner.chosen, sheet, bases)
+        made = _effects(owner.entry.get("pools", []), owner.source, owner.chosen, sheet, bases)
+        found += [replace(e, weakness=True) for e in made] if owner.weakness else made
     for category, name, properties in sheet.traits:
         if category in ("merits", "flaws"):
             found += _effects(properties.get("pools", []), name, {}, sheet, bases)
@@ -2059,7 +2141,36 @@ def frenzy(sheet: Sheet, found: Sequence[Effect]) -> Frenzy:
             for e in found
             if e.pool == "frenzy" and e.beast and e.when is not None and e.when in switched
         ],
+        against=[PoolPart(label=e.source, value=e.difficulty) for e in always if e.difficulty],
+        notes=[f"{e.source}: {e.note}" for e in always if e.weakness and e.note],
     )
+
+
+def weakness_lines(sheet: Sheet) -> list[WeaknessLine]:
+    """The clan weaknesses the character carries, each with its line and page, its
+    book where the books differ, the trait it comes by, its notes and its uses."""
+    return [
+        WeaknessLine(
+            name=w.name,
+            clan=w.clan,
+            text=w.weakness.text,
+            page=w.weakness.page,
+            book=w.weakness.label if w.chosen else None,
+            via=w.via,
+            notes=list(w.effects.get("notes", [])),
+            uses=uses(w.effects, sheet),
+        )
+        for w in sheet.weaknesses
+    ]
+
+
+def feeding_notes(sheet: Sheet) -> list[str]:
+    """What the character's clan weaknesses say about feeding."""
+    return [
+        f"{w.name}: {w.effects['feeding_note']}"
+        for w in sheet.weaknesses
+        if w.effects.get("feeding_note")
+    ]
 
 
 def other_notes(found: Sequence[Effect], shown: Collection[str] = ()) -> list[str]:
@@ -2068,6 +2179,9 @@ def other_notes(found: Sequence[Effect], shown: Collection[str] = ()) -> list[st
     notes: list[str] = []
     for e in found:
         if e.pool in shown and not e.instead_of:
+            continue
+        if e.pool == "frenzy" and e.weakness:
+            # Said in the Frenzy panel.
             continue
         if e.pool.startswith("skill:") and not e.instead_of and e.amount:
             when = f" {e.when}" if e.when else ""
@@ -2124,6 +2238,9 @@ def reference(
     return Reference(
         pools=made,
         frenzy=frenzy(sheet, found),
+        weaknesses=weakness_lines(sheet),
+        weakness_freed_by="Golconda Seeker" if sheet.freed else None,
+        feeding_notes=feeding_notes(sheet),
         disciplines=disciplines(sheet),
         other_powers=other_powers(sheet, rule_set),
         notes=other_notes(found, {p.key for p in made}),

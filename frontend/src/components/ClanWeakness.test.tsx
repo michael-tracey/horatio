@@ -56,8 +56,8 @@ describe("the clan's ⓘ on a character's title", () => {
 describe("the Clan weaknesses setting", () => {
   const versions = BOTH.map((w) => ({ ...w, page: w.page ?? null }));
   const clans: ClanWeaknessesOut["clans"] = [
-    { clan: "Tremere", versions, chosen: "vol2" },
-    { clan: "Ventrue", versions, chosen: "core" },
+    { clan: "Tremere", versions, chosen: "vol2", default: "vol2" },
+    { clan: "Ventrue", versions, chosen: "core", default: "core" },
   ];
 
   it("sends the clans played by the core book's once one changes", () => {

@@ -87,6 +87,7 @@ def test_a_troupe_plays_volume_2s_until_its_staff_choose(troupe: Troupe) -> None
                     {"book": "core", "label": "Core book", "weakness": CORE, "page": "64"},
                 ],
                 "chosen": "vol2",
+                "default": "vol2",
             }
         ]
     }

@@ -21,6 +21,8 @@ OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
     "gt": operator.gt,
     "gte": operator.ge,
     "in": lambda value, options: value in options,
+    # A fact that is several things holds this one: { weakness = { has = "Salubri" } }.
+    "has": lambda value, one: one in value,
 }
 
 
@@ -62,6 +64,7 @@ OPERATOR_WORDS: dict[str, str] = {
     "gt": "above {}",
     "gte": "{} or more",
     "in": "{}",
+    "has": "{}",
 }
 
 

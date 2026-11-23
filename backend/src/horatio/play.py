@@ -104,6 +104,7 @@ from sqlalchemy.orm import Session, aliased
 
 from horatio import (
     audit,
+    clan_weaknesses,
     equipment,
     influence_effects,
     npcs,
@@ -130,7 +131,7 @@ from horatio.models import (
     User,
 )
 from horatio.rules.equipment import EQUIPPED_KINDS, EquipmentRules
-from horatio.rules.feeding import clan_family
+from horatio.rules.model import RuleSetData
 from horatio.rules.splats import SPLATS, Panels, Vitae, both
 
 # Most blood, and blood a turn, by Generation dots (MET: VTM pp. 100-101).
@@ -1028,11 +1029,12 @@ def derangement_flaws(rows: Sequence[sheets.SheetRow]) -> tuple[str, ...]:
     )
 
 
-def malkavian(rows: Sequence[sheets.SheetRow]) -> bool:
-    """Malkavians always have 1 Derangement trait (MET: VtM core, p. 57)."""
-    return any(
-        r.category.key == "clan" and clan_family(r.definition.name) == "Malkavian" for r in rows
-    )
+def malkavian(rows: Sequence[sheets.SheetRow], rule_set: RuleSetData) -> bool:
+    """Malkavians always have 1 Derangement trait (MET: VtM core, p. 57): those who
+    carry the Malkavian weakness (horatio.clan_weaknesses), so not a Golconda Seeker
+    freed of it, nor a ghoul, who plays its domitor's for roleplay only."""
+    traits = [r.as_rules_trait() for r in rows]
+    return "Malkavian" in clan_weaknesses.carries(rule_set, traits)
 
 
 def temporary_derangements(db: Session, character: Character) -> tuple[Temporary, ...]:
@@ -1142,7 +1144,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         half, starting = False, carried_vitae(db, character, game, vitae)
     # A Malkavian's Derangement trait is its clan weakness, which a ghoul plays
     # for roleplay only.
-    least = 1 if splat.weakness and malkavian(rows) else 0
+    least = 1 if malkavian(rows, rule_set) else 0
     traits, held = carried(db, character, game, least)
     switches = tuple(reference.switches(rows, rule_set))
     kept = play_effects.held(db, character, game)

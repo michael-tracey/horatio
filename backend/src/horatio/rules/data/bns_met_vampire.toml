@@ -402,10 +402,11 @@ category = "paths"
 scheme = "per_dot"
 rate = 10
 
-# True Brujah pay double for Morality (p. 45).
+# True Brujah pay double for Morality (p. 45), and so does anyone else with their
+# weakness: a Brujah with Coldly Logical (Vol. 2, p. 270; horatio.clan_weaknesses).
 [[cost_rules]]
 category = "paths"
-condition = { clan = "Brujah: True Brujah" }
+condition = { weakness = { has = "Brujah: True Brujah" } }
 scheme = "per_dot"
 rate = 20
 
@@ -557,14 +558,30 @@ scheme = "free"
 # player chooses, kept as the clan's detail (horatio.rules.splats.clan_choice).
 # `weakness` is the clan's weakness in a line of our own words, for the creation
 # wizard, and `weakness_page` where the book has it in full. A bloodline with no
-# weakness of its own has its clan's (p. 42). Where a later book replaced a clan's
-# weakness, `weakness` is the later book's, which Horatio plays unless a troupe
-# chooses otherwise, and `core_weakness` with `core_weakness_page` is the core
-# book's: each troupe chooses which it plays (horatio.clan_weaknesses). Only the
-# Tremere's has been replaced, by Volume 2 (Vol. 2, p. 22); Volume 2's page on the
-# Followers of Set (p. 21) leaves their weakness as it was. `page_reference` is
-# the page where the clan's or bloodline's write-up starts. Tremere's is the core book's, with
-# its disciplines and merits; Volume 2's page on the clan changes only its weakness.
+# weakness of its own has its clan's (p. 42); one with its own has it instead of its
+# clan's ("alternate"), or with `weakness_adds = true` as well as it ("additional"),
+# and `weakness_also` names another clan whose weakness it has too. Where the books
+# differ on a clan's weakness, `weakness` is Volume 2's and `core_weakness` with
+# `core_weakness_page` the core book's: each troupe chooses which it plays
+# (horatio.clan_weaknesses), and until it does plays `weakness_default`, Volume 2's
+# unless it says "core". Volume 2 replaced the Tremere's (Vol. 2, p. 22). It leaves
+# the Brujah's as it was, but its Lash Out (Vol. 2, p. 121) reads it as Beast traits
+# counted, not a harder test, so the Brujah play the core book's unless the troupe
+# chooses that reading. Volume 2's page on the Followers of Set (p. 21) leaves their
+# weakness as it was. `page_reference` is the page where the clan's or bloodline's
+# write-up starts. Tremere's is the core book's, with its disciplines and merits;
+# Volume 2's page on the clan changes only its weakness.
+#
+# What a weakness does at a game is `weakness_effects` (`core_weakness_effects` for
+# the core book's version), read by the Play View's reference (horatio.reference):
+# `pools`, `active` and `use` as the powers file has them (see the top of
+# bns_met_vampire_powers.toml), where a frenzy entry may also make resisting harder
+# (`difficulty`); `notes` for what can't be worked out; and `feeding_note`, said on
+# the Play View's Feed sheet and in a downtime's Feeding section. Each is labelled
+# with the weakness, "Brujah weakness". What it does to feeding between games is a
+# [[feeding_modifiers]] entry with category "clan", and what it rules out a check
+# with the `weakness` condition (bns_met_vampire_checks.toml). Each holds only for
+# a character carrying the weakness: not a Golconda Seeker freed of it, say.
 
 [[traits]]
 category = "clan"
@@ -595,7 +612,7 @@ properties = { in_clan = ["Daimoinon", "Obfuscate", "Presence"], weakness = "Can
 category = "clan"
 name = "Baali: Angelis Ater"
 page_reference = "72"
-properties = { in_clan = ["Daimoinon", "Dominate"], choices = ["Potence", "Presence", "Obfuscate"], weakness = "Both the Baali and the Lasombra weaknesses.", weakness_page = "72" }
+properties = { in_clan = ["Daimoinon", "Dominate"], choices = ["Potence", "Presence", "Obfuscate"], weakness = "Both the Baali and the Lasombra weaknesses.", weakness_page = "72", weakness_adds = true, weakness_also = ["Lasombra"] }
 
 [[traits]]
 category = "clan"
@@ -673,7 +690,7 @@ properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Path of Element
 category = "clan"
 name = "Gangrel: Anda"
 page_reference = "Vol. 2, p. 31"
-properties = { in_clan = ["Animalism", "Potence", "Protean"], weakness = "The Gangrel weakness, and they must keep moving: each day slept near the last place costs 1 more Blood to wake.", weakness_page = "Vol. 2, p. 33" }
+properties = { in_clan = ["Animalism", "Potence", "Protean"], weakness = "The Gangrel weakness, and they must keep moving: each day slept near the last place costs 1 more Blood to wake.", weakness_page = "Vol. 2, p. 33", weakness_adds = true }
 
 [[traits]]
 category = "clan"
@@ -715,13 +732,13 @@ properties = { in_clan = ["Dominate", "Potence", "Obtenebration"], weakness = "N
 category = "clan"
 name = "Lasombra: Corsairs"
 page_reference = "Vol. 2, p. 40"
-properties = { in_clan = ["Celerity", "Obtenebration", "Presence"], weakness = "The Lasombra weakness, and the Overconfident flaw, which XP can never remove.", weakness_page = "Vol. 2, p. 43" }
+properties = { in_clan = ["Celerity", "Obtenebration", "Presence"], weakness = "The Lasombra weakness, and the Overconfident flaw, which XP can never remove.", weakness_page = "Vol. 2, p. 43", weakness_adds = true }
 
 [[traits]]
 category = "clan"
 name = "Lasombra: Kiasyd"
 page_reference = "56"
-properties = { in_clan = ["Dominate", "Mytherceria", "Obtenebration"], weakness = "The Lasombra weakness, and an unhuman look: very tall, chalk-white, with black eyes.", weakness_page = "56" }
+properties = { in_clan = ["Dominate", "Mytherceria", "Obtenebration"], weakness = "The Lasombra weakness, and an unhuman look: very tall, chalk-white, with black eyes.", weakness_page = "56", weakness_adds = true }
 
 # An independent bloodline, rare (4 merit points).
 [[traits]]
@@ -740,7 +757,7 @@ properties = { in_clan = ["Auspex", "Dementation", "Obfuscate"], weakness = "One
 category = "clan"
 name = "Malkavian: Ananke"
 page_reference = "57"
-properties = { in_clan = ["Auspex", "Dementation", "Presence"], weakness = "The Malkavian weakness, and a need for grisly trophies: with the collection lost, no Willpower comes back until a new one starts.", weakness_page = "57" }
+properties = { in_clan = ["Auspex", "Dementation", "Presence"], weakness = "The Malkavian weakness, and a need for grisly trophies: with the collection lost, no Willpower comes back until a new one starts.", weakness_page = "57", weakness_adds = true }
 
 [[traits]]
 category = "clan"
@@ -765,7 +782,7 @@ properties = { in_clan = ["Animalism", "Obfuscate", "Potence"], weakness = "Hide
 category = "clan"
 name = "Nosferatu: Creeps"
 page_reference = "Vol. 2, p. 45"
-properties = { in_clan = ["Animalism", "Auspex", "Obfuscate"], weakness = "The Nosferatu weakness, and human blood barely feeds them, so no Herd; animal and vampire blood are fine.", weakness_page = "Vol. 2, p. 48" }
+properties = { in_clan = ["Animalism", "Auspex", "Obfuscate"], weakness = "The Nosferatu weakness, and human blood barely feeds them, so no Herd; animal and vampire blood are fine.", weakness_page = "Vol. 2, p. 48", weakness_adds = true }
 
 [[traits]]
 category = "clan"

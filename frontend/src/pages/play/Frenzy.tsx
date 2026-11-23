@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from "react";
-import type { PlayReference } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { CardHeading } from "../../components/Headings";
-import { frenzyNumbers } from "./frenzy";
+import { frenzyNumbers, type Resist } from "./frenzy";
 import { FRENZY_TRIGGERS } from "./warnings";
 
 /**
@@ -9,7 +9,9 @@ import { FRENZY_TRIGGERS } from "./warnings";
  * pages: what makes a frenzy test, resisting it, riding the wave, the three
  * frenzies, and coming out of one. Closed until asked for, behind a chevron.
  * The player's own numbers to resist (issue #371) follow Willpower, Beast traits
- * and Humanity, and show even while it is closed once there is a Beast trait.
+ * and Humanity, and show even while it is closed once there is a Beast trait, or one
+ * counted (Volume 2's Brujah weakness counts two). What a clan weakness says about
+ * frenzy (#1197) goes with them: a Gangrel's new animal feature.
  */
 export function Frenzy({
   resist,
@@ -19,7 +21,7 @@ export function Frenzy({
   on = [],
 }: {
   /** Mental and what changes it, from the sheet; none until the reference loads. */
-  resist?: PlayReference["frenzy"];
+  resist?: Resist;
   willpower: number;
   beast: number;
   morality: { name: string; value: number } | null;
@@ -28,6 +30,7 @@ export function Frenzy({
 }) {
   const [open, setOpen] = useState(false);
   const panel = useId();
+  const named = useClanName();
   const you = resist ? frenzyNumbers(resist, willpower, beast, morality, on) : null;
   const line = you && (
     <p className="text-sm">
@@ -37,6 +40,11 @@ export function Frenzy({
       <span className="block text-xs text-mist">
         {you.poolParts}, against {you.againstParts}
       </span>
+      {(resist?.notes ?? []).map((n) => (
+        <span key={n} className="block text-xs text-mist">
+          {named(n)}
+        </span>
+      ))}
     </p>
   );
   return (
@@ -54,7 +62,7 @@ export function Frenzy({
           <span className="ml-auto text-xs text-mist">{open ? "Hide" : "The rules at the table"}</span>
         </button>
       </h2>
-      {!open && beast > 0 && line}
+      {!open && (beast > 0 || (you?.counted ?? 0) > 0) && line}
       {open && (
         <div id={panel} className="mt-2 flex flex-col gap-3 text-sm">
           <Part title="When you test" page="core, pp. 301–302">

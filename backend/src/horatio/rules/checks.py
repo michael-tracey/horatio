@@ -8,6 +8,10 @@ Condition vocabulary (every key in one table must hold):
 
     clan = ["Brujah"]               the clan is exactly one of these
     clan_family = ["Toreador"]      the clan is one of these or one of its bloodlines
+    weakness = ["Salubri"]          the character carries the weakness of one of these
+                                    clans or bloodlines (horatio.clan_weaknesses): a
+                                    bloodline's own or its clan's, one a flaw adds,
+                                    and none for a Golconda Seeker freed of it
     has = { category, name, detail?, rating? }
                                     the sheet holds that trait (at least `rating`)
     has_any = [ {...}, {...} ]      the sheet holds any of these
@@ -126,8 +130,8 @@ Strength = Literal["refuse", "complete", "review", "note"]
 Condition = Mapping[str, Any]
 
 CONDITION_KEYS = frozenset(
-    {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count",
-     "one_below", "parent", "self", "copies", "in_clan", "detail_in_clan", "accepted",
+    {"clan", "clan_family", "weakness", "has", "has_any", "has_all", "generation", "on_path",
+     "count", "one_below", "parent", "self", "copies", "in_clan", "detail_in_clan", "accepted",
      "finished", "npc", "more_than_dots", "over_points_limit",
      "above_in_clan", "same_value", "excess_over_generation", "any_of", "not",
      "kind", "tagged", "dots", "domitor_clan", "domitor_has"}
@@ -151,6 +155,9 @@ class Context:
     native: frozenset[str] = frozenset()
     # The primary paths: the ones the player named, else the clan's in-clan path.
     primary: frozenset[str] = frozenset()
+    # The clans and bloodlines whose weakness the character carries
+    # (horatio.clan_weaknesses.carries).
+    weaknesses: frozenset[str] = frozenset()
     # Each trait's catalogue type, such as "Clan" for a clan merit.
     kinds: Mapping[tuple[str, str], str] = field(default_factory=dict[tuple[str, str], str])
     # Each trait's catalogue tags, such as "vampire_only".
@@ -224,6 +231,7 @@ class CheckData:
 IMPLIED_TRAIT: dict[str, tuple[str, str | None]] = {
     "clan": ("clan", None),
     "clan_family": ("clan", None),
+    "weakness": ("clan", None),
     "detail_in_clan": ("clan", None),
     "generation": ("backgrounds", "Generation"),
     "on_path": ("paths", None),
@@ -332,6 +340,8 @@ def matches(
         elif key == "clan_family":
             clan = clan_of(sheet) or ""
             ok = any(clan == c or clan.startswith(f"{c}:") for c in test)
+        elif key == "weakness":
+            ok = not context.weaknesses.isdisjoint(test)
         elif key == "has":
             ok = holds_trait(sheet, test)
         elif key == "has_any":
@@ -645,6 +655,8 @@ def describe(condition: Condition) -> str:
             parts.append(f"without {test['has']['name']}")
         elif key in ("clan", "clan_family"):
             parts.append("for " + " or ".join(test))
+        elif key == "weakness":
+            parts.append("with the " + " or ".join(test) + " weakness")
         elif key == "generation":
             parts.append(
                 describe_facts({"generation": test}, {"generation": "Generation background {}"})

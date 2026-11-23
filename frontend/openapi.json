@@ -15426,6 +15426,14 @@
             "title": "Clan",
             "type": "string"
           },
+          "default": {
+            "enum": [
+              "vol2",
+              "core"
+            ],
+            "title": "Default",
+            "type": "string"
+          },
           "versions": {
             "items": {
               "$ref": "#/components/schemas/ClanWeaknessVersion"
@@ -15437,7 +15445,8 @@
         "required": [
           "clan",
           "versions",
-          "chosen"
+          "chosen",
+          "default"
         ],
         "title": "ClanWeaknessRow",
         "type": "object"
@@ -23745,6 +23754,14 @@
           "needed": {
             "title": "Needed",
             "type": "integer"
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
           }
         },
         "required": [
@@ -24707,12 +24724,28 @@
       "Frenzy": {
         "description": "Resisting frenzy (core p. 302): Mental and what merits and flaws add, to\nwhich the Play View adds current Willpower, against 10 + Beast traits.",
         "properties": {
+          "against": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PoolPart"
+            },
+            "title": "Against",
+            "type": "array"
+          },
           "beast": {
             "default": [],
             "items": {
               "$ref": "#/components/schemas/PoolPart"
             },
             "title": "Beast",
+            "type": "array"
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
             "type": "array"
           },
           "parts": {
@@ -40608,6 +40641,14 @@
               }
             ]
           },
+          "feeding_notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Feeding Notes",
+            "type": "array"
+          },
           "frenzy": {
             "$ref": "#/components/schemas/Frenzy"
           },
@@ -40670,6 +40711,25 @@
               "$ref": "#/components/schemas/VinculumLine"
             },
             "title": "Vinculum",
+            "type": "array"
+          },
+          "weakness_freed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness Freed By"
+          },
+          "weaknesses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/WeaknessLine"
+            },
+            "title": "Weaknesses",
             "type": "array"
           }
         },
@@ -62783,6 +62843,80 @@
           "link"
         ],
         "title": "WaitingLine",
+        "type": "object"
+      },
+      "WeaknessLine": {
+        "description": "A clan weakness the character carries (horatio.clan_weaknesses), for its line\non the Pools tab: what it is, its page, and what the Play View can't work out.",
+        "properties": {
+          "book": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "uses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PowerUse"
+            },
+            "title": "Uses",
+            "type": "array"
+          },
+          "via": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Via"
+          }
+        },
+        "required": [
+          "name",
+          "clan",
+          "text",
+          "page"
+        ],
+        "title": "WeaknessLine",
         "type": "object"
       },
       "WeaknessOut": {
@@ -97809,7 +97943,7 @@
     },
     "/api/troupes/{troupe_id}/clan-weaknesses": {
       "get": {
-        "description": "Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),\nwith both weaknesses and the one the troupe plays (horatio.clan_weaknesses).",
+        "description": "Each clan whose weakness the books differ on (the Tremere's, Vol. 2, p. 22; the\nBrujah's, Vol. 2, p. 121), with both weaknesses, the one the troupe plays and the\none it plays until it chooses (horatio.clan_weaknesses).",
         "operationId": "read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get",
         "parameters": [
           {
@@ -97851,7 +97985,7 @@
         ]
       },
       "put": {
-        "description": "Play the core book's weakness for these clans, and the later book's for every\nother. What the troupe's characters and rules show changes at once.",
+        "description": "Play the core book's weakness for these clans, and Volume 2's for every other.\nWhat the troupe's characters and rules show changes at once.",
         "operationId": "set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put",
         "parameters": [
           {

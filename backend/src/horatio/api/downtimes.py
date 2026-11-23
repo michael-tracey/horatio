@@ -223,6 +223,8 @@ class FeedingNeedOut(BaseModel):
     herd_factor: int
     # No feeding brings the character to full Blood.
     always_half: bool
+    # What its clan weaknesses say about feeding (#1197): "Giovanni weakness: …".
+    notes: list[str] = []
 
 
 class GiftIn(BaseModel):
@@ -625,6 +627,7 @@ def need_out(need: feeding_rules.Need) -> FeedingNeedOut:
         ],
         herd_factor=need.herd_factor,
         always_half=need.always_half,
+        notes=list(need.notes),
     )
 
 

@@ -1084,7 +1084,7 @@ def set_clan_names(
 
 
 class ClanWeaknessVersion(BaseModel):
-    # The book it is from: "vol2", the default, or "core"; and that book's name.
+    # The book it is from, "vol2" or "core", and that book's name.
     book: Literal["vol2", "core"]
     label: str
     weakness: str
@@ -1092,12 +1092,15 @@ class ClanWeaknessVersion(BaseModel):
 
 
 class ClanWeaknessRow(BaseModel):
-    # A clan, without its bloodlines, which play as it does, whose weakness a later book
-    # replaced: the later book's first, then the core book's.
+    # A clan, without its bloodlines, which play as it does, whose weakness the books
+    # differ on: its default first, then the other.
     clan: str
     versions: list[ClanWeaknessVersion]
     # Which the troupe plays.
     chosen: Literal["vol2", "core"]
+    # Which it plays until the troupe chooses: Volume 2's for the Tremere, whose it
+    # replaced, the core book's for the Brujah (#1197).
+    default: Literal["vol2", "core"]
 
 
 class ClanWeaknessesOut(BaseModel):
@@ -1105,8 +1108,8 @@ class ClanWeaknessesOut(BaseModel):
 
 
 class ClanWeaknessesIn(BaseModel):
-    # The clans the troupe plays by the core book's weakness; every other plays the
-    # later book's.
+    # The clans the troupe plays by the core book's weakness; every other plays
+    # Volume 2's.
     core: list[str] = Field(max_length=50)
 
 
@@ -1120,7 +1123,8 @@ def clan_weaknesses_out(db: DbSession, troupe: Troupe) -> ClanWeaknessesOut:
                     ClanWeaknessVersion(book=w.book, label=w.label, weakness=w.text, page=w.page)
                     for w in clan_weaknesses.versions(rule_set, clan)
                 ],
-                chosen=clan_weaknesses.chosen(troupe, clan),
+                chosen=clan_weaknesses.chosen(troupe, clan, rule_set),
+                default=clan_weaknesses.default(rule_set, clan),
             )
             for clan in clan_weaknesses.choosable(rule_set)
         ]
@@ -1131,8 +1135,9 @@ def clan_weaknesses_out(db: DbSession, troupe: Troupe) -> ClanWeaknessesOut:
 def read_clan_weaknesses(
     troupe_id: uuid.UUID, db: DbSession, user: CurrentUser
 ) -> ClanWeaknessesOut:
-    """Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),
-    with both weaknesses and the one the troupe plays (horatio.clan_weaknesses)."""
+    """Each clan whose weakness the books differ on (the Tremere's, Vol. 2, p. 22; the
+    Brujah's, Vol. 2, p. 121), with both weaknesses, the one the troupe plays and the
+    one it plays until it chooses (horatio.clan_weaknesses)."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     return clan_weaknesses_out(db, troupe)
 
@@ -1141,8 +1146,8 @@ def read_clan_weaknesses(
 def set_clan_weaknesses(
     troupe_id: uuid.UUID, body: ClanWeaknessesIn, db: DbSession, user: CurrentUser
 ) -> ClanWeaknessesOut:
-    """Play the core book's weakness for these clans, and the later book's for every
-    other. What the troupe's characters and rules show changes at once."""
+    """Play the core book's weakness for these clans, and Volume 2's for every other.
+    What the troupe's characters and rules show changes at once."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     clan_weaknesses.set_core(db, user, troupe, body.core)
     db.commit()
@@ -1680,18 +1685,21 @@ def other_settings(db: DbSession, troupe: Troupe, *, rarity: bool = True) -> lis
                     book_text=book or "Not given",
                 )
             )
-    if troupe.core_weaknesses:
-        # The clans played by the core book's weakness, beside the later book's.
+    if troupe.core_weaknesses or troupe.vol2_weaknesses:
+        # The clans played by the weakness that isn't their default, beside it.
         for row in clan_weaknesses_out(db, troupe).clans:
-            later, core = row.versions[0], row.versions[-1]
-            if row.chosen != "core":
+            if row.chosen == row.default:
                 continue
+            here = next(v for v in row.versions if v.book == row.chosen)
+            book = next(v for v in row.versions if v.book == row.default)
+            whose = {"core": "The core book's", "vol2": "Volume 2's"}
+            which = "which replaced it" if book.book == "vol2" else "as the clan's write-up has it"
             found.append(
                 HouseSettingOut(
                     name=f"The {row.clan} weakness",
-                    text=f"The core book's: {core.weakness} ({page_words(core.page)})",
-                    book_text=f"{later.label}'s, which replaced it: {later.weakness}"
-                    f" ({page_words(later.page)})",
+                    text=f"{whose[here.book]}: {here.weakness} ({page_words(here.page)})",
+                    book_text=f"{whose[book.book]}, {which}: {book.weakness}"
+                    f" ({page_words(book.page)})",
                 )
             )
     if troupe.default_bloodlines:

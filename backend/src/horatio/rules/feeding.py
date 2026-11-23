@@ -5,7 +5,9 @@ A character spends one downtime action feeding, or comes to the next game at
 half Blood, rounded up (MET: VtM core, Downtime chapter, "Feeding").
 Storytellers set how many actions each clan needs each cycle; traits change it
 (the rule set's feeding modifiers); and each dot of Herd stands in for one
-feeding action (p. 102).
+feeding action (p. 102). So do the clan weaknesses the character carries
+(horatio.clan_weaknesses): a modifier for a clan holds for a character carrying
+its weakness, and each weakness's `feeding_note` is said beside the number.
 """
 
 from collections.abc import Mapping, Sequence
@@ -34,22 +36,28 @@ def basis(
     traits that change feeding, and its Herd rating. A splat that does not feed
     on mortals (a ghoul, which drinks vitae) has none of them. `statuses` are the
     fleeting and negative status it holds, which are not on the sheet (Triumphant)."""
+    from horatio import clan_weaknesses  # imports this module
+
     if not SPLATS[rules.rule_set.splat].panels.feed:
         return {"clan": None, "modifiers": [], "herd": 0}
     clan = next((t.name for t in sheet if t.category == "clan"), None)
     held = {(t.category, t.name) for t in sheet if t.rating is None or t.rating > 0}
+    held -= {(c, n) for c, n in held if c == "clan"}
     held |= {(STATUS_CATEGORY, name) for name in statuses}
+    weaknesses = clan_weaknesses.carried(rules.rule_set, sheet)
+    named = {("clan", w.clan): w.name for w in weaknesses}
     modifiers = [
         {
-            "source": m.trait,
+            "source": named.get((m.category, m.trait), m.trait),
             "amount": m.amount,
             "herd_factor": m.herd_factor,
             "always_half": m.always_half,
             "page": m.page,
         }
         | ({"anywhere": True} if m.anywhere else {})
+        | ({"note": m.note} if m.note else {})
         for m in rules.rule_set.feeding_modifiers
-        if (m.category, m.trait) in held
+        if (m.category, m.trait) in held or (m.category, m.trait) in named
     ]
     herd = max(
         (t.rating or 0 for t in sheet if (t.category, t.name) == HERD),
@@ -59,6 +67,11 @@ def basis(
         "clan": clan_family(clan) if clan else None,
         "modifiers": modifiers,
         "herd": herd,
+        "notes": [
+            f"{w.name}: {w.effects['feeding_note']}"
+            for w in weaknesses
+            if w.effects.get("feeding_note")
+        ],
     }
 
 
@@ -94,6 +107,8 @@ class Need:
     always_half: bool
     # It may feed in any feeding territory without poaching (Triumphant).
     anywhere: bool = False
+    # What its clan weaknesses say about feeding: "Giovanni weakness: your bite …".
+    notes: tuple[str, ...] = ()
 
 
 def feeds_anywhere(feeding_basis: Mapping[str, Any] | None) -> bool:
@@ -116,7 +131,7 @@ def need(
     factor = 1
     always_half = False
     for m in feeding_basis["modifiers"]:
-        notes = [herd_note(m["herd_factor"])]
+        notes = [m.get("note", ""), herd_note(m["herd_factor"])]
         if m["always_half"]:
             notes.append("always half Blood")
         if m.get("anywhere"):
@@ -135,7 +150,14 @@ def need(
     for delta, reason in adjustments:
         lines.append(NeedLine("Storyteller", delta, "adjustment", reason))
     needed = max(0, sum(line.amount for line in lines))
-    return Need(needed, tuple(lines), factor, always_half, feeds_anywhere(feeding_basis))
+    return Need(
+        needed,
+        tuple(lines),
+        factor,
+        always_half,
+        feeds_anywhere(feeding_basis),
+        tuple(feeding_basis.get("notes", ())),
+    )
 
 
 @dataclass(frozen=True)

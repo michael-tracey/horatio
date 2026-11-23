@@ -125,25 +125,29 @@ message = "Repelled by Religion repeats the Baali weakness, so Baali and their b
 page = "236"
 
 # --- clan weaknesses ----------------------------------------------------------
+# `weakness` holds for a character carrying that clan's weakness
+# (horatio.clan_weaknesses): a bloodline with one of its own instead doesn't (the
+# Salubri Healers feed from Herd, p. 80), a flaw can add one (Coldly Logical, Vol. 2,
+# p. 270), and a Golconda Seeker freed of it doesn't (pp. 249-250).
 
 [[checks]]
 category = "focus_socials"
 name = "Appearance"
-forbids = { clan_family = ["Nosferatu"] }
+forbids = { weakness = ["Nosferatu"] }
 message = "Nosferatu cannot have the Appearance focus."
 page = "60"
 
 [[checks]]
 category = "skills"
 name = "Empathy"
-forbids = { clan = ["Brujah: True Brujah"] }
-message = "True Brujah cannot take Empathy."
+forbids = { weakness = ["Brujah: True Brujah"] }
+message = "The True Brujah weakness rules out Empathy, for True Brujah and for Brujah with Coldly Logical."
 page = "45"
 
 [[checks]]
 category = "backgrounds"
 name = "Herd"
-forbids = { clan_family = ["Salubri"] }
+forbids = { weakness = ["Salubri"] }
 message = "Salubri cannot take Herd."
 page = "77"
 

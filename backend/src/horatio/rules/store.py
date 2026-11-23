@@ -1057,6 +1057,12 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is None],
         starting_traits=[starting_data(r) for r in starting_rows if r.troupe_id is None],
     )
+    if troupe is not None:
+        # The book the troupe plays each clan's weakness by, where the books differ
+        # (#1197), so whatever reads its rules plays its choice.
+        from horatio import clan_weaknesses  # imports this module
+
+        data = replace(data, weakness_books=clan_weaknesses.books(data, troupe))
     # The troupe's own checks (horatio.house_checks), beside the book's: one the rule
     # set can no longer run (a trait the book has since lost) is left out, and its
     # staff see why on the Checks page.

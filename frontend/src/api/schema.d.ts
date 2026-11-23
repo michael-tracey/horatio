@@ -11205,14 +11205,15 @@ export interface paths {
         };
         /**
          * Read Clan Weaknesses
-         * @description Each clan whose weakness a later book replaced (the Tremere's, Vol. 2, p. 22),
-         *     with both weaknesses and the one the troupe plays (horatio.clan_weaknesses).
+         * @description Each clan whose weakness the books differ on (the Tremere's, Vol. 2, p. 22; the
+         *     Brujah's, Vol. 2, p. 121), with both weaknesses, the one the troupe plays and the
+         *     one it plays until it chooses (horatio.clan_weaknesses).
          */
         get: operations["read_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_get"];
         /**
          * Set Clan Weaknesses
-         * @description Play the core book's weakness for these clans, and the later book's for every
-         *     other. What the troupe's characters and rules show changes at once.
+         * @description Play the core book's weakness for these clans, and Volume 2's for every other.
+         *     What the troupe's characters and rules show changes at once.
          */
         put: operations["set_clan_weaknesses_api_troupes__troupe_id__clan_weaknesses_put"];
         post?: never;
@@ -21392,6 +21393,11 @@ export interface components {
             chosen: "vol2" | "core";
             /** Clan */
             clan: string;
+            /**
+             * Default
+             * @enum {string}
+             */
+            default: "vol2" | "core";
             /** Versions */
             versions: components["schemas"]["ClanWeaknessVersion"][];
         };
@@ -24468,6 +24474,11 @@ export interface components {
             lines: components["schemas"]["NeedLineOut"][];
             /** Needed */
             needed: number;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
         };
         /**
          * FeedingNumbers
@@ -24887,10 +24898,20 @@ export interface components {
          */
         Frenzy: {
             /**
+             * Against
+             * @default []
+             */
+            against: components["schemas"]["PoolPart"][];
+            /**
              * Beast
              * @default []
              */
             beast: components["schemas"]["PoolPart"][];
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
             /**
@@ -31326,6 +31347,11 @@ export interface components {
             /** Disciplines */
             disciplines: components["schemas"]["DisciplinePowers"][];
             domitor?: components["schemas"]["DomitorLine"] | null;
+            /**
+             * Feeding Notes
+             * @default []
+             */
+            feeding_notes: string[];
             frenzy: components["schemas"]["Frenzy"];
             /**
              * Identities
@@ -31348,6 +31374,13 @@ export interface components {
              * @default []
              */
             vinculum: components["schemas"]["VinculumLine"][];
+            /** Weakness Freed By */
+            weakness_freed_by?: string | null;
+            /**
+             * Weaknesses
+             * @default []
+             */
+            weaknesses: components["schemas"]["WeaknessLine"][];
         };
         /**
          * PlayReportOut
@@ -39958,6 +39991,35 @@ export interface components {
             label: string;
             /** Link */
             link: string;
+        };
+        /**
+         * WeaknessLine
+         * @description A clan weakness the character carries (horatio.clan_weaknesses), for its line
+         *     on the Pools tab: what it is, its page, and what the Play View can't work out.
+         */
+        WeaknessLine: {
+            /** Book */
+            book?: string | null;
+            /** Clan */
+            clan: string;
+            /** Name */
+            name: string;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+            /** Page */
+            page: string | null;
+            /** Text */
+            text: string;
+            /**
+             * Uses
+             * @default []
+             */
+            uses: components["schemas"]["PowerUse"][];
+            /** Via */
+            via?: string | null;
         };
         /**
          * WeaknessOut
