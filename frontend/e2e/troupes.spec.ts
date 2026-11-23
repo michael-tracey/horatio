@@ -3425,6 +3425,68 @@ test("signed out, the troupe directory finds a troupe by place, day (from its sc
   await expect(visitor).toHaveURL(/\/characters\/[0-9a-f-]+\/create/);
 });
 
+test("storytellers set the troupe's time zone, games are entered in it, and the directory finds a 9:30 pm Friday game in New York under Friday whatever the lead's zone (#1211)", async ({ browser }) => {
+  const custodian = await person(browser, "tzone-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tzone-lead");
+  const assistant = await person(browser, "tzone-assistant");
+  const headers = { "X-Horatio": "1" };
+  const name = `Eastern Hours ${run}`;
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = ((await made.json()) as { id: string }).id;
+  const l = lead.page;
+  for (const [path, data] of [
+    [`/api/troupes/${troupeId}/staff`, { handle: assistant.handle, role: "assistant_storyteller" }],
+    [`/api/troupes/${troupeId}/profile/public`, { public: true }],
+  ] as const) {
+    const done = await l.request.put(path, { headers, data });
+    expect(done.status(), await done.text()).toBe(200);
+  }
+  // The lead lives in Tokyo, where an evening game in New York is the next day.
+  const zoned = await l.request.patch("/api/preferences", { headers, data: { time_zone: "Asia/Tokyo" } });
+  expect(zoned.status(), await zoned.text()).toBe(200);
+
+  // None of its own yet: the lead's.
+  await settingsPart(l, troupeId, "time-zone");
+  const card = l.getByRole("region", { name: "Time zone" });
+  await expect(card).toContainText(/Now: Asia\/Tokyo \(.+\) \(the lead storyteller's\)/);
+  await card.getByRole("combobox", { name: "Time zone" }).fill("America/New_York");
+  await expect(l.getByText("Time zone: America/New York")).toBeVisible();
+  await expect(card).toContainText(/Now: America\/New York \(E[SD]T\)/);
+  await expect(card).not.toContainText("(the lead storyteller's)");
+  await expect(card.getByRole("button", { name: "Use the lead storyteller's" })).toBeVisible();
+
+  // The assistant storyteller reads it.
+  await settingsPart(assistant.page, troupeId, "time-zone");
+  const read = assistant.page.getByRole("region", { name: "Time zone" });
+  await expect(read).toContainText("The troupe's storytellers change this.");
+  await expect(read).toContainText("Now: America/New York");
+  await expect(read.getByRole("combobox")).toHaveCount(0);
+
+  // The schedule form says the times are the troupe's, and takes 9:30 pm on a Friday a few days off there.
+  const friday = new Date();
+  friday.setUTCDate(friday.getUTCDate() + 2 + ((5 - ((friday.getUTCDay() + 2) % 7) + 7) % 7));
+  const day = friday.toISOString().slice(0, 10);
+  await troupeTab(l, "Overview");
+  const profile = l.getByRole("region", { name: "Profile" });
+  await profile.getByRole("button", { name: "Edit profile" }).click();
+  await profile.getByRole("button", { name: "Edit when it plays" }).click();
+  await expect(l.getByText(/^Times are in America\/New York \(E[SD]T\), the troupe's time zone\./)).toBeVisible();
+  await l.getByLabel("Game starts").fill(`${day}T21:30`);
+  await expect(l.getByText(/^Fri \d+ \w+( \d{4})?, 9:30 pm E[SD]T$/)).toBeVisible();
+  await l.getByRole("button", { name: "Add game" }).click();
+  await expect(l.getByRole("list", { name: "Upcoming games to edit" }).getByText(/^Fri .*, 9:30 pm to Sat .*, 2:30 am E[SD]T$/)).toBeVisible();
+
+  // Signed out, the directory finds it under Friday, not Saturday, and says when on the troupe's clock.
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto(`/find-a-troupe?name=${encodeURIComponent(name)}&day=friday`);
+  const results = visitor.getByRole("list", { name: "Troupes found" });
+  await expect(results.getByRole("link", { name: new RegExp(name) })).toContainText(/Next game: Fri \d+ \w+( \d{4})?, 9:30 pm E[SD]T/);
+  await visitor.goto(`/find-a-troupe?name=${encodeURIComponent(name)}&day=saturday`);
+  await expect(visitor.getByText("No troupe matches that search. Try fewer filters.")).toBeVisible();
+});
+
 test("a troupe's Overview switches it public at once, shows its XP range, and Waiting on you leads to the work", async ({ browser }) => {
   const custodian = await person(browser, "tidy-custodian");
   makeCustodian(custodian.email);

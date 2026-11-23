@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    String,
     Text,
     UniqueConstraint,
     func,
@@ -52,6 +53,9 @@ class Troupe(Imported, Record):
     # None to go by the one made from its name.
     abbreviation: Mapped[str | None]
     description: Mapped[str] = mapped_column(default="", server_default="")
+    # Its time zone, from the IANA list, such as "America/New_York": where its games'
+    # days fall. None uses its lead storyteller's, then UTC (horatio.troupe_zones).
+    time_zone: Mapped[str | None] = mapped_column(String(64))
     # Not null: every troupe has exactly one lead storyteller, enforced here
     # rather than by counting rows in troupe_staff.
     lead_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
@@ -479,6 +483,8 @@ class TroupeRequest(Record):
     description: Mapped[str] = mapped_column(default="", server_default="")
     # Anything the requester wants the custodian to know.
     note: Mapped[str] = mapped_column(default="", server_default="")
+    # The requester's time zone as they asked, for the troupe's (horatio.troupe_zones).
+    time_zone: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(default="pending", server_default="pending", index=True)
     decided_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

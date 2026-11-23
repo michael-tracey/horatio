@@ -21,6 +21,7 @@ const BARE: TroupeProfileOut = {
   links: { website: null, discord: null, facebook: null, instagram: null, join: null },
   schedule: "",
   games: [],
+  time_zone: null,
   venue: { region: "", name: "", address: "", address_hidden: false, access: "" },
   setting: { chronicle: "", city: "", era: "" },
   new_players: null,

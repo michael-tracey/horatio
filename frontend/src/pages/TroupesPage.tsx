@@ -148,8 +148,10 @@ function AskForTroupe() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(blank);
   const toast = useToast();
+  // The troupe starts in the asker's time zone, or this device's (#1211).
+  const { zone } = useDates();
   const ask = useAction(async () => {
-    await unwrap(api.POST("/api/troupe-requests", { body: form }));
+    await unwrap(api.POST("/api/troupe-requests", { body: { ...form, time_zone: zone } }));
     setForm(blank);
     setOpen(false);
     toast({ message: "Request sent to the custodian" });

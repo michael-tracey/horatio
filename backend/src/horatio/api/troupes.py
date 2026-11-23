@@ -15,11 +15,13 @@ from horatio import (
     pictures,
     play_status,
     play_tabs,
+    preferences,
     sect_status,
     setting_notices,
     titles,
     troupe_abbreviations,
     troupe_settings,
+    troupe_zones,
     xp_range,
 )
 from horatio.api.troupe_profiles import Profile
@@ -55,6 +57,12 @@ class TroupeOut(BaseModel):
     abbreviation: str
     abbreviation_set: str | None
     abbreviation_default: str
+    # Its time zone (horatio.troupe_zones), such as "America/New_York": the one its
+    # staff chose, else its lead storyteller's, else UTC; the one they chose, None for
+    # none; and its zone with none chosen.
+    time_zone: str
+    time_zone_set: str | None
+    time_zone_default: str
     description: str
     lead_user_id: uuid.UUID
     archived: bool
@@ -193,6 +201,9 @@ class NewTroupe(BaseModel):
     description: str = ""
     # The lead storyteller's handle.
     lead_handle: str
+    # Its time zone to start with: the custodian's browser's, say. None for the
+    # custodian's own (and with none, its lead's).
+    time_zone: str | None = Field(default=None, max_length=64)
 
 
 class TroupeChanges(BaseModel):
@@ -200,6 +211,8 @@ class TroupeChanges(BaseModel):
     # Its abbreviation (horatio.troupe_abbreviations), "" to go by the one made from its
     # name. Checked there, to say what it may be.
     abbreviation: str | None = Field(default=None, max_length=100)
+    # Its time zone (horatio.troupe_zones), "" to use its lead storyteller's.
+    time_zone: str | None = Field(default=None, max_length=64)
     description: str | None = None
     allowed_sects: list[str] | None = None
     allowed_splats: list[str] | None = None
@@ -330,10 +343,12 @@ def troupes_out(db: DbSession, user: User, troupes: Sequence[Troupe]) -> list[Tr
     whos_who = whos_who_troupes(db, user, troupes, roles)
     mine = home_characters(db, user, troupes)
     abbreviations = troupe_abbreviations.effective(db)
+    zones = troupe_zones.names(db, troupes)
     return [
         one_out(
             t,
             abbreviations[t.id],
+            zones[t.id],
             figures[t.id],
             roles[t.id],
             t.id in whos_who,
@@ -372,6 +387,7 @@ def home_characters(
 def one_out(
     troupe: Troupe,
     goes_by: troupe_abbreviations.GoesBy,
+    zones: troupe_zones.Zones,
     figures: xp_range.Figures,
     role: Role | None,
     whos_who: bool,
@@ -386,6 +402,9 @@ def one_out(
         abbreviation=goes_by.abbreviation,
         abbreviation_set=troupe.abbreviation,
         abbreviation_default=goes_by.default,
+        time_zone=zones.zone,
+        time_zone_set=troupe.time_zone,
+        time_zone_default=zones.default,
         description=troupe.description,
         lead_user_id=troupe.lead_user_id,
         archived=troupe.archived_at is not None,
@@ -531,7 +550,13 @@ def create_troupe(body: NewTroupe, db: DbSession, user: CurrentUser) -> TroupeOu
     """The custodian sets up a troupe and names its lead storyteller."""
     require_custodian(user)
     lead = existing_user(db, body.lead_handle)
-    troupe = Troupe(name=body.name, description=body.description, lead_user_id=lead.id)
+    troupe = Troupe(
+        name=body.name,
+        description=body.description,
+        lead_user_id=lead.id,
+        # Whoever makes it, as a request keeps its requester's (#1211).
+        time_zone=troupe_zones.checked(body.time_zone) or preferences.read(user).time_zone,
+    )
     db.add(troupe)
     db.commit()
     return troupe_out(db, user, troupe)
@@ -558,6 +583,10 @@ def change_troupe(
         # Whoever may rename the troupe (#1153).
         require_troupe_action(db, user, troupe, TroupeAction.RENAME)
         troupe_abbreviations.set_abbreviation(db, user, troupe, body.abbreviation)
+    if body.time_zone is not None:
+        # Like the troupe's other settings, its storytellers' (#1211).
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        troupe_zones.set_zone(db, user, troupe, body.time_zone)
     if body.description is not None:
         require_troupe_action(db, user, troupe, TroupeAction.EDIT_DESCRIPTION)
         troupe.description = body.description

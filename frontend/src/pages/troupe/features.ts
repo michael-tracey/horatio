@@ -46,7 +46,7 @@ export const settingsAnchor = (key: FeatureKey) => `feature-${key.replace(/_/g, 
  * the troupe ready (#1048), the setting, who may join, XP, status and titles, Blood,
  * diablerie and feeding, and names.
  */
-export type TroupeSettingsPart = "getting-ready" | "setting" | "joining" | "xp" | "status" | "blood" | "names";
+export type TroupeSettingsPart = "getting-ready" | "setting" | "joining" | "xp" | "status" | "blood" | "names" | "time-zone";
 
 /** The address of Settings under the troupe, at a part of it; the Features list without one. */
 export const troupeSettings = (part?: TroupeSettingsPart) => (part ? `settings/${part}` : "settings");

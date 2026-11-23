@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import type { PublicTroupeOut } from "../api/types";
-import { useDates } from "../dates";
+import { useDatesIn } from "../dates";
 import { excerpt } from "../pages/troupeList";
 import { Avatar } from "./Avatar";
 import { TroupePill } from "./TroupePill";
@@ -11,10 +11,12 @@ import { Badge } from "./ui";
  * name, abbreviation, where it plays and the start of its description (#1164). With
  * `details`, as the troupe directory shows it (#1192), also when it plays and its next
  * game (#1206), as its profile shows them, whether it welcomes new players, its minimum
- * age and its content notes.
+ * age and its content notes. The next game is on the troupe's clock, if it has a time zone,
+ * which the directory's Day takes its day from (#1211), so the row agrees with the day it
+ * was found under; else on the viewer's.
  */
 export function PublicTroupeRow({ troupe: t, details = false }: { troupe: PublicTroupeOut; details?: boolean }) {
-  const dates = useDates();
+  const dates = useDatesIn(t.time_zone);
   const about = excerpt(t.description);
   const welcoming = details && t.new_players === "welcoming";
   const aged = details && t.min_age !== null;

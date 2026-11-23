@@ -8,8 +8,8 @@ the setting is off no expiry shows, warns or runs; one set before waits until th
 setting is on again.
 
 - A date is the last day the item is held: it expires once that day is over where
-  its holder's player is (their time zone in Settings; for an NPC, the lead
-  storyteller's), or in UTC for someone who chose none.
+  its holder's player is (their time zone in Settings; for an NPC, its troupe's,
+  horatio.troupe_zones), or in UTC for someone who chose none.
 - "After N games" counts the games the holder comes to (horatio.checkin) that start
   after the expiry was set, and the item expires once the Nth has ended. A game it
   was given at doesn't count. `attended_games` is the one place attendance is
@@ -45,7 +45,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications, preferences
+from horatio import audit, notifications, preferences, troupe_zones
 from horatio.models import (
     Character,
     DowntimeCycle,
@@ -145,12 +145,10 @@ def games_left(db: Session, item: EquipmentItem, at: datetime) -> int:
 
 def zone_of(db: Session, character: Character, troupe: Troupe | None) -> ZoneInfo:
     """Where the holder's day ends: its player's time zone, or for an NPC its troupe's
-    lead storyteller's; UTC for someone who chose none."""
-    if character.kind == "pc":
-        user_id: uuid.UUID | None = character.player_id
-    else:
-        user_id = troupe.lead_user_id if troupe else None
-    user = db.get(User, user_id) if user_id else None
+    (horatio.troupe_zones); UTC for a player who chose none."""
+    if character.kind != "pc":
+        return troupe_zones.zone(db, troupe)
+    user = db.get(User, character.player_id) if character.player_id else None
     zone = preferences.read(user).time_zone if user else None
     return ZoneInfo(zone or "UTC")
 

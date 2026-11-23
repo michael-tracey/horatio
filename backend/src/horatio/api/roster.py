@@ -384,6 +384,9 @@ MESSAGES: dict[str, str] = {
     " {former}, who has left the staff.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
     "troupe.abbreviation_set": "{actor} set the troupe's abbreviation to {abbreviation}.",
+    "troupe.time_zone_set": "{actor} set the troupe's time zone to {zone}.",
+    "troupe.time_zone_cleared": "{actor} cleared the troupe's time zone: it uses the lead"
+    " storyteller's, {zone}.",
     "troupe.abbreviation_cleared": "{actor} cleared the troupe's abbreviation: it goes by"
     " {abbreviation} now.",
     "troupe.archived": "{actor} archived the troupe{because}.",

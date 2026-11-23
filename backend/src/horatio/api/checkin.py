@@ -733,7 +733,7 @@ def award_game_xp(
             troupe_id=troupe.id,
             amount=body.amount,
             characters=len(given),
-            game=checkin.when(game),
+            game=checkin.when(db, game),
         )
     else:
         audit.record(
@@ -743,7 +743,7 @@ def award_game_xp(
             troupe_id=troupe.id,
             total=total,
             characters=len([g for g in given if g.amount > 0]),
-            game=checkin.when(game),
+            game=checkin.when(db, game),
         )
     db.commit()
     limit = game_xp.monthly_limit(found)

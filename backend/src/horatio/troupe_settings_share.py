@@ -932,6 +932,7 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "legacy_id": "where Yorick's copy came from",
     "name": "the troupe's own name",
     "description": "the troupe's own description",
+    "time_zone": "where it plays is its own (#1211)",
     "lead_user_id": "its staff are its own",
     "staff_two_step": "its staff are its own, and their lead asks two-step sign-in of them (#1057)",
     "archived_at": "whether the troupe is open",

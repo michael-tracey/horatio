@@ -10,7 +10,7 @@ its place (the venue's region and name, and the setting's city, never the street
 address, which only people signed in see), the day and how often it plays (from the
 schedule, which its storytellers write as words), new players and the minimum age.
 A day is also found from its games to come (#1206): one in the next eight weeks on
-that weekday, in its lead storyteller's time zone, as the troupe keeps none of its own.
+that weekday, in the troupe's time zone (horatio.troupe_zones, #1211).
 """
 
 import math
@@ -33,10 +33,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
-from horatio import pictures, troupe_abbreviations
+from horatio import pictures, troupe_abbreviations, troupe_zones
 from horatio.api.troupe_profiles import Profile
 from horatio.auth.deps import DbSession
-from horatio.models import ScheduledGame, Troupe, User
+from horatio.models import ScheduledGame, Troupe
 
 router = APIRouter(prefix="/public/troupes", tags=["troupe profiles"])
 
@@ -95,6 +95,10 @@ class PublicTroupeOut(BaseModel):
     # When its next game starts (or the one under way began), as its profile shows
     # it; None with none to come.
     next_game: datetime | None
+    # The time zone its staff chose (horatio.troupe_zones), which the Day filter takes
+    # its games' days in, for the row to show its next game in; None for none, and the
+    # row shows it in the viewer's, as before.
+    time_zone: str | None
 
 
 class PublicTroupePageOut(BaseModel):
@@ -125,12 +129,11 @@ def matching(column: SQLColumnExpression[str], pattern: str) -> ColumnElement[bo
 
 def plays_on(day: Day, at: datetime) -> ColumnElement[bool]:
     """It has a game still to come, starting in the next GAMES_AHEAD, that falls on
-    `day` in its lead storyteller's time zone (UTC for a lead who chose none, as
-    elsewhere). A game taken off the schedule is gone, so it never counts."""
-    zone = func.coalesce(User.preferences["time_zone"].astext, "UTC")
+    `day` in the troupe's time zone (its own, else its lead storyteller's, else UTC). A
+    game taken off the schedule is gone, so it never counts."""
+    zone = troupe_zones.column()
     return exists().where(
         ScheduledGame.troupe_id == Troupe.id,
-        User.id == Troupe.lead_user_id,
         ScheduledGame.ends_at > at,
         ScheduledGame.starts_at < at + GAMES_AHEAD,
         extract("isodow", func.timezone(zone, ScheduledGame.starts_at)) == ISO_DAYS[day],
@@ -246,6 +249,7 @@ def list_public_troupes(
                 min_age=kept.min_age,
                 content_notes=kept.content_notes,
                 next_game=next_games.get(troupe.id),
+                time_zone=troupe.time_zone,
             )
         )
     return PublicTroupePageOut(

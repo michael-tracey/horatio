@@ -29384,6 +29384,8 @@ export interface components {
             lead_handle: string;
             /** Name */
             name: string;
+            /** Time Zone */
+            time_zone?: string | null;
         };
         /** NewTroupeRequest */
         NewTroupeRequest: {
@@ -29399,6 +29401,8 @@ export interface components {
              * @default
              */
             note: string;
+            /** Time Zone */
+            time_zone?: string | null;
         };
         /**
          * NewsAgencyItem
@@ -32905,6 +32909,8 @@ export interface components {
             portrait: string | null;
             /** Schedule */
             schedule: string;
+            /** Time Zone */
+            time_zone: string | null;
         };
         /**
          * PublicTroupePageOut
@@ -38765,6 +38771,8 @@ export interface components {
             status_at_checkin?: boolean | null;
             /** Status By */
             status_by?: ("players" | "staff") | null;
+            /** Time Zone */
+            time_zone?: string | null;
             /** Titles By */
             titles_by?: ("players" | "staff") | null;
             /** Whos Who Negative */
@@ -39134,6 +39142,12 @@ export interface components {
             status_at_checkin: boolean;
             /** Status By */
             status_by: string;
+            /** Time Zone */
+            time_zone: string;
+            /** Time Zone Default */
+            time_zone_default: string;
+            /** Time Zone Set */
+            time_zone_set: string | null;
             /** Titles By */
             titles_by: string;
             /** Whos Who */
@@ -39269,6 +39283,8 @@ export interface components {
              * @default false
              */
             setting_document: boolean;
+            /** Time Zone */
+            time_zone: string | null;
             venue: components["schemas"]["VenueOut"];
             /** Written Rules */
             written_rules: components["schemas"]["WrittenRuleOut"][];

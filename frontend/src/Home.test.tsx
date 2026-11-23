@@ -54,6 +54,7 @@ function troupe(over: Partial<PublicTroupeOut>): PublicTroupeOut {
     min_age: 18,
     content_notes: "Violence.",
     next_game: null,
+    time_zone: null,
     ...over,
   };
 }

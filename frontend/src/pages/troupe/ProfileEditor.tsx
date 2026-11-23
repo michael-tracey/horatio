@@ -8,7 +8,8 @@ import { Dialog } from "../../components/Dialog";
 import { SectionLabel } from "../../components/Headings";
 import { Button, ErrorText, Field, Input, Notice, Select, Textarea } from "../../components/ui";
 import type { Crop } from "../../components/crop";
-import { useDates } from "../../dates";
+import { zoneWords } from "../../components/ZonePicker";
+import { useDatesIn } from "../../dates";
 import { useAction } from "../../hooks";
 import { Cropper } from "../character/Picture";
 import { editable, LINKS } from "./profile";
@@ -186,9 +187,12 @@ export function ProfilePartEditor({ profile, part, onDone }: { profile: TroupePr
   );
 }
 
-/** Upcoming games: each added or taken away at once, in the editor's own time zone. */
+/**
+ * Upcoming games: each added or taken away at once, in the troupe's time zone (#1211), or
+ * for a troupe with none, in the editor's own.
+ */
 export function Games({ profile }: { profile: TroupeProfileOut }) {
-  const dates = useDates();
+  const dates = useDatesIn(profile.time_zone);
   const path = { params: { path: { troupe_id: profile.id } } };
   const [starts, setStarts] = useState("");
   const [ends, setEnds] = useState("");
@@ -226,6 +230,7 @@ export function Games({ profile }: { profile: TroupeProfileOut }) {
         <Field label="Game starts">
           <DateInput
             type="datetime-local"
+            dates={dates}
             value={starts}
             onChange={(e) => {
               const value = e.target.value;
@@ -236,13 +241,17 @@ export function Games({ profile }: { profile: TroupeProfileOut }) {
           />
         </Field>
         <Field label="Game ends">
-          <DateInput type="datetime-local" value={ends} onChange={(e) => setEnds(e.target.value)} />
+          <DateInput type="datetime-local" dates={dates} value={ends} onChange={(e) => setEnds(e.target.value)} />
         </Field>
         <Button type="button" variant="secondary" className="sm:mt-6" disabled={!starts || !ends || add.isPending} onClick={() => add.mutate(undefined)}>
           Add game
         </Button>
       </div>
-      <p className="text-xs text-mist">Times are in {dates.zone.replace(/_/g, " ")}; everyone sees them in their own time zone.</p>
+      <p className="text-xs text-mist">
+        {profile.time_zone
+          ? `Times are in ${zoneWords(dates.zone)} (${dates.zoneName()}), the troupe's time zone. Everyone else sees them in their own.`
+          : `Times are in your time zone, ${zoneWords(dates.zone)} (${dates.zoneName()}), as the troupe has none of its own (Settings › Time zone). Everyone sees them in their own.`}
+      </p>
       <ErrorText error={add.error ?? remove.error} />
     </div>
   );

@@ -35955,6 +35955,18 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
           }
         },
         "required": [
@@ -35983,6 +35995,18 @@
             "maxLength": 2000,
             "title": "Note",
             "type": "string"
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
           }
         },
         "required": [
@@ -44702,6 +44726,17 @@
           "schedule": {
             "title": "Schedule",
             "type": "string"
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
           }
         },
         "required": [
@@ -44715,7 +44750,8 @@
           "new_players",
           "min_age",
           "content_notes",
-          "next_game"
+          "next_game",
+          "time_zone"
         ],
         "title": "PublicTroupeOut",
         "type": "object"
@@ -59888,6 +59924,18 @@
             ],
             "title": "Status By"
           },
+          "time_zone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
+          },
           "titles_by": {
             "anyOf": [
               {
@@ -60754,6 +60802,25 @@
             "title": "Status By",
             "type": "string"
           },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          },
+          "time_zone_default": {
+            "title": "Time Zone Default",
+            "type": "string"
+          },
+          "time_zone_set": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone Set"
+          },
           "titles_by": {
             "title": "Titles By",
             "type": "string"
@@ -60781,6 +60848,9 @@
           "abbreviation",
           "abbreviation_set",
           "abbreviation_default",
+          "time_zone",
+          "time_zone_set",
+          "time_zone_default",
           "description",
           "lead_user_id",
           "archived",
@@ -61149,6 +61219,17 @@
             "title": "Setting Document",
             "type": "boolean"
           },
+          "time_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
+          },
           "venue": {
             "$ref": "#/components/schemas/VenueOut"
           },
@@ -61172,6 +61253,7 @@
           "links",
           "schedule",
           "games",
+          "time_zone",
           "venue",
           "setting",
           "new_players",

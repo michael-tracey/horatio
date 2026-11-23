@@ -85,7 +85,7 @@ Anyone signed in can ask for a troupe of their own, from **Ask for a new troupe*
 
 ### Making a troupe yourself
 
-You can also make a troupe without a request. On **Custodian › Troupe management**, under **New troupe**, give its **Name**, a **Description** and its **Lead storyteller**, who needs an account already, then choose **Create troupe**. The **Troupes** page points you there too.
+You can also make a troupe without a request. On **Custodian › Troupe management**, under **New troupe**, give its **Name**, a **Description** and its **Lead storyteller**, who needs an account already, then choose **Create troupe**. It starts in your time zone (or your device's), which its storytellers can change under **Settings › Time zone**; a troupe made from a request starts in the time zone of whoever asked. The **Troupes** page points you there too.
 
 ### Appointing a lead storyteller
 

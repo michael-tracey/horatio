@@ -134,6 +134,9 @@ class TroupeProfileOut(BaseModel):
     schedule: str
     # Games still to come (or under way), soonest first.
     games: list[ScheduledGameOut]
+    # The time zone its staff chose (horatio.troupe_zones), which its games are entered
+    # in; None for none, and each editor enters them in their own, as before.
+    time_zone: str | None
     venue: VenueOut
     setting: Setting
     new_players: Literal["welcoming", "closed"] | None
@@ -209,6 +212,7 @@ def profile_out(db: Session, viewer: User | None, troupe: Troupe) -> TroupeProfi
             ScheduledGameOut(id=g.id, starts_at=g.starts_at, ends_at=g.ends_at)
             for g in upcoming(db, troupe)
         ],
+        time_zone=troupe.time_zone,
         venue=VenueOut(
             region=kept.venue.region,
             name=kept.venue.name,
