@@ -660,7 +660,14 @@ SETTINGS: dict[str, Setting] = {
         Setting(
             "core_weaknesses",
             "at_game",
-            "Clans played by the core book's weakness",
+            "Clans played by the core book's weakness, not Volume 2's",
+            Annotated[list[str], Field(max_length=50)],
+            listing,
+        ),
+        Setting(
+            "vol2_weaknesses",
+            "at_game",
+            "Clans played by Volume 2's weakness, not the core book's",
             Annotated[list[str], Field(max_length=50)],
             listing,
         ),
@@ -2563,8 +2570,10 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             troupe_settings.set_clan_rarity(db, user, troupe, values["clan_rarity"])
         if touched("status_ban_clans"):
             troupe_settings.set_status_ban_clans(db, user, troupe, values["status_ban_clans"])
-        if touched("core_weaknesses"):
-            clan_weaknesses.set_core(db, user, troupe, values["core_weaknesses"])
+        if touched("core_weaknesses", "vol2_weaknesses"):
+            clan_weaknesses.set_lists(
+                db, user, troupe, now("core_weaknesses"), now("vol2_weaknesses")
+            )
         if touched("default_bloodlines"):
             troupe_settings.set_default_bloodlines(db, user, troupe, values["default_bloodlines"])
         if touched("influence_lookback_days"):

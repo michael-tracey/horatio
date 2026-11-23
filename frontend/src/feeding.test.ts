@@ -6,6 +6,7 @@ const need: FeedingNeedOut = {
   needed: 2,
   herd_factor: 1,
   always_half: false,
+  notes: [],
   lines: [
     { source: "Gangrel", amount: 1, kind: "clan", note: "", page: null, text: "Gangrel 1" },
     { source: "Disease Carrier", amount: 1, kind: "trait", note: "", page: "262", text: "Disease Carrier +1" },
@@ -56,7 +57,7 @@ describe("feeding", () => {
 });
 
 describe("feeding territories and the Rack", () => {
-  const need = { needed: 2, lines: [], herd_factor: 1, always_half: false };
+  const need = { needed: 2, lines: [], herd_factor: 1, always_half: false, notes: [] };
 
   it("counts feeding in a territory as one feeding", () => {
     const t = tally(need, { ...emptyFeeding(), actions: 1 }, [], "the Docks");

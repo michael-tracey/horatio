@@ -2420,13 +2420,14 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
   await gain.click();
   const foothold = p.getByRole("note", { name: "The Beast has a foothold" });
   await expect(foothold).toContainText("You can frenzy now.");
-  await expect(foothold).toContainText("against 11");
+  // A Brujah resists 2 harder, by the core book's weakness (p. 45; #1197).
+  await expect(foothold).toContainText("against 13");
   // Once there is a Beast trait, the player's own numbers show even with the panel closed (issue #371).
-  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 11`);
-  await expect(frenzyPanel).toContainText(`Mental 4 + Willpower ${willpower}, against 10 + Beast traits 1`);
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 13`);
+  await expect(frenzyPanel).toContainText(`Mental 4 + Willpower ${willpower}, against 10 + Beast traits 1 + Brujah weakness 2`);
   // They follow Willpower.
   await p.getByRole("button", { name: "Spend Willpower", exact: true }).first().click();
-  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${3 + willpower} against 11`);
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${3 + willpower} against 13`);
   await p.getByRole("button", { name: "Restore Willpower", exact: true }).first().click();
   await expect(foothold).toContainText("MET: VtM core, pp. 301–302; Vol. II Issue 1 update, pp. 97–98");
   await gain.click();
@@ -2451,9 +2452,54 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
   await expect(p.getByRole("heading", { name: /Riding the wave/ })).toBeVisible();
   await expect(p.getByText("Fear ends once you've escaped and hidden quietly for 10 minutes.", { exact: false })).toBeVisible();
   // Resisting has them too, at five Beast traits.
-  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 15`);
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 17`);
   await p.screenshot(shots("play-frenzy"));
   await frenzy.click();
   await expect(frenzy).toHaveAttribute("aria-expanded", "false");
   await expect(p.getByText("Riding the wave")).toHaveCount(0);
+});
+
+test("clan weaknesses on the Play View: a Toreador's Willpower to look away, and a Brujah by Volume 2's reading frenzies with no Beast traits (#1197)", async ({ browser }) => {
+  const custodian = await person(browser, "weak-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "weak-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Salon of Thorns ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const p = lead.page;
+  const npc = async (name: string, clan: string) => {
+    const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(made.status(), await made.text()).toBe(201);
+    const id: string = (await made.json()).id;
+    for (const [category, trait, rating] of [["clan", clan, null], ["attributes", "Mental", 3], ["willpower_sources", "Willpower", 4]] as const) {
+      const rated = await p.request.put(`/api/characters/${id}/npc/ratings`, { headers, data: { category, name: trait, rating, detail: "" } });
+      expect(rated.status(), await rated.text()).toBe(200);
+    }
+    return id;
+  };
+
+  // A Toreador: the Pools tab gives the weakness with its page, and its button spends a Willpower.
+  const toreador = await npc("Lucienne", "Toreador");
+  await p.goto(`/play/characters/${toreador}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  const weakness = p.locator("section").filter({ has: p.getByRole("heading", { name: "Clan weakness", exact: true }) });
+  await expect(weakness).toContainText("Toreador weakness");
+  await expect(weakness).toContainText("Caught by beauty: something beautiful or new holds them for a scene, unless they spend 1 Willpower. (MET: VTM p. 61)");
+  await weakness.getByRole("button", { name: "Toreador weakness: Resist beauty · 1 Willpower" }).click();
+  await expect(p.getByText(/^Spent 1 Willpower on Toreador weakness/)).toBeVisible();
+  const willpower = async () => ((await (await p.request.get(`/api/characters/${toreador}/play`)).json()) as { willpower: { value: number } }).willpower.value;
+  await expect.poll(willpower).toBe(3);
+
+  // The troupe plays Volume 2's reading of the Brujah weakness: 2 more Beast traits, so a
+  // Brujah with none can frenzy, and the closed Frenzy panel shows the numbers.
+  const set = await p.request.put(`/api/troupes/${troupeId}/clan-weaknesses`, { headers, data: { core: [] } });
+  expect(set.status(), await set.text()).toBe(200);
+  const brujah = await npc("Tyrell", "Brujah");
+  await p.goto(`/play/characters/${brujah}`);
+  await expect(p.getByLabel("Beast traits: 0 of 5")).toBeVisible();
+  const frenzyPanel = p.locator("section").filter({ has: p.getByRole("button", { name: /^Frenzy/ }) });
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText("You: 7 against 12");
+  await expect(frenzyPanel).toContainText("Mental 3 + Willpower 4, against 10 + Beast traits 0 + Brujah weakness 2");
+  await expect(frenzyPanel).toContainText("Brujah weakness: 2 more Beast traits for frenzy only, so you test sooner as well as harder; never for losing Morality.");
 });

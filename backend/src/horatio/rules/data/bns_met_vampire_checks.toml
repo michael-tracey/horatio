@@ -125,25 +125,29 @@ message = "Repelled by Religion repeats the Baali weakness, so Baali and their b
 page = "236"
 
 # --- clan weaknesses ----------------------------------------------------------
+# `weakness` holds for a character carrying that clan's weakness
+# (horatio.clan_weaknesses): a bloodline with one of its own instead doesn't (the
+# Salubri Healers feed from Herd, p. 80), a flaw can add one (Coldly Logical, Vol. 2,
+# p. 270), and a Golconda Seeker freed of it doesn't (pp. 249-250).
 
 [[checks]]
 category = "focus_socials"
 name = "Appearance"
-forbids = { clan_family = ["Nosferatu"] }
+forbids = { weakness = ["Nosferatu"] }
 message = "Nosferatu cannot have the Appearance focus."
 page = "60"
 
 [[checks]]
 category = "skills"
 name = "Empathy"
-forbids = { clan = ["Brujah: True Brujah"] }
-message = "True Brujah cannot take Empathy."
+forbids = { weakness = ["Brujah: True Brujah"] }
+message = "The True Brujah weakness rules out Empathy, for True Brujah and for Brujah with Coldly Logical."
 page = "45"
 
 [[checks]]
 category = "backgrounds"
 name = "Herd"
-forbids = { clan_family = ["Salubri"] }
+forbids = { weakness = ["Salubri"] }
 message = "Salubri cannot take Herd."
 page = "77"
 
@@ -270,6 +274,21 @@ name = "Herd"
 forbids = { has = { category = "flaws", name = "Baali: Carrion Comfort" } }
 message = "Carrion Comfort bars the Herd background."
 page = "Vol. 2, p. 281"
+
+# After the one above, so the checks before them keep their keys.
+[[checks]]
+category = "backgrounds"
+name = "Herd"
+forbids = { weakness = ["Nagaraja"] }
+message = "Nagaraja cannot take Herd: they must eat human flesh, and Herd doesn't feed them."
+page = "Vol. 2, p. 60"
+
+[[checks]]
+category = "backgrounds"
+name = "Herd"
+forbids = { weakness = ["Nosferatu: Creeps"] }
+message = "Creeps cannot take Herd: human blood barely feeds them."
+page = "Vol. 2, p. 48"
 
 # --- only one -------------------------------------------------------------------
 

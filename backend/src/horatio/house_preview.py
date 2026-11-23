@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from horatio import house_traits, reference, sheets
+from horatio import clan_weaknesses, house_traits, reference, sheets
 from horatio.feeding import tracked
 from horatio.models import Character, HouseTrait, Troupe
 from horatio.rules.allowance import allowance
@@ -160,6 +160,7 @@ def preview(
         native=native,
         kinds=trial.with_it.rule_set.kinds,
         tags=trial.with_it.rule_set.tags,
+        weaknesses=clan_weaknesses.carries(trial.with_it.rule_set, with_it),
     )
     broken = {v.check.key for v in violations(compiled.checks, with_it, context)}
     return Preview(

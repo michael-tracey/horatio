@@ -163,7 +163,7 @@ export const SETTINGS = {
   clanWeaknesses: card(
     "clanWeaknesses",
     "Clan weaknesses",
-    "Which weakness a clan plays here where Volume 2 replaced the core book's: so far only the Tremere's. Characters, creation and the rules show the one chosen, and blood bonds count by it: Volume 2's holds another vampire at the first drink of a Tremere's blood; the core book's counts a Tremere's first drink as two.",
+    "Which weakness a clan plays here where the books differ: the Tremere's, which Volume 2 replaced, and the Brujah's, which Volume 2's Lash Out reads as Beast traits. Characters, creation, the rules and the Play View show the one chosen. Blood bonds count by the Tremere's: Volume 2's holds another vampire at the first drink of a Tremere's blood; the core book's counts a Tremere's first drink as two. Frenzy counts by the Brujah's: the core book's makes resisting 2 harder; Volume 2's counts 2 more Beast traits, so they test sooner too.",
     "blood",
   ),
   feeding: card(

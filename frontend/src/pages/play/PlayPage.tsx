@@ -285,7 +285,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
           <PastGames characterId={characterId} current={shown.game?.id} />
         </>
       )}
-      {shown.panels.feed && <Feed view={shown} asking={feeding} onClose={() => setFeeding(false)} tap={tap} />}
+      {shown.panels.feed && <Feed view={shown} asking={feeding} onClose={() => setFeeding(false)} tap={tap} notes={reference?.feeding_notes} />}
       {spending && (
         <InfluenceSheet
           standing={influenceStanding(shown, spending.tracker)!}

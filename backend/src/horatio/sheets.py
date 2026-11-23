@@ -526,6 +526,8 @@ def check_context(
     """What checks know beyond the sheet. `priced` is what the sheet's grants price
     as in-clan, and `domitor` the character's linked domitor, where the caller has
     them already."""
+    from horatio import clan_weaknesses  # imports this module
+
     rules = rules_for(db, character)
     # Paths a merit prices as in-clan (Thaumaturgic Expertise) count as in-clan here.
     if priced is None:
@@ -542,6 +544,7 @@ def check_context(
         primary=primary_set(character, native),
         kinds=rules.rule_set.kinds,
         tags=rules.rule_set.tags,
+        weaknesses=clan_weaknesses.carries(rules.rule_set, sheet),
         domitor_clan=domitor.clan if domitor is not None else None,
         domitor_powers=domitor.powers if domitor is not None else None,
         generation=SPLATS[character.splat].panels.generation,
@@ -915,10 +918,11 @@ def refusals(
                 trial = [t for _, t in granted(rules, trial, given).values()]
                 trial_priced = given.in_clan_priced
             trial_context = check_context(db, character, trial, trial_priced, domitor)
-            same_clan = (trial_context.in_clan, trial_context.native) == (
-                context.in_clan,
-                context.native,
-            )
+            same_clan = (
+                trial_context.in_clan,
+                trial_context.native,
+                trial_context.weaknesses,
+            ) == (context.in_clan, context.native, context.weaknesses)
             new = [
                 v
                 for v in violations(trying if same_clan else checks, trial, trial_context)

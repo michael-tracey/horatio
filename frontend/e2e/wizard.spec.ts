@@ -688,12 +688,15 @@ test("a new player picks the clan first and sees its disciplines and weakness, a
   await expect(brujah).toContainText("MET: VTM p. 45");
   await clan.press("ArrowDown");
   await expect(aboutChoice(p)).toContainText("MET: VTM p. 45");
-  await expect(aboutChoice(p)).toContainText("Weakness: Quick to rage: resisting frenzy is 2 harder. (p. 45)");
+  // Built for no troupe yet, the Brujah's weakness varies by troupe (#1197): the core
+  // book's, the default, and Volume 2's reading, each with its page.
+  await expect(aboutChoice(p)).toContainText("Weakness: varies by troupe.");
+  await expect(aboutChoice(p)).toContainText("Core book: Quick to rage: resisting frenzy is 2 harder. (p. 45)");
   await brujah.click();
   await expect(clan).toHaveValue("Brujah");
   const card = p.getByRole("region", { name: "About Brujah" });
   await expect(card).toContainText("In-clan now: Celerity, Potence and Presence.");
-  await expect(card).toContainText("Weakness: Quick to rage: resisting frenzy is 2 harder. (p. 45)");
+  await expect(card.getByRole("listitem")).toHaveText([/^Core book: Quick to rage: resisting frenzy is 2 harder\. \(p\. 45\)$/, /^Volume 2: .*\(Vol\. 2, p\. 121\)$/]);
   // A bloodline with no weakness of its own has its clan's.
   await chooseIn(p, "Clan", "Gangrel: Coyote");
   const coyote = p.getByRole("region", { name: "About Gangrel: Coyote" });

@@ -122,6 +122,16 @@ function ClanRow({ clan, cycleId, editable }: { clan: Clan; cycleId: string; edi
   );
 }
 
+/** What a character's clan weakness says about feeding (#1197): a Giovanni's painful bite, a Ventrue's one kind of prey. */
+function WeaknessNotes({ notes = [] }: { notes?: string[] }) {
+  const named = useClanName();
+  return notes.map((n) => (
+    <span key={n} className="block text-xs text-mist">
+      {named(n)}
+    </span>
+  ));
+}
+
 function CharacterFeeding({ cycle, character: c, humors, rack }: { cycle: CycleOut; character: CharacterFeedingOut; humors: HumorOut[]; rack: boolean }) {
   const path = { params: { path: { cycle_id: cycle.id, participant_id: c.participant_id } } };
   // With the Rack, taking a vessel is feeding: full Blood, as the book has it.
@@ -179,12 +189,14 @@ function CharacterFeeding({ cycle, character: c, humors, rack }: { cycle: CycleO
         <p className={`text-sm ${c.vessel ? "text-gold" : "text-mist"}`} aria-label={`${c.character_name}'s vessel`}>
           {c.vessel ? `Took Feeding Card ${cardLine(c.vessel)}${c.vessel.territory_name ? `, from ${c.vessel.territory_name}` : ""}.` : "No vessel taken yet."}
           {c.herd > 0 && <span className="text-mist"> Has Herd {c.herd}.</span>}
+          <WeaknessNotes notes={c.need.notes} />
         </p>
       ) : (
         <>
           <p className="text-sm">
             Needs <strong className="text-gold">{c.need.needed}</strong> feeding: {c.need.lines.map((l) => l.text).join(" · ")}.
             {c.herd > 0 && <span className="text-mist"> Has Herd {c.herd}.</span>}
+            <WeaknessNotes notes={c.need.notes} />
           </p>
           <p className="mt-1 text-sm">{c.summary || <span className="text-mist">No feeding entered.</span>}</p>
           {c.received.map((r) => (

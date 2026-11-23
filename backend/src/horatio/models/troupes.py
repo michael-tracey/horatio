@@ -272,6 +272,10 @@ class Troupe(Imported, Record):
     # a later book replaced it (the Tremere's, Vol. 2, p. 22). Every other plays the
     # later book's, as the rules data has it (horatio.clan_weaknesses, #1127).
     core_weaknesses: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # The same the other way: the clans whose weakness is the core book's unless the
+    # troupe chooses Volume 2's reading of it (the Brujah's, Vol. 2, p. 121), played
+    # here by Volume 2's (#1197).
+    vol2_weaknesses: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     # House rule: the clans each of the sects' bans on clans names here, by the ban's
     # key ("pillar_clans": ["Assamite", "Gangrel", ...]), over the rule set's. A ban it
     # leaves out goes by the rule set; one it names no clans for is off here

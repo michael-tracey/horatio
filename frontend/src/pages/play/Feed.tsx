@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useClanName } from "../../components/ClanNames";
 import { Button } from "../../components/ui";
 import { clockText, fedBlood, feedChoices, feedName, feedNote, compareText, defaultPlan, giveText, loadFeeding, loadSound, planText, resultText, saveFeeding, saveSound, type Feeding, type Plan } from "./feeding";
 import { tapId, type makeTap, type Shown } from "./tracker";
@@ -23,7 +24,20 @@ export function FeedButton({ onClick }: { onClick: () => void }) {
  * result waits for the player to come back (with a notification where the
  * browser allows one), and only then is the Blood added: once, whatever happens.
  */
-export function Feed({ view, asking, onClose, tap }: { view: Shown; asking: boolean; onClose: () => void; tap: Tap }) {
+export function Feed({
+  view,
+  asking,
+  onClose,
+  tap,
+  notes = [],
+}: {
+  view: Shown;
+  asking: boolean;
+  onClose: () => void;
+  tap: Tap;
+  /** What the character's clan weakness says about feeding (#1197): "Giovanni weakness: your bite does 3 damage…". */
+  notes?: string[];
+}) {
   const characterId = view.character_id;
   const [feeding, setFeeding] = useState<Feeding | null>(() => loadFeeding(characterId));
   const [sound, setSound] = useState(loadSound);
@@ -92,6 +106,7 @@ export function Feed({ view, asking, onClose, tap }: { view: Shown; asking: bool
       key={view.herd}
       herd={view.herd}
       blood={view.blood}
+      notes={notes}
       onCancel={onClose}
       onStart={(plan) => {
         // Starting is a tap, so the browser lets the page play sound and ask to notify.
@@ -104,7 +119,20 @@ export function Feed({ view, asking, onClose, tap }: { view: Shown; asking: bool
   );
 }
 
-function StartSheet({ herd, blood, onStart, onCancel }: { herd: number; blood: { value: number; most: number }; onStart: (plan: Plan) => void; onCancel: () => void }) {
+function StartSheet({
+  herd,
+  blood,
+  notes,
+  onStart,
+  onCancel,
+}: {
+  herd: number;
+  blood: { value: number; most: number };
+  notes: string[];
+  onStart: (plan: Plan) => void;
+  onCancel: () => void;
+}) {
+  const named = useClanName();
   const choices = feedChoices(herd);
   const [chosen, setChosen] = useState(() => defaultPlan(herd));
   const full = blood.value >= blood.most;
@@ -141,6 +169,11 @@ function StartSheet({ herd, blood, onStart, onCancel }: { herd: number; blood: {
             <p className="text-sm text-mist">{compareText(herd)}</p>
           </fieldset>
         )}
+        {notes.map((n) => (
+          <p key={n} className="text-sm text-parchment">
+            {named(n)}
+          </p>
+        ))}
         <p className="text-sm text-mist">Tell a storyteller or narrator you're feeding first.</p>
         {full && <p className="text-sm text-mist">Blood is full now, so feeding adds nothing unless some is spent first.</p>}
         <p className="text-xs text-mist">{choices.length > 1 ? "Hunting: core p. 294. Herd: core pp. 102–103." : "Hunting: core p. 294."}</p>

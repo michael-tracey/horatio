@@ -175,6 +175,8 @@ class FeedingModifierData:
     # May feed in any feeding territory without poaching: Triumphant's right to feed
     # in any of the sect's domains (MET: VtM core p. 316).
     anywhere: bool = False
+    # When it holds, where Horatio can't tell: "unless fed from Herd" (#1197).
+    note: str = ""
 
 
 @dataclass(frozen=True)
@@ -307,6 +309,10 @@ class RuleSetData:
     banked_xp: int | None = None
     # Equipment's kinds, grades, qualities and sample items (horatio.rules.equipment).
     equipment: EquipmentRules = NO_EQUIPMENT
+    # The book ("vol2" or "core") the troupe these rules are for plays each clan's
+    # weakness by, where the books differ (horatio.clan_weaknesses); empty with no
+    # troupe, where each plays its default.
+    weakness_books: Mapping[str, str] = field(default_factory=dict[str, str])
 
     @cached_property
     def memo(self) -> dict[Hashable, Any]:

@@ -22,6 +22,11 @@
 # `tags` sort traits for checks (horatio.rules.checks, `tagged`): "vampire_only" on
 # a merit or flaw about the vampiric condition, which a ghoul cannot take
 # (MET: VTM p. 296; bns_met_ghoul_checks.toml).
+#
+# `adds_weakness` on a flaw names a clan or bloodline whose weakness it gives the
+# character as well as their own (Coldly Logical, the True Brujah's: Vol. 2, p. 270;
+# horatio.clan_weaknesses). `choices` lists the details a merit or flaw is taken
+# with, one of which the player chooses (Golconda Seeker's benefit, pp. 249-250).
 
 # Titles a troupe can give its characters; each troupe can add its own.
 titles = [
@@ -1646,7 +1651,7 @@ category = "flaws"
 name = "Brujah: Coldly Logical"
 description = "You also suffer the True Brujah weakness, cold and without emotion until your Beast rises. Not for the True Brujah."
 page_reference = "Vol. 2, p. 270"
-properties = { rating = 1, type = "Clan", requirement = "Brujah" }
+properties = { rating = 1, type = "Clan", requirement = "Brujah", adds_weakness = "Brujah: True Brujah" }
 
 [[traits]]
 category = "flaws"
@@ -3872,9 +3877,9 @@ properties = { rating = 3, type = "Clan", requirement = "Giovanni" }
 [[traits]]
 category = "merits"
 name = "Golconda Seeker"
-description = "Needs Humanity 5 or more and 4 dots of Lore with Golconda lore. Choose one benefit: 2 more Blood a turn; no Blood to wake, and 1 Blood regained a day; or freedom from your clan weakness."
+description = "Needs Humanity 5 or more and 4 dots of Lore with Golconda lore. Choose one benefit, kept as its detail: 2 more Blood a turn; no Blood to wake, and 1 Blood regained a day; or freedom from your clan weakness, which Horatio then leaves off while your Humanity is 5 or more."
 page_reference = "249"
-properties = { rating = 5, type = "General" }
+properties = { rating = 5, type = "General", choices = ["2 more Blood a turn", "No Blood to wake", "No clan weakness"] }
 tags = ["vampire_only"]
 
 [[traits]]

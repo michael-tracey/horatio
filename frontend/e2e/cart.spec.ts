@@ -385,9 +385,10 @@ test("a finished Nosferatu asks staff for Bloodline: Creeps by exception, spends
   await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
 
-  // Silas, a Nosferatu, is built and accepted by the troupe.
+  // Silas, a Nosferatu, is built and accepted by the troupe; with Allies, not Herd, which
+  // a Creep can't have (Vol. 2, p. 48).
   const p = player.page;
-  const id = await builtVampire(p, "Silas", "Nosferatu", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]], disciplines: [["Animalism", 2], ["Obfuscate", 1], ["Potence", 1]] });
+  const id = await builtVampire(p, "Silas", "Nosferatu", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Allies", 2], ["Generation", 1]], disciplines: [["Animalism", 2], ["Obfuscate", 1], ["Potence", 1]] });
   const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
   expect(asked.status(), await asked.text()).toBe(201);
   const accepted = await lead.page.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });

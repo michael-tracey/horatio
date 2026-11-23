@@ -233,6 +233,8 @@ def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetT
             (),
         )
     )
+    from horatio import clan_weaknesses  # imports this module
+
     return {
         "generation": found.generation,
         "in_clan": inept is None
@@ -245,13 +247,26 @@ def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetT
         # The clan or bloodline exactly ("Brujah: True Brujah"), and its clan ("Brujah").
         "clan": found.clan,
         "clan_family": found.clan.split(":")[0].strip(),
+        # The clans and bloodlines whose weakness the character carries, which a flaw
+        # can add to and Golconda Seeker take away (horatio.clan_weaknesses).
+        "weakness": tuple(sorted(clan_weaknesses.carries(rules.rule_set, sheet))),
     }
 
 
-def clan_facts(rule_set: RuleSetData) -> list[dict[str, str]]:
-    """Each clan or bloodline a character could have, or none yet, with its clan."""
+def clan_facts(rule_set: RuleSetData) -> list[dict[str, Any]]:
+    """Each clan or bloodline a character could have, or none yet, with its clan and
+    the weaknesses it carries."""
+    from horatio import clan_weaknesses  # imports this module
+
     clans = sorted(name for category, name in rule_set.traits if category == "clan")
-    return [{"clan": c, "clan_family": c.split(":")[0].strip()} for c in ["", *clans]]
+    return [
+        {
+            "clan": c,
+            "clan_family": c.split(":")[0].strip(),
+            "weakness": tuple(clan_weaknesses.own(rule_set, c)) if c else (),
+        }
+        for c in ["", *clans]
+    ]
 
 
 def vampire_possible_facts(rule_set: RuleSetData) -> list[Facts]:
@@ -309,7 +324,7 @@ def ghoul_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTra
 
 SPLATS: dict[str, Splat] = {
     "vampire": Splat(
-        fact_names=frozenset({"generation", "in_clan", "clan", "clan_family"}),
+        fact_names=frozenset({"generation", "in_clan", "clan", "clan_family", "weakness"}),
         facts=vampire_facts,
         in_clan=vampire_in_clan_disciplines,
         fact_words={
@@ -317,6 +332,7 @@ SPLATS: dict[str, Splat] = {
             "in_clan": ("in-clan", "out-of-clan"),
             "clan": "{}",
             "clan_family": "{} clan",
+            "weakness": "with the {} weakness",
         },
         possible_facts=vampire_possible_facts,
         label="Vampire",

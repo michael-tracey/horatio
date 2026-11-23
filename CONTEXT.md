@@ -145,6 +145,10 @@ _Avoid_: Deleted, dead, inactive (except as the reason)
 The kind of supernatural a character is, such as Vampire, Werewolf or Changeling.
 _Avoid_: Venue, creature type, game line
 
+**Clan Weakness**:
+The drawback every vampire of a clan carries (MET: VTM p. 42): a bloodline's own in place of its clan's, or as well as it, or its clan's where it has none. A flaw can add another's (Coldly Logical, the True Brujah's), and a Golconda Seeker who took freedom from it as the merit's benefit carries none while their Humanity is 5 or more. Where the books differ, the troupe chooses which it plays: the Tremere's, Volume 2's or the core book's, and the Brujah's, the core book's or Volume 2's reading. Horatio applies what it can, at a game, in feeding, in what the sheet may hold and in prices, and says which weakness changed what; what it can't count, such as the nights a Lhiannan spends in a city, is a reminder. A ghoul plays its domitor's for roleplay only.
+_Avoid_: Curse, bane, clan flaw (a flaw is a trait)
+
 **Domitor**:
 The vampire a ghoul is bound to by its blood. A ghoul has no clan of its own: it takes its domitor's clan and bloodline, and its disciplines are its domitor's in-clan ones. The domitor is a PC or NPC in Horatio, or one known only by name.
 _Avoid_: Master, regnant (that is any blood bond's), sire

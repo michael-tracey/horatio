@@ -93,6 +93,7 @@ def feeding_modifier_from_dict(raw: dict[str, Any]) -> FeedingModifierData:
         always_half=raw.get("always_half", False),
         page=raw.get("page"),
         anywhere=raw.get("anywhere", False),
+        note=raw.get("note", ""),
     )
 
 
@@ -108,6 +109,8 @@ def feeding_modifier_to_dict(modifier: FeedingModifierData) -> dict[str, Any]:
         raw["page"] = modifier.page
     if modifier.anywhere:
         raw["anywhere"] = True
+    if modifier.note:
+        raw["note"] = modifier.note
     return raw
 
 

@@ -135,9 +135,10 @@ def test_a_merit_held_at_no_dots_changes_nothing() -> None:
 # --- Inceptor (Vol. 2 Issue 1, p. 46) -------------------------------------------------------
 
 
-def build(player: Person, character_id: str, skip: str) -> None:
-    """Every pick of the usual build but those in `skip`."""
+def build(player: Person, character_id: str, skip: str, herd: str = "Herd") -> None:
+    """Every pick of the usual build but those in `skip`, with `herd` for Herd."""
     for category, name, rating in FULL_BUILD:
+        name = herd if name == "Herd" else name
         if category != skip:
             assert pick(player, character_id, category, name, rating).status_code == 200, name
 
@@ -470,7 +471,8 @@ def test_the_starting_disciplines_follow_merits_that_change_what_is_in_clan(
 ) -> None:
     character_id = creating(troupe, clan="Nagaraja")
     player = troupe.player
-    build(player, character_id, skip="disciplines")
+    # Allies for Herd, which a Nagaraja cannot take (Vol. 2, p. 60).
+    build(player, character_id, skip="disciplines", herd="Allies")
     # The Ash Path's pick is left for later: out of clan, a path needs a merit for it.
     for name, rating in (("Dominate", 2), ("Auspex", 1)):
         assert pick(player, character_id, "disciplines", name, rating).status_code == 200

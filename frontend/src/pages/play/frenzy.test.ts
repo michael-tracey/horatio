@@ -8,6 +8,7 @@ describe("resisting frenzy with the player's numbers", () => {
     expect(frenzyNumbers({ parts: [mental(3)], beast: [], switched_beast: [] }, 6, 2, { name: "Humanity", value: 5 })).toEqual({
       pool: 9,
       against: 12,
+      counted: 2,
       poolParts: "Mental 3 + Willpower 6",
       againstParts: "10 + Beast traits 2",
     });
@@ -41,5 +42,27 @@ describe("Beast traits that count while a power is on (#822)", () => {
 
   it("reads a view kept on the phone from before, without them", () => {
     expect(frenzyNumbers({ parts: [mental(3)], beast: [] } as never, 5, 2, null, ["Heart removed"]).against).toBe(12);
+  });
+});
+
+describe("clan weaknesses (#1197)", () => {
+  it("makes resisting harder for a Brujah by the core book, without counting Beast traits", () => {
+    const brujah = { parts: [mental(3)], beast: [], switched_beast: [], against: [{ label: "Brujah weakness", value: 2 }] };
+    const you = frenzyNumbers(brujah, 5, 1, null);
+    expect([you.against, you.counted]).toEqual([13, 1]);
+    expect(you.againstParts).toBe("10 + Beast traits 1 + Brujah weakness 2");
+  });
+
+  it("counts Beast traits for a Brujah by Volume 2's reading, so one with none can frenzy", () => {
+    const brujah = { parts: [mental(3)], beast: [{ label: "Brujah weakness", value: 2 }], switched_beast: [] };
+    const you = frenzyNumbers(brujah, 5, 0, null);
+    expect([you.against, you.counted]).toEqual([12, 2]);
+    expect(you.againstParts).toBe("10 + Beast traits 0 + Brujah weakness 2");
+  });
+
+  it("counts an Assamite's tasted blood only while it's switched on", () => {
+    const assamite = { parts: [mental(3)], beast: [], switched_beast: [{ switch: "Tasted vampire blood", label: "Assamite weakness", value: 2 }] };
+    expect(frenzyNumbers(assamite, 5, 1, null).against).toBe(11);
+    expect(frenzyNumbers(assamite, 5, 1, null, ["Tasted vampire blood"]).against).toBe(13);
   });
 });

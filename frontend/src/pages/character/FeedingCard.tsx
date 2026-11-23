@@ -109,6 +109,12 @@ export function FeedingCard({
       {noFeeding || (
         <p className="mb-3 text-sm">
           You need <strong className="text-gold">{needed}</strong> feeding this cycle: {named(reasons)}.
+          {/* What the character's clan weakness says about feeding (#1197): a Giovanni's painful bite. */}
+          {(feeding.need.notes ?? []).map((n) => (
+            <span key={n} className="block text-xs text-mist">
+              {named(n)}
+            </span>
+          ))}
         </p>
       )}
       {locked && <Notice>A storyteller has answered your feeding, so it can no longer change.</Notice>}

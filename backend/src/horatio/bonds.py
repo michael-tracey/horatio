@@ -357,11 +357,18 @@ def clans_of(db: Session, *characters: Character | None) -> dict[uuid.UUID, str]
     return {who: name for who, name in rows}
 
 
-def is_tremere(clans: dict[uuid.UUID, str], character: Character | None) -> bool:
-    """A Tremere vampire, or a Telyav: a ghoul has its domitor's clan, but isn't one."""
+def is_tremere(db: Session, clans: dict[uuid.UUID, str], character: Character | None) -> bool:
+    """A Tremere vampire, or a Telyav, who carries the clan's weakness: a ghoul has its
+    domitor's clan, but isn't one, and a Golconda Seeker can be freed of it (core
+    pp. 249-250; horatio.clan_weaknesses)."""
     if character is None or not is_vampire(character):
         return False
-    return clan_family(clans.get(character.id, "")) == TREMERE
+    if clan_family(clans.get(character.id, "")) != TREMERE:
+        return False
+    from horatio import clan_weaknesses, sheets  # imports this module
+
+    rows = sheets.sheet_rows(db, character)
+    return not clan_weaknesses.freed([r.as_rules_trait() for r in rows])
 
 
 def weakness_for(db: Session, troupe: Troupe, thrall: Party, regnant: Party) -> str:
@@ -369,9 +376,9 @@ def weakness_for(db: Session, troupe: Troupe, thrall: Party, regnant: Party) -> 
     troupe: CAPPED, DOUBLED, or empty for neither."""
     clans = clans_of(db, thrall.character, regnant.character)
     if TREMERE in troupe.core_weaknesses:
-        return DOUBLED if is_tremere(clans, thrall.character) else ""
+        return DOUBLED if is_tremere(db, clans, thrall.character) else ""
     vampire_thrall = thrall.character is not None and is_vampire(thrall.character)
-    return CAPPED if vampire_thrall and is_tremere(clans, regnant.character) else ""
+    return CAPPED if vampire_thrall and is_tremere(db, clans, regnant.character) else ""
 
 
 def weakness_line(weakness: str, thrall: Party, regnant: Party) -> str:
