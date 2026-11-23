@@ -29,6 +29,7 @@ from horatio.models import Approval, AuditEvent, Character, EmailChange, Passwor
 from horatio.permissions import (
     Role,
     TroupeAction,
+    acting_as_custodian,
     can_see_lines_veils,
     can_view_character,
     require_custodian,
@@ -289,12 +290,14 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
         discord_handle=user.discord_handle,
         discord_linked=user.discord_user_id is not None,
         is_custodian=user.is_custodian,
-        email=user.email if viewer.is_custodian or viewer.id == user.id else None,
+        email=user.email if viewer.id == user.id or acting_as_custodian(viewer) else None,
         characters=player_characters(db, viewer, user),
-        reset_expires_at=reset_expiry(db, user) if viewer.is_custodian else None,
+        reset_expires_at=reset_expiry(db, user) if acting_as_custodian(viewer) else None,
         lines_veils=lines_veils_of(user) if can_see_lines_veils(db, viewer, user) else None,
-        email_change=pending(db, user) if viewer.is_custodian or viewer.id == user.id else None,
-        deleted_characters=deleted_characters(db, user) if viewer.is_custodian else [],
+        email_change=pending(db, user)
+        if viewer.id == user.id or acting_as_custodian(viewer)
+        else None,
+        deleted_characters=deleted_characters(db, user) if acting_as_custodian(viewer) else [],
     )
 
 

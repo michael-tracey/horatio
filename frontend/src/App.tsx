@@ -7,6 +7,7 @@ import { LeaveGuard } from "./components/LeaveGuard";
 import { SunriseHost } from "./components/Sunrise";
 import { ToastProvider } from "./components/Toast";
 import { ViewingBanner } from "./components/ViewingBanner";
+import { CustodianAccess } from "./components/CustodianAccess";
 import { AboutPage } from "./pages/AboutPage";
 import { CharactersPage } from "./pages/CharactersPage";
 import { ImportCharacterPage } from "./pages/character/Backup";
@@ -74,6 +75,7 @@ function App() {
   return (
     <ToastProvider>
       <ViewingBanner />
+      <CustodianAccess />
       <KeepQuestion />
       <UpdatePrompt />
       <Outlet />

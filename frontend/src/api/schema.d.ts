@@ -5916,6 +5916,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/custodian-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Custodian Access
+         * @description Whether the signed-in custodian has custodian access on; None for anyone else.
+         */
+        get: operations["custodian_access_api_custodian_access_get"];
+        put?: never;
+        /**
+         * Switch On
+         * @description Switch custodian access on for this sign-in, giving a second step again (a code,
+         *     a recovery code or a passkey) or, with none set up, the password, and a reason. Wrong
+         *     second steps count against the same limits as signing in.
+         */
+        post: operations["switch_on_api_custodian_access_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/custodian-access/passkey/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passkey Options
+         * @description What the browser needs to give one of the custodian's passkeys, to switch on
+         *     custodian access: WebAuthn's PublicKeyCredentialRequestOptions, as JSON.
+         */
+        post: operations["passkey_options_api_custodian_access_passkey_options_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/custodian-access/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Switch Off
+         * @description Switch custodian access off for this sign-in, at once.
+         */
+        post: operations["switch_off_api_custodian_access_stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}": {
         parameters: {
             query?: never;
@@ -21843,6 +21910,20 @@ export interface components {
             tool: components["schemas"]["CryptTemplatesTool"];
         };
         /**
+         * CustodianAccessOut
+         * @description The custodian's own: whether custodian access is on for this sign-in.
+         */
+        CustodianAccessOut: {
+            /** Ends At */
+            ends_at?: string | null;
+            /** On */
+            on: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Second Step */
+            second_step: string[];
+        };
+        /**
          * CustomKind
          * @description A custom kind, for one the book does not cover: its name, whether it is
          *     mortal or supernatural, and its resource.
@@ -37340,6 +37421,19 @@ export interface components {
             /** Level */
             level: string;
         };
+        /** SwitchOn */
+        SwitchOn: {
+            /** Code */
+            code?: string | null;
+            /** Credential */
+            credential?: {
+                [key: string]: unknown;
+            } | null;
+            /** Password */
+            password?: string | null;
+            /** Reason */
+            reason: string;
+        };
         /**
          * SwitchOption
          * @description One of a power's own options, picked each time it is used (issue #821): Mantle
@@ -51907,6 +52001,99 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    custodian_access_api_custodian_access_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustodianAccessOut"] | null;
+                };
+            };
+        };
+    };
+    switch_on_api_custodian_access_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwitchOn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustodianAccessOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    passkey_options_api_custodian_access_passkey_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    switch_off_api_custodian_access_stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

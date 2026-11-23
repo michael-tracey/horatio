@@ -69,8 +69,18 @@ export interface Api {
   PATCH: Call<"patch">;
 }
 
+/** Dispatched on `window` for a refusal that custodian access would have let through
+ * (#1213): the app offers the custodian to switch it on (components/CustodianAccess.tsx). */
+export const CUSTODIAN_ACCESS_NEEDED = "horatio:custodian-access-needed";
+
+const custodianAccess: Middleware = {
+  onResponse({ response }) {
+    if (response.headers.get("X-Horatio-Custodian-Access") === "needed") window.dispatchEvent(new Event(CUSTODIAN_ACCESS_NEEDED));
+  },
+};
+
 const client = createClient<paths>({ credentials: "same-origin" });
-client.use(csrf, connection);
+client.use(csrf, connection, custodianAccess);
 export const api = client as unknown as Api;
 
 function detailOf(error: unknown, status: number): string {

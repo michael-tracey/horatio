@@ -19,7 +19,7 @@ from horatio.api.troupe_profiles import Profile, viewable
 from horatio.api.written_rules import readable
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
 from horatio.models import ChronicleMotif, Troupe, User
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, open_to, troupe_role
 from horatio.setting_style import Kind, SettingError
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["setting style"])
@@ -119,8 +119,8 @@ def entry_out(motif: ChronicleMotif) -> SettingEntryOut:
 def can_do(db: Session, user: User | None, troupe: Troupe, action: TroupeAction) -> bool:
     return (
         user is not None
-        and (troupe.archived_at is None or user.is_custodian)
-        and allows(troupe_role(db, user, troupe), action, is_custodian=user.is_custodian)
+        and open_to(user, troupe)
+        and may(user, troupe_role(db, user, troupe), action, troupe)
     )
 
 

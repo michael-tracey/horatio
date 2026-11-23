@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 from horatio import audit
 from horatio.models import Character, Troupe, TroupeMembership, TroupeStaff, User
 from horatio.notifications import notify
-from horatio.permissions import TROUPE_POLICY, TroupeAction
+from horatio.permissions import TROUPE_POLICY, TroupeAction, acting_as_custodian
 from horatio.sheets import conflict, unprocessable
 
 # How often a player can rename a character that is in a troupe.
@@ -127,8 +127,11 @@ def rename(db: Session, user: User, character: Character, name: str) -> None:
     if name == old:
         return
     troupes = troupes_of(db, character)
-    by_custodian = user.is_custodian
-    by_player = not by_custodian and character.kind == "pc"
+    # The custodian's powers rename another's character without the wait; its player
+    # waits, the custodian as much as anyone.
+    own = character.kind == "pc" and character.player_id == user.id
+    by_custodian = not own and acting_as_custodian(user, character=character)
+    by_player = character.kind == "pc" and not by_custodian
     if troupes:
         if by_player:
             allowed = next_rename_on(db, character)

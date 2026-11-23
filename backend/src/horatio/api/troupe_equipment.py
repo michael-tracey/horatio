@@ -35,7 +35,12 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, can_view_character, visible_character
+from horatio.permissions import (
+    TroupeAction,
+    acting_as_custodian,
+    can_view_character,
+    visible_character,
+)
 from horatio.rules.equipment import EquipmentRules, item_qualities
 
 router = APIRouter(tags=["equipment"])
@@ -369,7 +374,7 @@ class Reader:
             return False
         home = equipment.home_of(character)
         if home is None:
-            return self.user.is_custodian
+            return acting_as_custodian(self.user, character=character)
         if home not in self.managing:
             self.managing[home] = equipment.can_manage(self.db, self.user, self.troupe(home))
         return self.managing[home]

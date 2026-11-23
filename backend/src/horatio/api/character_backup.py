@@ -45,8 +45,9 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, RuleSet, Troupe, TroupeMembership, User
 from horatio.permissions import (
     TroupeAction,
-    allows,
+    acting_as_custodian,
     can_edit_character,
+    may,
     troupe_role,
     visible_character,
 )
@@ -69,7 +70,9 @@ def exportable(db: Session, user: User, character_id: uuid.UUID) -> Character:
     """A character `user` may back up: their own, retired ones too; an NPC, its
     troupe's running staff; any, the custodian."""
     character = visible_character(db, user, character_id)
-    if not (user.is_custodian or can_edit_character(db, user, character)):
+    if not (
+        can_edit_character(db, user, character) or acting_as_custodian(user, character=character)
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player can export it.")
     return character
 
@@ -248,9 +251,7 @@ def export_troupe(
     those named in `characters`. Each player character names its player by handle,
     and by email too with `emails`, which only storytellers may ask for."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
-    if emails and not allows(
-        troupe_role(db, user, troupe), TroupeAction.GIVE_NPCS, is_custodian=user.is_custodian
-    ):
+    if emails and not may(user, troupe_role(db, user, troupe), TroupeAction.GIVE_NPCS, troupe):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Only the troupe's storytellers can export players' emails."
         )
@@ -710,9 +711,7 @@ def importing_troupe(
     """The troupe, if `user` runs it; whether they give player characters to players;
     and what they chose."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_NPCS)
-    can_give = allows(
-        troupe_role(db, user, troupe), TroupeAction.GIVE_NPCS, is_custodian=user.is_custodian
-    )
+    can_give = may(user, troupe_role(db, user, troupe), TroupeAction.GIVE_NPCS, troupe)
     chosen: dict[str, troupe_import.Decision] = {}
     if decisions:
         try:

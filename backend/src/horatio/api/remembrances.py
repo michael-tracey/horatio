@@ -14,7 +14,13 @@ from horatio import audit, downtimes, pictures, remembrances, social_age
 from horatio.api.downtimes import my_participation, staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, CycleParticipant, DowntimeCycle, Troupe, User
-from horatio.permissions import TroupeAction, allows, troupe_role, visible_character
+from horatio.permissions import (
+    TroupeAction,
+    acting_as_custodian,
+    allows,
+    troupe_role,
+    visible_character,
+)
 
 router = APIRouter(tags=["remembrances"])
 
@@ -119,10 +125,12 @@ def my_remembrances_out(
 def hears_asking(db: DbSession, user: User, character: Character) -> bool:
     """Whether `user` sees that the character's player asked for remembrances: its
     player, the custodian, and the home troupe's running staff, who are told."""
-    if character.player_id == user.id or user.is_custodian:
+    if character.player_id == user.id:
         return True
     troupe = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
-    return troupe is not None and allows(troupe_role(db, user, troupe), TroupeAction.MANAGE_CYCLES)
+    if troupe is not None and allows(troupe_role(db, user, troupe), TroupeAction.MANAGE_CYCLES):
+        return True
+    return acting_as_custodian(user, character=character)
 
 
 def character_remembrances_out(

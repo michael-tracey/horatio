@@ -129,6 +129,10 @@ NOTICE: frozenset[str] = frozenset(
         "troupe.staff_two_step",
         "account.view_as",
         "account.view_as_ended",
+        # Custodian access switched on and off, and used in a troupe they play in (#1213).
+        "account.custodian_access_on",
+        "account.custodian_access_off",
+        "troupe.custodian_access_used",
         # --- the custodian's work, and what stays with a troupe for good ---
         # Clearing a blog author's bio, links or picture (#1159).
         "account.blog_author_cleared",

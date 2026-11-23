@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from horatio import xp_range
 from horatio.api.troupes import get_troupe
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.permissions import TroupeAction, require_troupe_action
+from horatio.permissions import TroupeAction, open_to, require_troupe_action
 
 router = APIRouter(prefix="/troupes/{troupe_id}/xp-range", tags=["xp range"])
 
@@ -77,7 +77,7 @@ def range_out(db: DbSession, troupe_id: uuid.UUID) -> XpRangeOut:
 def read_range(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> XpRangeOut:
     """Anyone can see where a troupe stands, as they can see the troupe."""
     troupe = get_troupe(db, troupe_id)
-    if troupe.archived_at is not None and not user.is_custodian:
+    if not open_to(user, troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     return range_out(db, troupe_id)
 

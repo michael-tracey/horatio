@@ -30,7 +30,7 @@ from horatio.models import (
     TroupeMembership,
     User,
 )
-from horatio.permissions import TroupeAction, allows, is_member, troupe_role
+from horatio.permissions import TroupeAction, is_member, may, troupe_role
 
 router = APIRouter(prefix="/troupes/{troupe_id}/games", tags=["games"])
 
@@ -86,9 +86,7 @@ def games_out(
     db: Session, user: User, troupe: Troupe, games: list[ScheduledGame]
 ) -> list[GameRsvpsOut]:
     """Each game with its answers, asked of the database a few times in all."""
-    staff = allows(
-        troupe_role(db, user, troupe), TroupeAction.VIEW_RSVPS, is_custodian=user.is_custodian
-    )
+    staff = may(user, troupe_role(db, user, troupe), TroupeAction.VIEW_RSVPS, troupe)
     rsvps = list(db.scalars(select(GameRsvp).where(GameRsvp.game_id.in_([g.id for g in games]))))
     here = list(
         db.execute(

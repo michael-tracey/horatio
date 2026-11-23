@@ -375,6 +375,82 @@ test("the custodian views Horatio as a player, read-only, and the player sees th
   await p.screenshot(shots("viewed-as"));
 });
 
+test("a custodian who plays is a player until they switch on custodian access, which tells their lead once and ends an hour after its last use (#1213)", async ({ browser }) => {
+  const headers = { "X-Horatio": "1" };
+  const admin = await person(browser, "custaccess-admin");
+  makeCustodian(admin.email);
+  const lead = await person(browser, "custaccess-lead");
+  const player = await person(browser, "custaccess-player");
+  const keeper = await person(browser, "custaccess-keeper");
+  const made = await admin.page.request.post("/api/troupes", { headers, data: { name: `Court of the Switched Key ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(lead.page, troupeId);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const atHome = async (p: Page, name: string) => {
+    const id = await builtVampire(p, name, "Brujah", build);
+    const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+    expect(asked.status(), await asked.text()).toBe(201);
+    const approved = await lead.page.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+    expect(approved.status(), await approved.text()).toBe(200);
+    return id;
+  };
+  const hesper = await atHome(player.page, "Hesper Vance");
+  await atHome(keeper.page, "Wendeline Aske");
+  // The keeper is a custodian too, who plays in the troupe: custodian access is off.
+  makeCustodian(keeper.email, { switchedOn: false });
+  const k = keeper.page;
+  await k.reload();
+
+  // The Custodian pages are in the menu, and ask to switch it on.
+  await (await topBar(k)).getByRole("link", { name: "Custodian", exact: true }).click();
+  await expect(k.locator("main").getByRole("heading", { name: "Switch on custodian access" })).toBeVisible();
+  await expect(k.locator("main").getByRole("link", { name: "People", exact: true })).toHaveCount(0);
+
+  // Another player's sheet is closed to them, as to any player, and Horatio offers to switch it on.
+  await k.goto(`/characters/${hesper}`);
+  await expect(k.getByText("No such character.")).toBeVisible();
+  const offer = k.getByRole("dialog", { name: "Switch on custodian access" });
+  await expect(offer).toBeVisible();
+  await offer.getByLabel("Reason").fill("Hesper's sheet shows the wrong clan");
+  await offer.getByLabel("Your password").fill(PASSWORD);
+  await offer.getByRole("button", { name: "Switch on", exact: true }).click();
+  const banner = k.getByRole("status", { name: "Custodian access" });
+  await expect(banner).toContainText("Custodian access is on.");
+  await expect(banner).toContainText("Hesper's sheet shows the wrong clan");
+  await expect(k.getByRole("heading", { name: "Hesper Vance" })).toBeVisible();
+  await k.screenshot(shots("custodian-access-on"));
+  // More of the troupe's staff material: still one notice for the lead.
+  expect((await k.request.get(`/api/troupes/${troupeId}/log`)).status()).toBe(200);
+
+  // The lead's bell says who, and why, once.
+  const l = lead.page;
+  await l.reload();
+  await l.getByRole("button", { name: /^Notifications/ }).click();
+  const panel = l.getByRole("dialog", { name: "Notifications" });
+  await expect(panel.getByText(/^custaccess-keeper, the custodian, who plays in Court of the Switched Key .+, switched on custodian access and opened what only its staff see: Hesper's sheet shows the wrong clan$/)).toHaveCount(1);
+
+  // Switched off from the banner: a player again, at once.
+  await banner.getByRole("button", { name: "Switch off" }).click();
+  await expect(banner).toHaveCount(0);
+  await expect(k.getByText("No such character.")).toBeVisible();
+
+  // It ends a while after its last use: here 10 seconds, not the hour. Each use moves the end on.
+  makeCustodian(keeper.email, { lastsSeconds: 10 });
+  await k.reload();
+  await expect(banner).toBeVisible();
+  const on = async () => (await (await k.request.get("/api/custodian-access")).json()).on as boolean;
+  await k.waitForTimeout(6000);
+  expect((await k.request.get(`/api/characters/${hesper}`)).status()).toBe(200);
+  await k.waitForTimeout(6000);
+  // Twelve seconds after switching on, but six after its last use.
+  expect(await on()).toBe(true);
+  await expect.poll(on, { timeout: 20_000, intervals: [1000] }).toBe(false);
+  await k.reload();
+  await expect(k.getByText("No such character.")).toBeVisible();
+  await expect(banner).toHaveCount(0);
+});
+
 test("the custodian searches the audit log across troupes by person, days and character, and exports it", async ({ browser }) => {
   const custodian = await person(browser, "logsearch-cust");
   makeCustodian(custodian.email);
@@ -1270,7 +1346,9 @@ test("Clan logos and Site fit a phone: nothing sideways, the loading animations 
   await expect(card("What is running").getByText("Running since")).toBeVisible();
   await expect(c.locator("main details[open]")).toHaveCount(0);
   expect(await sideways()).toBe(0);
-  expect(await c.evaluate(() => document.documentElement.scrollHeight)).toBeLessThan(2500);
+  // Site itself: not the custodian access banner over every page (#1213).
+  const banner = (await c.getByRole("status", { name: "Custodian access" }).boundingBox())?.height ?? 0;
+  expect((await c.evaluate(() => document.documentElement.scrollHeight)) - banner).toBeLessThan(2500);
 });
 
 test("the custodian fetches the Dark Pack resources and the VTES symbols onto the server, then removes them", async ({ browser }) => {

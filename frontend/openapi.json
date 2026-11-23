@@ -16878,6 +16878,51 @@
         "title": "CryptTemplatesUpload",
         "type": "object"
       },
+      "CustodianAccessOut": {
+        "description": "The custodian's own: whether custodian access is on for this sign-in.",
+        "properties": {
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "second_step": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Second Step",
+            "type": "array"
+          }
+        },
+        "required": [
+          "on",
+          "second_step"
+        ],
+        "title": "CustodianAccessOut",
+        "type": "object"
+      },
       "CustomKind": {
         "description": "A custom kind, for one the book does not cover: its name, whether it is\nmortal or supernatural, and its resource.",
         "properties": {
@@ -56312,6 +56357,56 @@
         "title": "SwitchLevel",
         "type": "object"
       },
+      "SwitchOn": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "reason": {
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SwitchOn",
+        "type": "object"
+      },
       "SwitchOption": {
         "description": "One of a power's own options, picked each time it is used (issue #821): Mantle\nof Atira's Bear Strength, Mythic Form's Tough. While its switch is on and it is\npicked, what it does counts as a switch's does: its `key` (\"Mythic Form/Tough\") is\nwhat a `when` in the powers file names, and it is on while it is picked.",
         "properties": {
@@ -82260,6 +82355,115 @@
         "summary": "Remove Logo",
         "tags": [
           "clan logos"
+        ]
+      }
+    },
+    "/api/custodian-access": {
+      "get": {
+        "description": "Whether the signed-in custodian has custodian access on; None for anyone else.",
+        "operationId": "custodian_access_api_custodian_access_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CustodianAccessOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Custodian Access Api Custodian Access Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Custodian Access",
+        "tags": [
+          "custodian access"
+        ]
+      },
+      "post": {
+        "description": "Switch custodian access on for this sign-in, giving a second step again (a code,\na recovery code or a passkey) or, with none set up, the password, and a reason. Wrong\nsecond steps count against the same limits as signing in.",
+        "operationId": "switch_on_api_custodian_access_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchOn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustodianAccessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Switch On",
+        "tags": [
+          "custodian access"
+        ]
+      }
+    },
+    "/api/custodian-access/passkey/options": {
+      "post": {
+        "description": "What the browser needs to give one of the custodian's passkeys, to switch on\ncustodian access: WebAuthn's PublicKeyCredentialRequestOptions, as JSON.",
+        "operationId": "passkey_options_api_custodian_access_passkey_options_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Passkey Options Api Custodian Access Passkey Options Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Passkey Options",
+        "tags": [
+          "custodian access"
+        ]
+      }
+    },
+    "/api/custodian-access/stop": {
+      "post": {
+        "description": "Switch custodian access off for this sign-in, at once.",
+        "operationId": "switch_off_api_custodian_access_stop_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Switch Off",
+        "tags": [
+          "custodian access"
         ]
       }
     },

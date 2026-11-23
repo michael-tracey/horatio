@@ -12,9 +12,11 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, Troupe, TroupeMembership, User
 from horatio.permissions import (
     TroupeAction,
+    acting_as_custodian,
     allows,
     can_edit_character,
     can_see_whos_who,
+    may,
     troupe_role,
     visible_character,
 )
@@ -80,10 +82,8 @@ class SireLineChoiceOut(BaseModel):
 
 
 def is_running_staff(db: Session, user: User, troupe: Troupe | None) -> bool:
-    return troupe is not None and allows(
-        troupe_role(db, user, troupe),
-        TroupeAction.VIEW_MEMBER_CHARACTERS,
-        is_custodian=user.is_custodian,
+    return troupe is not None and may(
+        user, troupe_role(db, user, troupe), TroupeAction.VIEW_MEMBER_CHARACTERS, troupe
     )
 
 
@@ -97,12 +97,12 @@ def may_change(db: Session, user: User, character: Character) -> bool:
     storytellers and assistant storytellers, at any time."""
     if character.splat != sire_lines.VAMPIRE:
         return False
-    if user.is_custodian:
-        return True
     if character.status == "active" and can_edit_character(db, user, character):
         return True
     home = home_of(db, character)
-    return home is not None and allows(troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES)
+    if home is not None and allows(troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES):
+        return True
+    return acting_as_custodian(user, character=character)
 
 
 @router.get("/troupes/{troupe_id}/sire-lines")
@@ -175,9 +175,9 @@ def set_sire(
         if sire is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character to be the sire.")
     home = home_of(db, character)
-    by_staff = user.is_custodian or (
+    by_staff = (
         home is not None and allows(troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES)
-    )
+    ) or (character.player_id != user.id and acting_as_custodian(user, character=character))
     sire_lines.set_sire(
         db,
         user,

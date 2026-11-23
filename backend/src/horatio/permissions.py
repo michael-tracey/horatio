@@ -14,10 +14,21 @@ Roles come from CONTEXT.md:
 
 `TROUPE_POLICY` is the whole of that as data, so it can be read and tested in
 one place.
+
+**The custodian's powers are switched on, not always on (#1213).** A custodian is
+also often a player, so until they switch custodian access on
+(horatio.auth.custodian_access) they have only what their troupe roles give them.
+`acting_as_custodian` is the one place that asks, for every check: `user.is_custodian`
+itself says only that the account may switch it on (tests/test_custodian_checks.py
+keeps it so). Each use of the powers is noted for the request: it moves the end of
+the access on, and tells the lead storyteller of a troupe the custodian plays in,
+once, that they used it there. So a check asks it last, only when the person's own
+roles have not already let them through.
 """
 
 import uuid
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from enum import StrEnum
 
 from fastapi import HTTPException, status
@@ -169,8 +180,74 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
 
 
 def allows(role: Role | None, action: TroupeAction, *, is_custodian: bool = False) -> bool:
-    """The policy itself, without the database."""
+    """The policy itself, without the database. `is_custodian` is whether the custodian's
+    powers count; for someone signed in, `may` asks `acting_as_custodian` for it."""
     return is_custodian or (role is not None and role in TROUPE_POLICY[action])
+
+
+# --- acting as the custodian (#1213) --------------------------------------------------------
+
+SWITCH_ON = "Switch on custodian access to do that."
+_ACTING = "_horatio_acting"
+
+
+@dataclass
+class Acting:
+    """How one request stands as the custodian's, kept on the signed-in custodian's User
+    for the request (horatio.auth.deps): whether custodian access is on, and what used
+    it, for horatio.auth.custodian_access to keep once the request is answered."""
+
+    access_id: uuid.UUID | None
+    # Whether a check let them through on the custodian's powers alone.
+    used: bool = False
+    # Where: the troupes, and the characters (whose troupes are worked out after).
+    troupe_ids: set[uuid.UUID] = field(default_factory=set[uuid.UUID])
+    character_ids: set[uuid.UUID] = field(default_factory=set[uuid.UUID])
+    # Whether a check would have let them through had it been on.
+    wanted: bool = False
+
+
+def set_acting(user: User, acting: Acting | None) -> None:
+    setattr(user, _ACTING, acting)
+
+
+def acting_of(user: User) -> Acting | None:
+    found = getattr(user, _ACTING, None)
+    return found if isinstance(found, Acting) else None
+
+
+def acting_as_custodian(
+    user: User | None, *where: Troupe | uuid.UUID | None, character: Character | None = None
+) -> bool:
+    """Whether this request has the custodian's powers: the account is the custodian's
+    and they have custodian access switched on. Asked only once the person's own roles
+    have not let them through, so a yes is a use of the powers: in the troupes `where`,
+    or those `character` belongs to, if any."""
+    if user is None or not user.is_custodian:
+        return False
+    acting = acting_of(user)
+    if acting is None or acting.access_id is None:
+        if acting is not None:
+            acting.wanted = True
+        return False
+    acting.used = True
+    for place in where:
+        if place is not None:
+            acting.troupe_ids.add(place.id if isinstance(place, Troupe) else place)
+    if character is not None:
+        acting.character_ids.add(character.id)
+    return True
+
+
+def may(user: User, role: Role | None, action: TroupeAction, troupe: Troupe | None = None) -> bool:
+    """Whether `user`, with `role` in `troupe`, may take `action`: as the policy says,
+    or on the custodian's powers."""
+    return allows(role, action) or acting_as_custodian(user, troupe)
+
+
+def open_to(user: User | None, troupe: Troupe) -> bool:
+    """A troupe that isn't archived; an archived one only on the custodian's powers."""
+    return troupe.archived_at is None or acting_as_custodian(user, troupe)
 
 
 def troupe_role(db: Session, user: User, troupe: Troupe) -> Role | None:
@@ -187,21 +264,26 @@ def troupe_role(db: Session, user: User, troupe: Troupe) -> Role | None:
 def require_troupe_action(db: Session, user: User, troupe: Troupe, action: TroupeAction) -> None:
     """Refuse with 403 unless `user` may take `action` in `troupe`. An archived
     troupe is closed to everything except the custodian."""
-    if troupe.archived_at is not None and not user.is_custodian:
+    if not open_to(user, troupe):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This troupe is archived.")
-    if not allows(troupe_role(db, user, troupe), action, is_custodian=user.is_custodian):
+    if not may(user, troupe_role(db, user, troupe), action, troupe):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "You cannot do that in this troupe.")
 
 
 def require_custodian(user: User) -> None:
-    if not user.is_custodian:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the custodian can do that.")
+    """Refuse with 403 unless the custodian has custodian access on: for the site-wide
+    work only they do."""
+    if not acting_as_custodian(user):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            SWITCH_ON if user.is_custodian else "Only the custodian can do that.",
+        )
 
 
 def can_view_character(db: Session, user: User, character: Character) -> bool:
     """A PC's player, the custodian, and the running staff of any troupe it currently
     belongs to (for an NPC, the troupe that keeps it)."""
-    if user.is_custodian or (character.kind == "pc" and character.player_id == user.id):
+    if character.kind == "pc" and character.player_id == user.id:
         return True
     running = [r.value for r in TROUPE_POLICY[TroupeAction.VIEW_MEMBER_CHARACTERS]]
     member_troupes = select(TroupeMembership.troupe_id).where(
@@ -215,13 +297,15 @@ def can_view_character(db: Session, user: User, character: Character) -> bool:
         TroupeStaff.user_id == user.id,
         TroupeStaff.role.in_(running),
     )
-    return bool(db.scalar(select(is_lead | is_staff)))
+    return bool(db.scalar(select(is_lead | is_staff))) or acting_as_custodian(
+        user, character=character
+    )
 
 
-def viewable_characters(user: User) -> ColumnElement[bool]:
+def viewable_characters(user: User, *where: Troupe | uuid.UUID | None) -> ColumnElement[bool]:
     """The characters `user` can see, as `can_view_character` says, as a condition on
-    Character: to list them."""
-    if user.is_custodian:
+    Character: to list them, in the troupes `where` if the list is theirs."""
+    if acting_as_custodian(user, *where):
         return true()
     running = [r.value for r in TROUPE_POLICY[TroupeAction.VIEW_MEMBER_CHARACTERS]]
     led = select(Troupe.id).where(Troupe.lead_user_id == user.id, Troupe.archived_at.is_(None))
@@ -241,11 +325,11 @@ def viewable_characters(user: User) -> ColumnElement[bool]:
 def is_staff_for(db: Session, user: User, character: Character) -> bool:
     """The custodian, and the running staff of a troupe the character belongs to
     now: those who see its sheet without being its player."""
-    if user.is_custodian:
-        return True
     if character.kind == "pc" and character.player_id == user.id:
         # Its player may also be staff where it plays; check as if they were not.
-        return _running_staff_of(db, user, character)
+        return _running_staff_of(db, user, character) or acting_as_custodian(
+            user, character=character
+        )
     return can_view_character(db, user, character)
 
 
@@ -295,8 +379,20 @@ def whos_who_troupes(
     """Those of the troupes whose Who's Who the user may see (`can_see_whos_who`),
     asked of the database at most twice, whatever their number. `roles` are their
     `troupe_roles`, if already known."""
-    if user.is_custodian:
+    found = _whos_who_troupes(db, user, troupes, roles)
+    if len(found) < len(troupes) and acting_as_custodian(
+        user, *(t for t in troupes if t.id not in found)
+    ):
         return {t.id for t in troupes}
+    return found
+
+
+def _whos_who_troupes(
+    db: Session,
+    user: User,
+    troupes: Sequence[Troupe],
+    roles: dict[uuid.UUID, Role | None] | None,
+) -> set[uuid.UUID]:
     running = [t for t in troupes if t.archived_at is None]
     if not running:
         return set()
@@ -348,18 +444,20 @@ def can_edit_character(db: Session, user: User, character: Character) -> bool:
     if character.kind == "pc":
         return character.player_id == user.id
     troupe = db.get(Troupe, character.owner_troupe_id)
-    return troupe is not None and allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_NPCS, is_custodian=user.is_custodian
+    return troupe is not None and may(
+        user, troupe_role(db, user, troupe), TroupeAction.MANAGE_NPCS, troupe
     )
 
 
 def can_change_leaving(db: Session, user: User, character: Character) -> bool:
     """Why a retired character left, and whether the Who's Who lists it, are its
     player's to say, and its home troupe's running staff's (horatio.leaving)."""
-    if user.is_custodian or can_edit_character(db, user, character):
+    if can_edit_character(db, user, character):
         return True
     home = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
-    return home is not None and allows(troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES)
+    if home is not None and allows(troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES):
+        return True
+    return acting_as_custodian(user, character=character)
 
 
 def visible_character(db: Session, user: User, character_id: uuid.UUID) -> Character:
@@ -394,11 +492,11 @@ def can_see_lines_veils(db: Session, user: User, player: User) -> bool:
     """A player's lines and veils are never public. They see them themself, as do
     the custodian and the staff of every troupe they play in. Other players in those
     troupes see them only if the player shares them (horatio.lines_veils)."""
-    if user.id == player.id or user.is_custodian:
+    if user.id == player.id:
         return True
     theirs = _plays_in(db, player.id)
     if not theirs:
-        return False
+        return acting_as_custodian(user)
     roles = [r.value for r in TROUPE_POLICY[TroupeAction.VIEW_LINES_VEILS]]
     staffs = exists().where(
         TroupeStaff.troupe_id.in_(theirs),
@@ -408,16 +506,18 @@ def can_see_lines_veils(db: Session, user: User, player: User) -> bool:
     leads = exists().where(Troupe.id.in_(theirs), Troupe.lead_user_id == user.id)
     if db.scalar(select(staffs | leads)):
         return True
-    return player.share_lines_veils and bool(theirs & _plays_in(db, user.id))
+    if player.share_lines_veils and theirs & _plays_in(db, user.id):
+        return True
+    return acting_as_custodian(user, *theirs)
 
 
-def lines_veils_shown_here(user: User, role: Role | None, player: User) -> bool:
-    """On the Who's Who of a troupe `player` plays in, as someone who may see it with
-    `role` there: staff always see their lines and veils, others only if they share."""
+def lines_veils_shown_here(user: User, role: Role | None, player: User, troupe: Troupe) -> bool:
+    """On the Who's Who of `troupe`, which `player` plays in, as someone who may see it
+    with `role` there: staff always see their lines and veils, others only if they share."""
     return (
         user.id == player.id
-        or allows(role, TroupeAction.VIEW_LINES_VEILS, is_custodian=user.is_custodian)
         or player.share_lines_veils
+        or may(user, role, TroupeAction.VIEW_LINES_VEILS, troupe)
     )
 
 
@@ -426,7 +526,7 @@ def can_read_backstory(db: Session, user: User, character: Character) -> bool:
     assistant storytellers of its home troupe and of a troupe it asks to make its
     home; an NPC's, its troupe's. Never narrators, a visiting troupe's staff or other
     players (horatio.backstories)."""
-    if user.is_custodian or (character.kind == "pc" and character.player_id == user.id):
+    if character.kind == "pc" and character.player_id == user.id:
         return True
     if character.kind == "npc":
         troupe_ids = [character.owner_troupe_id]
@@ -442,4 +542,4 @@ def can_read_backstory(db: Session, user: User, character: Character) -> bool:
             troupe_role(db, user, troupe), TroupeAction.APPROVE_CHANGES
         ):
             return True
-    return False
+    return acting_as_custodian(user, character=character)

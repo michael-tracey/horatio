@@ -35,7 +35,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, acting_as_custodian, may, troupe_role
 from horatio.sheets import conflict, unprocessable
 
 # The most a memory may say: as a nomination.
@@ -53,8 +53,8 @@ def require_on(troupe: Troupe) -> None:
 
 def can_open(db: Session, user: User, troupe: Troupe) -> bool:
     """Running staff open remembrances, as they run the troupe's cycles."""
-    return troupe.archived_at is None and allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_CYCLES, is_custodian=user.is_custodian
+    return troupe.archived_at is None and may(
+        user, troupe_role(db, user, troupe), TroupeAction.MANAGE_CYCLES, troupe
     )
 
 
@@ -306,10 +306,10 @@ def can_read(db: Session, user: User, character: Character) -> bool:
     """Whether the user reads the character's published memories: its own player,
     always; the custodian; and its home troupe's staff and players, whatever the
     troupe's setting now."""
-    if character.player_id == user.id or user.is_custodian:
+    if character.player_id == user.id:
         return True
     if character.home_troupe_id is None:
-        return False
+        return acting_as_custodian(user, character=character)
     troupe = db.get_one(Troupe, character.home_troupe_id)
     return nominations.is_reader(db, user, troupe)
 

@@ -48,7 +48,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, open_to, troupe_role
 from horatio.rules.equipment import (
     ATHLETICS_POOL,
     TEXT,
@@ -271,10 +271,8 @@ def home_of(character: Character) -> uuid.UUID | None:
 
 def can_manage(db: Session, user: User, troupe: Troupe) -> bool:
     """The troupe's storytellers and assistant storytellers, and the custodian."""
-    if troupe.archived_at is not None and not user.is_custodian:
-        return False
-    return allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_EQUIPMENT, is_custodian=user.is_custodian
+    return open_to(user, troupe) and may(
+        user, troupe_role(db, user, troupe), TroupeAction.MANAGE_EQUIPMENT, troupe
     )
 
 
@@ -752,7 +750,7 @@ def acting_for(db: Session, user: User, character: Character) -> Troupe:
             " its equipment.",
         )
     troupe = db.get_one(Troupe, home_of(character))
-    if troupe.archived_at is not None and not user.is_custodian:
+    if not open_to(user, troupe):
         raise conflict(f"{troupe.name} is archived.")
     return troupe
 

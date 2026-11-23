@@ -16,7 +16,9 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, Troupe, User
 from horatio.permissions import (
     TroupeAction,
-    allows,
+    acting_as_custodian,
+    may,
+    open_to,
     require_troupe_action,
     troupe_role,
     visible_character,
@@ -211,12 +213,8 @@ def may_record(db: DbSession, user: User, character: Character) -> bool:
         character.kind == "pc"
         and diablerie.can_have(character) is None
         and troupe is not None
-        and (troupe.archived_at is None or user.is_custodian)
-        and allows(
-            troupe_role(db, user, troupe),
-            TroupeAction.APPROVE_CHANGES,
-            is_custodian=user.is_custodian,
-        )
+        and open_to(user, troupe)
+        and may(user, troupe_role(db, user, troupe), TroupeAction.APPROVE_CHANGES, troupe)
     )
 
 
@@ -244,7 +242,9 @@ def list_diablerie(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
                 id=d.id,
                 committed_on=d.committed_on,
                 note=d.note,
-                victim=d.victim if staff or user.is_custodian else None,
+                victim=d.victim
+                if staff or acting_as_custodian(user, character=character)
+                else None,
                 recorded_by=names.get(d.recorded_by) if d.recorded_by else None,
                 recorded_at=d.recorded_at,
                 effects=effects_out(d.outcome),

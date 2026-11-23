@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from horatio import handles, notifications, preferences, suspensions
 from horatio.audit import client_ip, record, sign_in_ip
-from horatio.auth import attempts, passkeys, two_step
+from horatio.auth import attempts, custodian_access, passkeys, two_step
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
 from horatio.auth.resets import (
@@ -21,7 +21,13 @@ from horatio.auth.resets import (
     use_reset,
     user_for_reset,
 )
-from horatio.auth.sessions import end_other_sessions, end_session, start_session, user_for_token
+from horatio.auth.sessions import (
+    end_other_sessions,
+    end_session,
+    hash_token,
+    start_session,
+    user_for_token,
+)
 from horatio.auth.two_step import allowed_first
 from horatio.auth.viewing import allowed_while_viewing, viewing_for
 from horatio.auth.viewing import end as end_viewing
@@ -29,6 +35,7 @@ from horatio.config import get_settings
 from horatio.connectors import email
 from horatio.db import get_sessionmaker
 from horatio.models import SecondStepSignIn, User
+from horatio.models import Session as SignInSession
 from horatio.preferences import Preferences
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -583,6 +590,13 @@ def sign_out(request: Request, db: DbSession, response: Response) -> None:
         if viewing is not None:
             end_viewing(db, viewing, "signed_out")
         if (user := user_for_token(db, token)) is not None:
+            custodian_access.end_for_session(
+                db,
+                db.scalar(
+                    select(SignInSession.id).where(SignInSession.token_hash == hash_token(token))
+                ),
+                "signed_out",
+            )
             record(
                 db,
                 user,

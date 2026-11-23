@@ -37,7 +37,7 @@ from horatio.models import (
     TroupeMembership,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, troupe_role
 from horatio.rules.model import RuleSetData
 from horatio.rules.npc_kinds import kind_name
 from horatio.rules.store import read_troupe_rules
@@ -129,8 +129,8 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
     """Every character in the troupe now, its NPCs among them: those whose home it is
     first, then visitors."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
-    shows_lines_veils = allows(
-        troupe_role(db, user, troupe), TroupeAction.VIEW_LINES_VEILS, is_custodian=user.is_custodian
+    shows_lines_veils = may(
+        user, troupe_role(db, user, troupe), TroupeAction.VIEW_LINES_VEILS, troupe
     )
     rows = list(
         db.execute(
@@ -887,6 +887,24 @@ MESSAGES: dict[str, str] = {
     " Discord: Discord didn't say who they are.",
     "account.discord_confirm_failed.other_account": "{actor} failed to confirm it's them with"
     " Discord: it was a Discord account not linked to theirs.",
+    "account.custodian_access_on": "{actor} switched on custodian access{because}.",
+    "account.custodian_access_off": "{actor} switched off custodian access.",
+    "account.custodian_access_off.signed_out": "{actor} signed out, which switched off"
+    " custodian access.",
+    "account.custodian_access_off.timed_out": "{actor}'s custodian access switched off, an"
+    " hour after they last used it.",
+    "account.custodian_access_off.not_custodian": "{actor}'s custodian access switched off:"
+    " they are no longer custodian.",
+    "account.custodian_access_refused": "{actor} gave a wrong second step switching on"
+    " custodian access.",
+    "account.custodian_access_refused.app": "{actor} gave a wrong code from an authenticator"
+    " app switching on custodian access.",
+    "account.custodian_access_refused.recovery_code": "{actor} gave a recovery code that was"
+    " wrong or used, switching on custodian access.",
+    "account.custodian_access_refused.passkey": "{actor} gave a passkey that isn't theirs"
+    " switching on custodian access.",
+    "troupe.custodian_access_used": "{actor}, the custodian, who plays in the troupe, used"
+    " custodian access here{because}.",
     "account.view_as": "{actor} viewed Horatio as {member}, read-only{because}.",
     "account.view_as_ended": "{actor} stopped viewing as {member}.",
     "account.view_as_ended.signed_out": "{actor} signed out, which ended viewing as {member}.",

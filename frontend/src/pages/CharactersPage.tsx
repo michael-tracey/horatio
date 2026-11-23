@@ -18,10 +18,12 @@ import { splatsFor, useSplats } from "./character/splats";
 import { roleLabel } from "./troupe/roles";
 import { useWaiting, WaitingList } from "./troupe/WaitingList";
 import { waitingTotal } from "./troupe/waiting";
+import { useCustodianOn } from "../custodianAccess";
 
 export function CharactersPage() {
   const navigate = useNavigate();
   const me = useMe();
+  const custodianOn = useCustodianOn();
   const characters = useQuery({ queryKey: ["characters"], queryFn: () => unwrap(api.GET("/api/characters")) });
   // What is next for each (#1051), in one request for them all.
   const next = useNextSteps();
@@ -38,7 +40,7 @@ export function CharactersPage() {
   const buildFor = troupes.data && !troupes.data.some((t) => t.id === chosen) ? null : chosen;
   const troupe = troupes.data?.find((t) => t.id === buildFor);
   // Staff land here too: the troupes they run come first while they have no characters of their own. The welcome is for new players.
-  const staff = !!me.data?.is_custodian || !!troupes.data?.some((t) => t.my_role);
+  const staff = custodianOn || !!troupes.data?.some((t) => t.my_role);
   const running = (troupes.data ?? []).filter((t) => t.my_role && !t.archived);
   const troupesFirst = running.length > 0 && characters.data?.length === 0;
   const offered = splatsFor(splats.data ?? [], troupe);

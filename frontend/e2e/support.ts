@@ -330,8 +330,13 @@ export function closeContextsAfterEach() {
   });
 }
 
-export function makeCustodian(email: string) {
-  execFileSync("uv", ["run", "python", "-m", "horatio.custodian", email], { cwd: "../backend", stdio: "ignore" });
+/** Make the account the custodian, from the server, as the real one is made. Custodian
+ * access is switched on for its sign-ins now, as a test of the custodian's work needs
+ * (#1213), unless `switchedOn` is false; `lastsSeconds` makes it end sooner after its
+ * last use than the hour it lasts, for a test of that. */
+export function makeCustodian(email: string, { switchedOn = true, lastsSeconds }: { switchedOn?: boolean; lastsSeconds?: number } = {}) {
+  const on = switchedOn ? ["--switch-on", ...(lastsSeconds ? ["--for", String(lastsSeconds)] : [])] : [];
+  execFileSync("uv", ["run", "python", "-m", "horatio.custodian", ...on, email], { cwd: "../backend", stdio: "ignore" });
 }
 
 /** Lets a troupe accept characters without an approved backstory, as a troupe needs

@@ -106,6 +106,13 @@ sessions (the custodian's sign-in it belongs to; set null if that is deleted),
 `reason`, `ends_at` (30 minutes on), `ended_at` (nullable: stopped, signed out
 or found timed out). Kept once ended, so the person sees it on their account page.
 
+**`custodian_accesses`**: the custodian switching custodian access on for one sign-in
+(#1213). `custodian_id` → users, `session_id` → sessions (set null if that is
+deleted), `reason`, `last_used_at` (when the custodian's powers were last used: it
+ends `lasts` after that, an hour), `told_troupe_ids` (the troupes whose lead has been
+told it was used there), `ended_at` (nullable: switched off, signed out or found
+timed out). Kept once ended.
+
 **`email_changes`**: a change of someone's email waiting to be confirmed at the
 new address. `user_id` (unique) and `created_by_id` → users (the person or the
 custodian), `new_email`, `token_hash` (unique), `expires_at` (7 days on),

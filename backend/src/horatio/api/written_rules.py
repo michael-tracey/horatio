@@ -13,7 +13,7 @@ from horatio import audit, written_rules
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe, WrittenRule
-from horatio.permissions import TroupeAction
+from horatio.permissions import TroupeAction, open_to
 from horatio.written_rules import LinkedTrait, find_trait, linked_traits, listed, move
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["written rules"])
@@ -95,7 +95,7 @@ def written_out(db: Session, troupe: Troupe) -> WrittenRulesOut:
 
 def readable(db: Session, user: CurrentUser, troupe_id: uuid.UUID) -> Troupe:
     troupe = db.get(Troupe, troupe_id)
-    if troupe is None or (troupe.archived_at is not None and not user.is_custodian):
+    if troupe is None or not open_to(user, troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     return troupe
 

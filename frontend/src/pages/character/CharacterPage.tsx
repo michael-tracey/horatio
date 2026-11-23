@@ -48,6 +48,7 @@ import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
 import { useSevenTaps } from "../jyhad/taps";
 import { useCatalogue } from "../../catalogue";
+import { useCustodianOn } from "../../custodianAccess";
 
 export function CharacterPage() {
   const { characterId = "" } = useParams();
@@ -58,6 +59,7 @@ export function CharacterPage() {
   // In the wizard, Continue creating would only lead back to where the player is.
   const onCreate = !!useMatch("/characters/:characterId/create/*");
   const me = useMe();
+  const custodianOn = useCustodianOn();
   const character = useQuery({
     queryKey: ["character", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}", { params: { path: { character_id: characterId } } })),
@@ -86,7 +88,7 @@ export function CharacterPage() {
   });
   // The Quests tab shows to its player while a troupe it is in runs quests, and to its
   // home troupe's storytellers and assistants while that troupe runs them (#614).
-  const staffQuests = !!home.data?.quests_enabled && abilities(home.data.my_role, !!me.data?.is_custodian).running;
+  const staffQuests = !!home.data?.quests_enabled && abilities(home.data.my_role, custodianOn).running;
   const quests = useQuery({
     queryKey: ["character-quests", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/quests", { params: { path: { character_id: characterId } } })),
@@ -115,7 +117,7 @@ export function CharacterPage() {
   if (character.error) return <ErrorText error={character.error} />;
   const c = character.data;
   const base = `/characters/${c.id}`;
-  const custodian = !!me.data?.is_custodian;
+  const custodian = custodianOn;
   const primaryLink = (to: string, label: string, secondary = false) => (
     <LinkButton variant={secondary ? "secondary" : "primary"} to={to}>
       {label}
@@ -315,7 +317,7 @@ export function CharacterPage() {
  */
 function StaffView({ character: c }: { character: CharacterOut }) {
   const [params] = useSearchParams();
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const troupeId = params.get("troupe") ?? c.home_troupe_id ?? c.asking_troupe_id;
   const troupe = useQuery({
     queryKey: ["troupe", troupeId],
@@ -327,7 +329,7 @@ function StaffView({ character: c }: { character: CharacterOut }) {
     queryFn: () => unwrap(api.GET("/api/players/{user_id}", { params: { path: { user_id: c.player_id } } })),
   });
   const t = troupe.data;
-  const custodian = !!me.data?.is_custodian;
+  const custodian = custodianOn;
   if (!t || (!t.my_role && !custodian)) return null;
   // A character asking to make the troupe its home is waiting on Approvals; otherwise it is on the roster.
   const back = c.home_troupe_id !== t.id && c.asking_troupe_id === t.id ? "approvals" : "characters";

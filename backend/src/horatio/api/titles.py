@@ -12,7 +12,7 @@ from horatio.api.downtimes import staff_troupe
 from horatio.api.sect_status import StatusAbout, about
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, Troupe
-from horatio.permissions import TroupeAction
+from horatio.permissions import TroupeAction, open_to
 from horatio.rules.status import GENERAL, TitleData
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["titles"])
@@ -240,7 +240,7 @@ def status_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Stat
     they may the troupe's house rules: it is the book's rules and the troupe's titles,
     never who holds them."""
     troupe = db.get(Troupe, troupe_id)
-    if troupe is None or (troupe.archived_at is not None and not user.is_custodian):
+    if troupe is None or not open_to(user, troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     caps, sects = sect_status.status_rules(db, troupe)
     return StatusRulesOut(

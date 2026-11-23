@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from horatio import bonds, shared_backgrounds
 from horatio.models import Character, Troupe, User
+from horatio.permissions import acting_as_custodian
 
 
 @dataclass
@@ -63,7 +64,9 @@ def what_it_would_tell(db: Session, user: User, character: Character) -> Retirin
     next writes (bonds.seen_by without settling)."""
     found = Retiring()
     troupe = troupe_of(db, character)
-    found.staff = user.is_custodian or (troupe is not None and bonds.can_manage(db, user, troupe))
+    found.staff = (
+        troupe is not None and bonds.can_manage(db, user, troupe)
+    ) or acting_as_custodian(user, character=character)
     for seen in bonds.seen_by(db, user, character, settle=False):
         regnant = seen.regnant.character
         if regnant is not None and regnant.id == character.id and seen.bond.status in bonds.OPEN:

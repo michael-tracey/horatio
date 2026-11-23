@@ -21,9 +21,25 @@ Only the custodian can:
 
 The custodian can also do anything a lead storyteller can, in any troupe, even one they have no role in: open its Staff tab, approve its characters, award XP, and so on. Use that sparingly. A troupe's own staff are the ones who run it, and its players expect their storytellers, not the custodian, to judge their characters.
 
+All of this needs [custodian access](#custodian-access) switched on. Until you do, you see Horatio as your troupe roles make you: a player here, a storyteller there.
+
+## Custodian access
+
+A custodian is often a player too. So the custodian's powers are switched on, not always on: signed in, you see only what your troupe roles let you see, and the other players' sheets, backstories and downtime answers stay as closed to you as to them.
+
+To use the custodian's powers, switch custodian access on:
+
+1. Open **Custodian** in the top menu, or do something only the custodian can, such as opening another player's sheet. Horatio asks you to switch it on.
+2. Say why, in a few words: "A player asked for help with their sheet".
+3. Give your second step again: a passkey, a code from your authenticator app or a recovery code. On a server where you have none set up, your password.
+
+A banner shows at the top of every page while it is on, with your reason and **Switch off**. It lasts an hour from the last thing you do with it: each use moves the hour on. Switching off, or signing out, ends it at once. It is for this sign-in only: on another device, you switch it on there.
+
+Switching on, and its end, go in the audit log with your reason. And in a troupe where you have an active character, at home or visiting, the first time you open what only its staff see (a sheet, a backstory, downtime answers, NPCs, its log, more of its Who's Who than a player sees), its lead storyteller is told in the bell, with your reason: once each time you switch it on. It shows in that troupe's log too. Work for the whole site, such as suspensions, two-step resets, the blog, backups and View as, tells no troupe.
+
 What the custodian isn't:
 
-- **Not a player's stand-in.** Like staff, the custodian can read any character's sheet, but only a character's player edits it. To see exactly what a player sees, use [View as](#viewing-as-someone).
+- **Not a player's stand-in.** Like staff, the custodian can read any character's sheet, with custodian access on, but only a character's player edits it. To see exactly what a player sees, use [View as](#viewing-as-someone).
 - **Not one of every troupe's staff.** The custodian isn't listed on a troupe's Staff tab, and isn't sent each troupe's approvals and downtimes. Their bell has only the custodian's own work, such as new troupe requests and articles sent for the blog, and a note each time someone signs up, which opens **Custodian › People** with that person found.
 - **Not a role you give in the app.** There's no button to make someone the custodian, or to stop being one. See [Becoming the custodian](#becoming-the-custodian) and [Removing a custodian](#removing-a-custodian).
 

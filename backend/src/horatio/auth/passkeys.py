@@ -206,6 +206,37 @@ def check(db: Session, waiting: SecondStepSignIn, user: User, credential: dict[s
     challenge = waiting.challenge
     waiting.challenge = None
     db.flush()
+    return signs(db, user, challenge, credential)
+
+
+def asking_options(db: Session, session: SignInSession, user: User) -> dict[str, Any]:
+    """What the browser needs to sign with one of `user`'s passkeys again, signed in, as
+    JSON: for switching on custodian access (horatio.api.custodian_access). Its
+    challenge is kept with the sign-in session, as one for a passkey being added is."""
+    rp_id, _ = relying_party()
+    options = generate_authentication_options(
+        rp_id=rp_id,
+        allow_credentials=_descriptors(db, user),
+        user_verification=UserVerificationRequirement.PREFERRED,
+    )
+    session.passkey_challenge = options.challenge
+    db.flush()
+    return json.loads(options_to_json(options))
+
+
+def check_asked(
+    db: Session, session: SignInSession, user: User, credential: dict[str, Any]
+) -> bool:
+    """Whether `credential` is one of `user`'s passkeys signing `asking_options`'
+    challenge. The challenge is used up either way."""
+    challenge = session.passkey_challenge
+    session.passkey_challenge = None
+    db.flush()
+    return signs(db, user, challenge, credential)
+
+
+def signs(db: Session, user: User, challenge: bytes | None, credential: dict[str, Any]) -> bool:
+    """Whether `credential` is one of `user`'s passkeys signing `challenge`."""
     raw = credential.get("rawId") or credential.get("id")
     if challenge is None or not isinstance(raw, str):
         return False

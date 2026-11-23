@@ -4,9 +4,10 @@ import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { Button, Card, ErrorText, Field, Textarea } from "../../components/ui";
-import { useAction, useMe } from "../../hooks";
+import { useAction } from "../../hooks";
 import { abilities } from "../troupe/roles";
 import { leavingWarnings } from "./leavingWarnings";
+import { useCustodianOn } from "../../custodianAccess";
 
 type Reason = "final_death" | "off_field" | "inactive";
 
@@ -146,10 +147,10 @@ export function RetireCharacter({ character, onDone }: { character: CharacterOut
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/troupes", { params: { path: { character_id: character.id } } })),
   });
   const titled = (troupes.data ?? []).filter((t) => t.titles.length > 0);
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const [remember, setRemember] = useState(false);
   const offered = !!home.data?.remembrances && !home.data.archived;
-  const opens = !!home.data && abilities(home.data.my_role, me.data?.is_custodian ?? false).running;
+  const opens = !!home.data && abilities(home.data.my_role, custodianOn).running;
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm">

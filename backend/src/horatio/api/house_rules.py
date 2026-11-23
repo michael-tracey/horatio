@@ -36,7 +36,7 @@ from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import RESTRICTION_TEXT
 from horatio.models import HouseTrait, Troupe, User
-from horatio.permissions import TroupeAction
+from horatio.permissions import TroupeAction, open_to
 from horatio.rules import checks, conditions, languages, pricing
 from horatio.rules.checks import REQUIREMENT_KEY, SECT_KEY, CheckData
 from horatio.rules.files import EVERYWHERE
@@ -1766,7 +1766,7 @@ def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
     Anyone signed in may read it, as anyone may build a character for the troupe and
     pay its prices; never its staff's notes, log or connectors."""
     troupe = db.get(Troupe, troupe_id)
-    if troupe is None or (troupe.archived_at is not None and not user.is_custodian):
+    if troupe is None or not open_to(user, troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     splats = ["vampire", *(s for s in troupe.allowed_splats if s != "vampire" and s in SPLATS)]
     house_traits = db.scalars(

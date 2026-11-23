@@ -27,7 +27,13 @@ from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
 from horatio.links import web_address
 from horatio.models import GameAttendance, ScheduledGame, Troupe, TroupeStaff, User
-from horatio.permissions import TroupeAction, allows, require_troupe_action, troupe_role
+from horatio.permissions import (
+    TroupeAction,
+    may,
+    open_to,
+    require_troupe_action,
+    troupe_role,
+)
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["troupe profiles"])
 
@@ -190,12 +196,8 @@ def profile_out(db: Session, viewer: User | None, troupe: Troupe) -> TroupeProfi
     )
     can_edit = (
         viewer is not None
-        and (troupe.archived_at is None or viewer.is_custodian)
-        and allows(
-            troupe_role(db, viewer, troupe),
-            TroupeAction.EDIT_PROFILE,
-            is_custodian=viewer.is_custodian,
-        )
+        and open_to(viewer, troupe)
+        and may(viewer, troupe_role(db, viewer, troupe), TroupeAction.EDIT_PROFILE, troupe)
     )
     return TroupeProfileOut(
         id=troupe.id,
@@ -238,11 +240,7 @@ def viewable(db: Session, viewer: User | None, troupe_id: uuid.UUID) -> Troupe:
     all when it is public. 404 otherwise, so a private troupe's profile does not
     show that it exists. An archived troupe's is only for the custodian."""
     troupe = db.get(Troupe, troupe_id)
-    if (
-        troupe is None
-        or (troupe.archived_at is not None and not (viewer and viewer.is_custodian))
-        or (viewer is None and not troupe.public)
-    ):
+    if troupe is None or not open_to(viewer, troupe) or (viewer is None and not troupe.public):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     return troupe
 

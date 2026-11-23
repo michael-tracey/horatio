@@ -35,6 +35,8 @@ from horatio.models import (
 from horatio.permissions import (
     Role,
     TroupeAction,
+    acting_as_custodian,
+    open_to,
     require_custodian,
     require_troupe_action,
     troupe_roles,
@@ -355,8 +357,8 @@ def troupes_out(db: DbSession, user: User, troupes: Sequence[Troupe]) -> list[Tr
             mine.get(t.id, []),
             reads_nominations=(t.player_nominations or t.remembrances)
             and (
-                user.is_custodian
-                or (t.archived_at is None and (roles[t.id] is not None or bool(mine.get(t.id))))
+                (t.archived_at is None and (roles[t.id] is not None or bool(mine.get(t.id))))
+                or acting_as_custodian(user, t)
             ),
         )
         for t in troupes
@@ -565,7 +567,7 @@ def create_troupe(body: NewTroupe, db: DbSession, user: CurrentUser) -> TroupeOu
 @router.get("/{troupe_id}")
 def read_troupe(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> TroupeOut:
     troupe = get_troupe(db, troupe_id)
-    if troupe.archived_at is not None and not user.is_custodian:
+    if not open_to(user, troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     return troupe_out(db, user, troupe)
 

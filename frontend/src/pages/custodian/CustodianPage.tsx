@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from "react-router";
-import { Loading, PageTitle, Tabs } from "../../components/ui";
+import { Card, Loading, PageTitle, Tabs } from "../../components/ui";
+import { SwitchOn } from "../../components/CustodianAccess";
+import { useCustodianAccess, useCustodianOn } from "../../custodianAccess";
 import { BackLink } from "../../components/BackLink";
 import { useMe } from "../../hooks";
 import { AuditTab } from "./AuditTab";
@@ -18,10 +20,24 @@ import { YorickImportTab } from "./YorickImportTab";
 /** What only the custodian can do, in one place. Anyone else is sent away. */
 export function CustodianPage() {
   const me = useMe();
-  const requests = useTroupeRequests(!!me.data?.is_custodian);
-  const blog = useBlogQueue(!!me.data?.is_custodian);
+  const access = useCustodianAccess();
+  const on = useCustodianOn();
+  const requests = useTroupeRequests(on);
+  const blog = useBlogQueue(on);
   if (me.isPending) return <Loading />;
   if (!me.data?.is_custodian) return <Navigate to="/characters" replace />;
+  if (access.isPending) return <Loading />;
+  if (!on) {
+    return (
+      <>
+        <PageTitle subtitle="Looking after Horatio as a whole: its people, its troupes and its data.">Custodian</PageTitle>
+        <Card title="Switch on custodian access" className="max-w-xl">
+          <p className="mb-3 text-sm text-mist">Until you do, you see Horatio as your troupe roles make you, as every player does.</p>
+          <SwitchOn />
+        </Card>
+      </>
+    );
+  }
 
   return (
     <>

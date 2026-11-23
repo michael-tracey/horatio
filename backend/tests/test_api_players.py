@@ -345,7 +345,10 @@ def test_a_reset_link_sets_a_new_password_and_ends_other_sessions(
     actions = list(
         session.scalars(
             select(AuditEvent.action)
-            .where(AuditEvent.action.startswith("account."))
+            .where(
+                AuditEvent.action.startswith("account."),
+                ~AuditEvent.action.startswith("account.custodian_access"),
+            )
             .order_by(AuditEvent.id)
         )
     )

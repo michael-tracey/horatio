@@ -74,7 +74,10 @@ def actions(session: Session) -> list[str]:
     return list(
         session.scalars(
             select(AuditEvent.action)
-            .where(AuditEvent.action.startswith("account."))
+            .where(
+                AuditEvent.action.startswith("account."),
+                ~AuditEvent.action.startswith("account.custodian_access"),
+            )
             .order_by(AuditEvent.id)
         )
     )

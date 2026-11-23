@@ -11,7 +11,13 @@ from horatio import bonds, in_character, npc_copies
 from horatio.api.roster import LogEntry, log_entries
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import AuditEvent, Troupe, User
-from horatio.permissions import TroupeAction, allows, troupe_role, visible_character
+from horatio.permissions import (
+    TroupeAction,
+    acting_as_custodian,
+    allows,
+    troupe_role,
+    visible_character,
+)
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["log"])
 
@@ -45,13 +51,13 @@ def character_log(
         .limit(min(max(limit, 1), 500))
     )
     players_own = character.kind == "pc" and character.player_id == user.id
-    if players_own and not user.is_custodian:
+    if players_own and not acting_as_custodian(user, character=character):
         # Staff copying it as an NPC is theirs to tell (horatio.npc_copies), and who
         # spoke as it while it was an NPC is never told (horatio.in_character).
         query = query.where(
             AuditEvent.action.not_in((npc_copies.COPIED_AS_NPC, *in_character.ACTIONS))
         )
-    if not (user.is_custodian or players_own):
+    if not (players_own or acting_as_custodian(user, character=character)):
         troupe_ids = set(
             db.scalars(select(AuditEvent.troupe_id).where(AuditEvent.character_id == character.id))
         ) - {None}

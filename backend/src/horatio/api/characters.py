@@ -30,9 +30,10 @@ from horatio.creation import grant_starting_traits
 from horatio.models import Approval, Character, RuleSet, Troupe, User
 from horatio.permissions import (
     TroupeAction,
-    allows,
+    acting_as_custodian,
     can_change_leaving,
     can_edit_character,
+    may,
     troupe_role,
     visible_character,
 )
@@ -427,7 +428,8 @@ def change_character(
     """Rename the character: its player, at most once every three months while it is
     in a troupe, or the custodian at any time (see horatio/renames.py)."""
     character = visible_character(db, user, character_id)
-    if not user.is_custodian:
+    own = character.kind == "pc" and character.player_id == user.id
+    if own or not acting_as_custodian(user, character=character):
         character = editable_character(db, user, character_id)
     renames.rename(db, user, lock_character(db, character.id), body.name)
     db.commit()
@@ -529,9 +531,7 @@ def binding_ghoul(db: DbSession, user: User, character_id: uuid.UUID) -> Charact
     if ghoul.home_troupe_id is None:
         return editable_character(db, user, character_id)
     home = db.get_one(Troupe, ghoul.home_troupe_id)
-    if not allows(
-        troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES, is_custodian=user.is_custodian
-    ):
+    if not may(user, troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES, home):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
             "Once a home troupe accepts a ghoul, its staff change its domitor.",

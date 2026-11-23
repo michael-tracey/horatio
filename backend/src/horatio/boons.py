@@ -49,7 +49,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit, court_knows, notifications
 from horatio.models import AuditEvent, Boon, BoonEvent, Character, Troupe, User
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, open_to, troupe_role
 from horatio.sheets import conflict, membership, unprocessable
 
 # The five kinds, lightest first (pp. 396-397).
@@ -149,10 +149,8 @@ def set_judge_ban(db: Session, user: User, troupe: Troupe, on: bool) -> None:
 
 def can_manage(db: Session, user: User, troupe: Troupe) -> bool:
     """The troupe's running staff, and the custodian: they keep its ledger."""
-    if troupe.archived_at is not None and not user.is_custodian:
-        return False
-    return allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_BOONS, is_custodian=user.is_custodian
+    return open_to(user, troupe) and may(
+        user, troupe_role(db, user, troupe), TroupeAction.MANAGE_BOONS, troupe
     )
 
 
@@ -160,9 +158,7 @@ def sees_changes(db: Session, user: User, troupe: Troupe) -> bool:
     """Whether `user` sees what each line of a boon's log changed (#979): the troupe's
     storytellers and assistant storytellers only (and the custodian), never the Harpy,
     a Lesser Harpy, a narrator or a player."""
-    return allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_BOONS, is_custodian=user.is_custodian
-    )
+    return may(user, troupe_role(db, user, troupe), TroupeAction.MANAGE_BOONS, troupe)
 
 
 def hidden_events() -> ColumnElement[bool]:

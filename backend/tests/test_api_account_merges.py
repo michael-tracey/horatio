@@ -22,7 +22,7 @@ from horatio.models import (
     Viewing,
 )
 from horatio.models import Troupe as TroupeRow
-from tests.api_helpers import PASSWORD, Person, Troupe, new_character, sign_up
+from tests.api_helpers import PASSWORD, Person, Troupe, new_character, sign_up, switch_on
 from tests.test_api_email_changes import token_of
 from tests.test_api_play import send, tap
 from tests.test_api_renames import at_home, other_troupe, summaries, troupe_log, visit
@@ -433,6 +433,7 @@ def test_viewing_as_the_merged_account_ends_and_it_cannot_be_viewed_as(
     # Another of the custodian's sign-ins is viewing as the twin.
     elsewhere = troupe.client_for()
     elsewhere.post("/auth/login", json={"login": troupe.custodian.email, "password": PASSWORD})
+    switch_on(troupe.session, troupe.session.get_one(User, uuid.UUID(troupe.custodian.id)))
     started = elsewhere.post(f"/players/{twin.id}/view-as", json={"reason": "Lost a sheet"})
     assert started.status_code == 201, started.text
     assert elsewhere.get("/view-as").json()["handle"] == twin.handle

@@ -22,7 +22,7 @@ from horatio.models import (
 )
 from horatio.permissions import (
     TroupeAction,
-    allows,
+    may,
     require_troupe_action,
     troupe_role,
     visible_character,
@@ -567,11 +567,7 @@ def settings_out(db: DbSession, user: User, troupe: Troupe) -> BackstorySettings
     return BackstorySettingsOut(
         mode=troupe.backstory_mode,  # type: ignore[arg-type]
         required=troupe.backstory_required,
-        can_edit=allows(
-            troupe_role(db, user, troupe),
-            TroupeAction.MANAGE_HOUSE_RULES,
-            is_custodian=user.is_custodian,
-        ),
+        can_edit=may(user, troupe_role(db, user, troupe), TroupeAction.MANAGE_HOUSE_RULES, troupe),
         sets=[
             BackstoryQuestionSetOut(
                 id=s.id,

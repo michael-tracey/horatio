@@ -48,8 +48,12 @@ A troupe its lead storyteller or the custodian has deleted: closed to all use bu
 _Avoid_: Deleted troupe, closed troupe
 
 **Custodian**:
-The site administrator, above all troupes, who appoints lead storytellers, manages the system itself, and can do anything in any troupe.
+The site administrator, above all troupes, who appoints lead storytellers, manages the system itself, and can do anything in any troupe, but only with **custodian access** switched on. Until then a custodian is a player like any other, seeing Horatio as their troupe roles make them.
 _Avoid_: Admin, superuser, site owner
+
+**Custodian Access**:
+The custodian's powers, switched on for one sign-in with their second step and a reason, for an hour from their last use of them, with a banner while on. The lead storyteller of a troupe the custodian plays in is told, once a switch-on, when they open what only its staff see there.
+_Avoid_: Admin mode, sudo, elevation
 
 **View As**:
 The custodian seeing Horatio exactly as one person does, with their permissions, to help them with a question: read-only, for at most 30 minutes, with a reason they are told. Never as another custodian.

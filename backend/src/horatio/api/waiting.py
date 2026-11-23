@@ -39,7 +39,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, allows, require_troupe_action, troupe_role
+from horatio.permissions import TroupeAction, may, require_troupe_action, troupe_role
 from horatio.rules.status import STATUS_CATEGORY
 
 router = APIRouter(tags=["troupes"])
@@ -359,7 +359,7 @@ def waiting(db: Session, user: User, troupe: Troupe) -> list[WaitingLine]:
     lines = [
         line
         for action, gather in LINES
-        if allows(role, action, is_custodian=user.is_custodian)
+        if may(user, role, action, troupe)
         for line in gather(asked)
         if line.count is None or line.count > 0
     ]

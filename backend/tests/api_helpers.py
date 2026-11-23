@@ -9,7 +9,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from horatio.auth import custodian_access
+from horatio.auth.sessions import live
 from horatio.models import Character, User
+from horatio.models import Session as SignInSession
 from horatio.models import Troupe as TroupeRecord
 
 PASSWORD = "correct horse battery"
@@ -31,7 +34,11 @@ def sign_up(
     *,
     custodian: bool = False,
     session: Session | None = None,
+    switched_on: bool = True,
 ) -> Person:
+    """Someone signed up and signed in. A `custodian` has custodian access switched on
+    for that sign-in (horatio.auth.custodian_access), as most tests of the custodian's
+    work need, unless `switched_on` is False."""
     client = client_for()
     email = f"{name}@example.com"
     response = client.post(
@@ -40,9 +47,22 @@ def sign_up(
     assert response.status_code == 201, response.text
     if custodian:
         assert session is not None
-        session.scalars(select(User).where(User.email == email)).one().is_custodian = True
+        user = session.scalars(select(User).where(User.email == email)).one()
+        user.is_custodian = True
         session.flush()
+        if switched_on:
+            switch_on(session, user)
     return Person(client, email, response.json())
+
+
+def switch_on(session: Session, user: User, reason: str = "For the tests.") -> None:
+    """Switch custodian access on for each sign-in the custodian has now, as giving
+    their second step again would (horatio.api.custodian_access)."""
+    for session_id in session.scalars(
+        select(SignInSession.id).where(SignInSession.user_id == user.id, *live())
+    ):
+        custodian_access.switch_on(session, user, session_id, reason)
+    session.flush()
 
 
 class Troupe:

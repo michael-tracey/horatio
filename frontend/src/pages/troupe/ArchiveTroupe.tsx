@@ -6,7 +6,8 @@ import type { components } from "../../api/schema";
 import type { TroupeOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { Button, Card, ErrorText, Field, Loading, Textarea } from "../../components/ui";
-import { useAction, useMe } from "../../hooks";
+import { useAction } from "../../hooks";
+import { useCustodianOn } from "../../custodianAccess";
 
 type ClosingCharacter = components["schemas"]["ClosingCharacter"];
 
@@ -36,7 +37,7 @@ export function ArchiveTroupe({ troupe }: { troupe: TroupeOut }) {
 
 function Confirm({ troupe, onCancel }: { troupe: TroupeOut; onCancel: () => void }) {
   const navigate = useNavigate();
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const [reason, setReason] = useState("");
   const closing = useQuery({
     queryKey: ["troupe-closing", troupe.id],
@@ -44,7 +45,7 @@ function Confirm({ troupe, onCancel }: { troupe: TroupeOut; onCancel: () => void
   });
   const archive = useAction(async () => {
     await unwrap(api.POST("/api/troupes/{troupe_id}/archive", { params: { path: { troupe_id: troupe.id } }, body: { reason: reason.trim() } }));
-    navigate(me.data?.is_custodian ? "/custodian/troupe-management#archived" : "/troupes");
+    navigate(custodianOn ? "/custodian/troupe-management#archived" : "/troupes");
   });
   if (closing.isPending) return <Loading />;
   if (closing.error) return <ErrorText error={closing.error} />;
