@@ -1,10 +1,10 @@
 """Calendars a calendar app can subscribe to (issue #420): a troupe's scheduled
 games and its downtime cycles' dates, written as iCalendar (RFC 5545).
 
-Horatio keeps moments, not time zones: a game is entered in its storyteller's own
-zone and kept as an instant, and everyone sees it in theirs. So each event is
-written in UTC, and the calendar app shows it in the subscriber's own zone, as the
-app itself does.
+Horatio keeps moments, not time zones: a game is entered in its troupe's zone
+(horatio.troupe_zones; for a troupe with none, its storyteller's own) and kept as an
+instant, and everyone sees it in theirs. So each event is written in UTC, and the
+calendar app shows it in the subscriber's own zone, as the app itself does.
 
 Nothing here names a person: no emails, no players, no characters. A game says
 when and where it is, and whether the subscriber said they are coming (issue

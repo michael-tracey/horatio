@@ -6,6 +6,7 @@ import type { TroupeOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading, Textarea } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { ArchivedTroupesTab } from "./ArchivedTroupesTab";
 import { TroupeRequestsTab } from "./TroupeRequestsTab";
@@ -60,8 +61,10 @@ function Section({ id, title, children }: { id: string; title: string; children:
 /** The custodian sets up a troupe and names its lead storyteller, who needs an account already. */
 function NewTroupe() {
   const [form, setForm] = useState({ name: "", description: "", lead_handle: "" });
+  // The troupe starts in the custodian's time zone, or this device's (#1211); its storytellers change it.
+  const { zone } = useDates();
   const create = useAction(async () => {
-    await unwrap(api.POST("/api/troupes", { body: form }));
+    await unwrap(api.POST("/api/troupes", { body: { ...form, time_zone: zone } }));
     setForm({ name: "", description: "", lead_handle: "" });
   });
   return (

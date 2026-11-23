@@ -24,6 +24,7 @@ function troupe(over: Partial<PublicTroupeOut>): PublicTroupeOut {
     min_age: 18,
     content_notes: "Violence and body horror.",
     next_game: null,
+    time_zone: null,
     ...over,
   };
 }
@@ -94,6 +95,15 @@ describe("the troupe directory, /find-a-troupe (#1192)", () => {
     expect(york!.textContent).not.toContain("Welcoming");
     expect(york!.textContent).not.toContain("Content notes");
     expect(york!.textContent).not.toContain("+");
+  });
+
+  it("shows a troupe's next game on its own clock, where it has a time zone, as the Day filter takes it (#1211)", async () => {
+    // 9:30 pm on Friday 27 November in New York is already Saturday in UTC, and in London.
+    answering(() => page([troupe({ next_game: "2026-11-28T02:30:00Z", time_zone: "America/New_York" })]));
+    show();
+    const list = await screen.findByRole("list", { name: "Troupes found" });
+    const [lords] = within(list).getAllByRole("link");
+    expect(lords!.textContent).toMatch(/Next game: Fri 27 Nov( 2026)?, 9:30 pm EST/);
   });
 
   it("searches from the address, and writes each search back to it", async () => {

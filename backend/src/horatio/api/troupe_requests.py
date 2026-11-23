@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import aliased
 
-from horatio import audit, notifications
+from horatio import audit, notifications, preferences, troupe_zones
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe, TroupeRequest, User
 from horatio.permissions import require_custodian
@@ -27,6 +27,8 @@ class NewTroupeRequest(BaseModel):
     description: str = Field(default="", max_length=2000)
     # Anything the custodian should know, such as who will play.
     note: str = Field(default="", max_length=2000)
+    # The requester's time zone, or their browser's, for the troupe's to start with.
+    time_zone: str | None = Field(default=None, max_length=64)
 
 
 class Decline(BaseModel):
@@ -122,6 +124,8 @@ def ask(body: NewTroupeRequest, db: DbSession, user: CurrentUser) -> TroupeReque
         name=name,
         description=body.description.strip(),
         note=body.note.strip(),
+        # For the troupe's own to start with (#1211).
+        time_zone=troupe_zones.checked(body.time_zone) or preferences.read(user).time_zone,
     )
     db.add(request)
     db.flush()
@@ -166,7 +170,10 @@ def approve(request_id: uuid.UUID, db: DbSession, user: CurrentUser) -> TroupeRe
     require_custodian(user)
     request = _pending(db, request_id)
     troupe = Troupe(
-        name=request.name, description=request.description, lead_user_id=request.requester_id
+        name=request.name,
+        description=request.description,
+        lead_user_id=request.requester_id,
+        time_zone=request.time_zone,
     )
     db.add(troupe)
     db.flush()

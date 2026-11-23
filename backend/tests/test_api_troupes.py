@@ -132,6 +132,69 @@ def test_only_the_lead_renames_or_describes_the_troupe(troupe: Troupe) -> None:
     assert response.json()["description"] == "Raleigh"
 
 
+def test_storytellers_set_the_troupes_time_zone_and_unset_it_is_the_leads(
+    troupe: Troupe,
+) -> None:
+    path = f"/troupes/{troupe.id}"
+    # None chosen: the lead's, and UTC while they have none either.
+    made = troupe.lead.client.get(path).json()
+    assert (made["time_zone"], made["time_zone_set"], made["time_zone_default"]) == (
+        "UTC",
+        None,
+        "UTC",
+    )
+    troupe.lead.client.patch("/preferences", json={"time_zone": "America/Chicago"})
+    assert troupe.player.client.get(path).json()["time_zone"] == "America/Chicago"
+
+    for person in (troupe.assistant, troupe.narrator, troupe.player):
+        response = person.client.patch(path, json={"time_zone": "America/New_York"})
+        assert response.status_code == 403
+    # Only a zone from the IANA list.
+    wrong = troupe.storyteller.client.patch(path, json={"time_zone": "Mars/Olympus"})
+    assert wrong.status_code == 422
+    assert wrong.json()["detail"] == "Mars/Olympus is not a time zone Horatio knows."
+
+    chosen = troupe.storyteller.client.patch(path, json={"time_zone": "America/New_York"})
+    assert chosen.status_code == 200, chosen.text
+    body = chosen.json()
+    assert (body["time_zone"], body["time_zone_set"], body["time_zone_default"]) == (
+        "America/New_York",
+        "America/New_York",
+        "America/Chicago",
+    )
+    # The lead's own zone no longer matters.
+    troupe.lead.client.patch("/preferences", json={"time_zone": "Asia/Tokyo"})
+    assert troupe.player.client.get(path).json()["time_zone"] == "America/New_York"
+    log = troupe.storyteller.client.get(f"{path}/log").json()
+    assert log[0]["message"] == "storyteller set the troupe's time zone to America/New York."
+
+    cleared = troupe.storyteller.client.patch(path, json={"time_zone": ""}).json()
+    assert (cleared["time_zone"], cleared["time_zone_set"]) == ("Asia/Tokyo", None)
+    log = troupe.storyteller.client.get(f"{path}/log").json()
+    assert log[0]["message"] == (
+        "storyteller cleared the troupe's time zone: it uses the lead storyteller's, Asia/Tokyo."
+    )
+
+
+def test_a_new_troupe_starts_with_its_makers_time_zone(troupe: Troupe) -> None:
+    def made(name: str, **more: str) -> dict[str, str | None]:
+        body = {"name": name, "lead_handle": troupe.lead.handle, **more}
+        response = troupe.custodian.client.post("/troupes", json=body)
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    # The zone the custodian's browser gave.
+    assert made("Court of London", time_zone="Europe/London")["time_zone_set"] == "Europe/London"
+    # Else the custodian's own, from Settings.
+    troupe.custodian.client.patch("/preferences", json={"time_zone": "Australia/Perth"})
+    assert made("Court of Perth")["time_zone_set"] == "Australia/Perth"
+    bad = troupe.custodian.client.post(
+        "/troupes",
+        json={"name": "Nowhere", "lead_handle": troupe.lead.handle, "time_zone": "Nowhere"},
+    )
+    assert bad.status_code == 422
+
+
 def test_storytellers_manage_staff_but_assistants_and_narrators_do_not(troupe: Troupe) -> None:
     newcomer = sign_up(troupe.client_for, "newcomer")
     for person in (troupe.assistant, troupe.narrator, troupe.player):

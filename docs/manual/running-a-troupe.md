@@ -62,7 +62,7 @@ The troupe's profile is what it tells players and people thinking of joining. It
 
 While you edit them, every part shows, with "Nothing yet." on those still empty. Players see only the parts that have something in them.
 
-To add a game to the schedule, choose **Edit profile**, then **Edit** on **When it plays**, fill in **Game starts** and **Game ends** under Upcoming games and choose **Add game**. Each game is added or removed at once. Times are in your time zone; everyone sees them in their own.
+To add a game to the schedule, choose **Edit profile**, then **Edit** on **When it plays**, fill in **Game starts** and **Game ends** under Upcoming games and choose **Add game**. Each game is added or removed at once. Times are in the troupe's time zone, as the note under the boxes says (see [Time zone](#time-zone)), or in your own if the troupe hasn't set one; everyone else sees them in their own.
 
 The old **Profile** address, `/troupes/…/profile`, now opens the Overview.
 
@@ -71,7 +71,7 @@ The **Public** switch, at the top of **Edit profile**, decides who can see it:
 - **Signed-in only**, the default: only people signed in to Horatio.
 - **Public**: anyone with the link, even people not signed in. Use **Copy the link** to share it when recruiting. The venue's street address still shows only to people signed in.
 
-A public profile is also in the troupe directory, **Find a troupe**, where anyone can search for it and choose **Request to join** (see [Finding a troupe](getting-started.md#finding-a-troupe)). The directory searches the profile itself: its name, the venue's city or region and name (or the setting's city, if you give no city or region), whether you're taking new players, and the minimum age. Its **Day** and **How often** come from what **When it plays** says, so name the day and how often there, such as "Every other Friday, 7 pm till late" or "Second Saturday of the month". **Day** also finds the troupe by its upcoming games in the next eight weeks, on the day each falls in the lead storyteller's time zone (set in [Preferences](getting-started.md#preferences); until they choose one, it's UTC). It never searches or shows the street address.
+A public profile is also in the troupe directory, **Find a troupe**, where anyone can search for it and choose **Request to join** (see [Finding a troupe](getting-started.md#finding-a-troupe)). The directory searches the profile itself: its name, the venue's city or region and name (or the setting's city, if you give no city or region), whether you're taking new players, and the minimum age. Its **Day** and **How often** come from what **When it plays** says, so name the day and how often there, such as "Every other Friday, 7 pm till late" or "Second Saturday of the month". **Day** also finds the troupe by its upcoming games in the next eight weeks, on the day each falls in the troupe's time zone (see [Time zone](#time-zone)), so a game at 9:30 pm on a Friday in New York is found under Friday even though it is Saturday in UTC. Where the troupe has set its time zone, each row's **Next game** shows in it too. It never searches or shows the street address.
 
 The profile never shows emails, characters, or anything only members see.
 
@@ -534,7 +534,7 @@ Everything under **Setting up** can stay as the book has it. Storytellers and th
 
 **Find a setting**, at the top of every Setting up tab, finds a setting by its name or by a word of what it does. Type part of it, such as `ceiling` or `stickers`, and choose a setting from the list, or press Enter for the first. It opens where the setting is: its tab or its part, or the **Settings** of the tab it belongs to, with its card scrolled to and lit gold for a moment. It finds the Setting up tabs, the parts of Settings and House rules, each feature's switch, each tab's Settings and every settings card, such as **Settings › XP**. The search in the top bar finds them too, under **Settings**, while you're on the troupe's pages or the page of a character whose home troupe it is, but only for its storytellers and the custodian, and only the troupe they're on. Assistant storytellers find a setting here, on Setting up, but not from the top bar.
 
-**Setting up › Settings** holds the settings for the whole troupe, in parts, one page each: **Features** (the list of its features, which the tab opens on), **Getting ready**, **The setting**, **Who may join**, **XP**, **Status and titles**, **Blood, diablerie and feeding** and **Names**. On a wide screen the parts are listed down the left of the page, with the open one beside them. On a phone or a tablet, one button above the page names the open part, such as **XP**; tap it for them all. Each part has its own address (`settings/xp`, say), so a link can go straight to it; a link to a card's old place on the one long page, such as `settings#feature-feeding`, still lands on that card. A feature with a tab of its own keeps the rest of its settings behind the **Settings** button of that tab (see [A feature's own settings](#a-features-own-settings)).
+**Setting up › Settings** holds the settings for the whole troupe, in parts, one page each: **Features** (the list of its features, which the tab opens on), **Getting ready**, **The setting**, **Who may join**, **XP**, **Status and titles**, **Blood, diablerie and feeding**, **Names** and **Time zone**. On a wide screen the parts are listed down the left of the page, with the open one beside them. On a phone or a tablet, one button above the page names the open part, such as **XP**; tap it for them all. Each part has its own address (`settings/xp`, say), so a link can go straight to it; a link to a card's old place on the one long page, such as `settings#feature-feeding`, still lands on that card. A feature with a tab of its own keeps the rest of its settings behind the **Settings** button of that tab (see [A feature's own settings](#a-features-own-settings)).
 
 Every settings card saves the same way, here and in a feature's own settings. Switches, ticks and choices save as you make them, and Horatio says **Saved.** each time. A card with fields to type in, such as **Experience**, is always open: change what you like, then choose its **Save**, at the bottom of the card. Until you do, it says **Not saved yet**, and leaving the page asks first. A card you can only read says who changes it.
 
@@ -706,6 +706,17 @@ Switching feeding off only hides it. What was recorded is kept and comes back if
 **Abbreviation** is the troupe's short name, shown beside its name: what it goes by where the full name won't fit, such as the pill on a search result when someone searches from another troupe, and on its profile. The lead storyteller (and the custodian) sets it; the rest of the staff see it here. It is 1 to 10 letters, digits, hyphens (`-`), underscores (`_`) or full stops, with no spaces, and no two troupes on the site can have the same one, whatever the case: Horatio says which troupe has it if yours is taken. Leave it empty and the troupe goes by the first letters of its name, upper case but for small words such as *of*, *the* and *and* ("Court of Ashes" is **CoA**, "Land of the Sky" **LotS**); the hint under the box says what that is. If another troupe has set those letters, or would make the same ones from its own name, the troupe goes by its full name until you set one. Each change is kept in the troupe's log.
 
 **Banu Haqim or Assamite** chooses what the troupe calls that clan: **Banu Haqim** (the default for a new troupe) or **Assamite**. Only the name shown changes, on every screen in the troupe; the rules and sheets stay as they are.
+
+### Time zone
+
+**Time zone** is where the troupe plays, chosen from the same list as your own time zone in [Preferences](getting-started.md#preferences): type part of a city, such as `New_York` or `London`, and choose it from the list. It saves as soon as you choose one. Storytellers and the lead change it; the rest of the staff see it here. It decides:
+
+- the zone you enter games in on the schedule, under **When it plays** (everyone still sees them in their own time zone),
+- the day each upcoming game falls on for the troupe directory's **Day**, and the **Next game** on its row,
+- when an NPC's item that expires on a day goes: once that day is over in the troupe's zone (a player character's goes once it is over in its player's),
+- and the day a game is named by in the troupe's log, such as when check-in opened.
+
+A troupe that hasn't chosen one uses its lead storyteller's time zone, or UTC if they haven't chosen one either; the card says which, and **Use the lead storyteller's** clears it. A new troupe starts with the time zone of whoever asked for it or made it, or their device's if they haven't chosen one. Changing it moves no game: each stays at the same moment, and only the day it falls on in the new zone can change. Each change is kept in the troupe's log.
 
 ## Setting up: house rules
 

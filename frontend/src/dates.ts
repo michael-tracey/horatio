@@ -227,3 +227,13 @@ export function useDates(): Dates {
   const { time_zone, date_format, clock } = usePreferences();
   return useMemo(() => datesFor({ time_zone, date_format, clock }), [time_zone, date_format, clock]);
 }
+
+/**
+ * Dates and times written as the signed-in person likes them, but on `zone`'s clock: a
+ * troupe's, say (#1211). With no zone, on their own, as `useDates`.
+ */
+export function useDatesIn(zone: string | null): Dates {
+  const { time_zone, date_format, clock } = usePreferences();
+  const shown = zone ?? time_zone;
+  return useMemo(() => datesFor({ time_zone: shown, date_format, clock }), [shown, date_format, clock]);
+}

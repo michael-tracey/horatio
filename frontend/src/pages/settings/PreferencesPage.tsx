@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { Preferences } from "../../api/types";
 import { drawCurtains } from "../../components/Curtains";
@@ -8,7 +8,7 @@ import { SettingCard } from "../../components/SettingCard";
 import { SettingRow } from "../../components/SettingRow";
 import { startSunrise } from "../../components/Sunrise";
 import { useToast } from "../../components/Toast";
-import { Input } from "../../components/ui";
+import { ZonePicker, zoneWords } from "../../components/ZonePicker";
 import { deviceZone, useDates } from "../../dates";
 import { usePreferences } from "../../hooks";
 import { useOnline } from "../../offline/connection";
@@ -121,55 +121,17 @@ function FlipSwitch({ hint }: { hint: ReactNode }) {
   );
 }
 
-/** A zone as people read it: "America/New York". */
-function zoneName(zone: string): string {
-  return zone.replaceAll("_", " ");
-}
-
-/** Every IANA zone this browser knows, such as "America/New_York". */
-function allZones(): string[] {
-  const zones = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
-  return [...new Set([...zones, "UTC", deviceZone()])].sort();
-}
-
 /** The zone times show in: type to search the list, or leave it empty to follow this device. */
 function TimeZone() {
   const prefs = usePreferences();
   const save = useSaveSetting();
-  const zones = useMemo(allZones, []);
-  const saved = prefs.time_zone ?? "";
-  const [text, setText] = useState(saved);
-  useEffect(() => setText(saved), [saved]);
-  const choose = (zone: string | null) => {
-    if (zone !== prefs.time_zone) save({ time_zone: zone }, `Time zone: ${zone ? zoneName(zone) : "this device's"}`);
-  };
   return (
-    <span className="flex flex-col items-start gap-1 sm:items-end">
-      <Input
-        type="search"
-        aria-label="Time zone"
-        list="time-zones"
-        placeholder="Follow this device"
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          if (zones.includes(e.target.value)) choose(e.target.value);
-        }}
-        // Left empty, times follow the device; left half-typed, the zone stays as it was.
-        onBlur={() => (text.trim() ? setText(saved) : choose(null))}
-        className="w-64 max-w-full text-sm"
-      />
-      <datalist id="time-zones">
-        {zones.map((z) => (
-          <option key={z} value={z} />
-        ))}
-      </datalist>
-      {prefs.time_zone && (
-        <button type="button" className="text-xs text-mist underline hover:text-parchment" onClick={() => choose(null)}>
-          Use this device's
-        </button>
-      )}
-    </span>
+    <ZonePicker
+      saved={prefs.time_zone ?? null}
+      onChoose={(zone) => save({ time_zone: zone }, `Time zone: ${zone ? zoneWords(zone) : "this device's"}`)}
+      placeholder="Follow this device"
+      clearText="Use this device's"
+    />
   );
 }
 
@@ -240,7 +202,7 @@ export function PreferencesPage() {
         </SettingCard>
 
         <SettingCard title="Dates and times">
-          <SettingRow label="Time zone" hint={`Times show in this zone, wherever you are. This device is on ${zoneName(deviceZone())} time.`}>
+          <SettingRow label="Time zone" hint={`Times show in this zone, wherever you are. This device is on ${zoneWords(deviceZone())} time.`}>
             <TimeZone />
           </SettingRow>
           <SettingRow label="Dates">

@@ -38,8 +38,24 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, free_changes, item_expiry, play, play_status, retainer_upkeep
-from horatio.models import Character, GameAttendance, PlayGame, ScheduledGame, User, XpEntry
+from horatio import (
+    audit,
+    free_changes,
+    item_expiry,
+    play,
+    play_status,
+    retainer_upkeep,
+    troupe_zones,
+)
+from horatio.models import (
+    Character,
+    GameAttendance,
+    PlayGame,
+    ScheduledGame,
+    Troupe,
+    User,
+    XpEntry,
+)
 from horatio.sheets import conflict, unprocessable
 
 # Check-in can open this long before a game starts, and taps made on the Play View
@@ -96,9 +112,10 @@ def game_for_code(db: Session, raw: str) -> ScheduledGame | None:
     return game if game is not None and is_open(game) else None
 
 
-def when(game: ScheduledGame) -> str:
-    """The game's day, for the log: "9 March 2030"."""
-    return f"{game.starts_at.astimezone(UTC):%-d %B %Y}"
+def when(db: Session, game: ScheduledGame) -> str:
+    """The game's day, for the log: "9 March 2030", in its troupe's time zone."""
+    zone = troupe_zones.zone(db, db.get_one(Troupe, game.troupe_id))
+    return f"{game.starts_at.astimezone(zone):%-d %B %Y}"
 
 
 def open_checkin(db: Session, actor: User, game: ScheduledGame) -> None:
@@ -112,7 +129,7 @@ def open_checkin(db: Session, actor: User, game: ScheduledGame) -> None:
         if db.scalar(select(ScheduledGame.id).where(ScheduledGame.checkin_code == code)) is None:
             break
     game.checkin_code = code
-    audit.record(db, actor, "play.checkin_opened", troupe_id=game.troupe_id, game=when(game))
+    audit.record(db, actor, "play.checkin_opened", troupe_id=game.troupe_id, game=when(db, game))
     db.flush()
 
 
@@ -120,7 +137,7 @@ def close_checkin(db: Session, actor: User, game: ScheduledGame) -> None:
     if game.checkin_code is None:
         return
     game.checkin_code = None
-    audit.record(db, actor, "play.checkin_closed", troupe_id=game.troupe_id, game=when(game))
+    audit.record(db, actor, "play.checkin_closed", troupe_id=game.troupe_id, game=when(db, game))
     db.flush()
 
 
@@ -213,7 +230,7 @@ def check_in(
         "play.checked_in",
         troupe_id=game.troupe_id,
         character_id=character.id,
-        game=when(game),
+        game=when(db, game),
     )
     db.flush()
     # The game that uses up its free changes ends them (horatio.free_changes).
@@ -246,7 +263,7 @@ def mark_absentee(
         "play.absentee_marked",
         troupe_id=game.troupe_id,
         character_id=character.id,
-        game=when(game),
+        game=when(db, game),
     )
     db.flush()
     return attendance
@@ -265,7 +282,7 @@ def check_out(db: Session, actor: User, game: ScheduledGame, character: Characte
         "play.absentee_unmarked" if found.kind == "absentee" else "play.checked_out",
         troupe_id=game.troupe_id,
         character_id=character.id,
-        game=when(game),
+        game=when(db, game),
     )
     db.flush()
 

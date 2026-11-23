@@ -80,6 +80,7 @@ def test_only_public_troupes_still_running_are_listed(troupe: Troupe, anyone: Te
         "min_age": 18,
         "content_notes": "Violence and body horror.",
         "next_game": None,
+        "time_zone": None,
     }
     # Nothing its public profile keeps from people signed out, nor anyone's email.
     assert "Mill Lane" not in response.text
@@ -281,6 +282,36 @@ def test_the_directory_finds_a_day_from_the_games_to_come_in_the_leads_time_zone
     zone(troupe, None)
     assert found(anyone, day="friday") == []
     assert found(anyone, day="saturday") == ["Late Fridays"]
+
+
+def test_the_directory_takes_a_troupes_own_time_zone_over_its_leads(
+    troupe: Troupe, anyone: TestClient
+) -> None:
+    # The lead is in Tokyo, where a 9:30 pm Friday game in New York is already Saturday.
+    zone(troupe, "Asia/Tokyo")
+    late = weekday(FRIDAY, "America/New_York", time(21, 30))
+    assert late.astimezone(ZoneInfo("Asia/Tokyo")).weekday() == SATURDAY
+    late_fridays = another(troupe, "Late Fridays")
+    game_at(troupe, late_fridays, late)
+    assert found(anyone, day="saturday") == ["Late Fridays"]
+
+    # Its storytellers set the troupe's own zone: it is found under Friday, whatever the
+    # lead's, and its row says which zone that is.
+    path = f"/troupes/{late_fridays}"
+    ok(troupe.lead.client.patch(path, json={"time_zone": "America/New_York"}))
+    assert found(anyone, day="friday") == ["Late Fridays"]
+    assert found(anyone, day="saturday") == []
+    zone(troupe, None)
+    assert found(anyone, day="friday") == ["Late Fridays"]
+    (row,) = ok(anyone.get("/public/troupes"))["troupes"]
+    assert row["time_zone"] == "America/New_York"
+
+    # Cleared, it goes back to the lead's: UTC, while they have none.
+    ok(troupe.lead.client.patch(path, json={"time_zone": ""}))
+    assert found(anyone, day="friday") == []
+    assert found(anyone, day="saturday") == ["Late Fridays"]
+    (row,) = ok(anyone.get("/public/troupes"))["troupes"]
+    assert row["time_zone"] is None
 
 
 def test_the_directory_day_leaves_out_games_over_taken_off_or_past_eight_weeks(

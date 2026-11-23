@@ -22,6 +22,7 @@ export const TROUPE_SETTINGS_PARTS: { part: TroupeSettingsPart; label: string }[
   { part: "status", label: "Status and titles" },
   { part: "blood", label: "Blood, diablerie and feeding" },
   { part: "names", label: "Names" },
+  { part: "time-zone", label: "Time zone" },
 ];
 
 /** The parts of the house rules staff change, each a part of the House rules tab (#782). */
@@ -190,6 +191,13 @@ export const SETTINGS = {
     "Banu Haqim or Assamite",
     "What Horatio calls the clan of Haqim on every screen here: sheets, the Play View, creation, the roster, the Who's Who and the rules. Only the name shown changes; the rules and the sheets are the same either way.",
     "names",
+  ),
+
+  timeZone: card(
+    "timeZone",
+    "Time zone",
+    "Where the troupe plays. Games on the schedule are entered in it, the troupe directory's Day takes each game's day in it, and an NPC's item that expires on a date goes once that day is over here. Left empty, it is the lead storyteller's.",
+    "time-zone",
   ),
 
   whosWho: card("whosWho", "Who's Who", "The troupe’s players and staff see its characters there. It shows no sect status unless you add negative status.", "whos_who"),

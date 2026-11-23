@@ -72,6 +72,24 @@ def test_approving_makes_the_troupe_with_the_asker_as_lead(
     assert sorted(actions) == ["troupe_request.approved", "troupe_request.made"]
 
 
+def test_the_troupe_starts_in_the_time_zone_it_was_asked_from(
+    custodian: Person, asker: Person
+) -> None:
+    def approved(request: Any) -> Any:
+        response = custodian.client.post(f"/troupe-requests/{request['id']}/approve")
+        assert response.status_code == 200, response.text
+        return asker.client.get(f"/troupes/{response.json()['troupe_id']}").json()
+
+    # The asker's browser's zone, while they have none of their own.
+    browser = approved(ask(asker, "Nights of Denver", time_zone="America/Denver"))
+    assert browser["time_zone_set"] == "America/Denver"
+    # Else theirs from Settings.
+    asker.client.patch("/preferences", json={"time_zone": "Europe/Paris"})
+    assert approved(ask(asker, "Nights of Paris"))["time_zone_set"] == "Europe/Paris"
+    unknown = asker.client.post("/troupe-requests", json={"name": "X", "time_zone": "Nowhere"})
+    assert unknown.status_code == 422
+
+
 def test_declining_tells_the_asker_why(custodian: Person, asker: Person) -> None:
     request = ask(asker)
     declined = custodian.client.post(

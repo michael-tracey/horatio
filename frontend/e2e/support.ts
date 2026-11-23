@@ -286,6 +286,7 @@ const SETTINGS_PARTS = {
   status: "Status and titles",
   blood: "Blood, diablerie and feeding",
   names: "Names",
+  "time-zone": "Time zone",
 } as const;
 
 /**

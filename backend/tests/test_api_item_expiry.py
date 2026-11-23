@@ -301,7 +301,7 @@ def test_an_npcs_date_and_cycle_expiries_are_as_before(expiring: Troupe, session
     cycled = given(expiring, wolf, **DAGGER, expiry={"kind": "cycle"})
 
     assert item_expiry.check_due(session, tomorrow_utc() - timedelta(minutes=1)) == 0
-    # The day over where the lead storyteller is (UTC, with none chosen).
+    # The day over where the troupe is: with no zone of its own or its lead's, UTC.
     assert item_expiry.check_due(session, tomorrow_utc()) == 1
     assert record(session, dated).status == "taken_back"
     assert record(session, cycled).status == "held"
@@ -309,6 +309,23 @@ def test_an_npcs_date_and_cycle_expiries_are_as_before(expiring: Troupe, session
     closed = expiring.storyteller.client.post(f"/cycles/{cycle['id']}/close")
     assert closed.status_code == 200, closed.text
     assert record(session, cycled).status == "taken_back"
+
+
+def test_an_npcs_date_ends_where_its_troupe_is(expiring: Troupe, session: Session) -> None:
+    # The lead is in Hawaii, where the day ends at 10 am UTC; the troupe plays in
+    # California, where it ends at 7 or 8 am.
+    expiring.lead.client.patch("/preferences", json={"time_zone": "Pacific/Honolulu"})
+    chosen = expiring.storyteller.client.patch(
+        f"/troupes/{expiring.id}", json={"time_zone": "America/Los_Angeles"}
+    )
+    assert chosen.status_code == 200, chosen.text
+    prince = npc(expiring, "Prince Alvarado")
+    today = datetime.now(UTC).date()
+    item = given(expiring, prince, **BLESSING, expiry={"kind": "date", "on": today.isoformat()})
+
+    assert item_expiry.check_due(session, tomorrow_utc() + timedelta(hours=1)) == 0
+    assert item_expiry.check_due(session, tomorrow_utc() + timedelta(hours=9)) == 1
+    assert record(session, item).status == "taken_back"
 
 
 # --- the cycle -----------------------------------------------------------------------------

@@ -18,7 +18,7 @@ The troupe directory, at /find-a-troupe, lists every troupe that shows its profi
 
 - **Name**: any part of the troupe's name, or the abbreviation its lead storyteller set.
 - **Place**: a town, city or region, or the venue's name, as the troupe's profile gives them; where it gives no city or region, the city its chronicle is set in. Never the venue's street address, which only people signed in see.
-- **Day** and **How often**: from what the profile says under **When it plays**, such as "Every other Friday" (Friday, fortnightly) or "Second Saturday of the month" (Saturday, monthly). A troupe whose schedule doesn't say isn't found by them. **Day** also finds a troupe with one of its upcoming games on that day in the next eight weeks, taken in its lead storyteller's time zone, so a game late on a Friday counts as Friday wherever you are.
+- **Day** and **How often**: from what the profile says under **When it plays**, such as "Every other Friday" (Friday, fortnightly) or "Second Saturday of the month" (Saturday, monthly). A troupe whose schedule doesn't say isn't found by them. **Day** also finds a troupe with one of its upcoming games on that day in the next eight weeks, taken in the troupe's time zone, so a game late on a Friday counts as Friday wherever you are. Its row's **Next game** is in the troupe's time zone too, where it has set one.
 - **Your age**: only troupes whose minimum age you meet, or that give none.
 - **Only troupes welcoming new players**.
 
