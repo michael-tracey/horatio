@@ -7,15 +7,14 @@ Markdown, up to six links and a picture. It is made when they first save it, and
 nothing from their player profile is in it unless they put it there: no email,
 pronouns, Discord or lines and veils, and never their player profile's bio.
 
-Anyone at all, signed in or not, can see an author's page (GET
-/blog/authors/<handle>) and picture, while the author writes for the blog (horatio.blog.may_write:
-the custodian, or anyone on the staff of a troupe that isn't archived), or has an
-article published. Until then it is theirs alone to see, so an account made only
-to post links has no public page. While their account is suspended it is hidden
-again, as for an account merged into another (#1182): their articles stay up,
-under a card with their name alone, and it all comes back when the suspension
-ends. The custodian can clear an author's bio, links
-or picture: it is logged, and the author is told in the bell.
+Anyone at all, signed in or not, can see an author's page (GET /blog/authors/<handle>)
+and picture, while the author writes for the blog (horatio.blog.writes_for_blog: the
+custodian, or anyone on the staff of a troupe that isn't archived), or has an article
+published. Until then it is theirs alone to see, so an account made only to post links
+has no public page. While their account is suspended it is hidden again, as for an
+account merged into another (#1182): their articles stay up, under a card with their
+name alone, and it all comes back when the suspension ends. The custodian can clear an
+author's bio, links or picture: it is logged, and the author is told in the bell.
 """
 
 import uuid
@@ -34,7 +33,7 @@ from horatio.api.players import Link, clean_link
 from horatio.api.troupe_profiles import read_upload
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
-from horatio.blog import may_write
+from horatio.blog import writes_for_blog
 from horatio.models import BlogAuthor, BlogPost, User
 from horatio.notifications import notify
 from horatio.permissions import acting_as_custodian, require_custodian
@@ -124,7 +123,7 @@ def shown(db: Session, author: BlogAuthor) -> bool:
     published = select(BlogPost.id).where(
         BlogPost.author_id == user.id, BlogPost.status == "published"
     )
-    return may_write(db, user) or db.scalar(published.limit(1)) is not None
+    return writes_for_blog(db, user) or db.scalar(published.limit(1)) is not None
 
 
 def card(author: BlogAuthor) -> AuthorCard:

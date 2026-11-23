@@ -30,6 +30,7 @@ IDENTITY: dict[str, tuple[int, str]] = {
     "notifications.py": (5, "the custodians' own bell and email: the work waiting on them"),
     "api/notification_settings.py": (1, "the custodian's own notification settings"),
     "posts.py": (1, "a post signed by the custodian"),
+    "blog.py": (1, "a custodian writes for the blog, so has an author page"),
 }
 
 

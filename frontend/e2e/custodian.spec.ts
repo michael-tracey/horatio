@@ -382,7 +382,7 @@ test("a custodian who plays is a player until they switch on custodian access, w
   const lead = await person(browser, "custaccess-lead");
   const player = await person(browser, "custaccess-player");
   const keeper = await person(browser, "custaccess-keeper");
-  const made = await admin.page.request.post("/api/troupes", { headers, data: { name: `Court of Open Doors ${run}`, lead_handle: lead.handle } });
+  const made = await admin.page.request.post("/api/troupes", { headers, data: { name: `Court of the Switched Key ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
   await backstoryOptional(lead.page, troupeId);
@@ -428,7 +428,7 @@ test("a custodian who plays is a player until they switch on custodian access, w
   await l.reload();
   await l.getByRole("button", { name: /^Notifications/ }).click();
   const panel = l.getByRole("dialog", { name: "Notifications" });
-  await expect(panel.getByText(/^custaccess-keeper, the custodian, who plays in Court of Open Doors .+, switched on custodian access and opened what only its staff see: Hesper's sheet shows the wrong clan$/)).toHaveCount(1);
+  await expect(panel.getByText(/^custaccess-keeper, the custodian, who plays in Court of the Switched Key .+, switched on custodian access and opened what only its staff see: Hesper's sheet shows the wrong clan$/)).toHaveCount(1);
 
   // Switched off from the banner: a player again, at once.
   await banner.getByRole("button", { name: "Switch off" }).click();
@@ -1346,7 +1346,9 @@ test("Clan logos and Site fit a phone: nothing sideways, the loading animations 
   await expect(card("What is running").getByText("Running since")).toBeVisible();
   await expect(c.locator("main details[open]")).toHaveCount(0);
   expect(await sideways()).toBe(0);
-  expect(await c.evaluate(() => document.documentElement.scrollHeight)).toBeLessThan(2500);
+  // Site itself: not the custodian access banner over every page (#1213).
+  const banner = (await c.getByRole("status", { name: "Custodian access" }).boundingBox())?.height ?? 0;
+  expect((await c.evaluate(() => document.documentElement.scrollHeight)) - banner).toBeLessThan(2500);
 });
 
 test("the custodian fetches the Dark Pack resources and the VTES symbols onto the server, then removes them", async ({ browser }) => {

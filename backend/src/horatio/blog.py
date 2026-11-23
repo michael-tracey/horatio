@@ -116,6 +116,12 @@ def may_write(db: Session, user: User) -> bool:
     return bool(writing_troupes(db, user)) or acting_as_custodian(user)
 
 
+def writes_for_blog(db: Session, user: User) -> bool:
+    """Whether `user` is one of the blog's writers, for their author page: on a
+    troupe's staff, or a custodian, with custodian access on or not."""
+    return user.is_custodian or bool(writing_troupes(db, user))
+
+
 def require_writer(db: Session, user: User) -> None:
     if not may_write(db, user):
         raise HTTPException(
