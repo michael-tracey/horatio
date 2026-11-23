@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, StringConstraints
 from horatio import recent_tabs
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe
+from horatio.permissions import open_to
 
 router = APIRouter(prefix="/troupes/{troupe_id}/recent-tabs", tags=["troupes"])
 
@@ -29,7 +30,7 @@ class RecentTabsOut(BaseModel):
 
 def open_troupe(db: DbSession, user: CurrentUser, troupe_id: uuid.UUID) -> Troupe:
     troupe = db.get(Troupe, troupe_id)
-    if troupe is None or (troupe.archived_at is not None and not user.is_custodian):
+    if troupe is None or not open_to(user, troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     return troupe
 

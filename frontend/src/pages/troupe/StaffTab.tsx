@@ -5,14 +5,15 @@ import { api, unwrap } from "../../api/client";
 import type { Role, TroupeOut } from "../../api/types";
 import { AtHandle, PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, ErrorText, Field, Loading, Select } from "../../components/ui";
-import { useAction, useMe } from "../../hooks";
+import { useAction } from "../../hooks";
 import { ROLE_LINES, roleLabel } from "./roles";
 import { StaffTwoStep } from "./StaffTwoStep";
+import { useCustodianOn } from "../../custodianAccess";
 
 const ASSIGNABLE: Role[] = ["storyteller", "assistant_storyteller", "narrator"];
 
 export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: boolean }) {
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const path = { params: { path: { troupe_id: troupe.id } } };
   const staff = useQuery({ queryKey: ["staff", troupe.id], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/staff", path)) });
   const [handle, setHandle] = useState("");
@@ -108,7 +109,7 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
           ))}
         </dl>
       </Card>
-      {me.data?.is_custodian && <AppointLead troupe={troupe} lead={staff.data?.find((m) => m.role === "lead_storyteller")?.display_name} />}
+      {custodianOn && <AppointLead troupe={troupe} lead={staff.data?.find((m) => m.role === "lead_storyteller")?.display_name} />}
     </div>
   );
 }

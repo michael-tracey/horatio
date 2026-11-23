@@ -25,7 +25,12 @@ from horatio.connectors import discord
 from horatio.models import Passkey, Troupe, TroupeStaff, User
 from horatio.models import Session as SignInSession
 from horatio.notifications import notify
-from horatio.permissions import TroupeAction, require_custodian, require_troupe_action
+from horatio.permissions import (
+    TroupeAction,
+    acting_as_custodian,
+    require_custodian,
+    require_troupe_action,
+)
 
 router = APIRouter(prefix="/two-step", tags=["auth"])
 
@@ -490,7 +495,7 @@ def staff_two_step(db: DbSession, user: User, troupe: Troupe) -> StaffTwoStepOut
 
 
 def can_change(user: User, troupe: Troupe) -> bool:
-    return user.is_custodian or troupe.lead_user_id == user.id
+    return troupe.lead_user_id == user.id or acting_as_custodian(user, troupe)
 
 
 @troupe_router.get("/{troupe_id}/staff-two-step")

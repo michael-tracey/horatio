@@ -71,9 +71,10 @@ from horatio.models import (
 from horatio.notifications import approvers, notify
 from horatio.permissions import (
     TroupeAction,
-    allows,
     can_edit_character,
     can_read_backstory,
+    may,
+    open_to,
     troupe_role,
 )
 from horatio.sheets import conflict, sheet_rows, unprocessable
@@ -151,12 +152,8 @@ def access(db: Session, user: User, character: Character) -> Access:
         read
         and troupe is not None
         and character.player_id != user.id
-        and (troupe.archived_at is None or user.is_custodian)
-        and allows(
-            troupe_role(db, user, troupe),
-            TroupeAction.APPROVE_CHANGES,
-            is_custodian=user.is_custodian,
-        )
+        and open_to(user, troupe)
+        and may(user, troupe_role(db, user, troupe), TroupeAction.APPROVE_CHANGES, troupe)
     )
     return Access(read=read, write=write, review=review)
 

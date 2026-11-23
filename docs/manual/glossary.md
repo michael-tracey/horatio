@@ -44,7 +44,7 @@ A way out of Horatio that a troupe sets up, such as its Discord server or email,
 
 ## Custodian
 
-The person who looks after the whole site, above every troupe. The custodian appoints lead storytellers, looks after people's accounts and the system, and can do anything in any troupe.
+The person who looks after the whole site, above every troupe. The custodian appoints lead storytellers, looks after people's accounts and the system, and can do anything in any troupe, once they switch on custodian access (see [Custodian access](custodian.md#custodian-access)). Until then a custodian sees Horatio as their troupe roles make them, as any player does.
 
 ## Delivery
 

@@ -61,6 +61,7 @@ from horatio.models import (
 from horatio.permissions import (
     Role,
     TroupeAction,
+    acting_as_custodian,
     allows,
     member_troupe_ids,
     troupe_roles,
@@ -110,7 +111,7 @@ class Reach:
 
     @property
     def custodian(self) -> bool:
-        return self.user.is_custodian
+        return acting_as_custodian(self.user)
 
     def may(self, action: TroupeAction) -> list[uuid.UUID]:
         """The person's troupes where they may take `action`, as horatio.permissions says."""

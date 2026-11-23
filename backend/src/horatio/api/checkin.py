@@ -39,7 +39,8 @@ from horatio.models import (
 )
 from horatio.permissions import (
     TroupeAction,
-    allows,
+    may,
+    open_to,
     require_troupe_action,
     troupe_role,
     visible_character,
@@ -288,8 +289,8 @@ def staff_game(
 
 
 def runs_checkin(db: Session, user: User, troupe: Troupe) -> bool:
-    return (troupe.archived_at is None or user.is_custodian) and allows(
-        troupe_role(db, user, troupe), TroupeAction.RUN_CHECKIN, is_custodian=user.is_custodian
+    return open_to(user, troupe) and may(
+        user, troupe_role(db, user, troupe), TroupeAction.RUN_CHECKIN, troupe
     )
 
 
@@ -475,9 +476,7 @@ def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> G
             awarded_at=game.xp_awarded_at,
             awarded_by=someone(awarded_by) if awarded_by else None,
         ),
-        can_award=allows(
-            troupe_role(db, user, troupe), TroupeAction.AWARD_XP, is_custodian=user.is_custodian
-        ),
+        can_award=may(user, troupe_role(db, user, troupe), TroupeAction.AWARD_XP, troupe),
         game_xp_low=checkin.GAME_XP[0],
         game_xp_high=checkin.GAME_XP[1],
         monthly_xp=game_xp.monthly_limit(found),

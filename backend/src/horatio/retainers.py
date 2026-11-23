@@ -35,9 +35,10 @@ from horatio import audit, auto_bonds
 from horatio.models import Character, Retainer, ScheduledGame, Troupe, User
 from horatio.permissions import (
     TroupeAction,
-    allows,
+    acting_as_custodian,
     can_edit_character,
     can_view_character,
+    may,
     troupe_role,
 )
 from horatio.rules.checks import matches
@@ -273,9 +274,9 @@ def can_link(db: Session, user: User, character: Character) -> bool:
     troupe_id = character.owner_troupe_id if character.kind == "npc" else character.home_troupe_id
     troupe = db.get(Troupe, troupe_id) if troupe_id else None
     if troupe is None:
-        return user.is_custodian
+        return acting_as_custodian(user, character=character)
     action = TroupeAction.MANAGE_NPCS if character.kind == "npc" else TroupeAction.APPROVE_CHANGES
-    return allows(troupe_role(db, user, troupe), action, is_custodian=user.is_custodian)
+    return may(user, troupe_role(db, user, troupe), action, troupe)
 
 
 def can_edit(db: Session, user: User, character: Character) -> bool:

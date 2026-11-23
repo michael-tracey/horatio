@@ -30,7 +30,13 @@ from horatio.api.troupe_profiles import image_response, read_upload
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe, User
-from horatio.permissions import TroupeAction, is_member, member_troupe_ids, require_troupe_action
+from horatio.permissions import (
+    TroupeAction,
+    acting_as_custodian,
+    is_member,
+    member_troupe_ids,
+    require_troupe_action,
+)
 
 router = APIRouter(prefix="/troupes/{troupe_id}/throw-images", tags=["throw images"])
 # The signed-in person's choice of set (#671).
@@ -82,7 +88,7 @@ def troupe_of(db: Session, troupe_id: uuid.UUID) -> Troupe:
 def seen_by(db: Session, user: User, troupe_id: uuid.UUID) -> Troupe:
     """The troupe, if `user` is one of its members or the custodian; 404 otherwise."""
     troupe = troupe_of(db, troupe_id)
-    if not (user.is_custodian or is_member(db, user, troupe)):
+    if not (is_member(db, user, troupe) or acting_as_custodian(user, troupe)):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     return troupe
 

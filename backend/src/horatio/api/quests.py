@@ -34,7 +34,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, require_troupe_action
+from horatio.permissions import TroupeAction, acting_as_custodian, require_troupe_action
 from horatio.quest_requirements import Option
 
 router = APIRouter(tags=["quests"])
@@ -519,7 +519,8 @@ def viewed_character(db: DbSession, user: User, character_id: uuid.UUID) -> tupl
         return character, False
     home = quests.home_troupe(db, character) if character is not None else None
     if character is None or not (
-        user.is_custodian or (home is not None and quests.is_running(db, user, home))
+        (home is not None and quests.is_running(db, user, home))
+        or acting_as_custodian(user, character=character)
     ):
         raise not_found("character")
     return character, True
@@ -529,7 +530,8 @@ def own_character(db: DbSession, user: User, character_id: uuid.UUID) -> Charact
     """The user's own PC (or any, for the custodian)."""
     character = db.get(Character, character_id)
     if character is None or not (
-        user.is_custodian or (character.kind == "pc" and character.player_id == user.id)
+        (character.kind == "pc" and character.player_id == user.id)
+        or acting_as_custodian(user, character=character)
     ):
         raise not_found("character")
     return character

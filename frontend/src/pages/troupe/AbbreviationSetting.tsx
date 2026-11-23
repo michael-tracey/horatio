@@ -2,9 +2,9 @@ import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
 import { SettingCard, SettingForm, useSettingForm } from "../../components/SettingCard";
 import { Field, Input } from "../../components/ui";
-import { useMe } from "../../hooks";
 import { abilities } from "./roles";
 import { SETTINGS } from "./settingsIndex";
+import { useCustodianOn } from "../../custodianAccess";
 
 /** The most an abbreviation may be, as the server has it (horatio.troupe_abbreviations). */
 export const LONGEST_ABBREVIATION = 10;
@@ -32,8 +32,8 @@ export function abbreviationDefaultText(troupe: Pick<TroupeOut, "name" | "abbrev
  * running staff read it. Unique on the site; empty goes by the one made from its name.
  */
 export function AbbreviationSetting({ troupe }: { troupe: TroupeOut }) {
-  const me = useMe();
-  const canEdit = abilities(troupe.my_role, me.data?.is_custodian ?? false).lead && !troupe.archived;
+  const custodianOn = useCustodianOn();
+  const canEdit = abilities(troupe.my_role, custodianOn).lead && !troupe.archived;
   const form = useSettingForm({ abbreviation: troupe.abbreviation_set ?? "" }, ({ abbreviation }) =>
     unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { abbreviation: abbreviation.trim() } })),
   );

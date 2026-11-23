@@ -24,7 +24,7 @@ from horatio.api.pictures import uploads
 from horatio.api.troupe_profiles import read_upload
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
 from horatio.models import BlogPost, BlogPostPicture, Troupe, User
-from horatio.permissions import require_custodian
+from horatio.permissions import acting_as_custodian, require_custodian
 
 router = APIRouter(prefix="/blog", tags=["blog"])
 
@@ -187,7 +187,7 @@ def seen_article(db: Session, user: User, article_id: uuid.UUID, *, lock: bool =
     """The article, for its author or the custodian; 404 for anyone else, so nobody
     learns what is being written."""
     article = db.get(BlogPost, article_id, with_for_update=lock)
-    if article is None or not (user.is_custodian or article.author_id == user.id):
+    if article is None or not (article.author_id == user.id or acting_as_custodian(user)):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such article.")
     return article
 
@@ -383,7 +383,7 @@ def list_tags(db: DbSession, user: CurrentUser) -> list[BlogTagOut]:
 def writer(db: DbSession, user: CurrentUser) -> BlogWriterOut:
     troupes = blog.writing_troupes(db, user)
     return BlogWriterOut(
-        can_write=user.is_custodian or bool(troupes), troupes=troupes_out(db, troupes)
+        can_write=bool(troupes) or acting_as_custodian(user), troupes=troupes_out(db, troupes)
     )
 
 
@@ -603,7 +603,7 @@ def body_picture(picture_id: uuid.UUID, name: str, db: DbSession, user: MaybeUse
     allowed = public or (
         article is not None
         and user is not None
-        and (user.is_custodian or article.author_id == user.id)
+        and (article.author_id == user.id or acting_as_custodian(user))
     )
     root = pictures.upload_dir()
     path = (

@@ -17,6 +17,7 @@ from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.clan_merits import book_defaults
 from horatio.models import RuleSet, Troupe
+from horatio.permissions import open_to
 from horatio.reference import catalogue as power_catalogue
 from horatio.rules import conditions, pricing
 from horatio.rules.files import EVERYWHERE
@@ -437,9 +438,7 @@ def browse(
     bloodlines are on the troupe's row, which changes it too."""
     version = rules_tag(db, splat, troupe_id)
     troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
-    if troupe_id is not None and (
-        troupe is None or (troupe.archived_at is not None and not user.is_custodian)
-    ):
+    if troupe_id is not None and (troupe is None or not open_to(user, troupe)):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     revalidate(request, response, "browse", splat, str(troupe_id), version)
     found = catalogue_of(db, splat, troupe_id=troupe_id)

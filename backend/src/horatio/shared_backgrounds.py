@@ -37,7 +37,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, open_to, troupe_role
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import conflict, unprocessable
 
@@ -67,12 +67,8 @@ def backgrounds(db: Session, troupe_id: uuid.UUID) -> list[str]:
 
 
 def can_manage(db: Session, user: User, troupe: Troupe) -> bool:
-    if troupe.archived_at is not None and not user.is_custodian:
-        return False
-    return allows(
-        troupe_role(db, user, troupe),
-        TroupeAction.MANAGE_SHARED_BACKGROUNDS,
-        is_custodian=user.is_custodian,
+    return open_to(user, troupe) and may(
+        user, troupe_role(db, user, troupe), TroupeAction.MANAGE_SHARED_BACKGROUNDS, troupe
     )
 
 

@@ -14,7 +14,8 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, Embrace, Troupe, User
 from horatio.permissions import (
     TroupeAction,
-    allows,
+    may,
+    open_to,
     require_troupe_action,
     troupe_role,
     visible_character,
@@ -213,8 +214,8 @@ def running_staff(db: DbSession, user: User, character: Character, action: Troup
     return (
         character.kind == "pc"
         and troupe is not None
-        and (troupe.archived_at is None or user.is_custodian)
-        and allows(troupe_role(db, user, troupe), action, is_custodian=user.is_custodian)
+        and open_to(user, troupe)
+        and may(user, troupe_role(db, user, troupe), action, troupe)
     )
 
 

@@ -14,7 +14,13 @@ from horatio import projects, quests
 from horatio.api.downtimes import staff_cycle
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, DowntimeCycle, Project, ProjectCycle, Troupe, User
-from horatio.permissions import TroupeAction, allows, troupe_role, visible_character
+from horatio.permissions import (
+    TroupeAction,
+    acting_as_custodian,
+    allows,
+    troupe_role,
+    visible_character,
+)
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(tags=["projects"])
@@ -125,10 +131,10 @@ def project_out(
 
 
 def is_staff(db: DbSession, user: User, troupe_id: uuid.UUID | None) -> bool:
-    if user.is_custodian:
-        return True
     troupe = db.get(Troupe, troupe_id) if troupe_id else None
-    return troupe is not None and allows(troupe_role(db, user, troupe), TroupeAction.MANAGE_CYCLES)
+    if troupe is not None and allows(troupe_role(db, user, troupe), TroupeAction.MANAGE_CYCLES):
+        return True
+    return acting_as_custodian(user, troupe_id)
 
 
 def character_access(db: DbSession, user: User, character_id: uuid.UUID) -> tuple[Character, bool]:

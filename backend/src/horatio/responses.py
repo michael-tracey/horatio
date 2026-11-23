@@ -42,7 +42,7 @@ from horatio.models import (
     User,
 )
 from horatio.notifications import notify
-from horatio.permissions import Role, troupe_role
+from horatio.permissions import Role, acting_as_custodian, troupe_role
 from horatio.sheets import conflict, unprocessable
 
 RUNNING = (Role.LEAD_STORYTELLER, Role.STORYTELLER, Role.ASSISTANT_STORYTELLER)
@@ -129,7 +129,7 @@ def item_for(db: Session, response_id: uuid.UUID) -> WorkItem | None:
 
 
 def is_running(db: Session, user: User, troupe: Troupe) -> bool:
-    return user.is_custodian or troupe_role(db, user, troupe) in RUNNING
+    return troupe_role(db, user, troupe) in RUNNING or acting_as_custodian(user, troupe)
 
 
 def mine(db: Session, user: User, cycle: DowntimeCycle) -> list[WorkItem]:

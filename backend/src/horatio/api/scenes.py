@@ -30,7 +30,7 @@ from horatio.models import (
     TroupeMembership,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, troupe_role
 
 router = APIRouter(prefix="/troupes/{troupe_id}/scenes", tags=["scenes"])
 
@@ -115,8 +115,8 @@ class KeptScenes(BaseModel):
 
 
 def may_change(db: Session, user: User, troupe: Troupe, scene: Scene) -> bool:
-    return scene.created_by_id == user.id or allows(
-        troupe_role(db, user, troupe), TroupeAction.CHANGE_ANY_SCENE, is_custodian=user.is_custodian
+    return scene.created_by_id == user.id or may(
+        user, troupe_role(db, user, troupe), TroupeAction.CHANGE_ANY_SCENE, troupe
     )
 
 
@@ -208,9 +208,7 @@ def summaries(db: Session, user: User, troupe: Troupe, scenes: list[Scene]) -> l
             select(User.id, User.display_name).where(User.id.in_({s.created_by_id for s in scenes}))
         )
     }
-    lead = allows(
-        troupe_role(db, user, troupe), TroupeAction.CHANGE_ANY_SCENE, is_custodian=user.is_custodian
-    )
+    lead = may(user, troupe_role(db, user, troupe), TroupeAction.CHANGE_ANY_SCENE, troupe)
     return [
         SceneSummary(
             id=s.id,

@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Card, PageTitle } from "../components/ui";
-import { useMe } from "../hooks";
 import { manualLink } from "../manualLink";
+import { useCustodianOn } from "../custodianAccess";
 
 const SOURCE = "https://github.com/michael-tracey/horatio";
 const DARK_PACK = "https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement";
@@ -26,7 +26,7 @@ function A({ href, children }: { href: string; children: ReactNode }) {
  * logo, Paradox's notice, and that it is unofficial. Public, like the sign-in page.
  */
 export function AboutPage() {
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const darkPack = useQuery({ queryKey: ["dark-pack"], queryFn: () => unwrap(api.GET("/api/dark-pack")), staleTime: 5 * 60_000 });
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -74,7 +74,7 @@ export function AboutPage() {
             ) : null}
           </div>
         </div>
-        {me.data?.is_custodian && darkPack.data && !darkPack.data.logo && (
+        {custodianOn && darkPack.data && !darkPack.data.logo && (
           <p className="mt-4 rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-sm">
             For the custodian: the Dark Pack logo isn't on this server yet. The agreement asks for it. Fetch the Dark Pack resources in{" "}
             <Link to="/custodian/tools" className="text-gold hover:underline">

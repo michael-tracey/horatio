@@ -51,6 +51,7 @@ from horatio.api import (
     connectors,
     court,
     creation,
+    custodian_access,
     dark_pack,
     discord,
     discord_account,
@@ -146,6 +147,7 @@ from horatio.api import (
     xp_range,
     yorick_imports,
 )
+from horatio.auth import custodian_access as access_on
 from horatio.auth.deps import DbSession
 from horatio.auth.two_step import allowed_first, two_step_first
 from horatio.auth.viewing import read_only_while_viewing
@@ -216,14 +218,32 @@ async def send_security_headers(
     return response
 
 
+@app.middleware("http")
+async def offer_custodian_access(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Mark a refusal that custodian access would have let through, so the app offers
+    the custodian to switch it on (horatio.auth.custodian_access)."""
+    response = await call_next(request)
+    if response.status_code in (403, 404) and access_on.wanted(request):
+        response.headers[access_on.HEADER] = "needed"
+    return response
+
+
 # uvicorn logs every request's path, and production keeps its logs in Cloud Logging.
 logging.getLogger("uvicorn.access").addFilter(secret_links.RedactSecrets())
 
 
 # While the custodian views as someone, nothing changes (horatio.auth.viewing). Someone
-# who must set up two-step sign-in does that first (horatio.auth.two_step).
+# who must set up two-step sign-in does that first (horatio.auth.two_step). A use of
+# custodian access moves its end on once answered (horatio.auth.custodian_access).
 api = APIRouter(
-    prefix="/api", dependencies=[Depends(read_only_while_viewing), Depends(two_step_first)]
+    prefix="/api",
+    dependencies=[
+        Depends(read_only_while_viewing),
+        Depends(two_step_first),
+        Depends(access_on.kept, scope="function"),
+    ],
 )
 for module in (
     auth,
@@ -238,6 +258,7 @@ for module in (
     clan_logos,
     dark_pack,
     creation,
+    custodian_access,
     sheets,
     power_choices,
     cart,

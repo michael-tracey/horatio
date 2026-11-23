@@ -2,11 +2,11 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
-import { useMe } from "../hooks";
 import { characterOf, currentTroupe, isSearchShortcut, searchHere, SHORTEST, type SearchGroup, type SearchHit } from "../search/search";
 import { Dialog } from "./Dialog";
 import { TroupePill } from "./TroupePill";
 import { ErrorText, Input } from "./ui";
+import { useCustodianOn } from "../custodianAccess";
 
 /**
  * Search everything from the top bar (#1046): its button, and `/` or Ctrl+K (⌘K) from any
@@ -76,13 +76,13 @@ export function SearchPanel({ onPick }: { onPick: () => void }) {
   });
   const troupeId = currentTroupe(pathname, character.data?.home_troupe_id);
   // The troupe as the person sees it, as its pages have it, for its settings (#1047).
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const troupe = useQuery({
     queryKey: ["troupe", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId! } } })),
     enabled: !!troupeId,
   });
-  const place = { troupeId, troupe: troupeId ? troupe.data : null, custodian: me.data?.is_custodian ?? false };
+  const place = { troupeId, troupe: troupeId ? troupe.data : null, custodian: custodianOn };
   const [text, setText] = useState("");
   const q = useSettled(text.trim());
   const asks = q.length >= SHORTEST;

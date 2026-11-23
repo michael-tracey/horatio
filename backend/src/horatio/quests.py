@@ -73,7 +73,7 @@ from horatio.models import (
     User,
 )
 from horatio.notifications import notify
-from horatio.permissions import Role, troupe_role
+from horatio.permissions import Role, acting_as_custodian, troupe_role
 from horatio.quest_requirements import Option
 from horatio.sheets import conflict, unprocessable
 
@@ -122,11 +122,11 @@ def set_settings(db: Session, user: User, troupe: Troupe, enabled: bool, per_cyc
 
 
 def is_running(db: Session, user: User, troupe: Troupe) -> bool:
-    return user.is_custodian or troupe_role(db, user, troupe) in RUNNING
+    return troupe_role(db, user, troupe) in RUNNING or acting_as_custodian(user, troupe)
 
 
 def is_narrator(db: Session, user: User, troupe: Troupe) -> bool:
-    return not user.is_custodian and troupe_role(db, user, troupe) == Role.NARRATOR
+    return troupe_role(db, user, troupe) == Role.NARRATOR and not acting_as_custodian(user, troupe)
 
 
 def narrator_may_see(user: User, item: Assignable) -> bool:

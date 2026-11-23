@@ -8,19 +8,20 @@ import { EmptyState } from "../components/EmptyState";
 import { useToast } from "../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Textarea } from "../components/ui";
 import { useDates } from "../dates";
-import { useAction, useMe } from "../hooks";
+import { useAction } from "../hooks";
 import { useSuspendedIds } from "./custodian/Suspension";
 import { newPlayersText } from "./troupe/profile";
 import { roleLabel } from "./troupe/roles";
 import { excerpt, matches, ownFirst, SEARCH_FROM } from "./troupeList";
 import { requestStatus } from "./troupeRequests";
+import { useCustodianOn } from "../custodianAccess";
 
 export function TroupesPage() {
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   // A key of its own, so the page asks afresh as it opens: the list another page
   // asked for earlier can still be on its way, and lacks a troupe made since.
   const troupes = useQuery({ queryKey: ["troupes", "page"], queryFn: () => unwrap(api.GET("/api/troupes")) });
-  const suspended = useSuspendedIds(!!me.data?.is_custodian);
+  const suspended = useSuspendedIds(custodianOn);
   const [query, setQuery] = useState("");
   const all = ownFirst(troupes.data ?? []);
   const shown = all.filter((t) => matches(t, query));
@@ -70,7 +71,7 @@ export function TroupesPage() {
   return (
     <>
       <PageTitle subtitle="Troupes run games and downtimes. Your characters join them from their own pages.">Troupes</PageTitle>
-      {me.data?.is_custodian ? (
+      {custodianOn ? (
         <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
           {list}
           <NewTroupePointer />

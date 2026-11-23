@@ -35,7 +35,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, acting_as_custodian, may, open_to, troupe_role
 from horatio.sheets import unprocessable
 
 # The rules' "within the last 3 months" (MET: VtM core, p. 512).
@@ -89,13 +89,9 @@ def home_troupe(db: Session, character: Character) -> Troupe | None:
 
 def keeps_log(db: Session, user: User, troupe: Troupe | None) -> bool:
     """Whether `user` keeps the troupe's influence log."""
-    if troupe is None or (troupe.archived_at is not None and not user.is_custodian):
+    if troupe is None or not open_to(user, troupe):
         return False
-    return allows(
-        troupe_role(db, user, troupe),
-        TroupeAction.MANAGE_INFLUENCE_LOG,
-        is_custodian=user.is_custodian,
-    )
+    return may(user, troupe_role(db, user, troupe), TroupeAction.MANAGE_INFLUENCE_LOG, troupe)
 
 
 def plays(user: User, character: Character) -> bool:
@@ -107,9 +103,9 @@ def can_see(db: Session, user: User, character: Character) -> bool:
     troupe. An NPC's history is for its troupe's staff only. The custodian sees
     every character's, with a home troupe or none (#541)."""
     return (
-        user.is_custodian
-        or plays(user, character)
+        plays(user, character)
         or keeps_log(db, user, home_troupe(db, character))
+        or acting_as_custodian(user, character=character)
     )
 
 

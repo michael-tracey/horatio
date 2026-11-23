@@ -28,8 +28,8 @@ from horatio.models import (
 )
 from horatio.permissions import (
     TroupeAction,
-    allows,
     is_staff_for,
+    may,
     require_troupe_action,
     troupe_role,
     visible_character,
@@ -268,10 +268,8 @@ def catalogue_out(db: DbSession, user: User, troupe: Troupe) -> LocationCatalogu
         influence_areas=influence_areas(db, troupe),
         characters=[character_out(db, rules, c) for c in troupe_characters(db, troupe.id)],
         feeding_blocks=sorted(blocks, key=str.casefold),
-        can_change_house=allows(
-            troupe_role(db, user, troupe),
-            TroupeAction.MANAGE_HOUSE_RULES,
-            is_custodian=user.is_custodian,
+        can_change_house=may(
+            user, troupe_role(db, user, troupe), TroupeAction.MANAGE_HOUSE_RULES, troupe
         ),
     )
 
@@ -836,10 +834,8 @@ def character_locations(
     def can_read(troupe_id: uuid.UUID) -> bool:
         if troupe_id not in readable:
             troupe = db.get_one(Troupe, troupe_id)
-            readable[troupe_id] = troupe.archived_at is None and allows(
-                troupe_role(db, user, troupe),
-                TroupeAction.MANAGE_LOCATIONS,
-                is_custodian=user.is_custodian,
+            readable[troupe_id] = troupe.archived_at is None and may(
+                user, troupe_role(db, user, troupe), TroupeAction.MANAGE_LOCATIONS, troupe
             )
         return readable[troupe_id]
 

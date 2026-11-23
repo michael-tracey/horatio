@@ -64,7 +64,7 @@ from horatio.models import (
     User,
 )
 from horatio.notifications import blog_article_waiting, notify
-from horatio.permissions import TROUPE_POLICY, TroupeAction
+from horatio.permissions import TROUPE_POLICY, TroupeAction, acting_as_custodian
 
 STATUSES = ("draft", "submitted", "published", "unpublished")
 # The longest slug made from a title, before any "-2" that keeps it unique.
@@ -113,7 +113,7 @@ def writing_troupes(db: Session, user: User) -> list[Troupe]:
 
 
 def may_write(db: Session, user: User) -> bool:
-    return user.is_custodian or bool(writing_troupes(db, user))
+    return bool(writing_troupes(db, user)) or acting_as_custodian(user)
 
 
 def require_writer(db: Session, user: User) -> None:
@@ -616,7 +616,7 @@ def tags_of(db: Session, article_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[B
 def set_tags(db: Session, user: User, article: BlogPost, tag_ids: list[uuid.UUID]) -> None:
     """Tag the article: the custodian at any time, its author while it isn't
     published or waiting. A retired tag it has may stay, but isn't added."""
-    if not user.is_custodian and article.status in ("published", "submitted"):
+    if article.status in ("published", "submitted") and not acting_as_custodian(user):
         raise HTTPException(status.HTTP_409_CONFLICT, "The custodian tags it once it is submitted.")
     wanted = list(dict.fromkeys(tag_ids))
     tags = list(db.scalars(select(BlogTag).where(BlogTag.id.in_(wanted)))) if wanted else []

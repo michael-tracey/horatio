@@ -82,7 +82,7 @@ from horatio.models import (
     User,
     WrittenRule,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, troupe_role
 from horatio.rules import conditions
 from horatio.rules import locations as location_catalogue
 from horatio.rules.house_checks import HouseCheckData, is_house_check
@@ -1261,10 +1261,11 @@ def abbreviation_problem(target: Target, value: str | None) -> str | None:
     if (
         user is not None
         and value != target.troupe.abbreviation
-        and not allows(
+        and not may(
+            user,
             troupe_role(target.db, user, target.troupe),
             TroupeAction.RENAME,
-            is_custodian=user.is_custodian,
+            target.troupe,
         )
     ):
         return "Only the lead storyteller sets the troupe's abbreviation."

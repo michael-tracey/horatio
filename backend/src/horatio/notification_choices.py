@@ -498,6 +498,15 @@ GROUPS = (
                 ("troupe.accounts_merged",),
             ),
             Topic(
+                "custodian_access",
+                "The custodian in your troupe",
+                "The custodian, who plays in a troupe you lead, switching on custodian access"
+                " and opening what only its staff see: once each time, with their reason."
+                " Always in the bell, and never by email.",
+                ("troupe.custodian_access",),
+                {"bell": ALWAYS},
+            ),
+            Topic(
                 "discord_problems",
                 "Discord channel problems",
                 "A character's Discord channel Horatio couldn't make or keep in step.",

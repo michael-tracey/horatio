@@ -154,7 +154,7 @@ from horatio.models.two_step import (
     RecoveryCode,
     SecondStepSignIn,
 )
-from horatio.models.viewing import Viewing
+from horatio.models.viewing import CustodianAccess, Viewing
 from horatio.models.vinculum import Vaulderie, VaulderieParticipant, VinculumTie
 from horatio.models.written_rules import WrittenRule
 from horatio.models.yorick_imports import YorickImport
@@ -268,6 +268,7 @@ __all__ = [
     "ServerSetting",
     "CostRule",
     "CreationRule",
+    "CustodianAccess",
     "EquipmentEvent",
     "EquipmentItem",
     "EquipmentQuality",

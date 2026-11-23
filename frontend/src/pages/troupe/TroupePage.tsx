@@ -5,7 +5,6 @@ import { api, unwrap } from "../../api/client";
 import { Avatar } from "../../components/Avatar";
 import { NotOpenHere } from "../../components/NotOpenHere";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../components/ui";
-import { useMe } from "../../hooks";
 import { ApprovalsPages } from "./ApprovalsTab";
 import { BondsPages } from "./BondsPages";
 import { BoonsPages } from "./BoonsPages";
@@ -50,6 +49,7 @@ import { useWaiting } from "./WaitingList";
 import { tabCounts } from "./waiting";
 import { WhosWhoTab } from "./WhosWhoTab";
 import { XpAwardsTab } from "./XpAwardsTab";
+import { useCustodianOn } from "../../custodianAccess";
 
 // The court over time (#712) draws with the chart kit, so d3 loads only when it is opened.
 const CourtTab = lazy(() => import("./CourtTab").then((m) => ({ default: m.CourtTab })));
@@ -63,20 +63,20 @@ const ObligationWeb = lazy(() => import("./ObligationWeb").then((m) => ({ defaul
 export function TroupePage() {
   const { troupeId = "" } = useParams();
   const { pathname } = useLocation();
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const troupe = useQuery({
     queryKey: ["troupe", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
   });
   // What waits on the staff member, for the tab counts: the same lines as About's
   // Waiting on you, so the two agree.
-  const staff = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).staff : false;
+  const staff = troupe.data ? abilities(troupe.data.my_role, custodianOn).staff : false;
   const waiting = useWaiting(troupeId, staff && !troupe.data?.archived);
   const counts = tabCounts(waiting.data);
   // What its members haven't read of its news (#510) and its announcements (#511), each counted apart.
   const glance = useGlance(troupeId, !!troupe.data?.whos_who && !troupe.data.archived);
   // Characters built to its rules whose players haven't asked to join yet (#774).
-  const running = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).running : false;
+  const running = troupe.data ? abilities(troupe.data.my_role, custodianOn).running : false;
   const building = useQuery({
     queryKey: ["builds-count", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/builds/count", { params: { path: { troupe_id: troupeId } } })),
@@ -84,7 +84,7 @@ export function TroupePage() {
   });
 
   const groups = troupe.data
-    ? troupeTabGroups(troupe.data, abilities(troupe.data.my_role, me.data?.is_custodian ?? false), {
+    ? troupeTabGroups(troupe.data, abilities(troupe.data.my_role, custodianOn), {
         ...counts,
         newsUnread: glance.data?.news_unread,
         announcementsUnread: glance.data?.announcements_unread,
@@ -94,13 +94,13 @@ export function TroupePage() {
   const recent = useRecentTabs(
     troupeId,
     groups.flatMap((g) => g.tabs),
-    !!troupe.data && (!troupe.data.archived || !!me.data?.is_custodian),
+    !!troupe.data && (!troupe.data.archived || custodianOn),
   );
 
   if (troupe.isPending) return <Loading />;
   if (troupe.error) return <ErrorText error={troupe.error} />;
   const t = troupe.data;
-  const can = abilities(t.my_role, me.data?.is_custodian ?? false);
+  const can = abilities(t.my_role, custodianOn);
   const base = `/troupes/${t.id}`;
   // A feature's settings are behind its tab's Settings button (#784, #909): running staff read
   // them, and its storytellers change them while the troupe is in play.

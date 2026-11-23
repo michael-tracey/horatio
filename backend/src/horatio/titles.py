@@ -55,7 +55,7 @@ from horatio.models import (
     TroupeTitle,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, troupe_role
 from horatio.rules.status import GENERAL, STATUS_CATEGORY, TitleData, titles_from
 from horatio.sheets import conflict, membership, unprocessable
 
@@ -534,9 +534,7 @@ def may_choose(
         return None
     if is_player(user, character) and (setting or setting_of(troupe)) == "players":
         return "player"
-    if allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_TITLES, is_custodian=user.is_custodian
-    ):
+    if may(user, troupe_role(db, user, troupe), TroupeAction.MANAGE_TITLES, troupe):
         return "staff"
     return None
 

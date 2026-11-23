@@ -15,7 +15,7 @@ from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import get_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import TitleHolding, Troupe, User
-from horatio.permissions import TroupeAction, allows, is_member, troupe_role
+from horatio.permissions import TroupeAction, is_member, may, troupe_role
 from horatio.sheets import unprocessable
 
 router = APIRouter(tags=["court"])
@@ -103,9 +103,7 @@ def holding_out(h: TitleHolding, clan: str | None, full: bool) -> TitleHoldingOu
 
 
 def runs(db: Session, user: User, troupe: Troupe) -> bool:
-    return allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_TITLES, is_custodian=user.is_custodian
-    )
+    return may(user, troupe_role(db, user, troupe), TroupeAction.MANAGE_TITLES, troupe)
 
 
 @router.get("/troupes/{troupe_id}/court-history")

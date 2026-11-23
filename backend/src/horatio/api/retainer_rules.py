@@ -11,7 +11,7 @@ from horatio import retainer_upkeep
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe
-from horatio.permissions import TroupeAction
+from horatio.permissions import TroupeAction, open_to
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["house rules"])
 
@@ -63,7 +63,7 @@ def rules_out(troupe: Troupe) -> RetainerRulesOut:
 def read_retainer_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> RetainerRulesOut:
     """Anyone signed in may read them, as they may the troupe's other house rules."""
     troupe = db.get(Troupe, troupe_id)
-    if troupe is None or (troupe.archived_at is not None and not user.is_custodian):
+    if troupe is None or not open_to(user, troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     return rules_out(troupe)
 

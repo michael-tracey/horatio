@@ -23,7 +23,7 @@ from horatio.models import (
     TroupeConnector,
     User,
 )
-from horatio.permissions import TroupeAction
+from horatio.permissions import TroupeAction, acting_as_custodian
 
 router = APIRouter(tags=["connectors"])
 
@@ -67,7 +67,7 @@ def connectors_out(db: DbSession, troupe_id: uuid.UUID, user: User) -> list[Conn
                 kind=kind,
                 name=connector.name,
                 unavailable=unavailable,
-                needs=list(connector.needs) if unavailable and user.is_custodian else [],
+                needs=list(connector.needs) if unavailable and acting_as_custodian(user) else [],
                 enabled=row.enabled if row else False,
                 mode=row.mode if row else "alert",  # type: ignore[arg-type]  # checked by the database
                 test_mode=row.test_mode if row else False,

@@ -37,7 +37,7 @@ from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
 from horatio.blog import may_write
 from horatio.models import BlogAuthor, BlogPost, User
 from horatio.notifications import notify
-from horatio.permissions import require_custodian
+from horatio.permissions import acting_as_custodian, require_custodian
 from horatio.sheets import conflict, unprocessable
 from horatio.titles import and_list
 
@@ -160,7 +160,8 @@ def viewable(db: Session, viewer: User | None, handle: str) -> BlogAuthor:
     author = by_handle(db, handle)
     if author is None or not (
         shown(db, author)
-        or (viewer is not None and (viewer.id == author.user_id or viewer.is_custodian))
+        or (viewer is not None and viewer.id == author.user_id)
+        or acting_as_custodian(viewer)
     ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such author.")
     return author
@@ -337,7 +338,7 @@ def read_author(handle: str, db: DbSession, user: MaybeUser) -> AuthorPage:
     return AuthorPage(
         **card(author).model_dump(),
         yours=user is not None and user.id == author.user_id,
-        can_clear=user is not None and user.is_custodian,
+        can_clear=acting_as_custodian(user),
     )
 
 

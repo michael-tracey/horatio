@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from horatio.auth import custodian_access
 from horatio.auth.sessions import user_for_token
 from horatio.auth.viewing import viewing_for
 from horatio.config import get_settings
@@ -16,13 +17,18 @@ DbSession = Annotated[Session, Depends(get_session)]
 
 def optional_user(request: Request, db: DbSession) -> User | None:
     """Who is signed in; or, while the custodian views as someone, that person
-    (horatio.auth.viewing)."""
+    (horatio.auth.viewing). Whether the custodian has custodian access on goes with
+    them for the request (horatio.auth.custodian_access)."""
     viewing = viewing_for(request, db)
     if viewing is not None:
-        return db.get_one(User, viewing.user_id)
+        person = db.get_one(User, viewing.user_id)
+        custodian_access.for_request(request, db, person)
+        return person
     token = request.cookies.get(get_settings().session_cookie_name)
     # Marks the sign-in as used now, now and then, for Account › Sign-in (#1193).
-    return user_for_token(db, token, touch=True) if token else None
+    user = user_for_token(db, token, touch=True) if token else None
+    custodian_access.for_request(request, db, user)
+    return user
 
 
 def current_user(user: Annotated[User | None, Depends(optional_user)]) -> User:

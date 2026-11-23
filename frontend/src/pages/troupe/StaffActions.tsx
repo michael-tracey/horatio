@@ -7,7 +7,7 @@ import { Dialog } from "../../components/Dialog";
 import { SectionLabel } from "../../components/Headings";
 import { useToast } from "../../components/Toast";
 import { Button, Empty, ErrorText, Input, Loading } from "../../components/ui";
-import { useAction, useMe } from "../../hooks";
+import { useAction } from "../../hooks";
 import { BadgeNote } from "../character/Badge";
 import { StatusCard } from "../character/StatusCard";
 import { EquipmentEditor } from "./EquipmentEditor";
@@ -16,6 +16,7 @@ import { MakeNpc } from "./MakeNpc";
 import { abilities } from "./roles";
 import { staffActions, type StaffAction, type Staffing } from "./staffActions";
 import { titleGroups } from "./titleGroups";
+import { useCustodianOn } from "../../custodianAccess";
 
 function useTroupe(troupeId: string) {
   return useQuery({
@@ -26,9 +27,9 @@ function useTroupe(troupeId: string) {
 
 /** Who is looking, in the troupe, for `StaffActions`: asked once for a whole list. */
 export function useStaffing(troupeId: string): Staffing {
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const troupe = useTroupe(troupeId);
-  const can = abilities(troupe.data?.my_role, me.data?.is_custodian ?? false);
+  const can = abilities(troupe.data?.my_role, custodianOn);
   return { running: can.running, storyteller: can.storyteller, archived: troupe.data?.archived ?? false };
 }
 

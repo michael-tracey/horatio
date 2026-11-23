@@ -30,7 +30,14 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.connectors import SendError, discord
 from horatio.models import Delivery, NewsAgency, Post, Troupe, User
 from horatio.notifications import notify
-from horatio.permissions import TroupeAction, allows, is_member, troupe_role
+from horatio.permissions import (
+    TroupeAction,
+    acting_as_custodian,
+    allows,
+    is_member,
+    open_to,
+    troupe_role,
+)
 
 router = APIRouter(tags=["posts"])
 
@@ -189,9 +196,9 @@ def running_troupe(db: Session, troupe_id: uuid.UUID) -> Troupe:
 
 
 def may(db: Session, user: User, troupe: Troupe, action: TroupeAction) -> bool:
-    if troupe.archived_at is not None and not user.is_custodian:
+    if not open_to(user, troupe):
         return False
-    return allows(troupe_role(db, user, troupe), action, is_custodian=user.is_custodian)
+    return allows(troupe_role(db, user, troupe), action) or acting_as_custodian(user, troupe)
 
 
 def member_troupe(db: Session, user: User, troupe_id: uuid.UUID) -> Troupe:

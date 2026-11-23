@@ -18,9 +18,9 @@ from horatio.models import Character, Troupe, User
 from horatio.nominations import is_reader
 from horatio.permissions import (
     TroupeAction,
-    allows,
     can_see_whos_who,
     lines_veils_shown_here,
+    may,
     require_troupe_action,
     troupe_role,
 )
@@ -177,13 +177,13 @@ def read_whos_who(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Who
         )
     found = whos_who.whos_who(db, troupe)
     role = troupe_role(db, user, troupe)
-    staff = allows(role, TroupeAction.MANAGE_TITLES, is_custodian=user.is_custodian)
+    staff = may(user, role, TroupeAction.MANAGE_TITLES, troupe)
     characters = {e.character.id: e.character for e in found.entries}
     entries: list[WhosWhoEntry] = []
     for e in found.entries:
         # The players are already loaded, so this asks the database nothing more.
         player = db.get_one(User, e.character.player_id) if e.character.kind == "pc" else None
-        if player is not None and lines_veils_shown_here(user, role, player):
+        if player is not None and lines_veils_shown_here(user, role, player, troupe):
             entries.append(entry_out(e, lines_veils_of(player)))
         else:
             entries.append(entry_out(e))

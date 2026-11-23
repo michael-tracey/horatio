@@ -39,7 +39,7 @@ from horatio.models import (
     TroupeStaff,
     User,
 )
-from horatio.permissions import troupe_role
+from horatio.permissions import acting_as_custodian, troupe_role
 from horatio.sheets import conflict, unprocessable
 
 # The most a nomination may say: a line or two usually, a paragraph at most.
@@ -483,12 +483,14 @@ def tell_those_named(
 def is_reader(db: Session, user: User, troupe: Troupe) -> bool:
     """One of the troupe's readers: its staff and its players, those with an active
     character at home there; and the custodian."""
-    if user.is_custodian:
-        return True
     if troupe.archived_at is not None:
-        return False
+        return acting_as_custodian(user, troupe)
     if troupe_role(db, user, troupe) is not None:
         return True
+    return _plays_at_home(db, user, troupe) or acting_as_custodian(user, troupe)
+
+
+def _plays_at_home(db: Session, user: User, troupe: Troupe) -> bool:
     return bool(
         db.scalar(
             select(

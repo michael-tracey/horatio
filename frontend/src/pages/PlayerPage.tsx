@@ -9,11 +9,13 @@ import { useDates } from "../dates";
 import { useMe } from "../hooks";
 import { ResetPassword } from "./custodian/ResetPassword";
 import { memberSince } from "./players";
+import { useCustodianOn } from "../custodianAccess";
 
 /** Who a player is: anyone signed in may look. The custodian can also make a reset link here. */
 export function PlayerPage() {
   const { userId = "" } = useParams();
   const me = useMe();
+  const custodianOn = useCustodianOn();
   const dates = useDates();
   const player = useQuery({
     queryKey: ["player", userId],
@@ -49,7 +51,7 @@ export function PlayerPage() {
         </div>
         <div className="flex flex-col gap-6">
           <Contact player={p} />
-          {me.data?.is_custodian && !mine && (
+          {custodianOn && !mine && (
             <Card title="Password">
               <ResetPassword player={p} />
             </Card>

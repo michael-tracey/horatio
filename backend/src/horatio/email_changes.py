@@ -33,6 +33,7 @@ from horatio.config import get_settings
 from horatio.connectors import SendError, email
 from horatio.email_design import Body, compose
 from horatio.models import EmailChange, User
+from horatio.permissions import acting_as_custodian
 
 CHANGE_DAYS = 7
 
@@ -78,7 +79,7 @@ def refuse_taken(db: Session, address: str, user: User, by: User) -> None:
     other = taken(db, address, user)
     if other is None:
         return
-    if by.is_custodian and by.id != user.id:
+    if by.id != user.id and acting_as_custodian(by):
         detail = (
             f"{other.display_name} (@{other.handle}) uses {address} already. If both "
             "accounts are the same person's, merge them instead."

@@ -33,8 +33,9 @@ from horatio.models import (
 )
 from horatio.permissions import (
     TroupeAction,
-    allows,
     can_edit_character,
+    may,
+    open_to,
     require_troupe_action,
     troupe_role,
     visible_character,
@@ -910,10 +911,10 @@ def home_troupe_awarding(db: DbSession, user: User, character: Character) -> Tro
     if character.home_troupe_id is None:
         return None
     troupe = db.get_one(Troupe, character.home_troupe_id)
-    if troupe.archived_at is not None and not user.is_custodian:
+    if not open_to(user, troupe):
         return None
     role = troupe_role(db, user, troupe)
-    return troupe if allows(role, TroupeAction.AWARD_XP, is_custodian=user.is_custodian) else None
+    return troupe if may(user, role, TroupeAction.AWARD_XP, troupe) else None
 
 
 @router.get("/xp")

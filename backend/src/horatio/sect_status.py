@@ -88,7 +88,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, acting_as_custodian, allows, troupe_role
 from horatio.renames import add_months
 from horatio.rules.checks import matches
 from horatio.rules.model import RuleSetData, SheetTrait
@@ -930,13 +930,13 @@ def setting_of(troupe: Troupe | None) -> str:
 def staff_in(db: Session, user: User, character: Character, troupe: Troupe | None) -> bool:
     """The custodian, or the running staff of a troupe the character is in (or that
     keeps it, for an NPC)."""
-    if user.is_custodian:
-        return True
     if troupe is None or troupe.archived_at is not None:
-        return False
+        return acting_as_custodian(user, troupe, character=character)
     if character.owner_troupe_id != troupe.id and membership(db, character, troupe.id) is None:
-        return False
-    return allows(troupe_role(db, user, troupe), TroupeAction.CHANGE_STATUS)
+        return acting_as_custodian(user, character=character)
+    return allows(troupe_role(db, user, troupe), TroupeAction.CHANGE_STATUS) or acting_as_custodian(
+        user, troupe
+    )
 
 
 def is_player(user: User, character: Character) -> bool:

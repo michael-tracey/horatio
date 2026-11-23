@@ -60,7 +60,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, allows, troupe_role
+from horatio.permissions import TroupeAction, may, open_to, troupe_role
 from horatio.rules.feeding import clan_family
 from horatio.sheets import conflict, membership, memberships, unprocessable
 
@@ -119,10 +119,8 @@ def set_setting(db: Session, user: User, troupe: Troupe, setting: str) -> None:
 
 def can_manage(db: Session, user: User, troupe: Troupe) -> bool:
     """The troupe's running staff, and the custodian: they see all its bonds."""
-    if troupe.archived_at is not None and not user.is_custodian:
-        return False
-    return allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_BONDS, is_custodian=user.is_custodian
+    return open_to(user, troupe) and may(
+        user, troupe_role(db, user, troupe), TroupeAction.MANAGE_BONDS, troupe
     )
 
 

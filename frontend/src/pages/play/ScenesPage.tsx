@@ -7,12 +7,12 @@ import { atGameCrumbs, Breadcrumb } from "../../components/Breadcrumb";
 import { DateInput } from "../../components/DateInput";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading, Notice } from "../../components/ui";
 import { useDates } from "../../dates";
-import { useMe } from "../../hooks";
 import { abilities } from "../troupe/roles";
 import { SaveDeviceScene } from "./DeviceScene";
 import { useOnline } from "../../offline/connection";
 import { KeepScenes, NeedsSignal, ScenesStrip } from "../../offline/KeepScenes";
 import { useTitle } from "../../title";
+import { useCustodianOn } from "../../custodianAccess";
 
 // How often to look for scenes other staff made or changed, as the Play View does.
 export const SCENE_REFRESH = 15_000;
@@ -57,7 +57,7 @@ export function useSceneChanges(troupeId: string) {
 export function ScenesPage() {
   const { troupeId = "" } = useParams();
   const navigate = useNavigate();
-  const me = useMe();
+  const custodianOn = useCustodianOn();
   const [mine, setMine] = useState(true);
   const troupe = useQuery({
     queryKey: ["troupe", troupeId],
@@ -70,7 +70,7 @@ export function ScenesPage() {
     refetchOnWindowFocus: true,
   });
   const changes = useSceneChanges(troupeId);
-  const lead = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).lead : false;
+  const lead = troupe.data ? abilities(troupe.data.my_role, custodianOn).lead : false;
   // With no signal, kept scenes open, but making, renaming and removing them wait for it (#503).
   const online = useOnline();
   useTitle(troupe.data ? `Scenes · ${troupe.data.name}` : "Scenes");

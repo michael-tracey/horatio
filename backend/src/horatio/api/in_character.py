@@ -26,7 +26,7 @@ from horatio.connectors import SendError, discord
 from horatio.models import Character, InCharacterMessage, Troupe, User
 from horatio.permissions import (
     TroupeAction,
-    allows,
+    may,
     require_troupe_action,
     troupe_role,
     visible_character,
@@ -172,11 +172,7 @@ def in_character_channel(
         unavailable=unavailable,
         channels=channels,
         channel=in_character.chosen_channel(settings),
-        can_change=allows(
-            troupe_role(db, user, troupe),
-            TroupeAction.MANAGE_CONNECTORS,
-            is_custodian=user.is_custodian,
-        ),
+        can_change=may(user, troupe_role(db, user, troupe), TroupeAction.MANAGE_CONNECTORS, troupe),
     )
 
 
@@ -266,10 +262,8 @@ def npc_in_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) 
         and npc.status == "active"
         and troupe.archived_at is None,
         channel_link=in_character.link(settings.get("guild_id"), channel) if channel else None,
-        can_choose_channel=allows(
-            troupe_role(db, user, troupe),
-            TroupeAction.MANAGE_CONNECTORS,
-            is_custodian=user.is_custodian,
+        can_choose_channel=may(
+            user, troupe_role(db, user, troupe), TroupeAction.MANAGE_CONNECTORS, troupe
         ),
         messages=messages_out(db, troupe, found[:RECENT]),
         older=len(found) > RECENT,
