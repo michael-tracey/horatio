@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PlayReference } from "../../api/types";
-import { PoolRow, SheetTab } from "./ReferenceTabs";
+import { PoolRow, SheetTab, Weaknesses } from "./ReferenceTabs";
 
 afterEach(cleanup);
 
@@ -145,6 +145,28 @@ describe("SheetTab", () => {
     sheet();
     expect(screen.queryByText("Loner")).toBeNull();
     expect(screen.queryByRole("heading", { name: "Archetype" })).toBeNull();
+  });
+});
+
+describe("Weaknesses (#1197)", () => {
+  const line = (more: Partial<PlayReference["weaknesses"][number]>) => ({ name: "Brujah weakness", clan: "Brujah", text: "Quick to rage.", page: "45", notes: [], uses: [], ...more });
+
+  it("gives each weakness carried, its page, the book the troupe plays and what brought it", () => {
+    const weaknesses = [line({ book: "Core book" }), line({ name: "True Brujah weakness", clan: "Brujah: True Brujah", text: "They feel little.", via: "Brujah: Coldly Logical", notes: ["No Empathy."] })];
+    render(<Weaknesses reference={{ ...reference, weaknesses }} />);
+    expect(screen.getByRole("heading", { name: "Clan weaknesses" })).toBeTruthy();
+    expect(document.body.textContent).toContain("Brujah weakness · Core book's, as this troupe plays it");
+    expect(document.body.textContent).toContain("Quick to rage. (MET: VTM p. 45)");
+    expect(document.body.textContent).toContain("True Brujah weakness from Brujah: Coldly Logical");
+    expect(document.body.textContent).toContain("No Empathy.");
+  });
+
+  it("tells a Golconda Seeker they're free of it, and says nothing for a clan with none", () => {
+    render(<Weaknesses reference={{ ...reference, weaknesses: [], weakness_freed_by: "Golconda Seeker" }} />);
+    expect(document.body.textContent).toContain("Golconda Seeker frees you of your clan weakness while your Humanity is 5 or more (MET: VTM pp. 249-250).");
+    cleanup();
+    const { container } = render(<Weaknesses reference={reference} />);
+    expect(container.textContent).toBe("");
   });
 });
 

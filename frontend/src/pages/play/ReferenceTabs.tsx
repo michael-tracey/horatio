@@ -352,6 +352,55 @@ function OtherTests({
   );
 }
 
+/**
+ * The clan weaknesses the character carries (#1197), each with its line and page: the
+ * book's, where the troupe chose between two; the trait it comes by, where it isn't
+ * the clan's own (Coldly Logical's True Brujah weakness); what Horatio can't work out;
+ * and its uses, as buttons (the Toreador's Willpower to look away). What each changes
+ * in a pool or in frenzy is there, labelled with it. A Golconda Seeker freed of it is
+ * told so. A view kept on the phone from before has neither.
+ */
+export function Weaknesses({ reference, using }: { reference: PlayReference; using?: Using }) {
+  const named = useClanName();
+  const weaknesses = reference.weaknesses ?? [];
+  if (!weaknesses.length && !reference.weakness_freed_by) return null;
+  return (
+    <Panel title={weaknesses.length > 1 ? "Clan weaknesses" : "Clan weakness"}>
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {weaknesses.map((w) => (
+          <li key={w.clan}>
+            <p>
+              <strong className="font-semibold">{named(w.name.charAt(0).toUpperCase() + w.name.slice(1))}</strong>
+              {w.via && <span className="text-xs text-mist"> from {named(w.via)}</span>}
+              {w.book && <span className="text-xs text-mist"> · {w.book}'s, as this troupe plays it</span>}
+            </p>
+            <p className="text-mist">
+              {named(w.text)}
+              {pageLabel(w.page) && (
+                <span className="whitespace-nowrap text-xs">
+                  {" "}
+                  (<PageRef page={w.page} />)
+                </span>
+              )}
+            </p>
+            {w.notes.map((n) => (
+              <p key={n} className="text-xs text-mist">
+                {named(n)}
+              </p>
+            ))}
+            {using && <UseEffects costed={{ name: w.name, uses: w.uses }} view={using.view} use={using.use} online={using.online} />}
+          </li>
+        ))}
+        {reference.weakness_freed_by && (
+          <li className="text-mist">
+            {reference.weakness_freed_by} frees you of your clan weakness while your Humanity is 5 or more (<PageRef page="249-250" />).
+          </li>
+        )}
+      </ul>
+    </Panel>
+  );
+}
+
 /** Using a power from the Pools tab: the Play View as it stands, and the taps (issue #370). */
 export type Using = { view: Parameters<typeof UseEffects>[0]["view"]; use: UseTaps; online?: boolean };
 
@@ -447,6 +496,7 @@ export function PoolsTab({
           ),
         )}
       </div>
+      <Weaknesses reference={reference} using={using} />
       {reference.notes.length > 0 && (
         <Panel title="Also">
           <ul className="list-disc pl-5 text-sm text-mist">

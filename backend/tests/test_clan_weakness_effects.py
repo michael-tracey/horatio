@@ -15,6 +15,7 @@ from horatio import clan_weaknesses
 from horatio.reference import (
     Sheet,
     frenzy,
+    pools,
     technique_bases,
     weakness_lines,
     work_out,
@@ -127,6 +128,98 @@ def test_brujah_frenzy_is_harder_or_counts_beast_traits_as_the_troupe_plays_it()
     assert resist.against == []
     assert [(p.label, p.value) for p in resist.beast] == [("Brujah weakness", 2)]
     assert resist.notes[0].startswith("Brujah weakness: 2 more Beast traits for frenzy only")
+
+
+def test_bratovitch_count_a_beast_trait_more_and_gangrel_grow_features() -> None:
+    bratovitch, done = worked(sheet("Tzimisce: Bratovitch"))
+    resist = frenzy(bratovitch, done.effects)
+    assert [(p.label, p.value) for p in resist.beast] == [("Bratovitch weakness", 1)]
+    # Said in the Frenzy panel, not under Also.
+    assert "never for losing Morality" in resist.notes[0]
+
+    anda, done = worked(sheet("Gangrel: Anda"))
+    assert frenzy(anda, done.effects).notes == [
+        "Gangrel weakness: each frenzy gives you another animal feature, until you next"
+        " sleep for a day."
+    ]
+
+
+def test_an_assamite_switches_on_tasted_vampire_blood() -> None:
+    assamite, done = worked(sheet("Assamite"))
+    (tasted,) = [s for s in done.switches if s.key == "Tasted vampire blood"]
+    assert (tasted.origin, tasted.page) == ("Assamite weakness", "p. 44")
+    assert "Frenzy resisted as if with 2 Beast traits more" in tasted.changes
+    assert any("diablerize" in n for n in tasted.notes)
+    resist = frenzy(assamite, done.effects)
+    assert resist.beast == []
+    assert [(p.switch, p.label, p.value) for p in resist.switched_beast] == [
+        ("Tasted vampire blood", "Assamite weakness", 2)
+    ]
+    # A Sorcerer has its own weakness instead (p. 45), so no switch.
+    _, done = worked(sheet("Assamite: Sorcerer"))
+    assert not any(s.key == "Tasted vampire blood" for s in done.switches)
+
+
+def pool_of(found: list[Any], key: str) -> Any:
+    return next(p for p in found if p.key == key)
+
+
+def test_pool_penalties_name_the_weakness() -> None:
+    traits = sheet(
+        "Daughters of Cacophony",
+        ("attributes", "Mental", 4),
+        ("skills", "Investigation", 2),
+    )
+    daughter, done = worked(traits)
+    investigation = pool_of(pools(daughter, done.effects), "skill:Investigation")
+    assert [(p.label, p.value) for p in investigation.parts][-1] == (
+        "Daughters of Cacophony weakness",
+        -2,
+    )
+    assert investigation.total == 4 + 2 - 2
+
+    gargoyle, done = worked(sheet("Gargoyles", ("attributes", "Mental", 3)))
+    mental = pool_of(pools(gargoyle, done.effects), "defense:Mental")
+    assert mental.total == 3
+    assert [(v.when, v.total) for v in mental.variants] == [("Against Dominate", 1)]
+
+    ishtarri, done = worked(sheet("Toreador: Ishtarri", ("attributes", "Social", 3)))
+    social = pool_of(pools(ishtarri, done.effects), "defense:Social")
+    assert [(v.when, v.total) for v in social.variants] == [
+        ("Against Presence and other powers over emotion", 1)
+    ]
+
+    tzimisce, done = worked(sheet("Tzimisce", ("attributes", "Physical", 4)))
+    brawl = pool_of(pools(tzimisce, done.effects), "attack:Brawl")
+    assert [(v.when, v.total) for v in brawl.variants] == [
+        ("For each day without your native soil (to -5)", 3)
+    ]
+
+
+def test_every_pool_reminders_and_notes() -> None:
+    from horatio.reference import other_notes
+
+    lhiannan, done = worked(sheet("Lhiannan"))
+    assert (
+        "Lhiannan weakness: -1 to every pool for each night in a city, until a night in the wild"
+        in (other_notes(done.effects))
+    )
+    (line,) = weakness_lines(lhiannan)
+    assert (line.name, line.page, line.book) == ("Lhiannan weakness", "Vol. 2, p. 53", None)
+    assert "difficulties against you are 2 lower" in line.notes[0]
+
+    _, done = worked(sheet("Nagaraja"))
+    assert "Nagaraja weakness: -1 to every pool for each night without human flesh" in (
+        other_notes(done.effects)
+    )
+
+
+def test_a_toreador_spends_willpower_to_look_away() -> None:
+    toreador, _ = worked(sheet("Toreador"))
+    (line,) = weakness_lines(toreador)
+    (use,) = line.uses
+    assert (use.label, use.spends, use.page) == ("Resist beauty", True, "p. 61")
+    assert use.cost is not None and (use.cost.tracker, use.cost.amount) == ("willpower", 1)
 
 
 def test_the_weakness_lines_say_which_book_and_what_brought_it() -> None:

@@ -587,7 +587,7 @@ scheme = "free"
 category = "clan"
 name = "Assamite"
 page_reference = "42"
-properties = { in_clan = ["Celerity", "Obfuscate", "Quietus"], weakness = "Vampire blood is addictive: drinking it gives 2 Beast traits for 10 minutes, and a frenzy then turns to diablerie.", weakness_page = "44" }
+properties = { in_clan = ["Celerity", "Obfuscate", "Quietus"], weakness = "Vampire blood is addictive: drinking it gives 2 Beast traits for 10 minutes, and a frenzy then turns to diablerie.", weakness_page = "44", weakness_effects = { active = { key = "Tasted vampire blood", name = "Assamite weakness: tasted vampire blood", page = 44, notes = ["2 Beast traits for 10 minutes, for frenzy only: they never count towards losing Morality.", "A frenzy now turns on the last vampire whose blood you tasted: you try to diablerize them."] }, pools = [{ pool = "frenzy", beast = 2, when = "Tasted vampire blood" }] } }
 
 [[traits]]
 category = "clan"
@@ -654,7 +654,7 @@ properties = { in_clan = ["Fortitude", "Obfuscate", "Thanatosis"] }
 category = "clan"
 name = "Daughters of Cacophony"
 page_reference = "80"
-properties = { in_clan = ["Fortitude", "Melpominee", "Presence"], weakness = "Music always plays in their heads: -2 to Investigation tests.", weakness_page = "80" }
+properties = { in_clan = ["Fortitude", "Melpominee", "Presence"], weakness = "Music always plays in their heads: -2 to Investigation tests.", weakness_page = "80", weakness_effects = { pools = [{ pool = "skill:Investigation", amount = -2 }] } }
 
 [[traits]]
 category = "clan"
@@ -678,7 +678,7 @@ properties = { in_clan = ["Potence", "Presence", "Serpentis"] }
 category = "clan"
 name = "Gangrel"
 page_reference = "49"
-properties = { in_clan = ["Animalism", "Fortitude", "Protean"], weakness = "One animal feature for good, and another, until they next sleep, each time they frenzy.", weakness_page = "49" }
+properties = { in_clan = ["Animalism", "Fortitude", "Protean"], weakness = "One animal feature for good, and another, until they next sleep, each time they frenzy.", weakness_page = "49", weakness_effects = { pools = [{ pool = "frenzy", note = "each frenzy gives you another animal feature, until you next sleep for a day." }] } }
 
 [[traits]]
 category = "clan"
@@ -708,7 +708,7 @@ properties = { in_clan = ["Animalism", "Auspex", "Protean"] }
 category = "clan"
 name = "Gargoyles"
 page_reference = "80"
-properties = { in_clan = ["Fortitude", "Potence", "Visceratika"], weakness = "Monstrous, so they can't pass for human without powers, and -2 to resist Dominate.", weakness_page = "81" }
+properties = { in_clan = ["Fortitude", "Potence", "Visceratika"], weakness = "Monstrous, so they can't pass for human without powers, and -2 to resist Dominate.", weakness_page = "81", weakness_effects = { pools = [{ pool = "defense:Mental", amount = -2, when = "against Dominate" }] } }
 
 [[traits]]
 category = "clan"
@@ -745,7 +745,7 @@ properties = { in_clan = ["Dominate", "Mytherceria", "Obtenebration"], weakness 
 category = "clan"
 name = "Lhiannan"
 page_reference = "Vol. 2, p. 50"
-properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Green Path"], weakness = "Easier to see for what they are (-2 to Auspex difficulties), and -1 to all tests for each night in a city, until a night in the wild.", weakness_page = "Vol. 2, p. 53" }
+properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Green Path"], weakness = "Easier to see for what they are (-2 to Auspex difficulties), and -1 to all tests for each night in a city, until a night in the wild.", weakness_page = "Vol. 2, p. 53", weakness_effects = { pools = [{ pool = "all", amount = -1, when = "for each night in a city, until a night in the wild" }], notes = ["Auspex and powers like it find what you are more easily: their difficulties against you are 2 lower."] } }
 
 [[traits]]
 category = "clan"
@@ -770,7 +770,7 @@ properties = { in_clan = ["Auspex", "Dominate", "Obfuscate"] }
 category = "clan"
 name = "Nagaraja"
 page_reference = "Vol. 2, p. 57"
-properties = { in_clan = ["Auspex", "Dominate", "Necromancy: Ash Path"], weakness = "Must eat human flesh too: -1 to all tests for each night without it, and no Herd.", weakness_page = "Vol. 2, p. 60" }
+properties = { in_clan = ["Auspex", "Dominate", "Necromancy: Ash Path"], weakness = "Must eat human flesh too: -1 to all tests for each night without it, and no Herd.", weakness_page = "Vol. 2, p. 60", weakness_effects = { pools = [{ pool = "all", amount = -1, when = "for each night without human flesh" }] } }
 
 [[traits]]
 category = "clan"
@@ -812,13 +812,13 @@ properties = { in_clan = ["Auspex", "Fortitude", "Obeah"], weakness = "Instead o
 category = "clan"
 name = "Toreador"
 page_reference = "60"
-properties = { in_clan = ["Auspex", "Celerity", "Presence"], weakness = "Caught by beauty: something beautiful or new holds them for a scene, unless they spend 1 Willpower.", weakness_page = "61" }
+properties = { in_clan = ["Auspex", "Celerity", "Presence"], weakness = "Caught by beauty: something beautiful or new holds them for a scene, unless they spend 1 Willpower.", weakness_page = "61", weakness_effects = { use = [{ label = "Resist beauty", cost = { willpower = 1 }, spends = true, note = "Something beautiful or new holds you for a scene unless you spend 1 Willpower.", page = 61 }] } }
 
 [[traits]]
 category = "clan"
 name = "Toreador: Ishtarri"
 page_reference = "61"
-properties = { in_clan = ["Celerity", "Fortitude", "Presence"], weakness = "Instead of the Toreador weakness, -2 to resist powers over emotion, such as Presence.", weakness_page = "61" }
+properties = { in_clan = ["Celerity", "Fortitude", "Presence"], weakness = "Instead of the Toreador weakness, -2 to resist powers over emotion, such as Presence.", weakness_page = "61", weakness_effects = { pools = [{ pool = "defense:Social", amount = -2, when = "against Presence and other powers over emotion" }] } }
 
 [[traits]]
 category = "clan"
@@ -842,13 +842,13 @@ properties = { in_clan = ["Auspex", "Presence", "Thaumaturgy: Path of Blood"] }
 category = "clan"
 name = "Tzimisce"
 page_reference = "64"
-properties = { in_clan = ["Animalism", "Auspex", "Vicissitude"], weakness = "Must rest by two handfuls of their native soil: each day without costs -1 to attacks, up to -5.", weakness_page = "65" }
+properties = { in_clan = ["Animalism", "Auspex", "Vicissitude"], weakness = "Must rest by two handfuls of their native soil: each day without costs -1 to attacks, up to -5.", weakness_page = "65", weakness_effects = { pools = [{ pool = "attack", amount = -1, when = "for each day without your native soil (to -5)" }] } }
 
 [[traits]]
 category = "clan"
 name = "Tzimisce: Bratovitch"
 page_reference = "Vol. 2, p. 36"
-properties = { in_clan = ["Animalism", "Potence", "Vicissitude"], weakness = "Counted as having 1 more Beast trait when testing for frenzy, and for powers that count Beast traits.", weakness_page = "Vol. 2, p. 37" }
+properties = { in_clan = ["Animalism", "Potence", "Vicissitude"], weakness = "Counted as having 1 more Beast trait when testing for frenzy, and for powers that count Beast traits.", weakness_page = "Vol. 2, p. 37", weakness_effects = { pools = [{ pool = "frenzy", beast = 1, note = "1 more Beast trait for frenzy, and for powers that count Beast traits; never for losing Morality." }] } }
 
 [[traits]]
 category = "clan"
