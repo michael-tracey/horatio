@@ -2420,13 +2420,14 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
   await gain.click();
   const foothold = p.getByRole("note", { name: "The Beast has a foothold" });
   await expect(foothold).toContainText("You can frenzy now.");
-  await expect(foothold).toContainText("against 11");
+  // A Brujah resists 2 harder, by the core book's weakness (p. 45; #1197).
+  await expect(foothold).toContainText("against 13");
   // Once there is a Beast trait, the player's own numbers show even with the panel closed (issue #371).
-  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 11`);
-  await expect(frenzyPanel).toContainText(`Mental 4 + Willpower ${willpower}, against 10 + Beast traits 1`);
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 13`);
+  await expect(frenzyPanel).toContainText(`Mental 4 + Willpower ${willpower}, against 10 + Beast traits 1 + Brujah weakness 2`);
   // They follow Willpower.
   await p.getByRole("button", { name: "Spend Willpower", exact: true }).first().click();
-  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${3 + willpower} against 11`);
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${3 + willpower} against 13`);
   await p.getByRole("button", { name: "Restore Willpower", exact: true }).first().click();
   await expect(foothold).toContainText("MET: VtM core, pp. 301–302; Vol. II Issue 1 update, pp. 97–98");
   await gain.click();
@@ -2451,7 +2452,7 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
   await expect(p.getByRole("heading", { name: /Riding the wave/ })).toBeVisible();
   await expect(p.getByText("Fear ends once you've escaped and hidden quietly for 10 minutes.", { exact: false })).toBeVisible();
   // Resisting has them too, at five Beast traits.
-  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 15`);
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 17`);
   await p.screenshot(shots("play-frenzy"));
   await frenzy.click();
   await expect(frenzy).toHaveAttribute("aria-expanded", "false");

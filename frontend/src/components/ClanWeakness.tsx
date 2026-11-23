@@ -10,8 +10,9 @@ export const hasWeakness = (trait: Weakened | undefined | null) => !!(trait?.wea
 
 /**
  * A clan's weakness, with the book's page: the one the troupe plays (#1127). Where the
- * weakness varies by troupe (the Tremere's: Volume 2 replaced the core book's, and each
- * troupe chooses) and there is no troupe, it says so and gives each, with its page.
+ * weakness varies by troupe (the Tremere's, which Volume 2 replaced, and the Brujah's,
+ * which Volume 2 reads otherwise: each troupe chooses, #1197) and there is no troupe, it
+ * says so and gives each, with its page, the default first.
  * Spans throughout, so it sits in a popover as well as a paragraph. `page` is how a page
  * is shown: "(p. 45)" in gold, or " p. 45" as the rules page has it.
  */

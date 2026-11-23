@@ -26,10 +26,13 @@ export function weaknessChangeText(clan: string, book: Book): string {
 }
 
 /**
- * Which weakness the troupe plays for each clan whose weakness a later book replaced (#1127):
- * the Tremere's, which Volume 2 changed (Vol. 2, p. 22). Volume 2's is the default, so a
- * troupe that never chooses goes on as before. Its bloodlines play as it does. What the
- * troupe's characters, creation and rules pages show follows at once.
+ * Which weakness the troupe plays for each clan the books differ on (#1127, #1197): the
+ * Tremere's, which Volume 2 replaced (Vol. 2, p. 22), with Volume 2's the default, and the
+ * Brujah's, which Volume 2's Lash Out reads as Beast traits counted (Vol. 2, p. 121), with
+ * the core book's the default. Each default is what Horatio played before there was a
+ * choice, so a troupe that never chooses goes on as before. Its bloodlines play as it
+ * does. What the troupe's characters, creation, rules pages and Play View show and work
+ * out follows at once.
  */
 export function ClanWeaknesses({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
@@ -64,7 +67,7 @@ export function ClanWeaknesses({ troupeId, canEdit }: { troupeId: string; canEdi
                 label: (
                   <>
                     {v.label}'s
-                    {v.book === "vol2" && <span className="text-mist"> (the default)</span>}
+                    {v.book === row.default && <span className="text-mist"> (the default)</span>}
                   </>
                 ),
                 hint: versionText(v),

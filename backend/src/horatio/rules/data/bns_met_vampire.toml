@@ -618,7 +618,7 @@ properties = { in_clan = ["Daimoinon", "Dominate"], choices = ["Potence", "Prese
 category = "clan"
 name = "Brujah"
 page_reference = "45"
-properties = { in_clan = ["Celerity", "Potence", "Presence"], weakness = "Quick to rage: resisting frenzy is 2 harder.", weakness_page = "45" }
+properties = { in_clan = ["Celerity", "Potence", "Presence"], weakness = "Quick to rage: counted as having 2 more Beast traits for frenzy, so they test sooner as well as harder.", weakness_page = "Vol. 2, p. 121", core_weakness = "Quick to rage: resisting frenzy is 2 harder.", core_weakness_page = "45", weakness_default = "core", weakness_effects = { pools = [{ pool = "frenzy", beast = 2, note = "2 more Beast traits for frenzy only, so you test sooner as well as harder; never for losing Morality." }] }, core_weakness_effects = { pools = [{ pool = "frenzy", difficulty = 2 }] } }
 
 [[traits]]
 category = "clan"

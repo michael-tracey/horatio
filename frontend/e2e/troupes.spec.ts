@@ -1470,7 +1470,7 @@ test("staff call the clan Banu Haqim or Assamite, and the sheet and the rules fo
   await expect(entry("Assamite: Vizier")).toBeVisible();
 });
 
-test("staff choose the core book's Tremere weakness, and the troupe's rules follow; with no troupe the rules give both (#1127)", async ({ browser }) => {
+test("staff choose the core book's Tremere weakness and Volume 2's Brujah, and the troupe's rules follow; with no troupe the rules give both (#1127, #1197)", async ({ browser }) => {
   const custodian = await person(browser, "weakness-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "weakness-lead");
@@ -1495,16 +1495,26 @@ test("staff choose the core book's Tremere weakness, and the troupe's rules foll
   // The lead chooses the core book's, in Settings.
   await settingsPart(l, troupeId, "blood");
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Clan weaknesses" }) });
-  await expect(card.getByRole("radio", { name: /^Volume 2's/ })).toBeChecked();
-  await card.getByRole("radio", { name: /^Core book's/ }).click();
+  const tremereChoice = card.getByRole("radiogroup", { name: "The Tremere weakness" });
+  await expect(tremereChoice.getByRole("radio", { name: /^Volume 2's \(the default\)/ })).toBeChecked();
+  await tremereChoice.getByRole("radio", { name: /^Core book's/ }).click();
   await expect(l.getByText("The Tremere here play by the core book's weakness now.")).toBeVisible();
-  await expect(card.getByRole("radio", { name: /^Core book's/ })).toBeChecked();
+  await expect(tremereChoice.getByRole("radio", { name: /^Core book's/ })).toBeChecked();
+  // The Brujah play the core book's by default (#1197); the lead takes Volume 2's reading.
+  const brujahChoice = card.getByRole("radiogroup", { name: "The Brujah weakness" });
+  await expect(brujahChoice.getByRole("radio", { name: /^Core book's \(the default\)/ })).toBeChecked();
+  await brujahChoice.getByRole("radio", { name: /^Volume 2's/ }).click();
+  await expect(l.getByText("The Brujah here play by Volume 2's weakness now.")).toBeVisible();
+  await expect(tremereChoice.getByRole("radio", { name: /^Core book's/ })).toBeChecked();
 
   // The troupe's rules follow at once.
   await l.goto(`/rules?troupe=${troupeId}`);
   await search.fill("tremere");
   await expect(tremere).toContainText("Weakness: Easily bound: their first drink of another vampire's blood counts as two, so a second binds them fully. p. 64");
   await expect(tremere).not.toContainText("varies by troupe");
+  await search.fill("brujah");
+  const brujah = l.getByTestId("rules-entry").filter({ has: l.getByRole("heading", { name: "Brujah", exact: true }) });
+  await expect(brujah).toContainText("Weakness: Quick to rage: counted as having 2 more Beast traits for frenzy, so they test sooner as well as harder. Vol. 2, p. 121");
 });
 
 test("a lead makes Soul Shard a general flaw on the Book traits page, and a player finds it among the general flaws (#436)", async ({ browser }) => {
