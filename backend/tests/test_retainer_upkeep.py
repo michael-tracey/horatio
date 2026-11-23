@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from horatio import downtimes
@@ -347,6 +347,42 @@ def test_a_months_upkeep_as_a_downtime_cost_is_charged_once_a_calendar_month(
         f"Retainer upkeep: −2 Blood ({MARTA}, Pike)",
         f"Retainer upkeep: −2 Blood ({MARTA}, Pike)",
     ]
+
+
+def test_the_month_a_cycle_closes_in_is_the_troupes(
+    troupe: Troupe, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A cycle closing at 11 pm on 31 October in New York closes in October there
+    (#1215), though it is 1 November in UTC, where a troupe with no zone counts it."""
+    character_id = with_both(troupe)
+    set_rules(troupe, upkeep=MONTHLY)
+    late_on_the_31st = datetime(2026, 11, 1, 3, 0, tzinfo=UTC)
+
+    def close_at(at: datetime) -> None:
+        cycle = open_cycle(troupe, new_cycle(troupe))
+        with monkeypatch.context() as patched:
+            patched.setattr(downtimes, "now", lambda: at)
+            close(troupe, cycle)
+
+    def months() -> list[str]:
+        return [c["month"] for c in kept_charges(session, character_id)]
+
+    close_at(late_on_the_31st - timedelta(days=1))
+    close_at(late_on_the_31st)
+    assert months() == ["2026-10-01", "2026-11-01"]
+
+    zoned = troupe.storyteller.client.patch(
+        f"/troupes/{troupe.id}", json={"time_zone": "America/New_York"}
+    )
+    assert zoned.status_code == 200, zoned.text
+    session.execute(update(Character).values(upkeep_next_game=None))
+    session.commit()
+    close_at(late_on_the_31st - timedelta(days=1))
+    close_at(late_on_the_31st)
+    assert months() == ["2026-10-01"]
+    # November begins there at 4 am UTC.
+    close_at(late_on_the_31st + timedelta(hours=1))
+    assert months() == ["2026-10-01", "2026-11-01"]
 
 
 def test_a_months_upkeep_taken_at_a_game_is_not_charged_again_that_month(

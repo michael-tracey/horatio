@@ -37,12 +37,12 @@ whose regnant's player made the Retainer a ghoul themself.
 
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
-from horatio import bonds
+from horatio import bonds, troupe_zones
 from horatio.models import BloodBond, BondEntry, Character, Embrace, Retainer, Troupe, User
 from horatio.rules.splats import SPLATS
 
@@ -106,8 +106,9 @@ def is_ghoul(character: Character) -> bool:
     return SPLATS[character.splat].has_domitor
 
 
-def day_of(moment: datetime) -> date:
-    return moment.astimezone(UTC).date()
+def day_of(troupe: Troupe, moment: datetime) -> date:
+    """The night of a moment, on the troupe's clock (horatio.bonds)."""
+    return troupe_zones.rule_day(troupe, moment)
 
 
 def wanted(db: Session, troupe: Troupe, known: Known) -> bool:
@@ -138,7 +139,7 @@ def add(db: Session, user: User, troupe: Troupe, known: Known) -> BloodBond | No
         BondEntry(
             bond_id=bond.id,
             kind="entered",
-            night=min(known.night, bonds.today()),
+            night=min(known.night, bonds.today(troupe)),
             source="staff",
             level=known.level,
             note=known.reason,
@@ -189,7 +190,7 @@ def sire_known(db: Session, troupe: Troupe, childe: Character) -> Known | None:
         SIRE,
         side(db, troupe, childe, ""),
         side(db, troupe, sire, childe.sire_name),
-        day_of(childe.created_at),
+        day_of(troupe, childe.created_at),
     )
 
 
@@ -202,7 +203,7 @@ def domitor_known(db: Session, troupe: Troupe, ghoul: Character) -> Known | None
         DOMITOR,
         side(db, troupe, ghoul, ""),
         side(db, troupe, domitor, ghoul.domitor_name),
-        bonds.today(),
+        bonds.today(troupe),
     )
 
 
@@ -242,7 +243,7 @@ def retainer_known(db: Session, troupe: Troupe, owner: Character, row: Retainer)
         RETAINER,
         side(db, troupe, npc, row.name),
         side(db, troupe, owner, ""),
-        day_of(row.created_at),
+        day_of(troupe, row.created_at),
     )
 
 
@@ -356,7 +357,11 @@ def known(db: Session, troupe: Troupe) -> list[Known]:
     for character in characters:
         domitor = domitor_known(db, troupe, character)
         if domitor is not None:
-            keep(Known(DOMITOR, domitor.thrall, domitor.regnant, day_of(character.created_at)))
+            keep(
+                Known(
+                    DOMITOR, domitor.thrall, domitor.regnant, day_of(troupe, character.created_at)
+                )
+            )
     for character in characters:
         if not bonds.is_vampire(character):
             continue

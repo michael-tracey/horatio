@@ -196,7 +196,7 @@ export const SETTINGS = {
   timeZone: card(
     "timeZone",
     "Time zone",
-    "Where the troupe plays. Games on the schedule are entered in it, the troupe directory's Day takes each game's day in it, and an NPC's item that expires on a date goes once that day is over here. Left empty, it is the lead storyteller's.",
+    "Where the troupe plays. Games on the schedule are entered in it, the troupe directory's Day takes each game's day in it, and an NPC's item that expires on a date goes once that day is over here. The rules count their days and months in it too: a blood bond's nights, the monthly game XP and Retainer upkeep, and influence months. Left empty, it is the lead storyteller's, and the rules count in UTC.",
     "time-zone",
   ),
 

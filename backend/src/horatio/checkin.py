@@ -20,7 +20,8 @@ so the troupe's Retainer upkeep is taken then (horatio.retainer_upkeep).
 Attendance is fact, apart from the RSVP (intent), and is what staff award a game's
 XP from (horatio.api.checkin). The book suggests 3 to 5 XP a game, and no more than
 8 to 10 a month (core, p. 108, "XP for Playing"), so an award that takes a character
-past MONTHLY_XP earned in the calendar month is warned of, never refused. A troupe
+past MONTHLY_XP earned in the calendar month is warned of, never refused. The month is
+the troupe's, on its clock (horatio.troupe_zones.rule_zone, #1215). A troupe
 may chart its game XP instead, cap it monthly, and record absentee games
 (horatio.game_xp). An absentee game is its own kind of attendance, never counted as
 having been there: ATTENDED picks out the characters who came.
@@ -35,8 +36,8 @@ import uuid
 from collections.abc import Iterable
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy import ColumnElement, Date, and_, cast, func, or_, select
+from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from horatio import (
     audit,
@@ -298,14 +299,33 @@ def month_start(today: date) -> date:
     return today.replace(day=1)
 
 
+def in_month(
+    troupe: Troupe | None,
+    created_at: InstrumentedAttribute[datetime],
+    entered_on: InstrumentedAttribute[date],
+    at: datetime | None = None,
+) -> ColumnElement[bool]:
+    """An XP line made in the calendar month of `at` (now), on the troupe's clock
+    (#1215). A line's day (`entered_on`) is the server's, in UTC, which can be a day off
+    the troupe's: a New York game's award at 11 pm on 31 October is dated 1 November,
+    and is October's. So what counts is the moment it was made. A line dated before
+    that moment, such as one restored from a backup, which keeps the day it was first
+    entered, counts only if its day is in the month too."""
+    began = troupe_zones.month_began(troupe, at or now())
+    first = began.date()
+    made_on = cast(func.timezone(troupe_zones.UTC_NAME, created_at), Date)
+    return and_(created_at >= began, or_(entered_on >= first, entered_on >= made_on))
+
+
 def earned(
-    db: Session, character_ids: Iterable[uuid.UUID], since: date | None = None
+    db: Session, character_ids: Iterable[uuid.UUID], *within: ColumnElement[bool]
 ) -> dict[uuid.UUID, int]:
-    """XP each character has been awarded, since a day or in all, corrections included.
-    Starting XP and what joining a troupe gave are left out, as they were not earned in
-    play. A game XP chart's bands count it in all (horatio.game_xp). A correction to a
-    purchase takes back XP a flaw gave (a diablerie removing one), which was never
-    awarded, so it is left out, as in horatio.xp_range.given_xp."""
+    """XP each character has been awarded, in all or `within` a time (`in_month`),
+    corrections included. Starting XP and what joining a troupe gave are left out, as
+    they were not earned in play. A game XP chart's bands count it in all
+    (horatio.game_xp). A correction to a purchase takes back XP a flaw gave (a diablerie
+    removing one), which was never awarded, so it is left out, as in
+    horatio.xp_range.given_xp."""
     ids = list(character_ids)
     if not ids:
         return {}
@@ -316,7 +336,7 @@ def earned(
             XpEntry.character_id.in_(ids),
             XpEntry.kind.in_(("award", "correction")),
             XpEntry.corrects_id.is_(None) | XpEntry.corrects_id.not_in(purchases),
-            *([XpEntry.entered_on >= since] if since is not None else []),
+            *within,
             *(~XpEntry.reason.startswith(start, autoescape=True) for start in NOT_EARNED),
         )
         .group_by(XpEntry.character_id)
@@ -326,8 +346,8 @@ def earned(
 
 
 def earned_this_month(
-    db: Session, character_ids: Iterable[uuid.UUID], today: date | None = None
+    db: Session, character_ids: Iterable[uuid.UUID], troupe: Troupe | None
 ) -> dict[uuid.UUID, int]:
-    """XP each character has earned in the calendar month so far: what the book's
-    monthly guidance counts."""
-    return earned(db, character_ids, month_start(today or now().date()))
+    """XP each character has earned in the calendar month so far, the troupe's month:
+    what the book's monthly guidance counts."""
+    return earned(db, character_ids, in_month(troupe, XpEntry.created_at, XpEntry.entered_on))

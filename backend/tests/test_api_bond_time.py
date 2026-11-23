@@ -7,8 +7,9 @@ change. Staff recording past a full bond's immunity need a reason."""
 
 import uuid
 from collections.abc import Callable
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
@@ -55,9 +56,15 @@ def months(n: int) -> int:
     return (today() - add_months(today(), -n)).days + 1
 
 
-def both_came(session: Session, scene: Players, *characters: str, days_ago: int) -> None:
-    """A game both characters checked in at, `days_ago`."""
-    starts = datetime.now(UTC) - timedelta(days=days_ago)
+def both_came(
+    session: Session,
+    scene: Players,
+    *characters: str,
+    days_ago: int = 0,
+    starts: datetime | None = None,
+) -> None:
+    """A game both characters checked in at, `days_ago` or from `starts`."""
+    starts = starts or datetime.now(UTC) - timedelta(days=days_ago)
     game = ScheduledGame(
         troupe_id=uuid.UUID(scene.troupe.id), starts_at=starts, ends_at=starts + timedelta(hours=4)
     )
@@ -160,6 +167,21 @@ def test_games_both_checked_in_at_and_logged_meetings_keep_a_lesser_bond(
     assert met.json()["entries"][-1]["kind"] == "meeting"
     assert met.json()["level"] == 1
     assert any("meeting on" in m for m in scene.messages())
+
+
+def test_the_night_of_a_game_both_came_to_is_the_troupes(scene: Players, session: Session) -> None:
+    """A New York game at 9:30 pm is that night's there, though the next day's in UTC,
+    where a troupe with no zone counts it (#1215)."""
+    bond = scene.drunk(scene.agnes, scene.bram, *nights(2))
+    age(session, scene, bond["id"], months(7))
+    night = today() - timedelta(days=10)
+    starts = datetime.combine(night, time(21, 30), ZoneInfo("America/New_York"))
+    both_came(session, scene, scene.agnes, scene.bram, starts=starts)
+    assert staff_bond(scene, bond["id"])["last_met"] == (night + timedelta(days=1)).isoformat()
+
+    session.get_one(TroupeRow, uuid.UUID(scene.troupe.id)).time_zone = "America/New_York"
+    session.commit()
+    assert staff_bond(scene, bond["id"])["last_met"] == night.isoformat()
 
 
 def test_in_players_report_staff_confirm_each_change(scene: Players, session: Session) -> None:

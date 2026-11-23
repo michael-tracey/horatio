@@ -39,14 +39,14 @@ import uuid
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from typing import Literal
 
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, checkin, sheets, xp_range
+from horatio import audit, checkin, sheets, troupe_zones, xp_range
 from horatio.models import (
     Character,
     DowntimeCycle,
@@ -287,17 +287,16 @@ def band_of(found: GameXpSettings, earned: int) -> tuple[str, Band] | None:
     return None
 
 
-def month_began(today: datetime | None = None) -> datetime:
-    at = today or checkin.now()
-    return datetime.combine(checkin.month_start(at.date()), datetime.min.time(), tzinfo=UTC)
-
-
-def used_this_month(db: Session, ids: Iterable[uuid.UUID]) -> dict[uuid.UUID, dict[str, int]]:
-    """How often each adjustment was ticked for each character this calendar month."""
+def used_this_month(
+    db: Session, troupe: Troupe, ids: Iterable[uuid.UUID]
+) -> dict[uuid.UUID, dict[str, int]]:
+    """How often each adjustment was ticked for each character this calendar month,
+    the troupe's."""
+    began = troupe_zones.month_began(troupe, checkin.now())
     found: dict[uuid.UUID, dict[str, int]] = defaultdict(dict)
     for character_id, ticked in db.execute(
         select(GameXpAward.character_id, GameXpAward.adjustments).where(
-            GameXpAward.character_id.in_(list(ids)), GameXpAward.created_at >= month_began()
+            GameXpAward.character_id.in_(list(ids)), GameXpAward.created_at >= began
         )
     ):
         for a in ticked:
@@ -311,8 +310,8 @@ def lines(db: Session, troupe: Troupe, present: Sequence[tuple[Character, str]])
     found = settings(troupe)
     ids = [c.id for c, _ in present]
     earned = checkin.earned(db, ids)
-    month = checkin.earned_this_month(db, ids)
-    used = used_this_month(db, ids)
+    month = checkin.earned_this_month(db, ids, troupe)
+    used = used_this_month(db, troupe, ids)
     out: list[Line] = []
     for character, kind in present:
         band = band_of(found, earned[character.id])
@@ -467,7 +466,7 @@ def range_figure(db: Session, troupe: Troupe, flat: int) -> int:
             select(func.coalesce(func.sum(XpRangeEntry.floor_change), 0)).where(
                 XpRangeEntry.troupe_id == troupe.id,
                 XpRangeEntry.kind == "game",
-                XpRangeEntry.entered_on >= checkin.month_start(checkin.now().date()),
+                checkin.in_month(troupe, XpRangeEntry.created_at, XpRangeEntry.entered_on),
             )
         )
         amount = min(amount, max(0, monthly_limit(found) - int(this_month or 0)))

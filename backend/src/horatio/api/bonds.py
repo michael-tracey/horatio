@@ -347,7 +347,7 @@ def bond_out(db: DbSession, bond: BloodBond) -> BondOut:
         next_change=ChangeOut(
             kind=change.kind,  # type: ignore[arg-type]  # drop or end
             on=change.on,
-            due=change.on <= bonds.today(),
+            due=change.on <= bonds.today(troupe),
             to=change.to if change.kind == "drop" else None,
             tremere=change.weakness == bonds.CAPPED,
         )

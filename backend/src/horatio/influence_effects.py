@@ -19,20 +19,23 @@ While an effect lasts, the target's rating counts lower (or higher) for what it
 can reach (horatio.influence.standings) and for the Play View's counters, and the
 actions lost or gained come off (or are added to) its next downtime allowance, as
 owed actions. Effects end by themselves: whether one lasts is worked out from its
-dates and the target's games whenever it is read. Months are calendar months in UTC.
+dates and the target's games whenever it is read. Months are calendar months on the
+troupe's clock (horatio.troupe_zones.rule_zone, #1215): in UTC for a troupe with no time
+zone of its own.
 """
 
 import re
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta, tzinfo
 from typing import TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import exists, func, or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, downtimes, influence, influence_log
+from horatio import audit, downtimes, influence, influence_log, troupe_zones
 from horatio.influence import InfluenceType
 from horatio.models import (
     Character,
@@ -69,20 +72,26 @@ def now() -> datetime:
     return datetime.now(UTC)
 
 
-def month_start(at: datetime) -> datetime:
-    return at.astimezone(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+def month_start(at: datetime, zone: tzinfo = UTC) -> datetime:
+    """The start of `at`'s month, on the clock of `zone` (the troupe's)."""
+    return datetime.combine(at.astimezone(zone).date().replace(day=1), time(), zone)
 
 
-def next_month(at: datetime) -> datetime:
+def next_month(at: datetime, zone: tzinfo = UTC) -> datetime:
     """The start of the month after `at`'s: when a Boost ends."""
-    start = month_start(at)
-    return datetime.combine(add_months(start.date(), 1), start.timetz())
+    start = month_start(at, zone)
+    return datetime.combine(add_months(start.date(), 1), time(), zone)
 
 
-def a_month_on(at: datetime) -> datetime:
-    """The same moment a calendar month later."""
-    at = at.astimezone(UTC)
-    return datetime.combine(add_months(at.date(), 1), at.timetz())
+def a_month_on(at: datetime, zone: tzinfo = UTC) -> datetime:
+    """The same time of day a calendar month later, on the clock of `zone`."""
+    at = at.astimezone(zone)
+    return datetime.combine(add_months(at.date(), 1), at.time(), zone)
+
+
+def zone_of(db: Session, troupe_id: uuid.UUID) -> ZoneInfo:
+    """The zone the troupe's months are counted in."""
+    return troupe_zones.rule_zone(db.get(Troupe, troupe_id))
 
 
 def attack_cost(spent: InfluenceType, aimed: InfluenceType) -> int:
@@ -324,7 +333,8 @@ def defends_before(
                 InfluenceEntry.action_key == influence.DEFEND,
                 InfluenceEntry.type == aimed,
                 defender == character_id,
-                InfluenceEntry.happened_at >= month_start(entry.happened_at),
+                InfluenceEntry.happened_at
+                >= month_start(entry.happened_at, zone_of(db, entry.troupe_id)),
                 InfluenceEntry.happened_at < entry.happened_at,
             )
             .order_by(InfluenceEntry.happened_at)
@@ -397,7 +407,7 @@ def plan_attack(db: Session, entry: InfluenceEntry, short: str, levels: int | No
         defended=defended,
         result=result,
         starts_at=entry.happened_at,
-        ends_at=a_month_on(entry.happened_at),
+        ends_at=a_month_on(entry.happened_at, zone_of(db, entry.troupe_id)),
         games=ATTACK_GAMES,
     )
     if found.cost > found.spent:
@@ -433,7 +443,7 @@ def plan_boost(db: Session, entry: InfluenceEntry, short: str, levels: int | Non
         rating=rating,
         result=asked,
         starts_at=entry.happened_at,
-        ends_at=next_month(entry.happened_at),
+        ends_at=next_month(entry.happened_at, zone_of(db, entry.troupe_id)),
     )
     if found.cost > found.spent:
         found.notes.append(
@@ -468,7 +478,11 @@ def plan_block(
         activity=" ".join((activity or entry.target_activity or default_activity).split()),
         starts_at=entry.happened_at,
         ends_at=ends_at
-        or (entry.happened_at + LOCATION_LASTS if location else next_month(entry.happened_at)),
+        or (
+            entry.happened_at + LOCATION_LASTS
+            if location
+            else next_month(entry.happened_at, zone_of(db, entry.troupe_id))
+        ),
     )
 
 
@@ -562,7 +576,7 @@ def record_block(
 ) -> InfluenceEffect:
     """A Block staff record on their own, such as an NPC's, with no log entry."""
     activity = " ".join(activity.split())
-    ends_at = ends_at or next_month(starts_at)
+    ends_at = ends_at or next_month(starts_at, troupe_zones.rule_zone(troupe))
     check_block(strength, activity, starts_at, ends_at)
     effect = InfluenceEffect(
         troupe_id=troupe.id,

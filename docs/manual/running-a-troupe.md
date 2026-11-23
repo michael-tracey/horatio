@@ -714,9 +714,10 @@ Switching feeding off only hides it. What was recorded is kept and comes back if
 - the zone you enter games in on the schedule, under **When it plays** (everyone still sees them in their own time zone),
 - the day each upcoming game falls on for the troupe directory's **Day**, and the **Next game** on its row,
 - when an NPC's item that expires on a day goes: once that day is over in the troupe's zone (a player character's goes once it is over in its player's),
-- and the day a game is named by in the troupe's log, such as when check-in opened.
+- the day a game is named by in the troupe's log, such as when check-in opened,
+- and the days and months the rules count by, once the troupe has chosen a zone of its own: the night a game falls on for blood bonds (a game both sides came to keeps a bond alive), "today" for bonds and the Vinculum, a bond's fade and the nights you can record; the calendar month of the monthly game XP figure and of adjustments limited to so many a month, and of Retainer upkeep and growth; an influence Defend's, Boost's or Block's month; and the day an influence or status spent at a game names it by, such as "Spent at the 31 Oct game". So in a New York troupe a game at 11 pm on 31 October is still October's, though it is 1 November in UTC.
 
-A troupe that hasn't chosen one uses its lead storyteller's time zone, or UTC if they haven't chosen one either; the card says which, and **Use the lead storyteller's** clears it. A new troupe starts with the time zone of whoever asked for it or made it, or their device's if they haven't chosen one. Changing it moves no game: each stays at the same moment, and only the day it falls on in the new zone can change. Each change is kept in the troupe's log.
+A troupe that hasn't chosen one uses its lead storyteller's time zone, or UTC if they haven't chosen one either; the card says which, and **Use the lead storyteller's** clears it. The rules' days and months are the exception: until the troupe chooses a zone, they stay in UTC, as they always were, and a spend at a game is named by its day in the player's own time zone. A new troupe starts with the time zone of whoever asked for it or made it, or their device's if they haven't chosen one. Changing it moves no game: each stays at the same moment, and only the day it falls on in the new zone can change. Each change is kept in the troupe's log.
 
 ## Setting up: house rules
 

@@ -30,6 +30,11 @@ lesser bond the thrall has (p. 295). Staff can also enter a bond that already
 stands, such as one from before Horatio, at its level with a reason, and break
 one with a reason (p. 296).
 
+Nights are the troupe's (horatio.troupe_zones.rule_day, #1215): "today", the night a
+game both sides came to was on, the day a bond or a character was made. A New York
+troupe's game at 11 pm on 31 October is that night, not 1 November's. A troupe with no
+time zone of its own counts them in UTC, as before it could have one.
+
 Who sees a bond: the troupe's running staff, all of them; the thrall's player,
 their own character's; the regnant's player, only once staff mark it known to the
 regnant. Nobody else, anywhere. Every change goes in the troupe's log and the
@@ -44,7 +49,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import ColumnElement, and_, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
-from horatio import audit, notifications, targets
+from horatio import audit, notifications, targets, troupe_zones
 from horatio.models import (
     Approval,
     AuditEvent,
@@ -112,7 +117,7 @@ def set_setting(db: Session, user: User, troupe: Troupe, setting: str) -> None:
     if troupe.blood_bonds == "off":
         # Nothing could be recorded while it was off, meetings included: time spent
         # apart until now doesn't count against the troupe's bonds (#665).
-        troupe.bond_clock_from = max(troupe.bond_clock_from, datetime.now(UTC).date())
+        troupe.bond_clock_from = max(troupe.bond_clock_from, today(troupe))
     troupe.blood_bonds = setting
     audit.record(db, user, "house.blood_bonds", troupe_id=troupe.id, setting=SETTINGS[setting])
 
@@ -483,9 +488,9 @@ def new_bond(db: Session, user: User, troupe: Troupe, thrall: Party, regnant: Pa
     return bond
 
 
-def check_night(night: date) -> None:
+def check_night(night: date, troupe: Troupe) -> None:
     # A day's grace, for a game still going past midnight somewhere.
-    if night > datetime.now(UTC).date() + timedelta(days=1):
+    if night > today(troupe) + timedelta(days=1):
         raise unprocessable("That night hasn't come yet.")
 
 
@@ -524,7 +529,7 @@ def record_drink(
     bonds."""
     if source not in SOURCES:
         raise unprocessable(f"Where it was told is one of {', '.join(SOURCES)}.")
-    check_night(night)
+    check_night(night, troupe)
     bond = open_bond(db, troupe, thrall, regnant) or new_bond(db, user, troupe, thrall, regnant)
     return add_drink(db, user, bond, night, source, note)
 
@@ -537,8 +542,8 @@ def add_drink(
         raise conflict("That bond has ended: record the drink as a new bond.")
     if source not in SOURCES:
         raise unprocessable(f"Where it was told is one of {', '.join(SOURCES)}.")
-    check_night(night)
     troupe = db.get_one(Troupe, bond.troupe_id)
+    check_night(night, troupe)
     thrall, regnant = parties(db, bond)
     weakness = weakness_for(db, troupe, thrall, regnant)
     before = level(db, bond)
@@ -592,7 +597,7 @@ def enter_bond(
         raise unprocessable("Give a reason for entering the bond.")
     if at not in LEVELS:
         raise unprocessable("A bond is one to three drinks.")
-    check_night(night)
+    check_night(night, troupe)
     if open_bond(db, troupe, thrall, regnant) is not None:
         raise conflict(
             f"{thrall.shown} is already bound to {regnant.shown}: add a drink to that bond."
@@ -699,8 +704,9 @@ FADE_REASONS = {REGNANT_DIED: "its regnant met Final Death"}
 FINAL_DEATH = "final_death"
 
 
-def today() -> date:
-    return datetime.now(UTC).date()
+def today(troupe: Troupe | None = None) -> date:
+    """The troupe's day now; UTC's with no troupe."""
+    return troupe_zones.rule_day(troupe)
 
 
 def staff_log(db: Session, user: User | None, action: str, bond: BloodBond, **data: str) -> None:
@@ -737,9 +743,9 @@ def tracked_bonds(db: Session, *conditions: ColumnElement[bool]) -> list[BloodBo
 
 def start_fading(db: Session, user: User, regnant: Character) -> None:
     """The regnant met Final Death: each bond still felt where they are the regnant
-    starts to fade, ending FADE_DAYS from today."""
-    ends = today() + timedelta(days=FADE_DAYS)
+    starts to fade, ending FADE_DAYS from today, its troupe's."""
     for bond in tracked_bonds(db, BloodBond.regnant_id == regnant.id, BloodBond.status == "active"):
+        ends = today(db.get(Troupe, bond.troupe_id)) + timedelta(days=FADE_DAYS)
         bond.status = "fading"
         bond.fades_on = ends
         bond.fade_reason = REGNANT_DIED
@@ -810,15 +816,17 @@ def faded(db: Session, bond: BloodBond, user: User | None = None) -> None:
 
 def settle_fades(db: Session, troupe_ids: Sequence[uuid.UUID] | None = None) -> None:
     """End every fading bond whose day has come, and make the changes time brings that
-    are due (#665): those of `troupe_ids`, or all."""
+    are due (#665): those of `troupe_ids`, or all. Each troupe's day is its own, a day
+    either side of UTC's at most."""
     conditions: list[ColumnElement[bool]] = [
         BloodBond.status == "fading",
-        BloodBond.fades_on <= today(),
+        BloodBond.fades_on <= today() + timedelta(days=1),
     ]
     if troupe_ids is not None:
         conditions.append(BloodBond.troupe_id.in_(troupe_ids))
     for bond in tracked_bonds(db, *conditions):
-        faded(db, bond)
+        if bond.fades_on is not None and bond.fades_on <= today(db.get(Troupe, bond.troupe_id)):
+            faded(db, bond)
     troupes = select(Troupe).where(Troupe.blood_bonds.in_(AUTOMATIC))
     if troupe_ids is not None:
         troupes = troupes.where(Troupe.id.in_(troupe_ids))
@@ -835,10 +843,9 @@ def set_fade(db: Session, user: User, bond: BloodBond, ends: date, reason: str) 
     if bond.status != "fading" or bond.fades_on is None:
         raise conflict("That bond isn't fading.")
     was = bond.fades_on
-    if ends <= today():
-        staff_log(
-            db, user, "bond.fade_changed", bond, ends=when(today()), was=when(was), reason=reason
-        )
+    now = today(db.get(Troupe, bond.troupe_id))
+    if ends <= now:
+        staff_log(db, user, "bond.fade_changed", bond, ends=when(now), was=when(was), reason=reason)
         faded(db, bond, user)
         return
     if ends == was:
@@ -1038,7 +1045,8 @@ def add_months(day: date, months: int) -> date:
 
 
 def met_at_games(db: Session, bond: BloodBond) -> date | None:
-    """The last game both sides checked in at, if both are characters (#421)."""
+    """The night of the last game both sides checked in at, if both are characters
+    (#421), on the bond's troupe's clock."""
     if bond.thrall_id is None or bond.regnant_id is None:
         return None
     came = and_(GameAttendance.game_id == ScheduledGame.id, GameAttendance.kind == "attended")
@@ -1053,7 +1061,9 @@ def met_at_games(db: Session, bond: BloodBond) -> date | None:
             thrall_came.exists(), regnant_came.exists(), ScheduledGame.starts_at <= func.now()
         )
     )
-    return started.astimezone(UTC).date() if started is not None else None
+    if started is None:
+        return None
+    return troupe_zones.rule_day(db.get(Troupe, bond.troupe_id), started)
 
 
 def last_met(db: Session, bond: BloodBond, entries: Sequence[BondEntry]) -> date | None:
@@ -1085,7 +1095,7 @@ class Change:
 
 
 def clock_from(troupe: Troupe, bond: BloodBond) -> date:
-    return max(troupe.bond_clock_from, bond.created_at.astimezone(UTC).date())
+    return max(troupe.bond_clock_from, troupe_zones.rule_day(troupe, bond.created_at))
 
 
 def next_change(
@@ -1130,7 +1140,7 @@ def next_change(
 
 def due(db: Session, troupe: Troupe, bond: BloodBond) -> Change | None:
     change = next_change(db, troupe, bond)
-    return change if change is not None and change.on <= today() else None
+    return change if change is not None and change.on <= today(troupe) else None
 
 
 def apply_change(db: Session, user: User | None, bond: BloodBond, change: Change) -> None:
@@ -1223,7 +1233,7 @@ def add_meeting(
         raise conflict("That bond isn't one time can fade now.")
     if source not in SOURCES:
         raise unprocessable(f"Where it was told is one of {', '.join(SOURCES)}.")
-    check_night(night)
+    check_night(night, db.get_one(Troupe, bond.troupe_id))
     db.add(
         BondEntry(
             bond_id=bond.id,
@@ -1270,7 +1280,7 @@ def change_entry(
     """Change a drink's night or note, or a bond entered's: for staff, who keep every
     bond, such as one a player recorded wrongly. The level is worked out again; if it
     becomes a full bond, the thrall's lesser bonds are wiped away."""
-    check_night(night)
+    check_night(night, db.get_one(Troupe, bond.troupe_id))
     note = note.strip()
     if entry.kind == "entered" and not note:
         raise unprocessable("Give a reason for entering the bond.")
@@ -1414,13 +1424,13 @@ def log_override(db: Session, user: User, bond: BloodBond, reason: str) -> None:
         log(db, user, "bond.immunity_overridden", bond, reason=reason)
 
 
-def check_player_night(night: date, *characters: Character | None) -> None:
-    """Not a night to come, nor one before either character was made in Horatio: with a
-    day's grace, as `check_night` gives, since the night is the player's own date and
-    the character was made at a moment kept in UTC."""
-    check_night(night)
+def check_player_night(night: date, troupe: Troupe, *characters: Character | None) -> None:
+    """Not a night to come, nor one before either character was made in Horatio, on the
+    troupe's clock: with a day's grace, as `check_night` gives, since the night is the
+    player's own date."""
+    check_night(night, troupe)
     for character in characters:
-        made = character.created_at.astimezone(UTC).date() if character is not None else None
+        made = troupe_zones.rule_day(troupe, character.created_at) if character else None
         if character is not None and made is not None and night < made - timedelta(days=1):
             raise unprocessable(f"That night is before {character.name} was made in Horatio.")
 
@@ -1482,7 +1492,7 @@ def report_drink(
         raise unprocessable(f"{mine.name} isn't a vampire: only a vampire's blood binds.")
     me = Party(mine, "")
     thrall, regnant = (me, other) if reported_as == "thrall" else (other, me)
-    check_player_night(night, mine, other.character)
+    check_player_night(night, troupe, mine, other.character)
     refused = immune_to(db, troupe, thrall, regnant)
     if refused:
         raise conflict(refused)
@@ -1573,7 +1583,7 @@ def report_meeting(
     if source not in PLAYER_SOURCES:
         raise unprocessable(f"Where it happened is one of {', '.join(PLAYER_SOURCES)}.")
     thrall, regnant = parties(db, bond)
-    check_player_night(night, thrall.character, regnant.character)
+    check_player_night(night, troupe, thrall.character, regnant.character)
     if troupe.blood_bonds == "players_manage":
         return add_meeting(db, user, bond, night, source, note)
     note = note.strip()

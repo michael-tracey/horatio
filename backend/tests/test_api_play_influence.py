@@ -3,6 +3,7 @@ shares one pool a month with downtimes (issue #133; MET: VtM core, p. 510)."""
 
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -304,6 +305,32 @@ def test_spending_two_at_a_game_leaves_the_next_cycle_two_lower(troupe: Troupe, 
     ]
     [participant] = troupe.storyteller.client.get(f"/cycles/{cycle['id']}/participants").json()
     assert participant["shortfall"] == {}
+
+
+def test_the_game_is_named_by_its_day_in_the_home_troupes_zone(troupe: Troupe, agnes: str) -> None:
+    """9:30 pm on 31 October in New York is 1 November in UTC and in Tokyo, where Agnes's
+    player is. Without a zone of its own the player's day names the game, as before; with
+    one, the troupe's (#1215)."""
+    troupe.player.client.patch("/preferences", json={"time_zone": "Asia/Tokyo"})
+    late = datetime(2026, 11, 1, 1, 30, tzinfo=UTC)
+
+    def spend_at(minutes: int) -> None:
+        at = (late + timedelta(minutes=minutes)).isoformat()
+        send(troupe.player, agnes, {**spend(details=GOSSIP), "happened_at": at})
+
+    spend_at(0)
+    zoned = troupe.lead.client.patch(
+        f"/troupes/{troupe.id}", json={"time_zone": "America/New_York"}
+    )
+    assert zoned.status_code == 200, zoned.text
+    spend_at(10)
+
+    open_cycle(troupe, new_cycle(troupe))
+    adjustments = my_downtime(troupe.player, agnes).json()["adjustments"]
+    assert [a["reason"] for a in adjustments] == [
+        "Spent at the 1 Nov game",
+        "Spent at the 31 Oct game",
+    ]
 
 
 def test_undo_after_the_cycle_took_it_gives_the_action_back(troupe: Troupe, agnes: str) -> None:
